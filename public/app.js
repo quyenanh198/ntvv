@@ -9,6 +9,7 @@
   let sheet = null; // { type: 'shop'|'buyplot', idx }
   let showLb = null; // mảng leaderboard khi mở modal
   let pending = false;
+  let familyFilter = ''; // ô tìm người nhà
 
   // ---------- helpers ----------
   const esc = (s) =>
@@ -139,6 +140,7 @@
 
   function render() {
     if (!DATA) return;
+    const searchWasFocused = document.activeElement?.classList?.contains('family-search');
     const m = me();
     const visiting = VISIT && VISIT.ownerId !== m.id ? VISIT : null;
     const xpSpan = m.nextLevelXp - m.levelXp;
@@ -159,7 +161,11 @@
         <span class="xp-num">${m.xp - m.levelXp}/${xpSpan} XP</span>
       </div>
 
-      <div class="family-strip">${DATA.family.map(familyBtn).join('')}</div>
+      <div class="family-search-wrap">
+        <span class="family-search-icon">🔍</span>
+        <input class="family-search" type="search" placeholder="Tìm người nhà…" value="${esc(familyFilter)}" />
+      </div>
+      <div class="family-strip">${familyStripHtml()}</div>
 
       ${visiting ? `
         <div class="visit-bar">
@@ -191,6 +197,14 @@
       ${showLb ? renderLb() : ''}
     `;
     bind();
+    // Poll 20s vẽ lại cả trang — đang gõ ô tìm thì trả lại focus + con trỏ.
+    if (searchWasFocused) {
+      const input = document.querySelector('.family-search');
+      if (input) {
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+    }
   }
 
   function renderToolbar() {
@@ -200,6 +214,23 @@
         <span class="farm-title">🏡 Ruộng nhà mình</span>
         ${empty >= 2 ? `<button class="btn-plantall" id="btn-plantall">🧺 Gieo hết ${empty} ô</button>` : ''}
       </div>`;
+  }
+
+  // So khớp không dấu: "co vy" tìm ra "Cô Vy".
+  function fold(s) {
+    return String(s ?? '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .toLowerCase();
+  }
+
+  function familyStripHtml() {
+    const q = fold(familyFilter.trim());
+    const list = q ? DATA.family.filter((u) => u.me || fold(u.name).includes(q)) : DATA.family;
+    if (list.length === 0) return '<span class="family-none">😅 Không thấy ai tên vậy</span>';
+    return list.map(familyBtn).join('');
   }
 
   function familyBtn(u) {
@@ -370,21 +401,28 @@
       }),
     );
 
-    document.querySelectorAll('[data-visit]').forEach((el) =>
-      el.addEventListener('click', async () => {
-        const id = Number(el.dataset.visit);
-        if (el.dataset.me === '1') {
-          VISIT = null;
-          refresh();
-          return;
-        }
-        try {
-          const r = await api(`/farm/${id}`);
-          VISIT = { ownerId: id, ...r };
-          render();
-        } catch { /* toast đã lo */ }
-      }),
-    );
+    // Delegation: strip được vẽ lại khi lọc mà không cần gắn lại listener.
+    document.querySelector('.family-strip')?.addEventListener('click', async (ev) => {
+      const el = ev.target.closest('[data-visit]');
+      if (!el) return;
+      const id = Number(el.dataset.visit);
+      if (el.dataset.me === '1') {
+        VISIT = null;
+        refresh();
+        return;
+      }
+      try {
+        const r = await api(`/farm/${id}`);
+        VISIT = { ownerId: id, ...r };
+        render();
+      } catch { /* toast đã lo */ }
+    });
+
+    document.querySelector('.family-search')?.addEventListener('input', (ev) => {
+      familyFilter = ev.target.value;
+      const strip = document.querySelector('.family-strip');
+      if (strip) strip.innerHTML = familyStripHtml();
+    });
 
     document.getElementById('btn-plantall')?.addEventListener('click', () => {
       sheet = { type: 'shop', all: true };

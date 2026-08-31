@@ -129,8 +129,29 @@ body {
 .xp-num { font-size: 0.72rem; color: var(--muted); font-weight: 700; white-space: nowrap; }
 
 /* ---------- Family strip ---------- */
-.family-strip { display: flex; gap: 0.6rem; overflow-x: auto; padding: 0.15rem 0.1rem 0.55rem; scrollbar-width: none; }
-.family-strip::-webkit-scrollbar { display: none; }
+.family-search-wrap { position: relative; margin-bottom: 0.45rem; }
+.family-search-icon {
+  position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%);
+  font-size: 0.85rem; pointer-events: none; opacity: 0.7;
+}
+.family-search {
+  width: 100%; border: 2px solid #e8e0cc; border-radius: 999px;
+  background: var(--card); font-family: inherit; font-size: 0.9rem; font-weight: 600;
+  color: var(--ink); padding: 0.42rem 0.9rem 0.42rem 2.1rem;
+  box-shadow: var(--shadow); outline: none;
+}
+.family-search::placeholder { color: var(--muted); font-weight: 600; }
+.family-search:focus { border-color: var(--grass); }
+.family-none { font-size: 0.85rem; font-weight: 700; color: var(--muted); padding: 0.6rem 0.3rem; white-space: nowrap; }
+
+.family-strip {
+  display: flex; gap: 0.6rem; overflow-x: auto; padding: 0.15rem 0.1rem 0.45rem;
+  scrollbar-width: thin; scrollbar-color: #b8dc8c transparent;
+}
+.family-strip::-webkit-scrollbar { height: 6px; }
+.family-strip::-webkit-scrollbar-track { background: transparent; }
+.family-strip::-webkit-scrollbar-thumb { background: #b8dc8c; border-radius: 999px; }
+.family-strip::-webkit-scrollbar-thumb:hover { background: var(--grass); }
 .family-member {
   border: none; background: none; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
