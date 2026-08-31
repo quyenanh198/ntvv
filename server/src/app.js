@@ -1,4 +1,5 @@
-import { dirname, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import staticPlugin from '@fastify/static';
@@ -393,7 +394,33 @@ export function buildApp({ config, db, logger = true }) {
   );
 
   // ---- Static + điều hướng ----------------------------------------------
-  app.register(staticPlugin, { root: PUBLIC_DIR, prefix: '/farm/' });
+  // Chống cache cũ (trình duyệt LẪN Cloudflare edge — bài học hub-ui):
+  // index.html luôn no-store và trỏ asset kèm ?v=<phiên boot>, nên mỗi lần
+  // deploy/restart là cả nhà nhận CSS/JS mới ngay; URL có ?v thì cache
+  // thoải mái một năm.
+  const BOOT_VERSION = Date.now().toString(36);
+  const INDEX_HTML = readFileSync(join(PUBLIC_DIR, 'index.html'), 'utf8')
+    .replace('href="style.css"', `href="style.css?v=${BOOT_VERSION}"`)
+    .replace('src="app.js"', `src="app.js?v=${BOOT_VERSION}"`);
+
+  app.register(staticPlugin, { root: PUBLIC_DIR, prefix: '/farm/', index: false });
+
+  // Cache header cho asset tĩnh: URL versioned (?v=) thì cache một năm,
+  // URL trần thì revalidate. Dùng onSend thay vì setHeaders của
+  // @fastify/static (v10 không đưa raw res ra nữa).
+  app.addHook('onSend', async (request, reply, payload) => {
+    const url = request.raw.url || '';
+    const isAsset =
+      url.startsWith('/farm/') && !url.startsWith('/farm/api/') && url !== '/farm/' && !url.startsWith('/farm/index.html');
+    if (isAsset) {
+      reply.header('cache-control', url.includes('?v=') ? 'public, max-age=31536000, immutable' : 'no-cache');
+    }
+    return payload;
+  });
+  const serveIndex = async (request, reply) =>
+    reply.type('text/html; charset=utf-8').header('cache-control', 'no-store').send(INDEX_HTML);
+  app.get('/farm/', serveIndex);
+  app.get('/farm/index.html', serveIndex);
   app.get('/farm', async (request, reply) => reply.redirect('/farm/'));
   app.get('/', async (request, reply) => reply.redirect('/farm/'));
   app.get('/healthz', async () => ({ ok: true }));
