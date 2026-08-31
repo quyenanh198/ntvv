@@ -52,6 +52,7 @@
     no_farm: 'Người này chưa mở nông trại.',
     max_plots: 'Đất đã mở hết rồi!',
     own_farm: 'Ruộng nhà mình mà!',
+    no_empty_plot: 'Không còn ô trống nào.',
   };
 
   function fmtTime(ms) {
@@ -164,9 +165,20 @@
         <div class="visit-bar">
           <span>👀 Đang thăm ruộng của <b>${esc(visiting.farm.name)}</b></span>
           <button id="btn-home">🏡 Về nhà</button>
-        </div>` : ''}
+        </div>` : renderToolbar()}
 
-      <div class="farm-grid" id="grid">${renderPlots(visiting)}</div>
+      <div class="field-wrap">
+        <span class="field-decor decor-1">🌻</span>
+        <span class="field-decor decor-2">🍄</span>
+        <span class="field-decor decor-3">🌼</span>
+        <span class="butterfly">🦋</span>
+        <div class="farm-grid" id="grid">${renderPlots(visiting)}</div>
+      </div>
+      <div class="yard" aria-hidden="true">
+        <span class="walker chicken">🐔</span>
+        <span class="walker chick">🐥</span>
+        <span class="sitter">🐶</span>
+      </div>
 
       <div class="events">
         <h3>📰 Bản tin làng</h3>
@@ -179,6 +191,15 @@
       ${showLb ? renderLb() : ''}
     `;
     bind();
+  }
+
+  function renderToolbar() {
+    const empty = me().plots.filter((p) => !p.crop).length;
+    return `
+      <div class="farm-toolbar">
+        <span class="farm-title">🏡 Ruộng nhà mình</span>
+        ${empty >= 2 ? `<button class="btn-plantall" id="btn-plantall">🧺 Gieo hết ${empty} ô</button>` : ''}
+      </div>`;
   }
 
   function familyBtn(u) {
@@ -244,26 +265,32 @@
   function renderSheet() {
     const m = me();
     if (sheet.type === 'shop') {
+      const emptyCount = sheet.all ? m.plots.filter((p) => !p.crop).length : 1;
       const rows = Object.values(crops())
         .map((c) => {
           const lockLevel = m.level < c.level;
           const lockCoin = m.coins < c.cost;
           const locked = lockLevel || lockCoin;
           const profit = c.yield * c.sell - c.cost;
+          const canPlant = sheet.all ? Math.min(emptyCount, Math.floor(m.coins / c.cost)) : 1;
+          const costLabel = sheet.all
+            ? `${canPlant} ô · ${(c.cost * canPlant).toLocaleString('vi')} 🪙`
+            : `${c.cost} 🪙`;
           return `<button class="seed-row${locked ? ' seed-row--locked' : ''}" data-crop="${locked ? '' : c.id}">
             <span class="seed-emoji">${c.emoji}</span>
             <span class="seed-info">
               <span class="seed-name">${c.name}</span>
               <div class="seed-meta">⏱ ${fmtDuration(c.growMs)} · bán ${c.yield}×${c.sell} 🪙 · lãi +${profit}</div>
             </span>
-            ${lockLevel ? `<span class="seed-lock">Cần Lv ${c.level}</span>` : `<span class="seed-cost">${c.cost} 🪙</span>`}
+            ${lockLevel ? `<span class="seed-lock">Cần Lv ${c.level}</span>` : `<span class="seed-cost">${costLabel}</span>`}
           </button>`;
         })
         .join('');
       return `
         <div class="sheet-backdrop" data-close="1"></div>
         <div class="sheet">
-          <h3>🛒 Chợ hạt giống <span style="margin-left:auto;font-size:0.85rem;color:var(--muted)">🪙 ${m.coins.toLocaleString('vi')}</span></h3>
+          <h3>${sheet.all ? `🧺 Gieo hết ${emptyCount} ô trống` : '🛒 Chợ hạt giống'} <span style="margin-left:auto;font-size:0.85rem;color:var(--muted)">🪙 ${m.coins.toLocaleString('vi')}</span></h3>
+          ${sheet.all ? '<p class="sheet-note">Chọn một loại hạt — thiếu xu thì gieo được bao nhiêu ô hay bấy nhiêu.</p>' : ''}
           ${rows}
         </div>`;
     }
@@ -359,14 +386,23 @@
       }),
     );
 
+    document.getElementById('btn-plantall')?.addEventListener('click', () => {
+      sheet = { type: 'shop', all: true };
+      render();
+    });
+
     document.querySelectorAll('.seed-row[data-crop]').forEach((el) =>
       el.addEventListener('click', async () => {
         const cropId = el.dataset.crop;
         if (!cropId) return;
-        const r = await run(() => api('/plant', { idx: sheet.idx, crop: cropId }));
+        const wasAll = sheet.all;
+        const r = await run(() =>
+          wasAll ? api('/plant-all', { crop: cropId }) : api('/plant', { idx: sheet.idx, crop: cropId }),
+        );
         if (r) {
           DATA.me = r.me;
           sheet = null;
+          if (wasAll) toast(`🌱 Đã gieo ${r.planted} ô!`);
           render();
         }
       }),
@@ -386,10 +422,22 @@
         sheet = { type: 'buyplot' };
         render();
       } else if (kind === 'harvest') {
+        const p = me().plots[idx];
+        const emoji = p?.crop ? crops()[p.crop].emoji : '🌾';
         const r = await run(() => api('/harvest', { idx }));
         if (r) {
           DATA.me = r.me;
           floatGain(x, y, `+${r.gain} 🪙`);
+          const layer = document.querySelector('.toast-layer');
+          if (layer) {
+            const el = document.createElement('div');
+            el.className = 'float-gain float-gain--emoji';
+            el.style.left = `${x - 40}px`;
+            el.style.top = `${y - 34}px`;
+            el.textContent = emoji;
+            layer.appendChild(el);
+            setTimeout(() => el.remove(), 1300);
+          }
           render();
         }
       } else if (kind === 'water') {

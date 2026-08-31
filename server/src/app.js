@@ -235,6 +235,36 @@ export function buildApp({ config, db, logger = true }) {
         return { me: farmerView(getFarmer.get(me.user_id)) };
       });
 
+      // Gieo một loại hạt kín mọi ô trống — gieo được bao nhiêu tùy ví
+      // (không đủ tiền cho tất cả thì gieo tới khi cạn xu).
+      api.post('/plant-all', async (request, reply) => {
+        const { crop: cropId } = request.body ?? {};
+        const crop = CROPS[cropId];
+        const me = request.farmer;
+        if (!crop) return reply.code(400).send({ error: 'bad_request' });
+        if (levelFor(me.xp) < crop.level) return reply.code(400).send({ error: 'level_too_low' });
+        const occupied = new Set(
+          db.prepare('SELECT idx FROM plots WHERE owner_id = ?').all(me.user_id).map((r) => r.idx),
+        );
+        const empty = [];
+        for (let i = 0; i < me.plots_count; i += 1) if (!occupied.has(i)) empty.push(i);
+        const count = Math.min(empty.length, Math.floor(me.coins / crop.cost));
+        if (count === 0) {
+          return reply.code(400).send({ error: empty.length === 0 ? 'no_empty_plot' : 'not_enough_coins' });
+        }
+        const now = Date.now();
+        const readyAt = now + growMsFor(crop, config.fast);
+        db.transaction(() => {
+          db.prepare('UPDATE farmers SET coins = coins - ? WHERE user_id = ?').run(crop.cost * count, me.user_id);
+          const ins = db.prepare(
+            'INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at) VALUES (?, ?, ?, ?, ?)',
+          );
+          for (const i of empty.slice(0, count)) ins.run(me.user_id, i, crop.id, now, readyAt);
+        })();
+        logEvent(`${crop.emoji} ${me.name} gieo ${crop.name} kín ${count} ô`);
+        return { me: farmerView(getFarmer.get(me.user_id)), planted: count };
+      });
+
       api.post('/harvest', async (request, reply) => {
         const { idx } = request.body ?? {};
         const me = request.farmer;
