@@ -1416,3 +1416,7 @@ img { display: block; max-width: 100%; }
 
 /* fix nhỏ trên bản redesign: số vàng/kim cương dài không bị cắt */
 .coin-pill b { max-width: 6.5rem; }
+
+/* Lễ hội + toolbar nhiều nút */
+.farm-toolbar { flex-wrap: wrap; row-gap: 0.4rem; }
+.q-right .btn-mini { font-size: 0.72rem; padding: 0.28rem 0.6rem; }

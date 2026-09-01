@@ -1,5 +1,6 @@
 import { buildApp } from './app.js';
-import { openDb } from './db.js';
+import { importLegacyLevels, openDb } from './db.js';
+import { xpNeedFor } from './game.js';
 
 const config = {
   port: process.env.PORT ? Number(process.env.PORT) : 8090,
@@ -11,6 +12,8 @@ const config = {
 };
 
 const db = openDb(config.dataDir);
+const lifted = importLegacyLevels(db, config.dataDir, xpNeedFor);
+if (lifted) console.log(`legacy levels imported for ${lifted} farmer(s)`);
 const app = buildApp({ config, db });
 
 app.listen({ port: config.port, host: '0.0.0.0' }).catch((err) => {

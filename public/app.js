@@ -78,6 +78,8 @@
     no_order: 'Đơn này không còn.',
     not_enough_stars: 'Chưa đủ sao.',
     no_milestone: 'Hết mốc để nhận rồi!',
+    nothing_to_water: 'Không có ô nào cần tưới.',
+    not_enough_progress: 'Chưa đạt mốc này, cày thêm nhé!',
   };
 
   function fmtTime(ms) {
@@ -205,6 +207,7 @@
     const questsReady = m.daily.done >= m.daily.required && !m.daily.chestClaimed;
     const ordersReady = m.orders.some((o) => canDeliver(o));
     const starReady = m.starNext && m.stars >= m.starNext.stars;
+    const festReady = m.festival.milestones.some((ms) => !ms.claimed && ms.progress >= ms.target);
 
     app.innerHTML = `
       <div class="stage">
@@ -231,6 +234,7 @@
           <button class="side-btn" data-sheet="shop">🏪<span>Cửa hàng</span></button>
           <button class="side-btn" data-sheet="inventory">🎒<span>Kho đồ</span></button>
           <button class="side-btn" data-sheet="events">📰<span>Bản tin</span></button>
+          <button class="side-btn" data-sheet="festival">🎪${festReady ? '<i class="dot"></i>' : ''}<span>Lễ hội</span></button>
         </div>
         <div class="side side-right">
           <button class="side-btn side-btn--gold" id="btn-harvestall"><img src="assets/art/basket.png" alt="" />${m.plots.some((p) => p.crop && p.ready) ? '<i class="dot"></i>' : ''}<span>Thu hoạch</span></button>
@@ -319,9 +323,13 @@
   function renderToolbar() {
     const m = me();
     const empty = m.plots.filter((p) => !p.crop).length;
+    const readyN = m.plots.filter((p) => p.crop && p.ready).length;
+    const dryN = m.plots.filter((p) => p.crop && !p.ready && !p.watered).length;
     return `
       <div class="farm-toolbar">
         <span class="ribbon">🏡 Ruộng nhà mình</span>
+        ${readyN >= 2 ? `<button class="gbtn gbtn--gold btn-mini" id="btn-harvestall-tb">🧺 Thu hết ${readyN}</button>` : ''}
+        ${dryN >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-waterall">💧 Tưới hết ${dryN}</button>` : ''}
         ${empty >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-plantall">🌱 Gieo hết ${empty} ô</button>` : ''}
       </div>`;
   }
@@ -353,7 +361,7 @@
       const pct = Math.min(100, Math.max(3, Math.round(((total - left) / total) * 100)));
       const acts = visiting ? visiting.myActs[p.idx] : null;
       const canWater = !p.watered && (!visiting || !acts?.watered);
-      return `<button class="plot plot--growing" data-idx="${p.idx}" data-kind="${mine ? 'plotmenu' : canWater ? 'water' : 'growing'}" data-ready="${p.readyAt}" data-total="${total}" data-cropid="${p.crop}">
+      return `<button class="plot plot--growing" data-idx="${p.idx}" data-kind="${mine ? (p.watered ? 'plotmenu' : 'waterplot') : canWater ? 'water' : 'growing'}" data-ready="${p.readyAt}" data-total="${total}" data-cropid="${p.crop}">
         <img class="crop-sprite" src="${cropSprite(p.crop, pct < 45 ? 1 : 2)}" alt="${c.name}" />
         <span class="plot-timer">${fmtTime(left)}</span>
         <div class="plot-progress"><i style="width:${pct}%"></i></div>
@@ -617,6 +625,29 @@
       return sheetShell('📰 Bản tin làng', rows);
     }
 
+    if (t === 'festival') {
+      const fest = m.festival;
+      const rows = fest.milestones.map((ms) => {
+        const done = ms.progress >= ms.target;
+        const reward = [ms.gold ? `${ms.gold.toLocaleString('vi')} ${COIN}` : '', ms.gems ? `${ms.gems} ${GEM}` : ''].filter(Boolean).join(' + ');
+        return `<div class="quest-row${ms.claimed ? ' quest-row--done' : ''}">
+          <span class="q-emoji">${ms.claimed ? '✅' : done ? '🎁' : '🎪'}</span>
+          <span class="seed-info">
+            <span class="seed-name">${ms.label}</span>
+            <div class="q-track"><i style="width:${Math.round((ms.progress / ms.target) * 100)}%"></i></div>
+            <div class="seed-meta">${reward}</div>
+          </span>
+          <span class="q-right">${ms.claimed ? 'Đã nhận' : done
+            ? `<button class="gbtn gbtn--gold btn-mini" data-fest-claim="${ms.id}">Nhận!</button>`
+            : `${ms.progress}/${ms.target}`}</span>
+        </div>`;
+      }).join('');
+      return sheetShell(
+        `${fest.emoji} ${fest.name} <span class="sheet-coins">⏳ còn ${fest.daysLeft} ngày</span>`,
+        `<p class="sheet-note">Sự kiện cá nhân — đạt mốc là nhận quà, hết ${fest.daysLeft} ngày mở mùa mới.</p>${rows}`,
+      );
+    }
+
     if (t === 'stars') {
       const next = m.starNext;
       const rows = DATA.config.starMilestones.map((ms) => {
@@ -720,6 +751,14 @@
     simple('btn-expand', '/expand', () => { sheet = null; toast('🎉 Đất rộng thêm 4 ô!'); });
     simple('btn-chest', '/quest-chest', (r) => toast(r.gem ? '🎁 Rương ngày + 1 kim cương! 💎' : '🎁 Đã mở rương ngày!'));
     simple('btn-star-claim', '/star-claim', (r) => toast(`🌟 Nhận thưởng mốc ${r.claimed.stars} sao!`));
+    simple('btn-waterall', '/water-all', (r) => toast(`💧 Đã tưới ${r.watered} ô!`));
+    simple('btn-harvestall-tb', '/harvest-all', (r, e) => floatGain(e.clientX || 200, e.clientY || 300, `🧺 +${r.harvested}`));
+
+    document.querySelectorAll('[data-fest-claim]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        const r = await run(() => api('/fest-claim', { id: Number(el.dataset.festClaim) }));
+        if (r) { updateMe(r); toast(`🎪 Nhận thưởng: ${r.claimed.label}!`); render(); }
+      }));
 
     document.getElementById('btn-water-own')?.addEventListener('click', async (e) => {
       const r = await run(() => api('/water', { idx: sheet.idx }));
@@ -763,6 +802,10 @@
       const { clientX: x, clientY: y } = ev;
 
       if (kind === 'empty') { sheet = { type: 'seed', idx }; render(); }
+      else if (kind === 'waterplot') {
+        const r = await run(() => api('/water', { idx }));
+        if (r) { updateMe(r); floatGain(x, y, '💧'); render(); }
+      }
       else if (kind === 'expand') { sheet = { type: 'expand' }; render(); }
       else if (kind === 'plotmenu') { sheet = { type: 'plotmenu', idx }; render(); }
       else if (kind === 'harvest') {

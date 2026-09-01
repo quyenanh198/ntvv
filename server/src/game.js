@@ -148,6 +148,26 @@ export const WATER_HELPER_GOLD = 2;
 export const WATER_HELPER_EXP = 1;
 export const WATER_FRESH_EXP = 1;
 
+// ---- Sự kiện cá nhân: Lễ Hội Thu Hoạch (mục 12.2, chu kỳ 7 ngày) ----------
+export const FESTIVAL = {
+  name: 'Lễ Hội Thu Hoạch',
+  emoji: '🎪',
+  cycleDays: 7,
+  milestones: [
+    { id: 1, type: 'harvest', label: 'Thu hoạch 50 cây',       target: 50,  gold: 1000 },
+    { id: 2, type: 'harvest', label: 'Thu hoạch 150 cây',      target: 150, gems: 5 },
+    { id: 3, type: 'deliver', label: 'Giao 15 đơn hàng',       target: 15,  gold: 2000 },
+    { id: 4, type: 'process', label: 'Chế biến 20 sản phẩm',   target: 20,  gems: 10 },
+    { id: 5, type: 'harvest', label: 'Thu hoạch 300 cây',      target: 300, gold: 3000, gems: 15 },
+  ],
+};
+
+// Chu kỳ hiện tại + số ngày còn lại (ngày tính theo giờ VN, UTC+7).
+export function festivalCycle(now = Date.now()) {
+  const dayNumber = Math.floor((now + 7 * 3600 * 1000) / 86400000);
+  return { cycle: Math.floor(dayNumber / FESTIVAL.cycleDays), daysLeft: FESTIVAL.cycleDays - (dayNumber % FESTIVAL.cycleDays) };
+}
+
 // ---- FARM_FAST (test): mọi đồng hồ chia 60, sàn 3 giây ---------------------
 export function scaleMs(ms, fast) {
   return fast ? Math.max(3000, Math.round(ms / 60)) : ms;

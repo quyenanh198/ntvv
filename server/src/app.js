@@ -30,6 +30,8 @@ import {
   WATER_HELPER_GOLD,
   WATER_HELPER_EXP,
   WATER_FRESH_EXP,
+  FESTIVAL,
+  festivalCycle,
   scaleMs,
   todayVN,
 } from './game.js';
@@ -75,6 +77,8 @@ export function buildApp({ config, db, logger = true }) {
     const user = await chatUserFor(request);
     if (!user) return reply.code(401).send({ error: 'not_logged_in' });
     upsertFarmer.run(user.id, user.display_name || user.username, START_GOLD, START_GEMS, START_PLOTS, Date.now());
+    const legacy = db.prepare('SELECT xp FROM legacy_levels WHERE user_id = ?').get(user.id);
+    if (legacy) db.prepare('UPDATE farmers SET xp = ? WHERE user_id = ? AND xp < ?').run(legacy.xp, user.id, legacy.xp);
     request.farmer = getFarmer.get(user.id);
     request.chatUser = user;
   }
@@ -148,6 +152,24 @@ export function buildApp({ config, db, logger = true }) {
       .run(JSON.stringify(d.counters), userId, d.day);
   }
 
+  // ---- Lễ Hội Thu Hoạch ---------------------------------------------------
+  const festRow = db.prepare('SELECT * FROM festival WHERE owner_id = ? AND cycle = ?');
+  function getFest(userId) {
+    const { cycle, daysLeft } = festivalCycle();
+    let row = festRow.get(userId, cycle);
+    if (!row) {
+      db.prepare('INSERT OR IGNORE INTO festival (owner_id, cycle) VALUES (?, ?)').run(userId, cycle);
+      row = festRow.get(userId, cycle);
+    }
+    return { ...row, daysLeft, counters: JSON.parse(row.counters_json || '{}'), claims: JSON.parse(row.claims_json || '[]') };
+  }
+  function bumpFest(userId, type, by = 1) {
+    const f = getFest(userId);
+    f.counters[type] = (f.counters[type] || 0) + by;
+    db.prepare('UPDATE festival SET counters_json = ? WHERE owner_id = ? AND cycle = ?')
+      .run(JSON.stringify(f.counters), userId, f.cycle);
+  }
+
   // ---- Đơn hàng -----------------------------------------------------------
   function ensureOrders(farmer) {
     if (levelFor(farmer.xp) < ORDER_UNLOCK_LEVEL) return;
@@ -191,6 +213,7 @@ export function buildApp({ config, db, logger = true }) {
   }
 
   function farmerView(f) {
+    const f0 = f;
     const li = levelInfo(f.xp);
     const expandNext = f.plots_count < MAX_PLOTS
       ? { ...EXPANSIONS[(f.plots_count - START_PLOTS) / 4], plots: 4 }
@@ -225,6 +248,19 @@ export function buildApp({ config, db, logger = true }) {
         required: DAILY_CHEST.questsRequired,
         chestClaimed: !!d.chest_claimed,
       },
+      festival: (() => {
+        const f = getFest(f0.user_id);
+        return {
+          name: FESTIVAL.name,
+          emoji: FESTIVAL.emoji,
+          daysLeft: f.daysLeft,
+          milestones: FESTIVAL.milestones.map((ms) => ({
+            ...ms,
+            progress: Math.min(ms.target, f.counters[ms.type] || 0),
+            claimed: f.claims.includes(ms.id),
+          })),
+        };
+      })(),
       starNext: STAR_MILESTONES.find(
         (m) => !db.prepare('SELECT 1 FROM star_claims WHERE owner_id = ? AND milestone = ?').get(f.user_id, m.stars),
       ) || null,
@@ -343,6 +379,7 @@ export function buildApp({ config, db, logger = true }) {
         invAdd(me.user_id, crop.id, 1);
         db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, plot.idx);
         bumpQuest(me.user_id, 'harvest');
+        bumpFest(me.user_id, 'harvest');
         return crop;
       }
 
@@ -527,6 +564,7 @@ export function buildApp({ config, db, logger = true }) {
           grant(me.user_id, { xp: recipe.exp });
           db.prepare('UPDATE machines SET recipe = NULL, ready_at = NULL WHERE owner_id = ? AND kind = ?').run(me.user_id, 'coixay');
           bumpQuest(me.user_id, 'process');
+          bumpFest(me.user_id, 'process');
         })();
         return { me: fresh(me.user_id) };
       });
@@ -548,6 +586,7 @@ export function buildApp({ config, db, logger = true }) {
           db.prepare('UPDATE farmers SET next_order_at = ? WHERE user_id = ?')
             .run(Date.now() + scaleMs(ORDER_REFRESH_MS, config.fast), me.user_id);
           bumpQuest(me.user_id, 'deliver');
+          bumpFest(me.user_id, 'deliver');
         })();
         logEvent(`🚚 ${me.name} giao một đơn hàng, nhận ${order.gold} vàng`);
         return { me: fresh(me.user_id), gained: order.gold };
@@ -645,6 +684,42 @@ export function buildApp({ config, db, logger = true }) {
           return { me: fresh(me.user_id), cost };
         }
         return reply.code(400).send({ error: 'bad_request' });
+      });
+
+      // ---- Lễ hội: nhận mốc ----
+      api.post('/fest-claim', async (request, reply) => {
+        const { id } = request.body ?? {};
+        const me = request.farmer;
+        const ms = FESTIVAL.milestones.find((x) => x.id === Number(id));
+        if (!ms) return reply.code(400).send({ error: 'bad_request' });
+        const f = getFest(me.user_id);
+        if (f.claims.includes(ms.id)) return reply.code(400).send({ error: 'already_claimed' });
+        if ((f.counters[ms.type] || 0) < ms.target) return reply.code(400).send({ error: 'not_enough_progress' });
+        db.transaction(() => {
+          grant(me.user_id, { gold: ms.gold || 0, gems: ms.gems || 0 });
+          f.claims.push(ms.id);
+          db.prepare('UPDATE festival SET claims_json = ? WHERE owner_id = ? AND cycle = ?')
+            .run(JSON.stringify(f.claims), me.user_id, f.cycle);
+        })();
+        logEvent(`🎪 ${me.name} nhận thưởng Lễ Hội Thu Hoạch: ${ms.label}`);
+        return { me: fresh(me.user_id), claimed: ms };
+      });
+
+      // ---- Tưới toàn bộ ruộng mình ----
+      api.post('/water-all', async (request, reply) => {
+        const me = request.farmer;
+        const now = Date.now();
+        const dry = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND watered = 0 AND ready_at > ?')
+          .all(me.user_id, now);
+        if (dry.length === 0) return reply.code(400).send({ error: 'nothing_to_water' });
+        db.transaction(() => {
+          const upd = db.prepare('UPDATE plots SET watered = 1 WHERE owner_id = ? AND idx = ?');
+          for (const plot of dry) {
+            upd.run(me.user_id, plot.idx);
+            markAction.run(me.user_id, plot.idx, plot.planted_at, me.user_id, 'water', now);
+          }
+        })();
+        return { me: fresh(me.user_id), watered: dry.length };
       });
 
       // ---- Thăm ruộng ----

@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
 
@@ -88,6 +88,20 @@ CREATE TABLE IF NOT EXISTS star_claims (
   PRIMARY KEY (owner_id, milestone)
 );
 
+CREATE TABLE IF NOT EXISTS festival (
+  owner_id INTEGER NOT NULL,
+  cycle INTEGER NOT NULL,
+  counters_json TEXT NOT NULL DEFAULT '{}',
+  claims_json TEXT NOT NULL DEFAULT '[]',
+  PRIMARY KEY (owner_id, cycle)
+);
+
+-- Level chuyển từ thế giới v1 (farm.sqlite3): xp v2 tối thiểu theo level cũ.
+CREATE TABLE IF NOT EXISTS legacy_levels (
+  user_id INTEGER PRIMARY KEY,
+  xp INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   at INTEGER NOT NULL,
@@ -102,4 +116,42 @@ export function openDb(dataDir) {
   db.pragma('journal_mode = WAL');
   db.exec(SCHEMA);
   return db;
+}
+
+// Đọc farmers từ thế giới v1 (nếu còn file) và quy đổi LEVEL cũ thành mốc XP
+// v2 tương đương (công thức spec). Chỉ nâng, không bao giờ hạ; chạy một lần
+// mỗi lần boot (idempotent).
+export function importLegacyLevels(db, dataDir, xpNeedFor) {
+  const oldPath = join(dataDir, 'farm.sqlite3');
+  if (!existsSync(oldPath)) return 0;
+  let rows;
+  try {
+    const v1 = new Database(oldPath, { readonly: true, fileMustExist: true });
+    rows = v1.prepare('SELECT user_id, xp FROM farmers').all();
+    v1.close();
+  } catch {
+    return 0;
+  }
+  // v1: level = l lớn nhất sao cho xp >= 20·(l−1)·l
+  const v1LevelFor = (xp) => {
+    let l = 1;
+    while (xp >= 20 * l * (l + 1)) l += 1;
+    return l;
+  };
+  const v2XpForLevel = (L) => {
+    let sum = 0;
+    for (let i = 1; i < L; i += 1) sum += xpNeedFor(i);
+    return sum;
+  };
+  const put = db.prepare('INSERT INTO legacy_levels (user_id, xp) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET xp = excluded.xp');
+  const lift = db.prepare('UPDATE farmers SET xp = ? WHERE user_id = ? AND xp < ?');
+  let n = 0;
+  for (const r of rows) {
+    const target = v2XpForLevel(v1LevelFor(r.xp));
+    if (target <= 0) continue;
+    put.run(r.user_id, target);
+    lift.run(target, r.user_id, target);
+    n += 1;
+  }
+  return n;
 }
