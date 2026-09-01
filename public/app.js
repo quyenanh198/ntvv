@@ -20,6 +20,7 @@
   const ITEM_ICON = {
     trung: 'assets/ui/egg.svg', botmi: 'assets/ui/flour.svg', thucan: 'assets/art/feed.png',
     sua: 'assets/ui/milk.svg', len: 'assets/ui/wool.svg',
+    cam: 'assets/art/trees/cam-qua.png', tao: 'assets/art/trees/tao-qua.png', xoai: 'assets/art/trees/xoai-qua.png', thanhlong: 'assets/art/trees/thanhlong-qua.png',
     canho: 'assets/ui/fish-canho.svg', caro: 'assets/ui/fish-caro.svg', cachep: 'assets/ui/fish-cachep.svg', cakoi: 'assets/ui/fish-cakoi.svg',
   };
   const itemIcon = (id) => ITEM_ICON[id] || (DATA?.config.crops[id] ? cropSprite(id, 3) : null);
@@ -203,7 +204,8 @@
   const me = () => DATA.me;
   const crops = () => DATA.config.crops;
   const goods = () => DATA.config.goods;
-  const itemInfo = (id) => crops()[id] || goods()[id];
+  const trees = () => DATA.config.trees;
+  const itemInfo = (id) => crops()[id] || goods()[id] || trees()[id];
 
   // ---------- render ----------
   function render() {
@@ -381,6 +383,19 @@
           ${mine ? '<span class="plot-note">Gieo hạt</span>' : ''}
         </button>`;
       }
+      if (p.tree) {
+        const t = trees()[p.crop];
+        const acts = visiting ? visiting.myActs[p.idx] : null;
+        const canPoach = visiting && p.ready && !acts?.poached && !p.poached;
+        const left = p.readyAt - now;
+        return `<button class="plot plot--tree${p.ready ? ' plot--ready' : ' plot--growing'}" data-idx="${p.idx}" data-kind="${p.ready ? (mine ? 'harvest' : canPoach ? 'poach' : 'ripe') : (mine ? (p.watered ? 'plotmenu' : 'waterplot') : (!p.watered && visiting && !acts?.watered ? 'water' : 'growing'))}" data-ready="${p.readyAt}" data-total="${t.growMs}" data-cropid="${p.crop}">
+          <img class="tree-sprite${p.ready ? '' : ' tree-sprite--wait'}" src="assets/art/trees/${p.crop}.png" alt="${t.name}" />
+          ${p.ready
+            ? `<span class="plot-note">${mine ? (p.poached ? 'Bị hái ké 😭' : 'Hái quả!') : canPoach ? 'Hái ké!' : 'Chín rồi'}</span><span class="plot-badge">×${t.yield - (p.poached ? 1 : 0)}</span>`
+            : `<span class="plot-timer">${fmtTime(left)}</span>`}
+          ${p.poached && p.ready ? '<span class="plot-act">😋</span>' : ''}
+        </button>`;
+      }
       const c = crops()[p.crop];
       if (p.ready) {
         const acts = visiting ? visiting.myActs[p.idx] : null;
@@ -494,25 +509,39 @@
             : `<span class="seed-cost">${sheet.all ? `${count} ô · ${(c.seed * count).toLocaleString('vi')}` : c.seed} ${COIN}</span>`}
         </button>`;
       }).join('');
+      const treeRows = sheet.all ? '' : Object.values(trees()).map((t) => {
+        const lockLevel = m.level < t.level;
+        const locked = lockLevel || m.gold < t.price;
+        return `<button class="seed-row${locked ? ' seed-row--locked' : ''}" data-tree="${locked ? '' : t.id}">
+          <img class="seed-sprite" src="assets/art/trees/${t.id}.png" alt="" />
+          <span class="seed-info">
+            <span class="seed-name">${t.name} ${t.emoji}</span>
+            <div class="seed-meta">🌳 trồng 1 lần · ${t.yield} quả mỗi ${fmtDuration(t.growMs)} · bán ${t.sell.toLocaleString('vi')} ${COIN}/quả · +${t.exp} EXP</div>
+          </span>
+          ${lockLevel ? `<span class="seed-lock">Cần Lv ${t.level}</span>` : `<span class="seed-cost">${t.price.toLocaleString('vi')} ${COIN}</span>`}
+        </button>`;
+      }).join('');
       return sheetShell(
         sheet.all ? `🧺 Gieo hết ô trống <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`
           : `🌱 Chọn hạt giống <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
-        rows,
+        rows + (treeRows ? `<p class="sheet-note" style="margin-top:0.5rem">🌳 Cây ăn quả — chiếm ô lâu dài, tự ra quả lại sau mỗi lần hái:</p>${treeRows}` : ''),
       );
     }
 
     if (t === 'plotmenu') {
       const p = m.plots[sheet.idx];
       if (!p || !p.crop || p.ready) return '';
-      const c = crops()[p.crop];
+      const info = p.tree ? trees()[p.crop] : crops()[p.crop];
       const left = p.readyAt - Date.now();
       const cost = Math.max(1, Math.ceil(left / (5 * 60_000)));
+      const icon = p.tree ? `<img class="seed-sprite" src="assets/art/trees/${p.crop}.png" alt="" />` : `<img class="seed-sprite" src="${cropSprite(p.crop, 3)}" alt="" />`;
       return sheetShell(
-        `<img class="seed-sprite" src="${cropSprite(p.crop, 3)}" alt="" /> ${c.name}`,
-        `<p class="sheet-note">Còn <b>${fmtTime(left)}</b> nữa là chín.${p.watered ? ' Đã tưới 💧 (Tươi tốt).' : ''}</p>
+        `${icon} ${info.name}`,
+        `<p class="sheet-note">Còn <b>${fmtTime(left)}</b> nữa là ${p.tree ? 'ra quả' : 'chín'}.${p.watered ? ' Đã tưới 💧 (Tươi tốt).' : ''}</p>
          <div class="sheet-actions">
            ${p.watered ? '' : `<button class="btn gbtn gbtn--green" id="btn-water-own">💧 Tưới (+EXP khi thu)</button>`}
-           <button class="btn gbtn gbtn--gold" id="btn-speedup-plot">${GEM} ${cost} · Chín ngay</button>
+           <button class="btn gbtn gbtn--gold" id="btn-speedup-plot">${GEM} ${cost} · ${p.tree ? 'Ra quả ngay' : 'Chín ngay'}</button>
+           ${p.tree ? `<button class="btn btn-ghost" id="btn-remove-tree">🪓 Nhổ cây</button>` : ''}
          </div>`,
       );
     }
@@ -641,7 +670,7 @@
         </span>`).join('');
       return sheetShell(
         `${a.emoji} Chuồng ${a.name} cấp ${barn.level} · ${herd.length}/${barn.capacity} <span class="sheet-coins"><img class="coin-img" src="assets/art/feed.png" alt=""/> ${feedQty}</span>`,
-        `<p class="sheet-note">🤖 Tự cho ăn khi kho còn thức ăn. Mỗi ${a.name.toLowerCase()} ăn ${a.feedQty} 🌰 → ${productInfo.name} ${productInfo.emoji} sau ${fmtDuration(a.produceMs)} (bán ${productInfo.sell} ${COIN}, +${a.expCollect} EXP).</p>
+        `<p class="sheet-note">🤖 Chuồng tự vận hành: tới giờ là sản phẩm TỰ vào kho và tự ăn tiếp — chỉ cần trữ đủ thức ăn. Mỗi ${a.name.toLowerCase()} ăn ${a.feedQty} 🌰 → ${productInfo.name} ${productInfo.emoji} sau ${fmtDuration(a.produceMs)} (bán ${productInfo.sell} ${COIN}, +${a.expCollect} EXP).</p>
          ${herd.length === 0 ? `<p class="sheet-note">Chuồng trống — mua ${a.name.toLowerCase()} đầu tiên đi!</p>` : `<div class="hen-row">${pens}</div>`}
          <div class="sheet-actions">
            ${hungryN ? `<button class="btn gbtn gbtn--green" data-feed-kind="${kind}" ${feedQty >= a.feedQty ? '' : 'disabled'}>🌰 Cho ăn (${hungryN} con đói)</button>` : ''}
@@ -830,6 +859,16 @@
       if (r) { updateMe(r); floatGain(e.clientX || 200, e.clientY || 300, `🧺 +${r.harvested}`); render(); }
     });
 
+    document.querySelectorAll('.seed-row[data-tree]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        if (!el.dataset.tree) return;
+        const r = await run(() => api('/plant-tree', { idx: sheet.idx, tree: el.dataset.tree }));
+        if (r) { updateMe(r); sheet = null; toast('🌳 Cây đã bén rễ!'); render(); }
+      }));
+    document.getElementById('btn-remove-tree')?.addEventListener('click', async () => {
+      const r = await run(() => api('/remove-tree', { idx: sheet.idx }));
+      if (r) { updateMe(r); sheet = null; toast('🪓 Đã nhổ cây.'); render(); }
+    });
     document.querySelectorAll('.seed-row[data-crop]').forEach((el) =>
       el.addEventListener('click', async () => {
         const cropId = el.dataset.crop;
@@ -1046,8 +1085,10 @@
       const bar = el.querySelector('.plot-progress i');
       if (bar) bar.style.width = `${Math.min(100, Math.max(3, Math.round(pct)))}%`;
       const img = el.querySelector('.crop-sprite');
-      const want = cropSprite(el.dataset.cropid, pct < 45 ? 1 : 2);
-      if (img && img.getAttribute('src') !== want) img.setAttribute('src', want);
+      if (img && crops()[el.dataset.cropid]) {
+        const want = cropSprite(el.dataset.cropid, pct < 45 ? 1 : 2);
+        if (img.getAttribute('src') !== want) img.setAttribute('src', want);
+      }
     });
   }, 1000);
 

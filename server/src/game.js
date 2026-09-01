@@ -47,8 +47,16 @@ export const GOODS = {
   cakoi:   { id: 'cakoi',   name: 'Cá koi',      emoji: '🎏', sell: 450, source: 'ho', expCatch: 70 },
 };
 
+// ---- Cây ăn quả (mục 6.4): trồng một lần, tự ra quả theo chu kỳ ------------
+export const TREES = {
+  cam:       { id: 'cam',       name: 'Cam',        emoji: '🍊', level: 12, price: 250, growMs: 240 * MIN, yield: 3, sell: 55,  exp: 48 },
+  tao:       { id: 'tao',       name: 'Táo',        emoji: '🍎', level: 14, price: 360, growMs: 360 * MIN, yield: 3, sell: 80,  exp: 75 },
+  xoai:      { id: 'xoai',      name: 'Xoài',       emoji: '🥭', level: 16, price: 500, growMs: 480 * MIN, yield: 4, sell: 95,  exp: 110 },
+  thanhlong: { id: 'thanhlong', name: 'Thanh long', emoji: '🌵', level: 18, price: 700, growMs: 720 * MIN, yield: 4, sell: 150, exp: 180 },
+};
+
 export function itemInfo(id) {
-  return CROPS[id] || GOODS[id] || null;
+  return CROPS[id] || GOODS[id] || TREES[id] || null;
 }
 
 // ---- Vật nuôi (mục 7.1) — gà/bò/cừu, chuồng riêng từng loại (mục 9.4) ------
@@ -146,6 +154,8 @@ export const ORDER_REFRESH_MS = 20 * MIN; // đơn mới sau khi bỏ/giao
 export function generateOrder(level, rng) {
   const pool = Object.values(CROPS).filter((c) => c.level <= level).map((c) => c.id);
   if (level >= ANIMALS.ga.level) pool.push('trung');
+  if (level >= TREES.cam.level) pool.push('cam');
+  if (level >= TREES.tao.level) pool.push('tao');
   if (level >= ANIMALS.bo.level) pool.push('sua');
   if (level >= ANIMALS.cuu.level) pool.push('len');
   if (level >= FISHING.level) pool.push('canho', 'caro');

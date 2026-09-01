@@ -126,6 +126,7 @@ export function openDb(dataDir) {
   if (!cols.includes('critter_next_at')) db.exec('ALTER TABLE farmers ADD COLUMN critter_next_at INTEGER NOT NULL DEFAULT 0');
   const pcols = db.prepare('PRAGMA table_info(plots)').all().map((c) => c.name);
   if (!pcols.includes('poached')) db.exec('ALTER TABLE plots ADD COLUMN poached INTEGER NOT NULL DEFAULT 0');
+  if (!pcols.includes('tree')) db.exec('ALTER TABLE plots ADD COLUMN tree INTEGER NOT NULL DEFAULT 0');
   return db;
 }
 

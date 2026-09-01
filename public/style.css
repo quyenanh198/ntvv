@@ -1617,3 +1617,9 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   75%  { transform: scaleX(-1) translateY(-9px); }
   100% { left: 106%; transform: scaleX(-1) translateY(0); }
 }
+
+/* Cây ăn quả trên ô */
+.plot--tree { background: linear-gradient(180deg, #b9dc90, #94c765); }
+.tree-sprite { max-width: 78%; max-height: 72%; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(50, 80, 20, 0.35)); }
+.tree-sprite--wait { filter: grayscale(0.35) opacity(0.8) drop-shadow(0 4px 4px rgba(50, 80, 20, 0.25)); }
+.plot--tree.plot--growing .tree-sprite { animation: sway 4s ease-in-out infinite; transform-origin: bottom center; }

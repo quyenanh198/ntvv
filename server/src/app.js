@@ -11,6 +11,7 @@ import {
   CHICKEN,
   ANIMALS,
   MACHINES,
+  TREES,
   CRITTER,
   critterKindFor,
   FEED_ITEM,
@@ -270,6 +271,7 @@ export function buildApp({ config, db, logger = true }) {
         ready: now >= r.ready_at,
         watered: !!r.watered,
         poached: !!r.poached,
+        tree: !!r.tree,
       });
     }
     return out;
@@ -369,27 +371,45 @@ export function buildApp({ config, db, logger = true }) {
     'INSERT OR IGNORE INTO plot_actions (owner_id, idx, planted_at, helper_id, action, at) VALUES (?, ?, ?, ?, ?, ?)',
   );
 
-  // Gia súc tự ăn khi trong kho còn đủ thức ăn (yêu cầu nhà mình):
-  // chạy mỗi lần chính chủ hành động/đọc state; vẫn tính vào quest cho ăn.
-  function autoFeed(userId) {
-    const hungry = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND ready_at IS NULL').all(userId);
-    if (hungry.length === 0) return;
-    let fed = 0;
+  // Chuồng tự vận hành (yêu cầu nhà mình): tới giờ là sản phẩm TỰ vào kho,
+  // con vật tự ăn tiếp (chu kỳ nối từ mốc cũ nên offline lâu vẫn tích đủ);
+  // chỉ dừng khi hết thức ăn. Chạy mỗi lần chính chủ hành động/đọc state.
+  function autoTend(userId) {
+    const rows = db.prepare('SELECT * FROM animals WHERE owner_id = ?').all(userId);
+    if (rows.length === 0) return;
     const now = Date.now();
     db.transaction(() => {
-      for (const row of hungry) {
+      for (const row of rows) {
         const a = ANIMALS[row.kind];
-        if (!a || invQty(userId, FEED_ITEM) < a.feedQty) continue;
-        invTake(userId, FEED_ITEM, a.feedQty);
-        db.prepare('UPDATE animals SET ready_at = ? WHERE id = ?').run(now + scaleMs(a.produceMs, config.fast), row.id);
-        fed += 1;
+        if (!a) continue;
+        let readyAt = row.ready_at;
+        let guard = 0;
+        while (readyAt != null && readyAt <= now && guard < 24) {
+          invAdd(userId, a.product, 1);
+          grant(userId, { xp: a.expCollect });
+          if (invQty(userId, FEED_ITEM) >= a.feedQty) {
+            invTake(userId, FEED_ITEM, a.feedQty);
+            bumpQuest(userId, 'feed');
+            readyAt += scaleMs(a.produceMs, config.fast);
+          } else {
+            readyAt = null;
+          }
+          guard += 1;
+        }
+        if (readyAt == null && invQty(userId, FEED_ITEM) >= a.feedQty) {
+          invTake(userId, FEED_ITEM, a.feedQty);
+          bumpQuest(userId, 'feed');
+          readyAt = now + scaleMs(a.produceMs, config.fast);
+        }
+        if (readyAt !== row.ready_at) {
+          db.prepare('UPDATE animals SET ready_at = ? WHERE id = ?').run(readyAt, row.id);
+        }
       }
-      if (fed) bumpQuest(userId, 'feed', fed);
     })();
   }
 
   function fresh(userId) {
-    autoFeed(userId);
+    autoTend(userId);
     return farmerView(getFarmer.get(userId));
   }
 
@@ -439,6 +459,7 @@ export function buildApp({ config, db, logger = true }) {
               loot: FISHING.loot.map((l) => ({ ...l, pct: Math.round((l.weight / FISHING.loot.reduce((a, x) => a + x.weight, 0)) * 100) })),
             },
             energy: ENERGY,
+            trees: Object.fromEntries(Object.entries(TREES).map(([k, t]) => [k, { ...t, sell: t.sell * GOLD_MULT, growMs: scaleMs(t.growMs, config.fast) }])),
             starMilestones: STAR_MILESTONES.map((m2) => ({ ...m2, gold: (m2.gold || 0) * GOLD_MULT })),
             poachDailyLimit: POACH_DAILY_LIMIT,
             fast: config.fast,
@@ -498,6 +519,17 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       function harvestPlot(me, plot) {
+        if (plot.tree) {
+          const tree = TREES[plot.crop];
+          grant(me.user_id, { xp: tree.exp + (plot.watered ? WATER_FRESH_EXP : 0) });
+          invAdd(me.user_id, tree.id, tree.yield - (plot.poached ? 1 : 0));
+          const now = Date.now();
+          db.prepare('UPDATE plots SET planted_at = ?, ready_at = ?, watered = 0, poached = 0 WHERE owner_id = ? AND idx = ?')
+            .run(now, now + scaleMs(tree.growMs, config.fast), me.user_id, plot.idx);
+          bumpQuest(me.user_id, 'harvest');
+          bumpFest(me.user_id, 'harvest');
+          return tree;
+        }
         const crop = CROPS[plot.crop];
         const xp = crop.expHarvest + (plot.watered ? WATER_FRESH_EXP : 0);
         grant(me.user_id, { xp });
@@ -844,6 +876,36 @@ export function buildApp({ config, db, logger = true }) {
           return { me: fresh(me.user_id), cost };
         }
         return reply.code(400).send({ error: 'bad_request' });
+      });
+
+      // ---- Cây ăn quả ----
+      api.post('/plant-tree', async (request, reply) => {
+        const { idx, tree: treeId } = request.body ?? {};
+        const tree = TREES[treeId];
+        const me = request.farmer;
+        if (!tree || !Number.isInteger(idx) || idx < 0 || idx >= me.plots_count) {
+          return reply.code(400).send({ error: 'bad_request' });
+        }
+        if (levelFor(me.xp) < tree.level) return reply.code(400).send({ error: 'level_too_low' });
+        if (me.gold < tree.price) return reply.code(400).send({ error: 'not_enough_gold' });
+        if (getPlot.get(me.user_id, idx)) return reply.code(400).send({ error: 'plot_busy' });
+        const now = Date.now();
+        db.transaction(() => {
+          grant(me.user_id, { gold: -tree.price });
+          db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, tree) VALUES (?, ?, ?, ?, ?, 1)')
+            .run(me.user_id, idx, tree.id, now, now + scaleMs(tree.growMs, config.fast));
+        })();
+        logEvent(`${tree.emoji} ${me.name} trồng một cây ${tree.name}`);
+        return { me: fresh(me.user_id) };
+      });
+
+      api.post('/remove-tree', async (request, reply) => {
+        const { idx } = request.body ?? {};
+        const me = request.farmer;
+        const plot = getPlot.get(me.user_id, idx);
+        if (!plot || !plot.tree) return reply.code(400).send({ error: 'no_plot' });
+        db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, idx);
+        return { me: fresh(me.user_id) };
       });
 
       // ---- Hồ câu cá ----
