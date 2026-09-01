@@ -115,6 +115,10 @@ export function openDb(dataDir) {
   const db = new Database(join(dataDir, 'farm2.sqlite3'));
   db.pragma('journal_mode = WAL');
   db.exec(SCHEMA);
+  // Cột thêm sau khi farm2 đã chạy thật — ALTER có guard, idempotent.
+  const cols = db.prepare('PRAGMA table_info(farmers)').all().map((c) => c.name);
+  if (!cols.includes('energy')) db.exec('ALTER TABLE farmers ADD COLUMN energy INTEGER NOT NULL DEFAULT 100');
+  if (!cols.includes('energy_at')) db.exec('ALTER TABLE farmers ADD COLUMN energy_at INTEGER NOT NULL DEFAULT 0');
   return db;
 }
 

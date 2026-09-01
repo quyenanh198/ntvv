@@ -25,6 +25,10 @@ export const GOODS = {
   trung:   { id: 'trung',   name: 'Trứng',       emoji: '🥚', sell: 28,  source: 'ga' },
   botmi:   { id: 'botmi',   name: 'Bột mì',      emoji: '🥡', sell: 32,  source: 'coixay' },
   thucan:  { id: 'thucan',  name: 'Thức ăn gà',  emoji: '🌰', sell: 0,   source: 'shop', buy: 12 },
+  canho:   { id: 'canho',   name: 'Cá nhỏ',      emoji: '🐟', sell: 35,  source: 'ho', expCatch: 12 },
+  caro:    { id: 'caro',    name: 'Cá rô',       emoji: '🐠', sell: 95,  source: 'ho', expCatch: 18 },
+  cachep:  { id: 'cachep',  name: 'Cá chép',     emoji: '🐡', sell: 180, source: 'ho', expCatch: 40 },
+  cakoi:   { id: 'cakoi',   name: 'Cá koi',      emoji: '🎏', sell: 450, source: 'ho', expCatch: 70 },
 };
 
 export function itemInfo(id) {
@@ -101,6 +105,7 @@ export const ORDER_REFRESH_MS = 20 * MIN; // đơn mới sau khi bỏ/giao
 export function generateOrder(level, rng) {
   const pool = Object.values(CROPS).filter((c) => c.level <= level).map((c) => c.id);
   if (level >= CHICKEN.level) pool.push('trung');
+  if (level >= FISHING.level) pool.push('canho', 'caro');
   if (level >= MILL.level) pool.push('botmi');
   const kinds = 1 + Math.floor(rng() * Math.min(3, Math.max(1, Math.floor(level / 4) + 1)));
   const chosen = new Set();
@@ -126,6 +131,7 @@ export const DAILY_QUESTS = [
   { id: 'process', name: 'Chế biến sản phẩm', emoji: '⚙️', target: 3,  gold: 250, exp: 70 },
   { id: 'feed',    name: 'Cho gà ăn',        emoji: '🐔', target: 5,  gold: 150, exp: 50 },
   { id: 'sell',    name: 'Bán nông sản',     emoji: '💰', target: 10, gold: 180, exp: 50 },
+  { id: 'fish',    name: 'Câu cá',           emoji: '🎣', target: 4,  gold: 180, exp: 60 },
 ];
 export const DAILY_CHEST = { gold: 500, exp: 100, gemChance: 0.1, questsRequired: 3 };
 
@@ -147,6 +153,37 @@ export const POACH_EXP = 1;
 export const WATER_HELPER_GOLD = 2;
 export const WATER_HELPER_EXP = 1;
 export const WATER_FRESH_EXP = 1;
+
+// ---- Năng lượng (mục 3.2) & Hồ câu cá (mục 7.1/11: mở cấp 7) ---------------
+export const ENERGY = {
+  max: 100,
+  buyCap: 120,        // thưởng/mua được vượt trần tối đa 20%
+  regenMs: 3 * MIN,   // hồi 1 năng lượng mỗi 3 phút
+  buyGems: 10,        // gói nhỏ: 10 kim cương = 30 năng lượng
+  buyAmount: 30,
+};
+
+export const FISHING = {
+  level: 7,
+  energyCost: 4,      // câu cá một lượt: 4 năng lượng
+  loot: [
+    { id: 'canho',  weight: 60 },
+    { id: 'caro',   weight: 30 },
+    { id: 'cachep', weight: 8 },
+    { id: 'cakoi',  weight: 2 },
+  ],
+};
+
+// Quay loot câu cá theo trọng số. rng: () => [0,1).
+export function rollFish(rng) {
+  const total = FISHING.loot.reduce((a, l) => a + l.weight, 0);
+  let r = rng() * total;
+  for (const l of FISHING.loot) {
+    r -= l.weight;
+    if (r < 0) return l.id;
+  }
+  return FISHING.loot[0].id;
+}
 
 // ---- Sự kiện cá nhân: Lễ Hội Thu Hoạch (mục 12.2, chu kỳ 7 ngày) ----------
 export const FESTIVAL = {

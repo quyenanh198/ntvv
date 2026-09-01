@@ -32,6 +32,9 @@ import {
   WATER_FRESH_EXP,
   FESTIVAL,
   festivalCycle,
+  ENERGY,
+  FISHING,
+  rollFish,
   scaleMs,
   todayVN,
 } from './game.js';
@@ -152,6 +155,32 @@ export function buildApp({ config, db, logger = true }) {
       .run(JSON.stringify(d.counters), userId, d.day);
   }
 
+  // ---- Năng lượng (hồi lười: tính khi đọc/tiêu) ---------------------------
+  function energyStep() {
+    return scaleMs(ENERGY.regenMs, config.fast);
+  }
+  function currentEnergy(f, now = Date.now()) {
+    const regen = Math.max(0, Math.floor((now - f.energy_at) / energyStep()));
+    // Ai đang vượt trần (mua gói) giữ nguyên mức đó; hồi tự nhiên chỉ đầy tới max.
+    const cap = Math.max(ENERGY.max, f.energy);
+    return Math.min(cap, f.energy + regen);
+  }
+  // Ghi lại mức năng lượng mới, giữ phần hồi lẻ đang tích.
+  function setEnergy(userId, f, value, now = Date.now()) {
+    const rem = value >= ENERGY.max ? 0 : (now - f.energy_at) % energyStep();
+    db.prepare('UPDATE farmers SET energy = ?, energy_at = ? WHERE user_id = ?').run(value, now - rem, userId);
+  }
+  function energyView(f, now = Date.now()) {
+    const cur = currentEnergy(f, now);
+    return {
+      current: cur,
+      max: ENERGY.max,
+      nextRegenMs: cur >= ENERGY.max ? null : energyStep() - ((now - f.energy_at) % energyStep()),
+      buyGems: ENERGY.buyGems,
+      buyAmount: ENERGY.buyAmount,
+    };
+  }
+
   // ---- Lễ Hội Thu Hoạch ---------------------------------------------------
   const festRow = db.prepare('SELECT * FROM festival WHERE owner_id = ? AND cycle = ?');
   function getFest(userId) {
@@ -248,6 +277,7 @@ export function buildApp({ config, db, logger = true }) {
         required: DAILY_CHEST.questsRequired,
         chestClaimed: !!d.chest_claimed,
       },
+      energy: energyView(f0),
       festival: (() => {
         const f = getFest(f0.user_id);
         return {
@@ -314,6 +344,11 @@ export function buildApp({ config, db, logger = true }) {
               ),
             },
             orderUnlockLevel: ORDER_UNLOCK_LEVEL,
+            fishing: {
+              ...FISHING,
+              loot: FISHING.loot.map((l) => ({ ...l, pct: Math.round((l.weight / FISHING.loot.reduce((a, x) => a + x.weight, 0)) * 100) })),
+            },
+            energy: ENERGY,
             starMilestones: STAR_MILESTONES,
             poachDailyLimit: POACH_DAILY_LIMIT,
             fast: config.fast,
@@ -686,6 +721,40 @@ export function buildApp({ config, db, logger = true }) {
         return reply.code(400).send({ error: 'bad_request' });
       });
 
+      // ---- Hồ câu cá ----
+      api.post('/fish', async (request, reply) => {
+        const me = request.farmer;
+        if (levelFor(me.xp) < FISHING.level) return reply.code(400).send({ error: 'level_too_low' });
+        const now = Date.now();
+        const cur = currentEnergy(me, now);
+        if (cur < FISHING.energyCost) return reply.code(400).send({ error: 'not_enough_energy' });
+        const fishId = rollFish(Math.random);
+        const fish = GOODS[fishId];
+        db.transaction(() => {
+          setEnergy(me.user_id, me, cur - FISHING.energyCost, now);
+          invAdd(me.user_id, fishId, 1);
+          grant(me.user_id, { xp: fish.expCatch });
+          bumpQuest(me.user_id, 'fish');
+        })();
+        if (fishId === 'cakoi' || fishId === 'cachep') {
+          logEvent(`🎣 ${me.name} câu được ${fish.name} ${fish.emoji}!`);
+        }
+        return { me: fresh(me.user_id), caught: fishId, exp: fish.expCatch };
+      });
+
+      api.post('/buy-energy', async (request, reply) => {
+        const me = request.farmer;
+        if (me.gems < ENERGY.buyGems) return reply.code(400).send({ error: 'not_enough_gems' });
+        const now = Date.now();
+        const cur = currentEnergy(me, now);
+        if (cur >= ENERGY.buyCap) return reply.code(400).send({ error: 'energy_full' });
+        db.transaction(() => {
+          grant(me.user_id, { gems: -ENERGY.buyGems });
+          setEnergy(me.user_id, me, Math.min(ENERGY.buyCap, cur + ENERGY.buyAmount), now);
+        })();
+        return { me: fresh(me.user_id) };
+      });
+
       // ---- Lễ hội: nhận mốc ----
       api.post('/fest-claim', async (request, reply) => {
         const { id } = request.body ?? {};
@@ -764,9 +833,11 @@ export function buildApp({ config, db, logger = true }) {
 
   // ---- Static + cache-bust (giữ nguyên bài v1) ----------------------------
   const BOOT_VERSION = Date.now().toString(36);
+  // Regex thay vì chuỗi cứng: index có thể đã mang sẵn ?v=... tay (bản
+  // redesign từng hardcode v=3 khiến per-boot bust chết lặng — không tái diễn).
   const INDEX_HTML = readFileSync(join(PUBLIC_DIR, 'index.html'), 'utf8')
-    .replace('href="style.css"', `href="style.css?v=${BOOT_VERSION}"`)
-    .replace('src="app.js"', `src="app.js?v=${BOOT_VERSION}"`);
+    .replace(/href="style\.css[^"]*"/, `href="style.css?v=${BOOT_VERSION}"`)
+    .replace(/src="app\.js[^"]*"/, `src="app.js?v=${BOOT_VERSION}"`);
 
   app.register(staticPlugin, { root: PUBLIC_DIR, prefix: '/farm/', index: false });
 

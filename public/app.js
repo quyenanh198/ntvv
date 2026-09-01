@@ -16,7 +16,10 @@
   const SPRITE_ALIAS = { luami: 'lua', dautay: 'dau' };
   const spriteBase = (id) => SPRITE_ALIAS[id] || id;
   const cropSprite = (id, stage) => `assets/crops/${stage === 1 ? 'seed-1' : `${spriteBase(id)}-${stage}`}.svg`;
-  const ITEM_ICON = { trung: 'assets/ui/egg.svg', botmi: 'assets/ui/flour.svg', thucan: 'assets/art/feed.png' };
+  const ITEM_ICON = {
+    trung: 'assets/ui/egg.svg', botmi: 'assets/ui/flour.svg', thucan: 'assets/art/feed.png',
+    canho: 'assets/ui/fish-canho.svg', caro: 'assets/ui/fish-caro.svg', cachep: 'assets/ui/fish-cachep.svg', cakoi: 'assets/ui/fish-cakoi.svg',
+  };
   const itemIcon = (id) => ITEM_ICON[id] || cropSprite(id, 3);
   const COIN = '<img class="coin-img" src="assets/ui/coin.svg" alt="vàng" />';
   const GEM = '<img class="coin-img" src="assets/ui/gem.svg" alt="kim cương" />';
@@ -80,6 +83,8 @@
     no_milestone: 'Hết mốc để nhận rồi!',
     nothing_to_water: 'Không có ô nào cần tưới.',
     not_enough_progress: 'Chưa đạt mốc này, cày thêm nhé!',
+    not_enough_energy: 'Hết năng lượng — nghỉ tay chút hoặc mua thêm bằng kim cương.',
+    energy_full: 'Năng lượng còn đầy mà!',
   };
 
   function fmtTime(ms) {
@@ -226,6 +231,7 @@
           <div class="hud-right">
             <button class="coin-pill" data-sheet="inventory" title="Vàng — mở kho để bán đồ">${COIN}<b>${m.gold.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
             <button class="coin-pill coin-pill--gem" data-sheet="stars" title="Kim cương — nhận từ mốc sao và rương">${GEM}<b>${m.gems.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
+            <button class="coin-pill coin-pill--energy" data-sheet="fishing" title="Năng lượng — mở Hồ câu cá">⚡<b>${m.energy.current}</b><span class="pill-plus">＋</span></button>
             <button class="coin-pill coin-pill--star" data-sheet="stars" title="Sao Nông Trại">${STAR}<b>${m.stars.toLocaleString('vi')}</b>${starReady ? '<i class="dot"></i>' : ''}</button>
             <span class="hud-rounds">
               <button class="hud-round" data-sheet="events" title="Bản tin làng">✉️</button>
@@ -286,7 +292,7 @@
         </div>
 
         <div class="welcome-sign" aria-hidden="true">Chào mừng đến với<br /><b>Nông Trại Vui Vẻ!</b></div>
-        <img class="pond-img" src="assets/pack/fish_pond.png" alt="" aria-hidden="true" />
+        <button class="pond-img pond-btn" data-sheet="fishing" title="Hồ câu cá"><img src="assets/pack/fish_pond.png" alt="Hồ câu cá" /></button>
 
         ${!visiting ? renderQuickbar() : ''}
       </div>
@@ -640,6 +646,30 @@
       return sheetShell('📰 Bản tin làng', rows);
     }
 
+    if (t === 'fishing') {
+      const cfg = DATA.config.fishing;
+      const en = m.energy;
+      const locked = m.level < cfg.level;
+      const canFish = !locked && en.current >= cfg.energyCost;
+      const lootRows = cfg.loot.map((l) => {
+        const info = itemInfo(l.id);
+        return `<div class="inv-row">
+          <img src="${itemIcon(l.id)}" alt="" />
+          <span class="seed-info"><span class="seed-name">${info.name}</span>
+            <div class="seed-meta">tỷ lệ ${l.pct}% · bán ${info.sell} ${COIN} · +${info.expCatch} EXP</div></span>
+          <span class="seed-cost">${(m.inventory[l.id] || 0)} con</span>
+        </div>`;
+      }).join('');
+      return sheetShell(
+        `🎣 Hồ câu cá <span class="sheet-coins">⚡ ${en.current}/${en.max}${en.current > en.max ? '+' : ''}</span>`,
+        `${locked ? `<p class="sheet-note">🔒 Hồ câu mở ở <b>cấp ${cfg.level}</b> — chăm ruộng thêm chút nữa nhé!</p>` : `
+          <p class="sheet-note">Mỗi lượt câu tốn <b>${cfg.energyCost}⚡</b> · năng lượng tự hồi 1⚡ mỗi ${DATA.config.fast ? '3 giây' : '3 phút'}${en.nextRegenMs ? ` (tiếp theo sau ${fmtTime(en.nextRegenMs)})` : ''}.</p>
+          <button class="btn gbtn gbtn--green" id="btn-fish" ${canFish ? '' : 'disabled'} style="width:100%;margin-bottom:0.55rem">🎣 Quăng cần (${cfg.energyCost}⚡)</button>`}
+        ${lootRows}
+        <button class="btn btn-ghost" id="btn-buy-energy" style="width:100%;margin-top:0.3rem">⚡ Mua ${DATA.config.energy.buyAmount} năng lượng — ${DATA.config.energy.buyGems} ${GEM}</button>`,
+      );
+    }
+
     if (t === 'festival') {
       const fest = m.festival;
       const rows = fest.milestones.map((ms) => {
@@ -767,6 +797,17 @@
     simple('btn-chest', '/quest-chest', (r) => toast(r.gem ? '🎁 Rương ngày + 1 kim cương! 💎' : '🎁 Đã mở rương ngày!'));
     simple('btn-star-claim', '/star-claim', (r) => toast(`🌟 Nhận thưởng mốc ${r.claimed.stars} sao!`));
     simple('btn-waterall', '/water-all', (r) => toast(`💧 Đã tưới ${r.watered} ô!`));
+    simple('btn-buy-energy', '/buy-energy', () => toast('⚡ +30 năng lượng!'));
+    document.getElementById('btn-fish')?.addEventListener('click', async (e) => {
+      const r = await run(() => api('/fish', {}));
+      if (r) {
+        updateMe(r);
+        const info = itemInfo(r.caught);
+        floatGain(e.clientX || innerWidth / 2, e.clientY || innerHeight / 2, `<img class="coin-img" src="${itemIcon(r.caught)}" alt=""/> +1`, `+${r.exp} EXP`);
+        toast(`${r.caught === 'cakoi' ? '🎉 HIẾM! ' : ''}Câu được ${info.name} ${info.emoji}!`);
+        render();
+      }
+    });
     simple('btn-harvestall-tb', '/harvest-all', (r, e) => floatGain(e.clientX || 200, e.clientY || 300, `🧺 +${r.harvested}`));
 
     document.querySelectorAll('[data-fest-claim]').forEach((el) =>

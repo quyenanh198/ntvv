@@ -1540,3 +1540,9 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 /* Lễ hội + toolbar nhiều nút */
 .farm-toolbar { flex-wrap: wrap; row-gap: 0.4rem; }
 .q-right .btn-mini { font-size: 0.72rem; padding: 0.28rem 0.6rem; }
+
+/* Hồ câu cá + năng lượng */
+.coin-pill--energy { background: linear-gradient(180deg, #2a6b8a, #174b66); border-color: #0e3346; }
+.pond-btn { pointer-events: auto; border: 0; background: none; cursor: pointer; padding: 0; }
+.pond-btn img { width: 100%; height: auto; display: block; }
+.pond-btn:active { transform: scale(0.95); }
