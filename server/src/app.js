@@ -34,6 +34,7 @@ import {
   POACH_DAILY_LIMIT,
   POACH_EXP,
   POACH_YIELD,
+  HARVEST_YIELD,
   WATER_HELPER_GOLD,
   WATER_HELPER_EXP,
   WATER_FRESH_EXP,
@@ -500,7 +501,7 @@ export function buildApp({ config, db, logger = true }) {
         const crop = CROPS[plot.crop];
         const xp = crop.expHarvest + (plot.watered ? WATER_FRESH_EXP : 0);
         grant(me.user_id, { xp });
-        if (!plot.poached) invAdd(me.user_id, crop.id, 1);
+        invAdd(me.user_id, crop.id, HARVEST_YIELD - (plot.poached ? 1 : 0));
         db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, plot.idx);
         bumpQuest(me.user_id, 'harvest');
         bumpFest(me.user_id, 'harvest');

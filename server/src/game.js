@@ -192,6 +192,7 @@ export const STAR_MILESTONES = [
 export const POACH_DAILY_LIMIT = 10; // (không còn dùng để chặn)
 export const POACH_EXP = 1;   // mỗi vật phẩm
 export const POACH_YIELD = 2; // số vật phẩm mỗi lần hái ké
+export const HARVEST_YIELD = 4; // mỗi ô thu 4 sản phẩm (+3 bù trộm); ô bị hái ké trừ 1
 
 // ---- Tưới: không đổi thời gian (mục 6.1) — đánh dấu "Tươi tốt", chủ +1 EXP
 // khi thu; khách tưới giúp nhận công nhỏ.
