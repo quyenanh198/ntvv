@@ -16,8 +16,13 @@ export const CROPS = {
   hanhtay:  { id: 'hanhtay',  name: 'Hành tây', emoji: '🧅', level: 10, growMs: 60 * MIN,  seed: 30,  sell: 84,  expSow: 4, expHarvest: 43 },
   mia:      { id: 'mia',      name: 'Mía',      emoji: '🎋', level: 12, growMs: 120 * MIN, seed: 46,  sell: 135, expSow: 5, expHarvest: 78 },
   dautay:   { id: 'dautay',   name: 'Dâu tây',  emoji: '🍓', level: 13, growMs: 45 * MIN,  seed: 24,  sell: 70,  expSow: 3, expHarvest: 33 },
+  catim:    { id: 'catim',    name: 'Cà tím',   emoji: '🍆', level: 14, growMs: 240 * MIN, seed: 72,  sell: 215, expSow: 7, expHarvest: 145 },
   gao:      { id: 'gao',      name: 'Gạo',      emoji: '🍚', level: 16, growMs: 90 * MIN,  seed: 38,  sell: 110, expSow: 4, expHarvest: 60 },
   bingo:    { id: 'bingo',    name: 'Bí ngô',   emoji: '🎃', level: 18, growMs: 180 * MIN, seed: 60,  sell: 180, expSow: 6, expHarvest: 110 },
+  duahau:   { id: 'duahau',   name: 'Dưa hấu',  emoji: '🍉', level: 21, growMs: 300 * MIN, seed: 90,  sell: 275, expSow: 8, expHarvest: 185 },
+  nho:      { id: 'nho',      name: 'Nho',      emoji: '🍇', level: 22, growMs: 360 * MIN, seed: 110, sell: 340, expSow: 9, expHarvest: 230 },
+  caphe:    { id: 'caphe',    name: 'Cà phê',   emoji: '☕', level: 23, growMs: 480 * MIN, seed: 145, sell: 450, expSow: 12, expHarvest: 300 },
+  cacao:    { id: 'cacao',    name: 'Ca cao',   emoji: '🍫', level: 28, growMs: 600 * MIN, seed: 190, sell: 585, expSow: 15, expHarvest: 380 },
 };
 
 // ---- Sản phẩm ngoài cây (kho dùng chung một catalogue) ---------------------

@@ -341,8 +341,10 @@ export function buildApp({ config, db, logger = true }) {
   const hasAction = db.prepare(
     'SELECT 1 FROM plot_actions WHERE owner_id = ? AND idx = ? AND planted_at = ? AND helper_id = ? AND action = ?',
   );
+  // OR IGNORE: hàng lịch sử từ vụ/bản cũ có thể đã tồn tại (poach giờ chặn
+  // bằng plots.poached, không bằng khóa này) — trùng thì bỏ qua, đừng 500.
   const markAction = db.prepare(
-    'INSERT INTO plot_actions (owner_id, idx, planted_at, helper_id, action, at) VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT OR IGNORE INTO plot_actions (owner_id, idx, planted_at, helper_id, action, at) VALUES (?, ?, ?, ?, ?, ?)',
   );
 
   // Gia súc tự ăn khi trong kho còn đủ thức ăn (yêu cầu nhà mình):
