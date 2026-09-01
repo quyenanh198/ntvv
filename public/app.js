@@ -146,20 +146,32 @@
     const xpSpan = m.nextLevelXp - m.levelXp;
     const xpPct = Math.min(100, Math.round(((m.xp - m.levelXp) / xpSpan) * 100));
 
-    app.innerHTML = `
-      <header class="farm-header">
-        <div class="farm-logo">🌾 Nông trại<small>VUI VẺ</small></div>
-        <div class="header-spacer"></div>
-        <span class="stat-pill">🪙 ${m.coins.toLocaleString('vi')}</span>
-        <button class="header-btn" id="btn-daily" title="Quà mỗi ngày">🎁${m.dailyAvailable ? '<span class="dot"></span>' : ''}</button>
-        <button class="header-btn" id="btn-lb" title="Bảng xếp hạng">🏆</button>
-      </header>
+    const meFam = DATA.family.find((u) => u.me) || {};
+    const hudAvatar = meFam.avatar_at
+      ? `<img src="/farm/api/avatar/${m.id}?v=${meFam.avatar_at}" alt="" onerror="this.remove()" />`
+      : esc((m.name || '?').charAt(0).toUpperCase());
 
-      <div class="level-bar">
-        <span class="level-badge">Lv ${m.level}</span>
-        <div class="xp-track"><div class="xp-fill" style="width:${xpPct}%"></div></div>
-        <span class="xp-num">${m.xp - m.levelXp}/${xpSpan} XP</span>
-      </div>
+    app.innerHTML = `
+      <header class="top-hud">
+        <div class="hud-player">
+          <span class="hud-avatar">${hudAvatar}</span>
+          <span class="hud-info">
+            <span class="hud-name">${esc(m.name)}</span>
+            <span class="hud-level">
+              <span class="hud-lv">Lv ${m.level}</span>
+              <i class="hud-xp"><u style="width:${xpPct}%"></u></i>
+              <span class="hud-xpnum">${m.xp - m.levelXp}/${xpSpan}</span>
+            </span>
+          </span>
+        </div>
+        <div class="hud-right">
+          <span class="coin-pill">
+            <span class="coin-ico">🪙</span><b>${m.coins.toLocaleString('vi')}</b>
+            <button class="gbtn gbtn--green coin-plus" id="btn-daily" title="Quà mỗi ngày">＋${m.dailyAvailable ? '<span class="dot"></span>' : ''}</button>
+          </span>
+          <button class="gbtn gbtn--gold round-btn" id="btn-lb" title="Bảng xếp hạng">🏆</button>
+        </div>
+      </header>
 
       <div class="family-search-wrap">
         <span class="family-search-icon">🔍</span>
@@ -170,7 +182,7 @@
       ${visiting ? `
         <div class="visit-bar">
           <span>👀 Đang thăm ruộng của <b>${esc(visiting.farm.name)}</b></span>
-          <button id="btn-home">🏡 Về nhà</button>
+          <button id="btn-home" class="gbtn gbtn--gold">🏡 Về nhà</button>
         </div>` : renderToolbar()}
 
       <div class="field-wrap">
@@ -186,8 +198,8 @@
         <span class="sitter">🐶</span>
       </div>
 
-      <div class="events">
-        <h3>📰 Bản tin làng</h3>
+      <div class="events panel">
+        <span class="ribbon">📰 Bản tin làng</span>
         ${DATA.events.length
           ? `<ul>${DATA.events.map((e) => `<li><time>${timeAgo(e.at)}</time><span>${esc(e.text)}</span></li>`).join('')}</ul>`
           : '<p class="empty">Chưa có gì — trồng cây đầu tiên đi!</p>'}
@@ -211,8 +223,8 @@
     const empty = me().plots.filter((p) => !p.crop).length;
     return `
       <div class="farm-toolbar">
-        <span class="farm-title">🏡 Ruộng nhà mình</span>
-        ${empty >= 2 ? `<button class="btn-plantall" id="btn-plantall">🧺 Gieo hết ${empty} ô</button>` : ''}
+        <span class="ribbon">🏡 Ruộng nhà mình</span>
+        ${empty >= 2 ? `<button class="gbtn gbtn--green btn-plantall" id="btn-plantall">🧺 Gieo hết ${empty} ô</button>` : ''}
       </div>`;
   }
 
@@ -262,7 +274,7 @@
         const acts = visiting ? visiting.myActs[p.idx] : null;
         const canSteal = visiting && !acts?.stolenByMe && p.stolen < p.stealCap;
         return `<button class="plot plot--ready" data-idx="${p.idx}" data-kind="${mine ? 'harvest' : canSteal ? 'steal' : 'ripe'}">
-          <span class="plot-main">${c.emoji}</span>
+          <span class="plot-crops"><span>${c.emoji}</span><b>${c.emoji}</b><span>${c.emoji}</span></span>
           <span class="plot-note">${mine ? 'Thu hoạch!' : canSteal ? 'Trộm được!' : 'Chín rồi'}</span>
           <span class="plot-badge">×${p.yieldLeft}</span>
           ${!mine && canSteal ? '<span class="plot-act">😈</span>' : ''}
@@ -335,7 +347,7 @@
           <p class="sheet-note">Ô đất thứ ${s.idx + 1}: giá <b>${s.price.toLocaleString('vi')} 🪙</b>, cần <b>Lv ${s.level}</b>.</p>
           <div class="sheet-actions">
             <button class="btn btn-ghost" data-close="1">Thôi</button>
-            <button class="btn btn-primary" id="btn-buyplot" ${can ? '' : 'disabled'}>${can ? 'Mua luôn!' : m.level < s.level ? `Cần Lv ${s.level}` : 'Thiếu xu'}</button>
+            <button class="btn gbtn gbtn--green" id="btn-buyplot" ${can ? '' : 'disabled'}>${can ? 'Mua luôn!' : m.level < s.level ? `Cần Lv ${s.level}` : 'Thiếu xu'}</button>
           </div>
         </div>`;
     }
