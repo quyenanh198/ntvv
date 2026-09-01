@@ -1546,3 +1546,20 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .pond-btn { pointer-events: auto; border: 0; background: none; cursor: pointer; padding: 0; }
 .pond-btn img { width: 100%; height: auto; display: block; }
 .pond-btn:active { transform: scale(0.95); }
+
+/* Bộ chọn số lượng trong Kho */
+.inv-row { flex-wrap: wrap; row-gap: 0.35rem; }
+.qty-ctl { display: inline-flex; align-items: center; gap: 0.15rem; }
+.qty-ctl button {
+  width: 1.7rem; height: 1.7rem; border-radius: 8px; cursor: pointer;
+  border: 2px solid var(--paper-edge); background: var(--paper);
+  font-family: inherit; font-weight: 800; font-size: 0.95rem; line-height: 1; color: var(--ink);
+}
+.qty-ctl button:active { transform: scale(0.9); }
+.qty-input {
+  width: 2.9rem; height: 1.7rem; text-align: center;
+  border: 2px solid var(--paper-edge); border-radius: 8px; background: #fffdf6;
+  font-family: inherit; font-weight: 800; font-size: 0.85rem; color: var(--ink);
+  -moz-appearance: textfield; appearance: textfield;
+}
+.qty-input::-webkit-outer-spin-button, .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }

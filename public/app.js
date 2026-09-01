@@ -499,13 +499,18 @@
         ? '<p class="sheet-note">Kho trống — thu hoạch gì đó đi!</p>'
         : entries.map(([id, q]) => {
             const info = itemInfo(id);
-            return `<div class="inv-row">
+            return `<div class="inv-row" data-item="${id}">
               <img src="${itemIcon(id)}" alt="" />
               <span class="seed-info"><span class="seed-name">${info?.name || id}</span>
-                <div class="seed-meta">x${q}${info?.sell ? ` · bán ${info.sell} ${COIN}/cái` : ' · không bán được'}</div></span>
+                <div class="seed-meta">x${q}${info?.sell ? ` · ${info.sell} ${COIN}/cái` : ' · không bán được'}</div></span>
               ${info?.sell ? `
-                <button class="gbtn gbtn--gold btn-mini" data-sell="${id}" data-qty="1">Bán 1</button>
-                <button class="gbtn gbtn--green btn-mini" data-sell="${id}" data-qty="${q}">Bán hết</button>` : ''}
+                <span class="qty-ctl">
+                  <button type="button" data-qstep="-1">−</button>
+                  <input class="qty-input" type="number" inputmode="numeric" min="1" max="${q}" value="1" />
+                  <button type="button" data-qstep="1">＋</button>
+                </span>
+                <button class="gbtn gbtn--gold btn-mini" data-sell="${id}">Bán 1</button>
+                <button class="gbtn gbtn--green btn-mini" data-sell="${id}" data-qty="${q}">Hết</button>` : ''}
             </div>`;
           }).join('');
       return sheetShell(`🎒 Kho đồ <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, rows);
@@ -829,9 +834,30 @@
       if (r) { updateMe(r); toast(`💎 -${r.cost} kim cương!`); render(); }
     });
 
+    function rowQty(el) {
+      const input = el.closest('.inv-row')?.querySelector('.qty-input');
+      if (!input) return 1;
+      const max = Number(input.max) || 999;
+      return Math.max(1, Math.min(max, Math.round(Number(input.value) || 1)));
+    }
+    document.querySelectorAll('[data-qstep]').forEach((el) =>
+      el.addEventListener('click', () => {
+        const row = el.closest('.inv-row');
+        const input = row.querySelector('.qty-input');
+        const max = Number(input.max) || 999;
+        input.value = Math.max(1, Math.min(max, (Number(input.value) || 1) + Number(el.dataset.qstep)));
+        const btn = row.querySelector('[data-sell]:not([data-qty])');
+        if (btn) btn.textContent = `Bán ${input.value}`;
+      }));
+    document.querySelectorAll('.qty-input').forEach((el) =>
+      el.addEventListener('input', () => {
+        const btn = el.closest('.inv-row').querySelector('[data-sell]:not([data-qty])');
+        if (btn) btn.textContent = `Bán ${Math.max(1, Math.min(Number(el.max) || 999, Math.round(Number(el.value) || 1)))}`;
+      }));
     document.querySelectorAll('[data-sell]').forEach((el) =>
       el.addEventListener('click', async (e) => {
-        const r = await run(() => api('/sell', { item: el.dataset.sell, qty: Number(el.dataset.qty) }));
+        const qty = el.dataset.qty ? Number(el.dataset.qty) : rowQty(el);
+        const r = await run(() => api('/sell', { item: el.dataset.sell, qty }));
         if (r) { updateMe(r); floatGain(e.clientX, e.clientY, `+${r.gained} ${COIN}`); render(); }
       }));
     document.querySelectorAll('[data-buy]').forEach((el) =>
