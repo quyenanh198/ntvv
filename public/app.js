@@ -207,62 +207,78 @@
     const starReady = m.starNext && m.stars >= m.starNext.stars;
 
     app.innerHTML = `
-      <header class="top-hud">
-        <div class="hud-player">
-          <span class="hud-avatar">${hudAvatar}</span>
-          <span class="hud-info">
-            <span class="hud-name">${esc(m.name)}</span>
-            <span class="hud-level">
-              <span class="hud-lv">Lv ${m.level}</span>
-              <i class="hud-xp"><u style="width:${xpPct}%"></u></i>
-              <span class="hud-xpnum">${m.levelInto.toLocaleString('vi')}/${m.levelNeed.toLocaleString('vi')}</span>
+      <div class="stage">
+        <header class="top-hud">
+          <div class="hud-player">
+            <span class="hud-avatar">${hudAvatar}</span>
+            <span class="hud-info">
+              <span class="hud-name">${esc(m.name)}</span>
+              <span class="hud-level">
+                <span class="hud-lv">Lv ${m.level}</span>
+                <i class="hud-xp"><u style="width:${xpPct}%"></u></i>
+                <span class="hud-xpnum">${m.levelInto.toLocaleString('vi')}/${m.levelNeed.toLocaleString('vi')}</span>
+              </span>
             </span>
-          </span>
+          </div>
+          <div class="hud-right">
+            <button class="coin-pill" data-sheet="inventory" title="Vàng — mở kho để bán đồ">${COIN}<b>${m.gold.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
+            <button class="coin-pill coin-pill--gem" data-sheet="stars" title="Kim cương — nhận từ mốc sao và rương">${GEM}<b>${m.gems.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
+          </div>
+        </header>
+
+        <div class="side side-left">
+          <button class="side-btn" data-sheet="quests">🧾${questsReady ? '<i class="dot"></i>' : ''}<span>Nhiệm vụ</span></button>
+          <button class="side-btn" data-sheet="shop">🏪<span>Cửa hàng</span></button>
+          <button class="side-btn" data-sheet="inventory">🎒<span>Kho đồ</span></button>
+          <button class="side-btn" data-sheet="events">📰<span>Bản tin</span></button>
         </div>
-        <div class="hud-right">
-          <span class="coin-pill" title="Vàng">${COIN}<b>${m.gold.toLocaleString('vi')}</b></span>
-          <span class="coin-pill coin-pill--gem" title="Kim cương">${GEM}<b>${m.gems.toLocaleString('vi')}</b></span>
+        <div class="side side-right">
+          <button class="side-btn side-btn--gold" id="btn-harvestall"><img src="assets/art/basket.png" alt="" />${m.plots.some((p) => p.crop && p.ready) ? '<i class="dot"></i>' : ''}<span>Thu hoạch</span></button>
+          ${m.level >= DATA.config.orderUnlockLevel ? `<button class="side-btn" data-sheet="orders">🚚${ordersReady ? '<i class="dot"></i>' : ''}<span>Đơn hàng</span></button>` : ''}
+          <button class="side-btn" data-sheet="stars">${STAR}${starReady ? '<i class="dot"></i>' : ''}<span>${m.stars} sao</span></button>
+          <button class="side-btn" id="btn-lb">🏆<span>Hạng</span></button>
         </div>
-      </header>
 
-      <div class="action-row">
-        <button class="act-btn" data-sheet="quests">🧾<span>Nhiệm vụ</span>${questsReady ? '<i class="dot"></i>' : ''}</button>
-        <button class="act-btn" data-sheet="shop">🏪<span>Cửa hàng</span></button>
-        <button class="act-btn" data-sheet="inventory">🎒<span>Kho đồ</span></button>
-        ${m.level >= DATA.config.orderUnlockLevel
-          ? `<button class="act-btn" data-sheet="orders">🚚<span>Đơn hàng</span>${ordersReady ? '<i class="dot"></i>' : ''}</button>` : ''}
-        <button class="act-btn" data-sheet="stars">${STAR}<span>${m.stars}</span>${starReady ? '<i class="dot"></i>' : ''}</button>
-        <button class="act-btn" id="btn-lb">🏆<span>Hạng</span></button>
-      </div>
+        <div class="stage-center">
+          <div class="scene-banner" aria-hidden="true">
+            <div class="sb-hills"></div>
+            <img class="sb sb-house" src="assets/art/house.png" alt="" />
+            <img class="sb sb-tree1" src="assets/art/tree.png" alt="" />
+            <img class="sb sb-barn" src="assets/art/barn.png" alt="" />
+            <img class="sb sb-green" src="assets/art/greenhouse.png" alt="" />
+            <img class="sb sb-tree2" src="assets/art/tree.png" alt="" />
+            <img class="sb sb-mill" src="assets/art/windmill.png" alt="" />
+            <img class="sb sb-cow" src="assets/art/cow.png" alt="" />
+            <img class="sb sb-sheep" src="assets/art/sheep.png" alt="" />
+            <img class="sb sb-pig" src="assets/art/pig.png" alt="" />
+            <img class="sb sb-hen" src="assets/art/chicken.png" alt="" />
+            <img class="sb sb-logo" src="assets/art/logo.png" alt="Nông Trại Vui Vẻ" />
+          </div>
 
-      <div class="family-search-wrap">
-        <span class="family-search-icon">🔍</span>
-        <input class="family-search" type="search" placeholder="Tìm người nhà…" value="${esc(familyFilter)}" />
-      </div>
-      <div class="family-strip">${familyStripHtml()}</div>
+          <div class="family-search-wrap">
+            <span class="family-search-icon">🔍</span>
+            <input class="family-search" type="search" placeholder="Tìm người nhà…" value="${esc(familyFilter)}" />
+          </div>
+          <div class="family-strip">${familyStripHtml()}</div>
 
-      ${visiting ? `
-        <div class="visit-bar">
-          <span>👀 Ruộng của <b>${esc(visiting.farm.name)}</b> · Lv ${visiting.farm.level}</span>
-          <button id="btn-home" class="gbtn gbtn--gold">🏡 Về nhà</button>
-        </div>` : renderToolbar()}
+          ${visiting ? `
+            <div class="visit-bar">
+              <span>👀 Ruộng của <b>${esc(visiting.farm.name)}</b> · Lv ${visiting.farm.level}</span>
+              <button id="btn-home" class="gbtn gbtn--gold">🏡 Về nhà</button>
+            </div>` : renderToolbar()}
 
-      <div class="field-wrap">
-        <span class="field-decor decor-1">🌻</span>
-        <span class="field-decor decor-2">🍄</span>
-        <img class="scarecrow-img" src="assets/ui/scarecrow.svg" alt="" />
-        <span class="butterfly">🦋</span>
-        <div class="farm-grid" id="grid">${renderPlots(visiting)}</div>
-      </div>
+          <div class="field-wrap">
+            <span class="field-decor decor-1">🌻</span>
+            <span class="field-decor decor-2">🍄</span>
+            <img class="scarecrow-img" src="assets/ui/scarecrow.svg" alt="" />
+            <span class="butterfly">🦋</span>
+            <div class="farm-grid" id="grid">${renderPlots(visiting)}</div>
+          </div>
 
-      ${!visiting ? renderBuildings() : ''}
-      ${!visiting ? renderQuickbar() : ''}
+          ${!visiting ? renderBuildings() : ''}
+        </div>
 
-      <div class="events panel">
-        <span class="ribbon">📰 Bản tin làng</span>
-        ${DATA.events.length
-          ? `<ul>${DATA.events.map((e) => `<li><time>${timeAgo(e.at)}</time><span>${esc(e.text)}</span></li>`).join('')}</ul>`
-          : '<p class="empty">Chưa có gì — gieo hạt đầu tiên đi!</p>'}
+        ${!visiting ? renderQuickbar() : ''}
       </div>
 
       ${sheet ? renderSheet() : ''}
@@ -303,11 +319,9 @@
   function renderToolbar() {
     const m = me();
     const empty = m.plots.filter((p) => !p.crop).length;
-    const ready = m.plots.filter((p) => p.crop && p.ready).length;
     return `
       <div class="farm-toolbar">
         <span class="ribbon">🏡 Ruộng nhà mình</span>
-        ${ready >= 2 ? `<button class="gbtn gbtn--gold btn-mini" id="btn-harvestall">🧺 Thu hết ${ready} ô</button>` : ''}
         ${empty >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-plantall">🌱 Gieo hết ${empty} ô</button>` : ''}
       </div>`;
   }
@@ -594,6 +608,13 @@
           <button class="btn btn-ghost" data-close="1">Thôi</button>
           <button class="btn gbtn gbtn--green" id="btn-expand" ${can ? '' : 'disabled'}>${can ? 'Mở luôn!' : m.level < e.level ? `Cần Lv ${e.level}` : 'Thiếu vàng'}</button>
         </div>`);
+    }
+
+    if (t === 'events') {
+      const rows = DATA.events.length
+        ? `<ul class="event-list">${DATA.events.map((e) => `<li><time>${timeAgo(e.at)}</time><span>${esc(e.text)}</span></li>`).join('')}</ul>`
+        : '<p class="sheet-note">Chưa có gì — gieo hạt đầu tiên đi!</p>';
+      return sheetShell('📰 Bản tin làng', rows);
     }
 
     if (t === 'stars') {
