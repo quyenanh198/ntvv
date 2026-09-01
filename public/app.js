@@ -16,7 +16,7 @@
   const SPRITE_ALIAS = { luami: 'lua', dautay: 'dau' };
   const spriteBase = (id) => SPRITE_ALIAS[id] || id;
   const cropSprite = (id, stage) => `assets/crops/${stage === 1 ? 'seed-1' : `${spriteBase(id)}-${stage}`}.svg`;
-  const ITEM_ICON = { trung: 'assets/ui/egg.svg', botmi: 'assets/ui/flour.svg', thucan: 'assets/ui/feed.svg' };
+  const ITEM_ICON = { trung: 'assets/ui/egg.svg', botmi: 'assets/ui/flour.svg', thucan: 'assets/art/feed.png' };
   const itemIcon = (id) => ITEM_ICON[id] || cropSprite(id, 3);
   const COIN = '<img class="coin-img" src="assets/ui/coin.svg" alt="vàng" />';
   const GEM = '<img class="coin-img" src="assets/ui/gem.svg" alt="kim cương" />';
@@ -368,7 +368,7 @@
       const hungry = m.animals.filter((a) => a.ready_at == null).length;
       bits.push(`
         <button class="building" data-sheet="coop">
-          <img src="assets/ui/chicken.svg" alt="" />
+          <img src="assets/art/chicken.png" alt="" />
           <span class="b-name">Chuồng gà</span>
           <span class="b-note">${total === 0 ? 'Chưa có gà' : readyN ? `🥚 ${readyN} trứng chờ!` : hungry ? `${hungry} gà đói` : 'Đang đẻ trứng…'}</span>
           ${readyN ? '<i class="dot"></i>' : ''}
@@ -483,7 +483,7 @@
          </div>
          ${m.level >= DATA.config.chicken.level ? `
          <div class="inv-row">
-           <img src="assets/ui/chicken.svg" alt="" />
+           <img src="assets/art/chicken.png" alt="" />
            <span class="seed-info"><span class="seed-name">Gà mái</span>
              <div class="seed-meta">${DATA.config.chicken.price} ${COIN} · đẻ trứng ${fmtDuration(DATA.config.chicken.produceMs)}/quả · chuồng ${m.animals.length}/${DATA.config.chicken.capacity}</div></span>
            <button class="gbtn gbtn--green btn-mini" id="btn-buy-chicken" ${m.animals.length >= DATA.config.chicken.capacity ? 'disabled' : ''}>Mua gà</button>
@@ -544,7 +544,7 @@
       const hungryN = m.animals.filter((a) => a.ready_at == null).length;
       const hens = m.animals.map((a) => `
         <span class="hen${a.ready ? ' hen--ready' : ''}">
-          <img src="assets/ui/chicken.svg" alt="" />
+          <img src="assets/art/chicken.png" alt="" />
           <small>${a.ready ? '🥚!' : a.ready_at == null ? 'đói' : fmtTime(a.ready_at - Date.now())}</small>
         </span>`).join('');
       return sheetShell(

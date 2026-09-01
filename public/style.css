@@ -56,15 +56,40 @@ body {
 .cloud-3 { top: 2%; font-size: 2.1rem; animation: drift 115s linear infinite; animation-delay: -30s; }
 @keyframes drift { from { left: -12%; } to { left: 106%; } }
 
-/* ---------- Cảnh nông trại + logo ---------- */
+/* ---------- Cảnh nông trại (art thật) ---------- */
 .scene-banner {
   position: relative; z-index: 1;
-  max-width: 560px; margin: 0 auto; padding: 0 0.4rem;
+  max-width: 560px; margin: 0 auto;
+  height: clamp(150px, 42vw, 200px);
   pointer-events: none;
 }
-.scene-banner svg { display: block; width: 100%; height: auto; }
-.mill { transform-origin: 601px 96px; animation: millspin 14s linear infinite; }
-@keyframes millspin { to { transform: rotate(360deg); } }
+.sb-hills {
+  position: absolute; left: -4%; right: -4%; bottom: 0; height: 62%;
+  background:
+    radial-gradient(58% 100% at 28% 0%, rgba(150, 209, 100, 0.55) 0 68%, transparent 69%),
+    radial-gradient(52% 90% at 75% 8%, rgba(126, 195, 90, 0.45) 0 66%, transparent 67%),
+    linear-gradient(180deg, transparent 0 34%, #8fd14f 68%, #7cc043 100%);
+  border-radius: 0 0 18px 18px;
+}
+.sb { position: absolute; height: auto; filter: drop-shadow(0 4px 6px rgba(60, 90, 30, 0.3)); }
+.sb-house { left: 15%; bottom: 26%; width: 21%; z-index: 2; }
+.sb-tree1 { left: 34%; bottom: 24%; width: 8%; z-index: 1; }
+.sb-barn { left: 43%; bottom: 25%; width: 18%; z-index: 3; }
+.sb-green { right: 20%; bottom: 24%; width: 14%; z-index: 1; }
+.sb-tree2 { right: 15%; bottom: 24%; width: 8.5%; z-index: 2; }
+.sb-mill { right: 2%; bottom: 23%; width: 12%; z-index: 3; animation: millsway 5.5s ease-in-out infinite; transform-origin: bottom center; }
+@keyframes millsway { 50% { transform: rotate(1.6deg); } }
+.sb-cow { left: 40%; bottom: 4%; width: 12%; z-index: 6; }
+.sb-sheep { left: 56%; bottom: 3%; width: 9.5%; z-index: 6; }
+.sb-pig { right: 22%; bottom: 3.5%; width: 9%; z-index: 6; }
+.sb-hen { left: 30%; bottom: 5%; width: 5.5%; z-index: 6; animation: nudge 2.2s ease-in-out infinite; }
+.sb-logo {
+  left: 1%; top: 4%; width: 30%; z-index: 7;
+  transform: rotate(-3deg);
+  filter: drop-shadow(0 5px 8px rgba(60, 90, 30, 0.4));
+  animation: logopop 4.5s ease-in-out infinite;
+}
+@keyframes logopop { 50% { transform: rotate(-3deg) scale(1.03); } }
 
 #app { position: relative; z-index: 2; max-width: 560px; margin: 0 auto; padding: 0.4rem 0.9rem 4.5rem; }
 
