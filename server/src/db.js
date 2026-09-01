@@ -119,6 +119,8 @@ export function openDb(dataDir) {
   const cols = db.prepare('PRAGMA table_info(farmers)').all().map((c) => c.name);
   if (!cols.includes('energy')) db.exec('ALTER TABLE farmers ADD COLUMN energy INTEGER NOT NULL DEFAULT 100');
   if (!cols.includes('energy_at')) db.exec('ALTER TABLE farmers ADD COLUMN energy_at INTEGER NOT NULL DEFAULT 0');
+  if (!cols.includes('coop_level')) db.exec('ALTER TABLE farmers ADD COLUMN coop_level INTEGER NOT NULL DEFAULT 1');
+  if (!cols.includes('pond_level')) db.exec('ALTER TABLE farmers ADD COLUMN pond_level INTEGER NOT NULL DEFAULT 1');
   return db;
 }
 

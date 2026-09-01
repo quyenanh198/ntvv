@@ -35,6 +35,10 @@ import {
   ENERGY,
   FISHING,
   rollFish,
+  COOP_LEVELS,
+  COOP_UPGRADE_GOLD,
+  POND_LEVELS,
+  POND_UPGRADE_GOLD,
   scaleMs,
   todayVN,
 } from './game.js';
@@ -278,6 +282,20 @@ export function buildApp({ config, db, logger = true }) {
         chestClaimed: !!d.chest_claimed,
       },
       energy: energyView(f0),
+      coop: {
+        level: f.coop_level,
+        capacity: COOP_LEVELS[f.coop_level - 1],
+        next: f.coop_level < COOP_LEVELS.length
+          ? { level: f.coop_level + 1, capacity: COOP_LEVELS[f.coop_level], gold: COOP_UPGRADE_GOLD[f.coop_level - 1] }
+          : null,
+      },
+      pond: {
+        level: f.pond_level,
+        fishPerCast: POND_LEVELS[f.pond_level - 1],
+        next: f.pond_level < POND_LEVELS.length
+          ? { level: f.pond_level + 1, fishPerCast: POND_LEVELS[f.pond_level], gold: POND_UPGRADE_GOLD[f.pond_level - 1] }
+          : null,
+      },
       festival: (() => {
         const f = getFest(f0.user_id);
         return {
@@ -479,7 +497,6 @@ export function buildApp({ config, db, logger = true }) {
           return reply.code(400).send({ error: 'already_poached' });
         }
         const d = getDaily(me.user_id);
-        if (d.poached >= POACH_DAILY_LIMIT) return reply.code(400).send({ error: 'poach_limit' });
         const crop = CROPS[plot.crop];
         db.transaction(() => {
           markAction.run(ownerId, idx, plot.planted_at, me.user_id, 'poach', Date.now());
@@ -524,7 +541,7 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         if (levelFor(me.xp) < CHICKEN.level) return reply.code(400).send({ error: 'level_too_low' });
         const count = db.prepare('SELECT COUNT(*) c FROM animals WHERE owner_id = ?').get(me.user_id).c;
-        if (count >= CHICKEN.capacity) return reply.code(400).send({ error: 'coop_full' });
+        if (count >= COOP_LEVELS[me.coop_level - 1]) return reply.code(400).send({ error: 'coop_full' });
         if (me.gold < CHICKEN.price) return reply.code(400).send({ error: 'not_enough_gold' });
         db.transaction(() => {
           grant(me.user_id, { gold: -CHICKEN.price });
@@ -728,18 +745,24 @@ export function buildApp({ config, db, logger = true }) {
         const now = Date.now();
         const cur = currentEnergy(me, now);
         if (cur < FISHING.energyCost) return reply.code(400).send({ error: 'not_enough_energy' });
-        const fishId = rollFish(Math.random);
-        const fish = GOODS[fishId];
+        const casts = POND_LEVELS[me.pond_level - 1];
+        const caught = [];
+        let exp = 0;
+        for (let i = 0; i < casts; i += 1) {
+          const id = rollFish(Math.random);
+          caught.push(id);
+          exp += GOODS[id].expCatch;
+        }
         db.transaction(() => {
           setEnergy(me.user_id, me, cur - FISHING.energyCost, now);
-          invAdd(me.user_id, fishId, 1);
-          grant(me.user_id, { xp: fish.expCatch });
+          for (const id of caught) invAdd(me.user_id, id, 1);
+          grant(me.user_id, { xp: exp });
           bumpQuest(me.user_id, 'fish');
         })();
-        if (fishId === 'cakoi' || fishId === 'cachep') {
-          logEvent(`🎣 ${me.name} câu được ${fish.name} ${fish.emoji}!`);
+        for (const id of caught) {
+          if (id === 'cakoi' || id === 'cachep') logEvent(`🎣 ${me.name} câu được ${GOODS[id].name} ${GOODS[id].emoji}!`);
         }
-        return { me: fresh(me.user_id), caught: fishId, exp: fish.expCatch };
+        return { me: fresh(me.user_id), caught, exp };
       });
 
       api.post('/buy-energy', async (request, reply) => {
@@ -752,6 +775,34 @@ export function buildApp({ config, db, logger = true }) {
           grant(me.user_id, { gems: -ENERGY.buyGems });
           setEnergy(me.user_id, me, Math.min(ENERGY.buyCap, cur + ENERGY.buyAmount), now);
         })();
+        return { me: fresh(me.user_id) };
+      });
+
+      // ---- Nâng cấp chuồng gà / ao cá ----
+      api.post('/upgrade-coop', async (request, reply) => {
+        const me = request.farmer;
+        if (me.coop_level >= COOP_LEVELS.length) return reply.code(400).send({ error: 'max_level' });
+        const gold = COOP_UPGRADE_GOLD[me.coop_level - 1];
+        if (me.gold < gold) return reply.code(400).send({ error: 'not_enough_gold' });
+        db.transaction(() => {
+          grant(me.user_id, { gold: -gold });
+          db.prepare('UPDATE farmers SET coop_level = coop_level + 1 WHERE user_id = ?').run(me.user_id);
+        })();
+        logEvent(`🐔 ${me.name} nâng chuồng gà lên cấp ${me.coop_level + 1}`);
+        return { me: fresh(me.user_id) };
+      });
+
+      api.post('/upgrade-pond', async (request, reply) => {
+        const me = request.farmer;
+        if (levelFor(me.xp) < FISHING.level) return reply.code(400).send({ error: 'level_too_low' });
+        if (me.pond_level >= POND_LEVELS.length) return reply.code(400).send({ error: 'max_level' });
+        const gold = POND_UPGRADE_GOLD[me.pond_level - 1];
+        if (me.gold < gold) return reply.code(400).send({ error: 'not_enough_gold' });
+        db.transaction(() => {
+          grant(me.user_id, { gold: -gold });
+          db.prepare('UPDATE farmers SET pond_level = pond_level + 1 WHERE user_id = ?').run(me.user_id);
+        })();
+        logEvent(`🎣 ${me.name} nâng ao cá lên cấp ${me.pond_level + 1}`);
         return { me: fresh(me.user_id) };
       });
 

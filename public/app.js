@@ -85,6 +85,7 @@
     not_enough_progress: 'Chưa đạt mốc này, cày thêm nhé!',
     not_enough_energy: 'Hết năng lượng — nghỉ tay chút hoặc mua thêm bằng kim cương.',
     energy_full: 'Năng lượng còn đầy mà!',
+    max_level: 'Đã nâng tối đa rồi!',
   };
 
   function fmtTime(ms) {
@@ -533,8 +534,8 @@
          <div class="inv-row">
            <img src="assets/art/chicken.png" alt="" />
            <span class="seed-info"><span class="seed-name">Gà mái</span>
-             <div class="seed-meta">${DATA.config.chicken.price} ${COIN} · đẻ trứng ${fmtDuration(DATA.config.chicken.produceMs)}/quả · chuồng ${m.animals.length}/${DATA.config.chicken.capacity}</div></span>
-           <button class="gbtn gbtn--green btn-mini" id="btn-buy-chicken" ${m.animals.length >= DATA.config.chicken.capacity ? 'disabled' : ''}>Mua gà</button>
+             <div class="seed-meta">${DATA.config.chicken.price} ${COIN} · đẻ trứng ${fmtDuration(DATA.config.chicken.produceMs)}/quả · chuồng ${m.animals.length}/${m.coop.capacity}</div></span>
+           <button class="gbtn gbtn--green btn-mini" id="btn-buy-chicken" ${m.animals.length >= m.coop.capacity ? 'disabled' : ''}>Mua gà</button>
          </div>` : ''}
          <p class="sheet-note" style="margin-top:0.6rem">💡 Hạt giống mua ngay lúc gieo (chạm ô đất trống). Giá mới nhất:</p>
          ${seedRows}`,
@@ -596,12 +597,13 @@
           <small>${a.ready ? '🥚!' : a.ready_at == null ? 'đói' : fmtTime(a.ready_at - Date.now())}</small>
         </span>`).join('');
       return sheetShell(
-        `🐔 Chuồng gà <span class="sheet-coins"><img class="coin-img" src="assets/ui/feed.svg" alt=""/> ${feedQty}</span>`,
+        `🐔 Chuồng gà cấp ${m.coop.level} · ${m.animals.length}/${m.coop.capacity} <span class="sheet-coins"><img class="coin-img" src="assets/ui/feed.svg" alt=""/> ${feedQty}</span>`,
         `${m.animals.length === 0 ? '<p class="sheet-note">Chưa có gà — mua ở Cửa hàng nhé!</p>' : `<div class="hen-row">${hens}</div>`}
          <div class="sheet-actions">
            ${hungryN ? `<button class="btn gbtn gbtn--green" id="btn-feed" ${feedQty ? '' : 'disabled'}>🌰 Cho ăn (${hungryN} gà đói)</button>` : ''}
            ${readyN ? `<button class="btn gbtn gbtn--gold" id="btn-collect">🥚 Thu ${readyN} trứng</button>` : ''}
-           ${m.animals.length < ch.capacity ? `<button class="btn btn-ghost" id="btn-buy-chicken">＋ Mua gà (${ch.price} vàng)</button>` : ''}
+           ${m.animals.length < m.coop.capacity ? `<button class="btn btn-ghost" id="btn-buy-chicken">＋ Mua gà (${ch.price} vàng)</button>` : ''}
+           ${m.coop.next ? `<button class="btn gbtn gbtn--gold" id="btn-upgrade-coop" ${m.gold >= m.coop.next.gold ? '' : 'disabled'}>⬆️ Nâng chuồng cấp ${m.coop.next.level} (${m.coop.next.capacity} gà) — ${m.coop.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}
          </div>
          ${!feedQty && hungryN ? '<p class="sheet-note">Hết thức ăn: mua ở Cửa hàng (12 vàng) hoặc xay 2 ngô ở Cối xay (Lv 10).</p>' : ''}`,
       );
@@ -666,12 +668,13 @@
         </div>`;
       }).join('');
       return sheetShell(
-        `🎣 Hồ câu cá <span class="sheet-coins">⚡ ${en.current}/${en.max}${en.current > en.max ? '+' : ''}</span>`,
+        `🎣 Hồ câu cá cấp ${m.pond.level} <span class="sheet-coins">⚡ ${en.current}/${en.max}${en.current > en.max ? '+' : ''}</span>`,
         `${locked ? `<p class="sheet-note">🔒 Hồ câu mở ở <b>cấp ${cfg.level}</b> — chăm ruộng thêm chút nữa nhé!</p>` : `
           <p class="sheet-note">Mỗi lượt câu tốn <b>${cfg.energyCost}⚡</b> · năng lượng tự hồi 1⚡ mỗi ${DATA.config.fast ? '3 giây' : '3 phút'}${en.nextRegenMs ? ` (tiếp theo sau ${fmtTime(en.nextRegenMs)})` : ''}.</p>
-          <button class="btn gbtn gbtn--green" id="btn-fish" ${canFish ? '' : 'disabled'} style="width:100%;margin-bottom:0.55rem">🎣 Quăng cần (${cfg.energyCost}⚡)</button>`}
+          <button class="btn gbtn gbtn--green" id="btn-fish" ${canFish ? '' : 'disabled'} style="width:100%;margin-bottom:0.55rem">🎣 Quăng cần (${cfg.energyCost}⚡${m.pond.fishPerCast > 1 ? ` · ${m.pond.fishPerCast} cá` : ''})</button>`}
         ${lootRows}
-        <button class="btn btn-ghost" id="btn-buy-energy" style="width:100%;margin-top:0.3rem">⚡ Mua ${DATA.config.energy.buyAmount} năng lượng — ${DATA.config.energy.buyGems} ${GEM}</button>`,
+        <button class="btn btn-ghost" id="btn-buy-energy" style="width:100%;margin-top:0.3rem">⚡ Mua ${DATA.config.energy.buyAmount} năng lượng — ${DATA.config.energy.buyGems} ${GEM}</button>
+        ${!locked && m.pond.next ? `<button class="btn gbtn gbtn--gold" id="btn-upgrade-pond" ${m.gold >= m.pond.next.gold ? '' : 'disabled'} style="width:100%;margin-top:0.3rem">⬆️ Nâng ao cấp ${m.pond.next.level} (${m.pond.next.fishPerCast} cá/lượt) — ${m.pond.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}`,
       );
     }
 
@@ -803,13 +806,17 @@
     simple('btn-star-claim', '/star-claim', (r) => toast(`🌟 Nhận thưởng mốc ${r.claimed.stars} sao!`));
     simple('btn-waterall', '/water-all', (r) => toast(`💧 Đã tưới ${r.watered} ô!`));
     simple('btn-buy-energy', '/buy-energy', () => toast('⚡ +30 năng lượng!'));
+    simple('btn-upgrade-coop', '/upgrade-coop', (r) => toast(`🐔 Chuồng lên cấp ${r.me.coop.level} — chứa ${r.me.coop.capacity} gà!`));
+    simple('btn-upgrade-pond', '/upgrade-pond', (r) => toast(`🎣 Ao lên cấp ${r.me.pond.level} — ${r.me.pond.fishPerCast} cá mỗi lượt!`));
     document.getElementById('btn-fish')?.addEventListener('click', async (e) => {
       const r = await run(() => api('/fish', {}));
       if (r) {
         updateMe(r);
-        const info = itemInfo(r.caught);
-        floatGain(e.clientX || innerWidth / 2, e.clientY || innerHeight / 2, `<img class="coin-img" src="${itemIcon(r.caught)}" alt=""/> +1`, `+${r.exp} EXP`);
-        toast(`${r.caught === 'cakoi' ? '🎉 HIẾM! ' : ''}Câu được ${info.name} ${info.emoji}!`);
+        const names = r.caught.map((id) => `${itemInfo(id).name} ${itemInfo(id).emoji}`).join(', ');
+        floatGain(e.clientX || innerWidth / 2, e.clientY || innerHeight / 2,
+          r.caught.map((id) => `<img class="coin-img" src="${itemIcon(id)}" alt=""/>`).join('') + ` +${r.caught.length}`,
+          `+${r.exp} EXP`);
+        toast(`${r.caught.includes('cakoi') ? '🎉 HIẾM! ' : ''}Câu được ${names}!`);
         render();
       }
     });

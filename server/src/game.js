@@ -163,6 +163,14 @@ export const ENERGY = {
   buyAmount: 30,
 };
 
+// Nâng cấp chuồng gà (mục 9.4): sức chứa theo cấp, giá lên cấp 2..5.
+export const COOP_LEVELS = [3, 4, 6, 8, 10];
+export const COOP_UPGRADE_GOLD = [1000, 3000, 8000, 20000];
+
+// Nâng cấp ao cá: số cá mỗi lượt quăng theo cấp, giá lên cấp 2..5.
+export const POND_LEVELS = [1, 1, 2, 2, 3];
+export const POND_UPGRADE_GOLD = [1500, 4000, 10000, 25000];
+
 export const FISHING = {
   level: 7,
   energyCost: 4,      // câu cá một lượt: 4 năng lượng
