@@ -1413,3 +1413,6 @@ img { display: block; max-width: 100%; }
     transition-duration: .001ms !important;
   }
 }
+
+/* fix nhỏ trên bản redesign: số vàng/kim cương dài không bị cắt */
+.coin-pill b { max-width: 6.5rem; }
