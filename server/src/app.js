@@ -9,6 +9,9 @@ import {
   GOODS,
   itemInfo,
   CHICKEN,
+  ANIMALS,
+  FEED_ITEM,
+  BARN_UPGRADE_GOLD,
   MILL,
   START_PLOTS,
   EXPANSIONS,
@@ -159,6 +162,26 @@ export function buildApp({ config, db, logger = true }) {
       .run(JSON.stringify(d.counters), userId, d.day);
   }
 
+  // ---- Chuồng trại: cột cấp theo loại ------------------------------------
+  const BARN_COL = { ga: 'coop_level', bo: 'cow_level', cuu: 'sheep_level' };
+  function barnLevel(f, kind) {
+    return f[BARN_COL[kind]] || 1;
+  }
+  function barnView(f, kind) {
+    const a = ANIMALS[kind];
+    const lv = barnLevel(f, kind);
+    const count = db.prepare('SELECT COUNT(*) c FROM animals WHERE owner_id = ? AND kind = ?').get(f.user_id, kind).c;
+    return {
+      kind,
+      level: lv,
+      capacity: a.capacities[lv - 1],
+      count,
+      next: lv < a.capacities.length
+        ? { level: lv + 1, capacity: a.capacities[lv], gold: BARN_UPGRADE_GOLD[lv - 1] }
+        : null,
+    };
+  }
+
   // ---- Năng lượng (hồi lười: tính khi đọc/tiêu) ---------------------------
   function energyStep() {
     return scaleMs(ENERGY.regenMs, config.fast);
@@ -282,13 +305,8 @@ export function buildApp({ config, db, logger = true }) {
         chestClaimed: !!d.chest_claimed,
       },
       energy: energyView(f0),
-      coop: {
-        level: f.coop_level,
-        capacity: COOP_LEVELS[f.coop_level - 1],
-        next: f.coop_level < COOP_LEVELS.length
-          ? { level: f.coop_level + 1, capacity: COOP_LEVELS[f.coop_level], gold: COOP_UPGRADE_GOLD[f.coop_level - 1] }
-          : null,
-      },
+      coop: barnView(f0, 'ga'),
+      barns: { ga: barnView(f0, 'ga'), bo: barnView(f0, 'bo'), cuu: barnView(f0, 'cuu') },
       pond: {
         level: f.pond_level,
         fishPerCast: POND_LEVELS[f.pond_level - 1],
@@ -355,6 +373,8 @@ export function buildApp({ config, db, logger = true }) {
             crops: Object.fromEntries(Object.entries(CROPS).map(([k, c]) => [k, { ...c, growMs: scaleMs(c.growMs, config.fast) }])),
             goods: GOODS,
             chicken: { ...CHICKEN, produceMs: scaleMs(CHICKEN.produceMs, config.fast) },
+            animals: Object.fromEntries(Object.entries(ANIMALS).map(([k, a]) => [k, { ...a, produceMs: scaleMs(a.produceMs, config.fast) }])),
+            barnUpgradeGold: BARN_UPGRADE_GOLD,
             mill: {
               ...MILL,
               recipes: Object.fromEntries(
@@ -537,31 +557,37 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       // ---- Chuồng gà ----
-      api.post('/buy-chicken', async (request, reply) => {
+      async function buyAnimal(request, reply, kind) {
+        const a = ANIMALS[kind];
         const me = request.farmer;
-        if (levelFor(me.xp) < CHICKEN.level) return reply.code(400).send({ error: 'level_too_low' });
-        const count = db.prepare('SELECT COUNT(*) c FROM animals WHERE owner_id = ?').get(me.user_id).c;
-        if (count >= COOP_LEVELS[me.coop_level - 1]) return reply.code(400).send({ error: 'coop_full' });
-        if (me.gold < CHICKEN.price) return reply.code(400).send({ error: 'not_enough_gold' });
+        if (!a) return reply.code(400).send({ error: 'bad_request' });
+        if (levelFor(me.xp) < a.level) return reply.code(400).send({ error: 'level_too_low' });
+        const count = db.prepare('SELECT COUNT(*) c FROM animals WHERE owner_id = ? AND kind = ?').get(me.user_id, kind).c;
+        if (count >= a.capacities[barnLevel(me, kind) - 1]) return reply.code(400).send({ error: 'coop_full' });
+        if (me.gold < a.price) return reply.code(400).send({ error: 'not_enough_gold' });
         db.transaction(() => {
-          grant(me.user_id, { gold: -CHICKEN.price });
-          db.prepare('INSERT INTO animals (owner_id, kind) VALUES (?, ?)').run(me.user_id, 'ga');
+          grant(me.user_id, { gold: -a.price });
+          db.prepare('INSERT INTO animals (owner_id, kind) VALUES (?, ?)').run(me.user_id, kind);
         })();
-        logEvent(`🐔 ${me.name} đón một chú gà mới về chuồng`);
+        logEvent(`${a.emoji} ${me.name} đón một chú ${a.name} mới về chuồng`);
         return { me: fresh(me.user_id) };
-      });
+      }
+      api.post('/buy-animal', async (request, reply) => buyAnimal(request, reply, request.body?.kind));
+      api.post('/buy-chicken', async (request, reply) => buyAnimal(request, reply, 'ga'));
 
       api.post('/feed', async (request, reply) => {
         const me = request.farmer;
-        const hungry = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND ready_at IS NULL').all(me.user_id);
+        const kind = ANIMALS[request.body?.kind] ? request.body.kind : 'ga';
+        const a = ANIMALS[kind];
+        const hungry = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND kind = ? AND ready_at IS NULL').all(me.user_id, kind);
         if (hungry.length === 0) return reply.code(400).send({ error: 'no_hungry_animal' });
-        const canFeed = Math.min(hungry.length, Math.floor(invQty(me.user_id, CHICKEN.feedItem) / CHICKEN.feedQty));
+        const canFeed = Math.min(hungry.length, Math.floor(invQty(me.user_id, FEED_ITEM) / a.feedQty));
         if (canFeed === 0) return reply.code(400).send({ error: 'not_enough_feed' });
-        const readyAt = Date.now() + scaleMs(CHICKEN.produceMs, config.fast);
+        const readyAt = Date.now() + scaleMs(a.produceMs, config.fast);
         db.transaction(() => {
-          invTake(me.user_id, CHICKEN.feedItem, canFeed * CHICKEN.feedQty);
+          invTake(me.user_id, FEED_ITEM, canFeed * a.feedQty);
           const upd = db.prepare('UPDATE animals SET ready_at = ? WHERE id = ?');
-          for (const a of hungry.slice(0, canFeed)) upd.run(readyAt, a.id);
+          for (const row of hungry.slice(0, canFeed)) upd.run(readyAt, row.id);
           bumpQuest(me.user_id, 'feed', canFeed);
         })();
         return { me: fresh(me.user_id), fed: canFeed };
@@ -569,18 +595,20 @@ export function buildApp({ config, db, logger = true }) {
 
       api.post('/collect', async (request, reply) => {
         const me = request.farmer;
+        const kind = ANIMALS[request.body?.kind] ? request.body.kind : 'ga';
+        const a = ANIMALS[kind];
         const now = Date.now();
-        const ready = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND ready_at IS NOT NULL AND ready_at <= ?')
-          .all(me.user_id, now);
+        const ready = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND kind = ? AND ready_at IS NOT NULL AND ready_at <= ?')
+          .all(me.user_id, kind, now);
         if (ready.length === 0) return reply.code(400).send({ error: 'nothing_ready' });
         db.transaction(() => {
-          for (const a of ready) {
-            invAdd(me.user_id, CHICKEN.product, 1);
-            grant(me.user_id, { xp: CHICKEN.expCollect });
-            db.prepare('UPDATE animals SET ready_at = NULL WHERE id = ?').run(a.id);
+          for (const row of ready) {
+            invAdd(me.user_id, a.product, 1);
+            grant(me.user_id, { xp: a.expCollect });
+            db.prepare('UPDATE animals SET ready_at = NULL WHERE id = ?').run(row.id);
           }
         })();
-        return { me: fresh(me.user_id), collected: ready.length };
+        return { me: fresh(me.user_id), collected: ready.length, product: a.product };
       });
 
       // ---- Cối xay ----
@@ -779,18 +807,23 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       // ---- Nâng cấp chuồng gà / ao cá ----
-      api.post('/upgrade-coop', async (request, reply) => {
+      async function upgradeBarn(request, reply, kind) {
+        const a = ANIMALS[kind];
         const me = request.farmer;
-        if (me.coop_level >= COOP_LEVELS.length) return reply.code(400).send({ error: 'max_level' });
-        const gold = COOP_UPGRADE_GOLD[me.coop_level - 1];
+        if (!a) return reply.code(400).send({ error: 'bad_request' });
+        const lv = barnLevel(me, kind);
+        if (lv >= a.capacities.length) return reply.code(400).send({ error: 'max_level' });
+        const gold = BARN_UPGRADE_GOLD[lv - 1];
         if (me.gold < gold) return reply.code(400).send({ error: 'not_enough_gold' });
         db.transaction(() => {
           grant(me.user_id, { gold: -gold });
-          db.prepare('UPDATE farmers SET coop_level = coop_level + 1 WHERE user_id = ?').run(me.user_id);
+          db.prepare(`UPDATE farmers SET ${BARN_COL[kind]} = ${BARN_COL[kind]} + 1 WHERE user_id = ?`).run(me.user_id);
         })();
-        logEvent(`🐔 ${me.name} nâng chuồng gà lên cấp ${me.coop_level + 1}`);
+        logEvent(`${a.emoji} ${me.name} nâng chuồng ${a.name} lên cấp ${lv + 1}`);
         return { me: fresh(me.user_id) };
-      });
+      }
+      api.post('/upgrade-barn', async (request, reply) => upgradeBarn(request, reply, request.body?.kind));
+      api.post('/upgrade-coop', async (request, reply) => upgradeBarn(request, reply, 'ga'));
 
       api.post('/upgrade-pond', async (request, reply) => {
         const me = request.farmer;

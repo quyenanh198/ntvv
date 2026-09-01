@@ -1563,3 +1563,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   -moz-appearance: textfield; appearance: textfield;
 }
 .qty-input::-webkit-outer-spin-button, .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Chuồng bò trên scene */
+.sb-cowbarn { right: 34%; bottom: 2.5%; width: 11%; z-index: 6; }
+.sb--locked { opacity: 0.55; filter: grayscale(0.4); }

@@ -25,6 +25,8 @@ export const GOODS = {
   trung:   { id: 'trung',   name: 'Trứng',       emoji: '🥚', sell: 28,  source: 'ga' },
   botmi:   { id: 'botmi',   name: 'Bột mì',      emoji: '🥡', sell: 32,  source: 'coixay' },
   thucan:  { id: 'thucan',  name: 'Thức ăn gà',  emoji: '🌰', sell: 0,   source: 'shop', buy: 12 },
+  sua:     { id: 'sua',     name: 'Sữa',         emoji: '🥛', sell: 82,  source: 'bo' },
+  len:     { id: 'len',     name: 'Len',         emoji: '🧶', sell: 145, source: 'cuu' },
   canho:   { id: 'canho',   name: 'Cá nhỏ',      emoji: '🐟', sell: 35,  source: 'ho', expCatch: 12 },
   caro:    { id: 'caro',    name: 'Cá rô',       emoji: '🐠', sell: 95,  source: 'ho', expCatch: 18 },
   cachep:  { id: 'cachep',  name: 'Cá chép',     emoji: '🐡', sell: 180, source: 'ho', expCatch: 40 },
@@ -35,17 +37,17 @@ export function itemInfo(id) {
   return CROPS[id] || GOODS[id] || null;
 }
 
-// ---- Vật nuôi (mục 7 — MVP: gà) -------------------------------------------
-export const CHICKEN = {
-  level: 3,
-  price: 250,
-  capacity: 3, // chuồng cấp 1
-  produceMs: 15 * MIN,
-  feedItem: 'thucan',
-  feedQty: 1,
-  product: 'trung',
-  expCollect: 8,
+// ---- Vật nuôi (mục 7.1) — gà/bò/cừu, chuồng riêng từng loại (mục 9.4) ------
+// capacities: sức chứa chuồng cấp 1..5. Tất cả ăn chung 'thucan'.
+export const ANIMALS = {
+  ga:  { id: 'ga',  name: 'Gà',  emoji: '🐔', level: 3,  price: 250,  produceMs: 15 * MIN, feedQty: 1, product: 'trung', expCollect: 8,  capacities: [3, 4, 6, 8, 10] },
+  bo:  { id: 'bo',  name: 'Bò',  emoji: '🐄', level: 8,  price: 850,  produceMs: 45 * MIN, feedQty: 2, product: 'sua',   expCollect: 16, capacities: [2, 3, 4, 6, 8] },
+  cuu: { id: 'cuu', name: 'Cừu', emoji: '🐑', level: 14, price: 1400, produceMs: 60 * MIN, feedQty: 3, product: 'len',   expCollect: 22, capacities: [2, 3, 4, 6, 8] },
 };
+export const FEED_ITEM = 'thucan';
+export const BARN_UPGRADE_GOLD = [1000, 3000, 8000, 20000]; // lên cấp 2..5, mọi chuồng
+// Tương thích ngược cho các chỗ cũ còn tham chiếu gà.
+export const CHICKEN = { ...ANIMALS.ga, capacity: ANIMALS.ga.capacities[0], feedItem: FEED_ITEM };
 
 // ---- Cối xay (mục 8 — MVP) -------------------------------------------------
 export const MILL = {
@@ -104,7 +106,9 @@ export const ORDER_REFRESH_MS = 20 * MIN; // đơn mới sau khi bỏ/giao
 // Sinh một đơn từ các sản phẩm đã mở khóa. rng: () => [0,1).
 export function generateOrder(level, rng) {
   const pool = Object.values(CROPS).filter((c) => c.level <= level).map((c) => c.id);
-  if (level >= CHICKEN.level) pool.push('trung');
+  if (level >= ANIMALS.ga.level) pool.push('trung');
+  if (level >= ANIMALS.bo.level) pool.push('sua');
+  if (level >= ANIMALS.cuu.level) pool.push('len');
   if (level >= FISHING.level) pool.push('canho', 'caro');
   if (level >= MILL.level) pool.push('botmi');
   const kinds = 1 + Math.floor(rng() * Math.min(3, Math.max(1, Math.floor(level / 4) + 1)));

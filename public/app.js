@@ -18,6 +18,7 @@
   const cropSprite = (id, stage) => `assets/crops/${stage === 1 ? 'seed-1' : `${spriteBase(id)}-${stage}`}.svg`;
   const ITEM_ICON = {
     trung: 'assets/ui/egg.svg', botmi: 'assets/ui/flour.svg', thucan: 'assets/art/feed.png',
+    sua: 'assets/ui/milk.svg', len: 'assets/ui/wool.svg',
     canho: 'assets/ui/fish-canho.svg', caro: 'assets/ui/fish-caro.svg', cachep: 'assets/ui/fish-cachep.svg', cakoi: 'assets/ui/fish-cakoi.svg',
   };
   const itemIcon = (id) => ITEM_ICON[id] || cropSprite(id, 3);
@@ -261,7 +262,20 @@
             <img class="sb sb-green" src="assets/pack/greenhouse.png" alt="" />
             <img class="sb sb-tree2" src="assets/pack/tree_02.png" alt="" />
             <span class="sb sb-pen" aria-hidden="true"></span>
-            <img class="sb sb-sheep" src="assets/pack/sheep_adult.png" alt="" />
+            ${m.level >= DATA.config.animals.cuu.level ? `
+              <button class="sb sb-btn sb-sheep" data-barn="cuu" title="Chuồng cừu">
+                <img src="assets/pack/sheep_adult.png" alt="Chuồng cừu" />
+                ${m.animals.some((x) => x.kind === 'cuu' && x.ready) ? '<i class="dot"></i>' : ''}
+                <span class="sb-tag">Chuồng cừu</span>
+              </button>`
+            : `<img class="sb sb-sheep sb--locked" src="assets/pack/sheep_adult.png" alt="" title="Chuồng cừu — cần Lv ${DATA.config.animals.cuu.level}" />`}
+            ${m.level >= DATA.config.animals.bo.level ? `
+              <button class="sb sb-btn sb-cowbarn" data-barn="bo" title="Chuồng bò">
+                <img src="assets/art/cow.png" alt="Chuồng bò" />
+                ${m.animals.some((x) => x.kind === 'bo' && x.ready) ? '<i class="dot"></i>' : ''}
+                <span class="sb-tag">Chuồng bò</span>
+              </button>`
+            : `<img class="sb sb-cowbarn sb--locked" src="assets/art/cow.png" alt="" title="Chuồng bò — cần Lv ${DATA.config.animals.bo.level}" />`}
             <img class="sb sb-pig" src="assets/pack/pig_adult.png" alt="" />
             <img class="sb sb-well" src="assets/pack/well.png" alt="" />
             <img class="sb sb-farmer" src="assets/pack/farmer_female_full.png" alt="" />
@@ -399,8 +413,8 @@
     const m = me();
     const coopUnlocked = m.level >= DATA.config.chicken.level;
     const millUnlocked = m.level >= DATA.config.mill.level;
-    const eggReady = m.animals.some((a) => a.ready);
-    const hungry = m.animals.some((a) => a.ready_at == null);
+    const eggReady = m.animals.some((a) => a.kind === 'ga' && a.ready);
+    const hungry = m.animals.some((a) => a.kind === 'ga' && a.ready_at == null);
     const millDone = m.mill && m.mill.ready;
     if (visiting) {
       return `
@@ -535,8 +549,20 @@
            <img src="assets/art/chicken.png" alt="" />
            <span class="seed-info"><span class="seed-name">Gà mái</span>
              <div class="seed-meta">${DATA.config.chicken.price} ${COIN} · đẻ trứng ${fmtDuration(DATA.config.chicken.produceMs)}/quả · chuồng ${m.animals.length}/${m.coop.capacity}</div></span>
-           <button class="gbtn gbtn--green btn-mini" id="btn-buy-chicken" ${m.animals.length >= m.coop.capacity ? 'disabled' : ''}>Mua gà</button>
+           <button class="gbtn gbtn--green btn-mini" data-buy-animal="ga" ${m.animals.filter((x) => x.kind === 'ga').length >= m.barns.ga.capacity ? 'disabled' : ''}>Mua gà</button>
          </div>` : ''}
+         ${['bo', 'cuu'].map((k) => {
+           const a = DATA.config.animals[k];
+           if (m.level < a.level) return `<div class="inv-row"><img src="${k === 'bo' ? 'assets/art/cow.png' : 'assets/art/sheep.png'}" alt="" /><span class="seed-info"><span class="seed-name">${a.name}</span><div class="seed-meta">🔒 Mở ở cấp ${a.level}</div></span></div>`;
+           const herd = m.animals.filter((x) => x.kind === k).length;
+           const info = itemInfo(a.product);
+           return `<div class="inv-row">
+             <img src="${k === 'bo' ? 'assets/art/cow.png' : 'assets/art/sheep.png'}" alt="" />
+             <span class="seed-info"><span class="seed-name">${a.name}</span>
+               <div class="seed-meta">${a.price.toLocaleString('vi')} ${COIN} · ${info.name} ${info.emoji} mỗi ${fmtDuration(a.produceMs)} · chuồng ${herd}/${m.barns[k].capacity}</div></span>
+             <button class="gbtn gbtn--green btn-mini" data-buy-animal="${k}" ${herd >= m.barns[k].capacity ? 'disabled' : ''}>Mua</button>
+           </div>`;
+         }).join('')}
          <p class="sheet-note" style="margin-top:0.6rem">💡 Hạt giống mua ngay lúc gieo (chạm ô đất trống). Giá mới nhất:</p>
          ${seedRows}`,
       );
@@ -586,26 +612,35 @@
       return sheetShell(`🚚 Đơn hàng <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, rows);
     }
 
-    if (t === 'coop') {
-      const ch = DATA.config.chicken;
+    if (t === 'coop' || t === 'barn') {
+      const kind = t === 'coop' ? 'ga' : sheet.kind;
+      const a = DATA.config.animals[kind];
+      const barn = m.barns[kind];
+      const BARN_ART = { ga: 'assets/art/chicken.png', bo: 'assets/art/cow.png', cuu: 'assets/art/sheep.png' };
       const feedQty = m.inventory.thucan || 0;
-      const readyN = m.animals.filter((a) => a.ready).length;
-      const hungryN = m.animals.filter((a) => a.ready_at == null).length;
-      const hens = m.animals.map((a) => `
-        <span class="hen${a.ready ? ' hen--ready' : ''}">
-          <img src="assets/art/chicken.png" alt="" />
-          <small>${a.ready ? '🥚!' : a.ready_at == null ? 'đói' : fmtTime(a.ready_at - Date.now())}</small>
+      const herd = m.animals.filter((x) => x.kind === kind);
+      const readyN = herd.filter((x) => x.ready).length;
+      const hungryN = herd.filter((x) => x.ready_at == null).length;
+      const productInfo = itemInfo(a.product);
+      if (m.level < a.level) {
+        return sheetShell(`${a.emoji} Chuồng ${a.name}`, `<p class="sheet-note">🔒 Mở ở <b>cấp ${a.level}</b> — cày thêm chút nữa nhé!</p>`);
+      }
+      const pens = herd.map((x) => `
+        <span class="hen${x.ready ? ' hen--ready' : ''}">
+          <img src="${BARN_ART[kind]}" alt="" />
+          <small>${x.ready ? `${productInfo.emoji}!` : x.ready_at == null ? 'đói' : fmtTime(x.ready_at - Date.now())}</small>
         </span>`).join('');
       return sheetShell(
-        `🐔 Chuồng gà cấp ${m.coop.level} · ${m.animals.length}/${m.coop.capacity} <span class="sheet-coins"><img class="coin-img" src="assets/ui/feed.svg" alt=""/> ${feedQty}</span>`,
-        `${m.animals.length === 0 ? '<p class="sheet-note">Chưa có gà — mua ở Cửa hàng nhé!</p>' : `<div class="hen-row">${hens}</div>`}
+        `${a.emoji} Chuồng ${a.name} cấp ${barn.level} · ${herd.length}/${barn.capacity} <span class="sheet-coins"><img class="coin-img" src="assets/art/feed.png" alt=""/> ${feedQty}</span>`,
+        `<p class="sheet-note">Mỗi ${a.name.toLowerCase()} ăn ${a.feedQty} 🌰 → ${productInfo.name} ${productInfo.emoji} sau ${fmtDuration(a.produceMs)} (bán ${productInfo.sell} ${COIN}, +${a.expCollect} EXP).</p>
+         ${herd.length === 0 ? `<p class="sheet-note">Chuồng trống — mua ${a.name.toLowerCase()} đầu tiên đi!</p>` : `<div class="hen-row">${pens}</div>`}
          <div class="sheet-actions">
-           ${hungryN ? `<button class="btn gbtn gbtn--green" id="btn-feed" ${feedQty ? '' : 'disabled'}>🌰 Cho ăn (${hungryN} gà đói)</button>` : ''}
-           ${readyN ? `<button class="btn gbtn gbtn--gold" id="btn-collect">🥚 Thu ${readyN} trứng</button>` : ''}
-           ${m.animals.length < m.coop.capacity ? `<button class="btn btn-ghost" id="btn-buy-chicken">＋ Mua gà (${ch.price} vàng)</button>` : ''}
-           ${m.coop.next ? `<button class="btn gbtn gbtn--gold" id="btn-upgrade-coop" ${m.gold >= m.coop.next.gold ? '' : 'disabled'}>⬆️ Nâng chuồng cấp ${m.coop.next.level} (${m.coop.next.capacity} gà) — ${m.coop.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}
+           ${hungryN ? `<button class="btn gbtn gbtn--green" data-feed-kind="${kind}" ${feedQty >= a.feedQty ? '' : 'disabled'}>🌰 Cho ăn (${hungryN} con đói)</button>` : ''}
+           ${readyN ? `<button class="btn gbtn gbtn--gold" data-collect-kind="${kind}">${productInfo.emoji} Thu ${readyN}</button>` : ''}
+           ${herd.length < barn.capacity ? `<button class="btn btn-ghost" data-buy-animal="${kind}">＋ Mua ${a.name} (${a.price.toLocaleString('vi')} vàng)</button>` : ''}
+           ${barn.next ? `<button class="btn gbtn gbtn--gold" data-upgrade-barn="${kind}" ${m.gold >= barn.next.gold ? '' : 'disabled'}>⬆️ Nâng chuồng cấp ${barn.next.level} (${barn.next.capacity} con) — ${barn.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}
          </div>
-         ${!feedQty && hungryN ? '<p class="sheet-note">Hết thức ăn: mua ở Cửa hàng (12 vàng) hoặc xay 2 ngô ở Cối xay (Lv 10).</p>' : ''}`,
+         ${feedQty < a.feedQty && hungryN ? '<p class="sheet-note">Hết thức ăn: mua ở Cửa hàng (12 vàng/túi) hoặc xay 2 ngô ở Cối xay (Lv 10).</p>' : ''}`,
       );
     }
 
@@ -797,7 +832,29 @@
       const r = await run(() => api(path, {}));
       if (r) { updateMe(r); if (after) after(r, e); render(); }
     });
-    simple('btn-feed', '/feed', (r) => toast(`🌰 Đã cho ${r.fed} gà ăn`));
+    document.querySelectorAll('[data-barn]').forEach((el) =>
+      el.addEventListener('click', () => { sheet = { type: 'barn', kind: el.dataset.barn }; render(); }));
+    document.querySelectorAll('[data-feed-kind]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        const r = await run(() => api('/feed', { kind: el.dataset.feedKind }));
+        if (r) { updateMe(r); toast(`🌰 Đã cho ${r.fed} con ăn`); render(); }
+      }));
+    document.querySelectorAll('[data-collect-kind]').forEach((el) =>
+      el.addEventListener('click', async (e) => {
+        const r = await run(() => api('/collect', { kind: el.dataset.collectKind }));
+        if (r) { updateMe(r); floatGain(e.clientX || 200, e.clientY || 300, `<img class="coin-img" src="${itemIcon(r.product)}" alt=""/> +${r.collected}`); render(); }
+      }));
+    document.querySelectorAll('[data-buy-animal]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        const r = await run(() => api('/buy-animal', { kind: el.dataset.buyAnimal }));
+        if (r) { updateMe(r); toast('🎉 Thành viên mới về chuồng!'); render(); }
+      }));
+    document.querySelectorAll('[data-upgrade-barn]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        const k = el.dataset.upgradeBarn;
+        const r = await run(() => api('/upgrade-barn', { kind: k }));
+        if (r) { updateMe(r); toast(`⬆️ Chuồng lên cấp ${r.me.barns[k].level} — chứa ${r.me.barns[k].capacity} con!`); render(); }
+      }));
     simple('btn-collect', '/collect', (r, e) => floatGain(e.clientX || 200, e.clientY || 300, `🥚 +${r.collected}`, `+${r.collected * DATA.config.chicken.expCollect} EXP`));
     simple('btn-buy-chicken', '/buy-chicken', () => toast('🐔 Gà mới về chuồng!'));
     simple('btn-mill-collect', '/mill-collect', () => toast('⚙️ Xong một mẻ!'));
