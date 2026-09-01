@@ -11,6 +11,7 @@
   let pending = false;
   let familyFilter = '';
   let lastLevel = null;
+  let critterTimer = null;
 
   // ---------- sprite ----------
   const SPRITE_ALIAS = { luami: 'lua', dautay: 'dau' };
@@ -21,7 +22,12 @@
     sua: 'assets/ui/milk.svg', len: 'assets/ui/wool.svg',
     canho: 'assets/ui/fish-canho.svg', caro: 'assets/ui/fish-caro.svg', cachep: 'assets/ui/fish-cachep.svg', cakoi: 'assets/ui/fish-cakoi.svg',
   };
-  const itemIcon = (id) => ITEM_ICON[id] || cropSprite(id, 3);
+  const itemIcon = (id) => ITEM_ICON[id] || (DATA?.config.crops[id] ? cropSprite(id, 3) : null);
+  const itemImg = (id, cls = '') => {
+    const path = itemIcon(id);
+    if (path) return `<img class="${cls}" src="${path}" alt="" />`;
+    return `<span class="emoji-ic ${cls}">${itemInfo(id)?.emoji || '❔'}</span>`;
+  };
   const COIN = '<img class="coin-img" src="assets/ui/coin.svg" alt="vàng" />';
   const GEM = '<img class="coin-img" src="assets/ui/gem.svg" alt="kim cương" />';
   const STAR = '<img class="coin-img" src="assets/ui/star.svg" alt="sao" />';
@@ -86,6 +92,7 @@
     not_enough_progress: 'Chưa đạt mốc này, cày thêm nhé!',
     not_enough_energy: 'Hết năng lượng — nghỉ tay chút hoặc mua thêm bằng kim cương.',
     energy_full: 'Năng lượng còn đầy mà!',
+    critter_gone: 'Nó chạy mất rồi 😅 — canh lần sau nhé!',
     max_level: 'Đã nâng tối đa rồi!',
   };
 
@@ -452,7 +459,7 @@
     if (inv.length === 0) return '';
     return `
       <button class="quickbar" data-sheet="inventory">
-        ${inv.map(([id, q]) => `<span class="qb-item"><img src="${itemIcon(id)}" alt="" /><b>${q}</b></span>`).join('')}
+        ${inv.map(([id, q]) => `<span class="qb-item">${itemImg(id)}<b>${q}</b></span>`).join('')}
         <span class="qb-more">🎒</span>
       </button>`;
   }
@@ -517,7 +524,7 @@
         : entries.map(([id, q]) => {
             const info = itemInfo(id);
             return `<div class="inv-row" data-item="${id}">
-              <img src="${itemIcon(id)}" alt="" />
+              ${itemImg(id)}
               <span class="seed-info"><span class="seed-name">${info?.name || id}</span>
                 <div class="seed-meta">x${q}${info?.sell ? ` · ${info.sell} ${COIN}/cái` : ' · không bán được'}</div></span>
               ${info?.sell ? `
@@ -600,7 +607,7 @@
             const ok = canDeliver(o);
             const items = Object.entries(o.items).map(([id, q]) => {
               const have = m.inventory[id] || 0;
-              return `<span class="o-item${have >= q ? ' o-item--ok' : ''}"><img src="${itemIcon(id)}" alt="" />${Math.min(have, q)}/${q}</span>`;
+              return `<span class="o-item${have >= q ? ' o-item--ok' : ''}">${itemImg(id)}${Math.min(have, q)}/${q}</span>`;
             }).join('');
             return `<div class="order-card">
               <div class="o-items">${items}</div>
@@ -647,28 +654,37 @@
     }
 
     if (t === 'mill') {
-      const mill = m.mill;
-      const recipes = Object.values(DATA.config.mill.recipes).map((r) => {
-        const haveAll = Object.entries(r.in).every(([id, q]) => (m.inventory[id] || 0) >= q);
-        const ins = Object.entries(r.in).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(' + ');
-        const outs = Object.entries(r.out).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(' + ');
-        return `<button class="seed-row${!haveAll || mill ? ' seed-row--locked' : ''}" data-recipe="${!haveAll || mill ? '' : r.id}">
-          <img class="seed-sprite" src="${itemIcon(Object.keys(r.out)[0])}" alt="" />
-          <span class="seed-info"><span class="seed-name">${r.name}</span>
-            <div class="seed-meta">${ins} → ${outs} · ⏱ ${fmtDuration(r.ms)} · +${r.exp}EXP</div></span>
-          ${haveAll ? '' : '<span class="seed-lock">Thiếu đồ</span>'}
-        </button>`;
+      const blocks = Object.values(DATA.config.machines).map((mc) => {
+        if (m.level < mc.level) {
+          return `<div class="inv-row"><span class="emoji-ic">${mc.emoji}</span>
+            <span class="seed-info"><span class="seed-name">${mc.name}</span><div class="seed-meta">🔒 Mở ở cấp ${mc.level}</div></span></div>`;
+        }
+        const st = m.machines[mc.id];
+        let body = '';
+        if (st) {
+          const r = mc.recipes[st.recipe];
+          const left = st.readyAt - Date.now();
+          body = st.ready
+            ? `<button class="btn gbtn gbtn--gold" data-machine-collect="${mc.id}" style="width:100%">✅ Lấy ${r.name} ${r.emoji}!</button>`
+            : `<p class="sheet-note">${mc.emoji} Đang làm <b>${r.name}</b> — còn ${fmtTime(left)}.
+                 <button class="btn-mini gbtn gbtn--gold" data-machine-speed="${mc.id}">${GEM} ${Math.max(1, Math.ceil(left / 300000))} · Xong ngay</button></p>`;
+        } else {
+          body = Object.values(mc.recipes).map((r) => {
+            const haveAll = Object.entries(r.in).every(([id, q]) => (m.inventory[id] || 0) >= q);
+            const ins = Object.entries(r.in).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(' + ');
+            const outQty = Object.values(r.out)[0];
+            const outInfo = itemInfo(Object.keys(r.out)[0]);
+            return `<button class="seed-row${haveAll ? '' : ' seed-row--locked'}" data-machine-run="${mc.id}" data-recipe="${haveAll ? r.id : ''}">
+              ${itemImg(Object.keys(r.out)[0], 'seed-sprite')}
+              <span class="seed-info"><span class="seed-name">${r.name}</span>
+                <div class="seed-meta">${ins} → ${outQty} ${outInfo?.name || ''} · ⏱ ${fmtDuration(r.ms)} · bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp}EXP</div></span>
+              ${haveAll ? '' : '<span class="seed-lock">Thiếu đồ</span>'}
+            </button>`;
+          }).join('');
+        }
+        return `<div class="machine-block"><h4>${mc.emoji} ${mc.name}</h4>${body}</div>`;
       }).join('');
-      let status = '';
-      if (mill) {
-        const r = DATA.config.mill.recipes[mill.recipe];
-        const left = mill.readyAt - Date.now();
-        status = mill.ready
-          ? `<button class="btn gbtn gbtn--gold" id="btn-mill-collect" style="width:100%">✅ Lấy ${r.name}!</button>`
-          : `<p class="sheet-note">⚙️ Đang xay <b>${r.name}</b> — còn ${fmtTime(left)}.</p>
-             <button class="btn gbtn gbtn--gold" id="btn-speedup-mill" style="width:100%">${GEM} ${Math.max(1, Math.ceil(left / 300000))} · Xong ngay</button>`;
-      }
-      return sheetShell('⚙️ Cối xay bột', `${status}${mill ? '' : recipes}`);
+      return sheetShell('🏭 Khu chế biến', blocks);
     }
 
     if (t === 'expand') {
@@ -698,7 +714,7 @@
       const lootRows = cfg.loot.map((l) => {
         const info = itemInfo(l.id);
         return `<div class="inv-row">
-          <img src="${itemIcon(l.id)}" alt="" />
+          ${itemImg(l.id)}
           <span class="seed-info"><span class="seed-name">${info.name}</span>
             <div class="seed-meta">tỷ lệ ${l.pct}% · bán ${info.sell} ${COIN} · +${info.expCatch} EXP</div></span>
           <span class="seed-cost">${(m.inventory[l.id] || 0)} con</span>
@@ -823,11 +839,21 @@
         if (r) { updateMe(r); sheet = null; if (wasAll) toast(`🌱 Đã gieo ${r.planted} ô!`); render(); }
       }));
 
-    document.querySelectorAll('.seed-row[data-recipe]').forEach((el) =>
+    document.querySelectorAll('[data-machine-run]').forEach((el) =>
       el.addEventListener('click', async () => {
         if (!el.dataset.recipe) return;
-        const r = await run(() => api('/mill', { recipe: el.dataset.recipe }));
+        const r = await run(() => api('/machine-run', { machine: el.dataset.machineRun, recipe: el.dataset.recipe }));
         if (r) { updateMe(r); render(); }
+      }));
+    document.querySelectorAll('[data-machine-collect]').forEach((el) =>
+      el.addEventListener('click', async (e) => {
+        const r = await run(() => api('/machine-collect', { machine: el.dataset.machineCollect }));
+        if (r) { updateMe(r); floatGain(e.clientX || 200, e.clientY || 300, `${itemImg(r.product, 'coin-img')} +1`); render(); }
+      }));
+    document.querySelectorAll('[data-machine-speed]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        const r = await run(() => api('/speedup', { target: 'machine', kind: el.dataset.machineSpeed }));
+        if (r) { updateMe(r); toast(`💎 -${r.cost} kim cương!`); render(); }
       }));
 
     const simple = (id, path, after) => document.getElementById(id)?.addEventListener('click', async (e) => {
@@ -844,7 +870,7 @@
     document.querySelectorAll('[data-collect-kind]').forEach((el) =>
       el.addEventListener('click', async (e) => {
         const r = await run(() => api('/collect', { kind: el.dataset.collectKind }));
-        if (r) { updateMe(r); floatGain(e.clientX || 200, e.clientY || 300, `<img class="coin-img" src="${itemIcon(r.product)}" alt=""/> +${r.collected}`); render(); }
+        if (r) { updateMe(r); floatGain(e.clientX || 200, e.clientY || 300, `${itemImg(r.product, 'coin-img')} +${r.collected}`); render(); }
       }));
     document.querySelectorAll('[data-buy-animal]').forEach((el) =>
       el.addEventListener('click', async () => {
@@ -873,7 +899,7 @@
         updateMe(r);
         const names = r.caught.map((id) => `${itemInfo(id).name} ${itemInfo(id).emoji}`).join(', ');
         floatGain(e.clientX || innerWidth / 2, e.clientY || innerHeight / 2,
-          r.caught.map((id) => `<img class="coin-img" src="${itemIcon(id)}" alt=""/>`).join('') + ` +${r.caught.length}`,
+          r.caught.map((id) => itemImg(id, 'coin-img')).join('') + ` +${r.caught.length}`,
           `+${r.exp} EXP`);
         toast(`${r.caught.includes('cakoi') ? '🎉 HIẾM! ' : ''}Câu được ${names}!`);
         render();
@@ -962,7 +988,7 @@
         const r = await run(() => api('/harvest', { idx }));
         if (r) {
           updateMe(r);
-          if (c) floatGain(x, y, `<img class="coin-img" src="${itemIcon(c.id)}" alt=""/> +1`, `+${c.expHarvest} EXP`);
+          if (c) floatGain(x, y, `${itemImg(c.id, 'coin-img')} +1`, `+${c.expHarvest} EXP`);
           render();
         }
       } else if (kind === 'water') {
@@ -993,6 +1019,7 @@
         VISIT = { ownerId: VISIT.ownerId, farm: r.farm, myActs: r.myActs };
       }
       render();
+      scheduleCritter();
     } catch { /* gate/waking đã render */ }
   }
 
@@ -1023,6 +1050,39 @@
       if (img && img.getAttribute('src') !== want) img.setAttribute('src', want);
     });
   }, 1000);
+
+  // ---------- con vật may mắn ----------
+  function scheduleCritter() {
+    if (critterTimer) { clearTimeout(critterTimer); critterTimer = null; }
+    const c = DATA?.me?.critter;
+    if (!c) return;
+    const now = Date.now();
+    if (now > c.at + c.windowMs) return;
+    const delay = Math.max(0, c.at - now);
+    critterTimer = setTimeout(() => spawnCritter(c), delay);
+  }
+  function spawnCritter(c) {
+    if (document.querySelector('.critter')) return;
+    const runMs = Math.min(c.windowMs, 5000 + Math.random() * 5000);
+    const el = document.createElement('button');
+    el.className = 'critter';
+    el.textContent = c.kind;
+    el.style.animationDuration = `${runMs}ms`;
+    el.title = 'Tóm lấy!';
+    el.addEventListener('click', async (e) => {
+      el.disabled = true;
+      const r = await run(() => api('/critter-catch', {}));
+      el.remove();
+      if (r) {
+        updateMe(r);
+        floatGain(e.clientX, e.clientY, `💎 +${r.gems}`, '✨');
+        toast(`✨ Tóm được ${r.kind} — +${r.gems} kim cương!`);
+        render();
+      }
+    });
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), runMs + 400);
+  }
 
   setInterval(() => {
     if (document.visibilityState === 'visible' && !sheet && !showLb) refresh();

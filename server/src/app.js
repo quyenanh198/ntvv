@@ -10,6 +10,9 @@ import {
   itemInfo,
   CHICKEN,
   ANIMALS,
+  MACHINES,
+  CRITTER,
+  critterKindFor,
   FEED_ITEM,
   BARN_UPGRADE_GOLD,
   MILL,
@@ -299,6 +302,24 @@ export function buildApp({ config, db, logger = true }) {
       mill: mill && mill.recipe
         ? { recipe: mill.recipe, readyAt: mill.ready_at, ready: Date.now() >= mill.ready_at }
         : null,
+      machines: (() => {
+        const out = {};
+        for (const row of db.prepare('SELECT * FROM machines WHERE owner_id = ?').all(f.user_id)) {
+          if (row.recipe) out[row.kind] = { recipe: row.recipe, readyAt: row.ready_at, ready: Date.now() >= row.ready_at };
+        }
+        return out;
+      })(),
+      critter: (() => {
+        const now = Date.now();
+        const gapMin = scaleMs(CRITTER.minGapMs, config.fast);
+        const gapMax = scaleMs(CRITTER.maxGapMs, config.fast);
+        let at = f.critter_next_at;
+        if (!at || now > at + CRITTER.windowMs + CRITTER.graceMs) {
+          at = now + gapMin + Math.floor(Math.random() * (gapMax - gapMin));
+          db.prepare('UPDATE farmers SET critter_next_at = ? WHERE user_id = ?').run(at, f.user_id);
+        }
+        return { at, windowMs: CRITTER.windowMs, kind: critterKindFor(at) };
+      })(),
       orders: db.prepare('SELECT id, slot, items_json, gold, exp, stars FROM orders WHERE owner_id = ? ORDER BY slot').all(f.user_id)
         .map((o) => ({ id: o.id, slot: o.slot, items: JSON.parse(o.items_json), gold: o.gold, exp: o.exp, stars: o.stars })),
       daily: {
@@ -407,6 +428,10 @@ export function buildApp({ config, db, logger = true }) {
                 Object.entries(MILL.recipes).map(([k, r]) => [k, { ...r, ms: scaleMs(r.ms, config.fast) }]),
               ),
             },
+            machines: Object.fromEntries(Object.entries(MACHINES).map(([mk, m2]) => [mk, {
+              ...m2,
+              recipes: Object.fromEntries(Object.entries(m2.recipes).map(([rk, r]) => [rk, { ...r, ms: scaleMs(r.ms, config.fast) }])),
+            }])),
             orderUnlockLevel: ORDER_UNLOCK_LEVEL,
             fishing: {
               ...FISHING,
@@ -638,13 +663,13 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       // ---- Cối xay ----
-      api.post('/mill', async (request, reply) => {
-        const { recipe: recipeId } = request.body ?? {};
-        const recipe = MILL.recipes[recipeId];
+      async function machineRun(request, reply, machineId, recipeId) {
+        const machine = MACHINES[machineId];
+        const recipe = machine?.recipes[recipeId];
         const me = request.farmer;
-        if (!recipe) return reply.code(400).send({ error: 'bad_request' });
-        if (levelFor(me.xp) < MILL.level) return reply.code(400).send({ error: 'level_too_low' });
-        const cur = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(me.user_id, 'coixay');
+        if (!machine || !recipe) return reply.code(400).send({ error: 'bad_request' });
+        if (levelFor(me.xp) < machine.level) return reply.code(400).send({ error: 'level_too_low' });
+        const cur = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(me.user_id, machineId);
         if (cur && cur.recipe) return reply.code(400).send({ error: 'mill_busy' });
         for (const [item, qty] of Object.entries(recipe.in)) {
           if (invQty(me.user_id, item) < qty) return reply.code(400).send({ error: 'not_enough_items' });
@@ -652,27 +677,54 @@ export function buildApp({ config, db, logger = true }) {
         db.transaction(() => {
           for (const [item, qty] of Object.entries(recipe.in)) invTake(me.user_id, item, qty);
           db.prepare(`
-            INSERT INTO machines (owner_id, kind, recipe, ready_at) VALUES (?, 'coixay', ?, ?)
+            INSERT INTO machines (owner_id, kind, recipe, ready_at) VALUES (?, ?, ?, ?)
             ON CONFLICT(owner_id, kind) DO UPDATE SET recipe = excluded.recipe, ready_at = excluded.ready_at
-          `).run(me.user_id, recipeId, Date.now() + scaleMs(recipe.ms, config.fast));
+          `).run(me.user_id, machineId, recipeId, Date.now() + scaleMs(recipe.ms, config.fast));
         })();
         return { me: fresh(me.user_id) };
-      });
+      }
 
-      api.post('/mill-collect', async (request, reply) => {
+      async function machineCollect(request, reply, machineId) {
+        const machine = MACHINES[machineId];
         const me = request.farmer;
-        const cur = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(me.user_id, 'coixay');
+        if (!machine) return reply.code(400).send({ error: 'bad_request' });
+        const cur = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(me.user_id, machineId);
         if (!cur || !cur.recipe) return reply.code(400).send({ error: 'mill_empty' });
         if (Date.now() < cur.ready_at) return reply.code(400).send({ error: 'not_ready' });
-        const recipe = MILL.recipes[cur.recipe];
+        const recipe = machine.recipes[cur.recipe];
         db.transaction(() => {
           for (const [item, qty] of Object.entries(recipe.out)) invAdd(me.user_id, item, qty);
           grant(me.user_id, { xp: recipe.exp });
-          db.prepare('UPDATE machines SET recipe = NULL, ready_at = NULL WHERE owner_id = ? AND kind = ?').run(me.user_id, 'coixay');
+          db.prepare('UPDATE machines SET recipe = NULL, ready_at = NULL WHERE owner_id = ? AND kind = ?').run(me.user_id, machineId);
           bumpQuest(me.user_id, 'process');
           bumpFest(me.user_id, 'process');
         })();
-        return { me: fresh(me.user_id) };
+        return { me: fresh(me.user_id), product: Object.keys(recipe.out)[0] };
+      }
+
+      api.post('/machine-run', async (request, reply) => machineRun(request, reply, request.body?.machine, request.body?.recipe));
+      api.post('/machine-collect', async (request, reply) => machineCollect(request, reply, request.body?.machine));
+      api.post('/mill', async (request, reply) => machineRun(request, reply, 'coixay', request.body?.recipe));
+      api.post('/mill-collect', async (request, reply) => machineCollect(request, reply, 'coixay'));
+
+      // ---- Con vật may mắn: bấm trúng ăn kim cương ----
+      api.post('/critter-catch', async (request, reply) => {
+        const me = request.farmer;
+        const now = Date.now();
+        const at = me.critter_next_at;
+        if (!at || now < at || now > at + CRITTER.windowMs + CRITTER.graceMs) {
+          return reply.code(400).send({ error: 'critter_gone' });
+        }
+        const gems = CRITTER.gemMin + Math.floor(Math.random() * (CRITTER.gemMax - CRITTER.gemMin + 1));
+        const gapMin = scaleMs(CRITTER.minGapMs, config.fast);
+        const gapMax = scaleMs(CRITTER.maxGapMs, config.fast);
+        const next = now + gapMin + Math.floor(Math.random() * (gapMax - gapMin));
+        db.transaction(() => {
+          grant(me.user_id, { gems });
+          db.prepare('UPDATE farmers SET critter_next_at = ? WHERE user_id = ?').run(next, me.user_id);
+        })();
+        logEvent(`✨ ${me.name} tóm được ${critterKindFor(at)} may mắn — +${gems} kim cương!`);
+        return { me: fresh(me.user_id), gems, kind: critterKindFor(at) };
       });
 
       // ---- Đơn hàng ----
@@ -777,15 +829,16 @@ export function buildApp({ config, db, logger = true }) {
           })();
           return { me: fresh(me.user_id), cost };
         }
-        if (target === 'mill') {
-          const cur = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(me.user_id, 'coixay');
+        if (target === 'mill' || target === 'machine') {
+          const mk = target === 'machine' && MACHINES[request.body?.kind] ? request.body.kind : 'coixay';
+          const cur = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(me.user_id, mk);
           if (!cur || !cur.recipe || now >= cur.ready_at) return reply.code(400).send({ error: 'not_processing' });
           remaining = cur.ready_at - now;
           const cost = speedupCost(remaining);
           if (me.gems < cost) return reply.code(400).send({ error: 'not_enough_gems' });
           db.transaction(() => {
             grant(me.user_id, { gems: -cost });
-            db.prepare('UPDATE machines SET ready_at = ? WHERE owner_id = ? AND kind = ?').run(now, me.user_id, 'coixay');
+            db.prepare('UPDATE machines SET ready_at = ? WHERE owner_id = ? AND kind = ?').run(now, me.user_id, mk);
           })();
           return { me: fresh(me.user_id), cost };
         }

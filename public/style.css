@@ -1592,3 +1592,28 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   }
   .family-block .family-member { width: 100%; }
 }
+
+/* Khu chế biến + emoji icon + con vật may mắn */
+.emoji-ic { display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; line-height: 1; }
+.inv-row > .emoji-ic { width: 2.2rem; height: 2.2rem; font-size: 1.7rem; }
+.qb-item .emoji-ic { width: 1.5rem; height: 1.5rem; font-size: 1.15rem; }
+.o-item .emoji-ic { width: 1.3rem; height: 1.3rem; font-size: 1rem; }
+.emoji-ic.seed-sprite { font-size: 1.9rem; }
+.emoji-ic.coin-img { font-size: 1.05em; vertical-align: -0.12em; }
+.machine-block { margin-bottom: 0.8rem; }
+.machine-block h4 { font-weight: 800; font-size: 0.95rem; margin-bottom: 0.4rem; }
+.machine-block .sheet-note .btn-mini { margin-left: 0.4rem; }
+.critter {
+  position: fixed; bottom: 24%; left: -12%;
+  z-index: 90; border: none; background: none; cursor: pointer;
+  font-size: 2.6rem; line-height: 1; padding: 0.4rem;
+  filter: drop-shadow(0 4px 5px rgba(60, 80, 20, 0.35));
+  animation-name: critter-run; animation-timing-function: linear; animation-fill-mode: forwards;
+}
+@keyframes critter-run {
+  0%   { left: -12%; transform: scaleX(-1) translateY(0); }
+  25%  { transform: scaleX(-1) translateY(-9px); }
+  50%  { transform: scaleX(-1) translateY(0); }
+  75%  { transform: scaleX(-1) translateY(-9px); }
+  100% { left: 106%; transform: scaleX(-1) translateY(0); }
+}

@@ -32,6 +32,15 @@ export const GOODS = {
   thucan:  { id: 'thucan',  name: 'Thức ăn gia súc', emoji: '🌰', sell: 0, source: 'shop', buy: 12 },
   sua:     { id: 'sua',     name: 'Sữa',         emoji: '🥛', sell: 82,  source: 'bo' },
   len:     { id: 'len',     name: 'Len',         emoji: '🧶', sell: 145, source: 'cuu' },
+  nuoccarot:  { id: 'nuoccarot',  name: 'Nước ép cà rốt',  emoji: '🥤', sell: 34,   source: 'mayep' },
+  nuocduahau: { id: 'nuocduahau', name: 'Nước ép dưa hấu', emoji: '🍹', sell: 620,  source: 'mayep' },
+  mutdau:     { id: 'mutdau',     name: 'Mứt dâu',         emoji: '🫙', sell: 180,  source: 'noimut' },
+  sotcachua:  { id: 'sotcachua',  name: 'Sốt cà chua',     emoji: '🥫', sell: 140,  source: 'noimut' },
+  phomai:     { id: 'phomai',     name: 'Phô mai',         emoji: '🧀', sell: 220,  source: 'nhamaysua' },
+  banhmi:     { id: 'banhmi',     name: 'Bánh mì trứng',   emoji: '🥖', sell: 100,  source: 'lobanh' },
+  banhbi:     { id: 'banhbi',     name: 'Bánh bí ngô',     emoji: '🥧', sell: 250,  source: 'lobanh' },
+  capherang:  { id: 'capherang',  name: 'Cà phê rang',     emoji: '🫘', sell: 1020, source: 'mayrang' },
+  cuonlen:    { id: 'cuonlen',    name: 'Cuộn len',        emoji: '🧵', sell: 360,  source: 'xuongdet' },
   canho:   { id: 'canho',   name: 'Cá nhỏ',      emoji: '🐟', sell: 35,  source: 'ho', expCatch: 12 },
   caro:    { id: 'caro',    name: 'Cá rô',       emoji: '🐠', sell: 95,  source: 'ho', expCatch: 18 },
   cachep:  { id: 'cachep',  name: 'Cá chép',     emoji: '🐡', sell: 180, source: 'ho', expCatch: 40 },
@@ -55,13 +64,35 @@ export const BARN_UPGRADE_GOLD = [1000, 3000, 8000, 20000]; // lên cấp 2..5, 
 export const CHICKEN = { ...ANIMALS.ga, capacity: ANIMALS.ga.capacities[0], feedItem: FEED_ITEM };
 
 // ---- Cối xay (mục 8 — MVP) -------------------------------------------------
-export const MILL = {
-  level: 10,
-  recipes: {
-    botmi:  { id: 'botmi',  name: 'Bột mì',     emoji: '🥡', in: { luami: 2 }, out: { botmi: 1 },  ms: 10 * MIN, exp: 10 },
-    thucan: { id: 'thucan', name: 'Thức ăn gà', emoji: '🌰', in: { ngo: 2 },   out: { thucan: 3 }, ms: 8 * MIN,  exp: 8 },
-  },
+export const MACHINES = {
+  coixay: { id: 'coixay', name: 'Cối xay bột', emoji: '⚙️', level: 10, recipes: {
+    botmi:  { id: 'botmi',  name: 'Bột mì', emoji: '🥡', in: { luami: 2 }, out: { botmi: 1 },  ms: 10 * MIN, exp: 10 },
+    thucan: { id: 'thucan', name: 'Thức ăn gia súc', emoji: '🌰', in: { ngo: 2 }, out: { thucan: 3 }, ms: 8 * MIN, exp: 8 },
+  } },
+  mayep: { id: 'mayep', name: 'Máy ép nước', emoji: '🧃', level: 12, recipes: {
+    nuoccarot:  { id: 'nuoccarot',  name: 'Nước ép cà rốt',  emoji: '🥤', in: { carot: 2 },  out: { nuoccarot: 1 },  ms: 20 * MIN, exp: 18 },
+    nuocduahau: { id: 'nuocduahau', name: 'Nước ép dưa hấu', emoji: '🍹', in: { duahau: 2 }, out: { nuocduahau: 1 }, ms: 70 * MIN, exp: 105 },
+  } },
+  noimut: { id: 'noimut', name: 'Nồi mứt', emoji: '🍯', level: 13, recipes: {
+    mutdau:    { id: 'mutdau',    name: 'Mứt dâu',     emoji: '🫙', in: { dautay: 2 }, out: { mutdau: 1 },    ms: 35 * MIN, exp: 32 },
+    sotcachua: { id: 'sotcachua', name: 'Sốt cà chua', emoji: '🥫', in: { cachua: 2 }, out: { sotcachua: 1 }, ms: 30 * MIN, exp: 28 },
+  } },
+  nhamaysua: { id: 'nhamaysua', name: 'Nhà máy sữa', emoji: '🧀', level: 15, recipes: {
+    phomai: { id: 'phomai', name: 'Phô mai', emoji: '🧀', in: { sua: 2 }, out: { phomai: 1 }, ms: 50 * MIN, exp: 52 },
+  } },
+  lobanh: { id: 'lobanh', name: 'Lò bánh', emoji: '🥖', level: 17, recipes: {
+    banhmi: { id: 'banhmi', name: 'Bánh mì trứng', emoji: '🥖', in: { botmi: 1, trung: 1 }, out: { banhmi: 1 }, ms: 45 * MIN, exp: 45 },
+    banhbi: { id: 'banhbi', name: 'Bánh bí ngô',   emoji: '🥧', in: { bingo: 1, botmi: 1 }, out: { banhbi: 1 }, ms: 90 * MIN, exp: 88 },
+  } },
+  mayrang: { id: 'mayrang', name: 'Máy rang cà phê', emoji: '🫘', level: 23, recipes: {
+    capherang: { id: 'capherang', name: 'Cà phê rang', emoji: '🫘', in: { caphe: 2 }, out: { capherang: 1 }, ms: 120 * MIN, exp: 180 },
+  } },
+  xuongdet: { id: 'xuongdet', name: 'Xưởng dệt', emoji: '🧵', level: 25, recipes: {
+    cuonlen: { id: 'cuonlen', name: 'Cuộn len', emoji: '🧵', in: { len: 2 }, out: { cuonlen: 1 }, ms: 150 * MIN, exp: 150 },
+  } },
 };
+// Tương thích ngược: cối xay là máy đầu tiên.
+export const MILL = MACHINES.coixay;
 
 // ---- Đất ------------------------------------------------------------------
 export const START_PLOTS = 12;
@@ -205,6 +236,20 @@ export function rollFish(rng) {
     if (r < 0) return l.id;
   }
   return FISHING.loot[0].id;
+}
+
+// ---- Con vật may mắn: chạy ngang vườn ~mỗi tiếng, bấm trúng ăn kim cương ---
+export const CRITTER = {
+  kinds: ['🐇', '🐿️', '🦆', '🐈'],
+  minGapMs: 35 * MIN,
+  maxGapMs: 75 * MIN,
+  windowMs: 10_000,
+  graceMs: 3_000,
+  gemMin: 1,
+  gemMax: 3,
+};
+export function critterKindFor(at) {
+  return CRITTER.kinds[Math.abs(at) % CRITTER.kinds.length];
 }
 
 // ---- Sự kiện cá nhân: Lễ Hội Thu Hoạch (mục 12.2, chu kỳ 7 ngày) ----------
