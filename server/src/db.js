@@ -123,6 +123,8 @@ export function openDb(dataDir) {
   if (!cols.includes('pond_level')) db.exec('ALTER TABLE farmers ADD COLUMN pond_level INTEGER NOT NULL DEFAULT 1');
   if (!cols.includes('cow_level')) db.exec('ALTER TABLE farmers ADD COLUMN cow_level INTEGER NOT NULL DEFAULT 1');
   if (!cols.includes('sheep_level')) db.exec('ALTER TABLE farmers ADD COLUMN sheep_level INTEGER NOT NULL DEFAULT 1');
+  const pcols = db.prepare('PRAGMA table_info(plots)').all().map((c) => c.name);
+  if (!pcols.includes('poached')) db.exec('ALTER TABLE plots ADD COLUMN poached INTEGER NOT NULL DEFAULT 0');
   return db;
 }
 

@@ -30,11 +30,13 @@ import {
   STAR_MILESTONES,
   POACH_DAILY_LIMIT,
   POACH_EXP,
+  POACH_YIELD,
   WATER_HELPER_GOLD,
   WATER_HELPER_EXP,
   WATER_FRESH_EXP,
   FESTIVAL,
   festivalCycle,
+  GOLD_MULT,
   ENERGY,
   FISHING,
   rollFish,
@@ -263,6 +265,7 @@ export function buildApp({ config, db, logger = true }) {
         readyAt: r.ready_at,
         ready: now >= r.ready_at,
         watered: !!r.watered,
+        poached: !!r.poached,
       });
     }
     return out;
@@ -299,7 +302,7 @@ export function buildApp({ config, db, logger = true }) {
       orders: db.prepare('SELECT id, slot, items_json, gold, exp, stars FROM orders WHERE owner_id = ? ORDER BY slot').all(f.user_id)
         .map((o) => ({ id: o.id, slot: o.slot, items: JSON.parse(o.items_json), gold: o.gold, exp: o.exp, stars: o.stars })),
       daily: {
-        quests: DAILY_QUESTS.map((q) => ({ ...q, progress: Math.min(q.target, d.counters[q.id] || 0) })),
+        quests: DAILY_QUESTS.map((q) => ({ ...q, gold: q.gold * GOLD_MULT, progress: Math.min(q.target, d.counters[q.id] || 0) })),
         done: questsDone,
         required: DAILY_CHEST.questsRequired,
         chestClaimed: !!d.chest_claimed,
@@ -322,6 +325,7 @@ export function buildApp({ config, db, logger = true }) {
           daysLeft: f.daysLeft,
           milestones: FESTIVAL.milestones.map((ms) => ({
             ...ms,
+            gold: (ms.gold || 0) * GOLD_MULT,
             progress: Math.min(ms.target, f.counters[ms.type] || 0),
             claimed: f.claims.includes(ms.id),
           })),
@@ -341,7 +345,27 @@ export function buildApp({ config, db, logger = true }) {
     'INSERT INTO plot_actions (owner_id, idx, planted_at, helper_id, action, at) VALUES (?, ?, ?, ?, ?, ?)',
   );
 
+  // Gia súc tự ăn khi trong kho còn đủ thức ăn (yêu cầu nhà mình):
+  // chạy mỗi lần chính chủ hành động/đọc state; vẫn tính vào quest cho ăn.
+  function autoFeed(userId) {
+    const hungry = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND ready_at IS NULL').all(userId);
+    if (hungry.length === 0) return;
+    let fed = 0;
+    const now = Date.now();
+    db.transaction(() => {
+      for (const row of hungry) {
+        const a = ANIMALS[row.kind];
+        if (!a || invQty(userId, FEED_ITEM) < a.feedQty) continue;
+        invTake(userId, FEED_ITEM, a.feedQty);
+        db.prepare('UPDATE animals SET ready_at = ? WHERE id = ?').run(now + scaleMs(a.produceMs, config.fast), row.id);
+        fed += 1;
+      }
+      if (fed) bumpQuest(userId, 'feed', fed);
+    })();
+  }
+
   function fresh(userId) {
+    autoFeed(userId);
     return farmerView(getFarmer.get(userId));
   }
 
@@ -370,8 +394,8 @@ export function buildApp({ config, db, logger = true }) {
           me: fresh(request.farmer.user_id),
           family,
           config: {
-            crops: Object.fromEntries(Object.entries(CROPS).map(([k, c]) => [k, { ...c, growMs: scaleMs(c.growMs, config.fast) }])),
-            goods: GOODS,
+            crops: Object.fromEntries(Object.entries(CROPS).map(([k, c]) => [k, { ...c, sell: c.sell * GOLD_MULT, growMs: scaleMs(c.growMs, config.fast) }])),
+            goods: Object.fromEntries(Object.entries(GOODS).map(([k, x]) => [k, { ...x, sell: x.sell * GOLD_MULT }])),
             chicken: { ...CHICKEN, produceMs: scaleMs(CHICKEN.produceMs, config.fast) },
             animals: Object.fromEntries(Object.entries(ANIMALS).map(([k, a]) => [k, { ...a, produceMs: scaleMs(a.produceMs, config.fast) }])),
             barnUpgradeGold: BARN_UPGRADE_GOLD,
@@ -387,7 +411,7 @@ export function buildApp({ config, db, logger = true }) {
               loot: FISHING.loot.map((l) => ({ ...l, pct: Math.round((l.weight / FISHING.loot.reduce((a, x) => a + x.weight, 0)) * 100) })),
             },
             energy: ENERGY,
-            starMilestones: STAR_MILESTONES,
+            starMilestones: STAR_MILESTONES.map((m2) => ({ ...m2, gold: (m2.gold || 0) * GOLD_MULT })),
             poachDailyLimit: POACH_DAILY_LIMIT,
             fast: config.fast,
           },
@@ -449,7 +473,7 @@ export function buildApp({ config, db, logger = true }) {
         const crop = CROPS[plot.crop];
         const xp = crop.expHarvest + (plot.watered ? WATER_FRESH_EXP : 0);
         grant(me.user_id, { xp });
-        invAdd(me.user_id, crop.id, 1);
+        if (!plot.poached) invAdd(me.user_id, crop.id, 1);
         db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, plot.idx);
         bumpQuest(me.user_id, 'harvest');
         bumpFest(me.user_id, 'harvest');
@@ -497,7 +521,7 @@ export function buildApp({ config, db, logger = true }) {
         db.transaction(() => {
           db.prepare('UPDATE plots SET watered = 1 WHERE owner_id = ? AND idx = ?').run(ownerId, idx);
           markAction.run(ownerId, idx, plot.planted_at, me.user_id, 'water', Date.now());
-          if (ownerId !== me.user_id) grant(me.user_id, { gold: WATER_HELPER_GOLD, xp: WATER_HELPER_EXP });
+          if (ownerId !== me.user_id) grant(me.user_id, { gold: WATER_HELPER_GOLD * GOLD_MULT, xp: WATER_HELPER_EXP });
         })();
         if (ownerId !== me.user_id) logEvent(`💧 ${me.name} tưới giúp ruộng của ${owner.name}`);
         if (ownerId === me.user_id) return { me: fresh(me.user_id) };
@@ -513,19 +537,18 @@ export function buildApp({ config, db, logger = true }) {
         const plot = owner && getPlot.get(ownerId, idx);
         if (!plot) return reply.code(400).send({ error: 'no_plot' });
         if (Date.now() < plot.ready_at) return reply.code(400).send({ error: 'not_ready' });
-        if (hasAction.get(ownerId, idx, plot.planted_at, me.user_id, 'poach')) {
-          return reply.code(400).send({ error: 'already_poached' });
-        }
+        if (plot.poached) return reply.code(400).send({ error: 'already_poached' });
         const d = getDaily(me.user_id);
         const crop = CROPS[plot.crop];
         db.transaction(() => {
           markAction.run(ownerId, idx, plot.planted_at, me.user_id, 'poach', Date.now());
-          invAdd(me.user_id, crop.id, 1);
-          grant(me.user_id, { xp: POACH_EXP });
+          db.prepare('UPDATE plots SET poached = 1 WHERE owner_id = ? AND idx = ?').run(ownerId, idx);
+          invAdd(me.user_id, crop.id, POACH_YIELD);
+          grant(me.user_id, { xp: POACH_EXP * POACH_YIELD });
           db.prepare('UPDATE daily SET poached = poached + 1 WHERE owner_id = ? AND day = ?').run(me.user_id, d.day);
         })();
-        logEvent(`😋 ${me.name} hái ké ${crop.name} ${crop.emoji} nhà ${owner.name}`);
-        pushTo([ownerId], 'Nông trại vui vẻ 🌾', `😋 ${me.name} vừa hái ké ${crop.name} ${crop.emoji} nhà bạn!`);
+        logEvent(`😋 ${me.name} hái ké ${POACH_YIELD} ${crop.name} ${crop.emoji} nhà ${owner.name}`);
+        pushTo([ownerId], 'Nông trại vui vẻ 🌾', `😋 ${me.name} vừa hái ké ${POACH_YIELD} ${crop.name} ${crop.emoji} nhà bạn!`);
         return visitPayload(request, ownerId);
       });
 
@@ -537,9 +560,10 @@ export function buildApp({ config, db, logger = true }) {
         const n = Math.max(1, Math.min(999, Number(qty) || 1));
         if (!info || !info.sell) return reply.code(400).send({ error: 'bad_request' });
         if (!invTake(me.user_id, item, n)) return reply.code(400).send({ error: 'not_enough_items' });
-        grant(me.user_id, { gold: info.sell * n });
+        const gained = info.sell * n * GOLD_MULT;
+        grant(me.user_id, { gold: gained });
         bumpQuest(me.user_id, 'sell', n);
-        return { me: fresh(me.user_id), gained: info.sell * n };
+        return { me: fresh(me.user_id), gained };
       });
 
       api.post('/buy', async (request, reply) => {
@@ -695,8 +719,8 @@ export function buildApp({ config, db, logger = true }) {
         const gem = Math.random() < DAILY_CHEST.gemChance ? 1 : 0;
         db.transaction(() => {
           // Thưởng từng nhiệm vụ đã xong + rương tổng.
-          for (const q of done) grant(me.user_id, { gold: q.gold, xp: q.exp, stars: q.stars || 0 });
-          grant(me.user_id, { gold: DAILY_CHEST.gold, xp: DAILY_CHEST.exp, gems: gem });
+          for (const q of done) grant(me.user_id, { gold: q.gold * GOLD_MULT, xp: q.exp, stars: q.stars || 0 });
+          grant(me.user_id, { gold: DAILY_CHEST.gold * GOLD_MULT, xp: DAILY_CHEST.exp, gems: gem });
           db.prepare('UPDATE daily SET chest_claimed = 1 WHERE owner_id = ? AND day = ?').run(me.user_id, d.day);
         })();
         logEvent(`🎁 ${me.name} mở rương nhiệm vụ ngày`);
@@ -712,7 +736,7 @@ export function buildApp({ config, db, logger = true }) {
         if (!next) return reply.code(400).send({ error: 'no_milestone' });
         if (me.stars < next.stars) return reply.code(400).send({ error: 'not_enough_stars' });
         db.transaction(() => {
-          grant(me.user_id, { gold: next.gold || 0, gems: next.gems || 0 });
+          grant(me.user_id, { gold: (next.gold || 0) * GOLD_MULT, gems: next.gems || 0 });
           db.prepare('INSERT INTO star_claims (owner_id, milestone) VALUES (?, ?)').run(me.user_id, next.stars);
         })();
         return { me: fresh(me.user_id), claimed: next };
@@ -849,7 +873,7 @@ export function buildApp({ config, db, logger = true }) {
         if (f.claims.includes(ms.id)) return reply.code(400).send({ error: 'already_claimed' });
         if ((f.counters[ms.type] || 0) < ms.target) return reply.code(400).send({ error: 'not_enough_progress' });
         db.transaction(() => {
-          grant(me.user_id, { gold: ms.gold || 0, gems: ms.gems || 0 });
+          grant(me.user_id, { gold: (ms.gold || 0) * GOLD_MULT, gems: ms.gems || 0 });
           f.claims.push(ms.id);
           db.prepare('UPDATE festival SET claims_json = ? WHERE owner_id = ? AND cycle = ?')
             .run(JSON.stringify(f.claims), me.user_id, f.cycle);
@@ -885,7 +909,7 @@ export function buildApp({ config, db, logger = true }) {
           if (!p.crop) continue;
           myActs[p.idx] = {
             watered: p.watered || !!hasAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'water'),
-            poached: !!hasAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'poach'),
+            poached: p.poached,
           };
         }
         return {

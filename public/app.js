@@ -58,7 +58,7 @@
     not_enough_gold: 'Không đủ vàng rồi!',
     not_enough_gems: 'Không đủ kim cương!',
     not_enough_items: 'Trong kho không đủ đồ.',
-    not_enough_feed: 'Hết thức ăn gà — ghé Cửa hàng hoặc xay ngô nhé.',
+    not_enough_feed: 'Hết thức ăn — ghé Cửa hàng hoặc xay ngô nhé.',
     level_too_low: 'Chưa đủ cấp, cày thêm chút nữa!',
     plot_busy: 'Ô này đang có cây rồi.',
     not_ready: 'Chưa xong mà, từ từ đã!',
@@ -284,11 +284,13 @@
             <img class="sb sb-logo" src="assets/pack/farm_logo.png" alt="Nông Trại Vui Vẻ" />
           </div>
 
-          <div class="family-search-wrap">
-            <span class="family-search-icon">🔍</span>
-            <input class="family-search" type="search" placeholder="Tìm người nhà…" value="${esc(familyFilter)}" />
+          <div class="family-block">
+            <div class="family-search-wrap">
+              <span class="family-search-icon">🔍</span>
+              <input class="family-search" type="search" placeholder="Tìm người nhà…" value="${esc(familyFilter)}" />
+            </div>
+            <div class="family-strip">${familyStripHtml()}</div>
           </div>
-          <div class="family-strip">${familyStripHtml()}</div>
 
           ${visiting ? `
             <div class="visit-bar">
@@ -378,8 +380,8 @@
         const canPoach = visiting && !acts?.poached;
         return `<button class="plot plot--ready" data-idx="${p.idx}" data-kind="${mine ? 'harvest' : canPoach ? 'poach' : 'ripe'}">
           <img class="crop-sprite crop-sprite--ready" src="${cropSprite(p.crop, 3)}" alt="${c.name}" />
-          <span class="plot-note">${mine ? 'Thu hoạch!' : canPoach ? 'Hái ké!' : 'Chín rồi'}</span>
-          ${p.watered ? '<span class="plot-badge plot-badge--fresh">💧</span>' : ''}
+          <span class="plot-note">${mine ? (p.poached ? 'Bị hái ké 😭' : 'Thu hoạch!') : canPoach ? 'Hái ké!' : 'Chín rồi'}</span>
+          ${p.poached ? '<span class="plot-badge">😋</span>' : p.watered ? '<span class="plot-badge plot-badge--fresh">💧</span>' : ''}
           ${!mine && canPoach ? '<span class="plot-act">😋</span>' : ''}
         </button>`;
       }
@@ -539,7 +541,7 @@
         `🏪 Cửa hàng <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
         `<div class="inv-row">
            <img src="assets/ui/feed.svg" alt="" />
-           <span class="seed-info"><span class="seed-name">Thức ăn gà</span>
+           <span class="seed-info"><span class="seed-name">Thức ăn gia súc</span>
              <div class="seed-meta">${feed.buy} ${COIN}/túi · gà ăn 1 túi cho 1 trứng</div></span>
            <button class="gbtn gbtn--green btn-mini" data-buy="thucan" data-qty="1">Mua 1</button>
            <button class="gbtn gbtn--gold btn-mini" data-buy="thucan" data-qty="10">Mua 10</button>
@@ -632,7 +634,7 @@
         </span>`).join('');
       return sheetShell(
         `${a.emoji} Chuồng ${a.name} cấp ${barn.level} · ${herd.length}/${barn.capacity} <span class="sheet-coins"><img class="coin-img" src="assets/art/feed.png" alt=""/> ${feedQty}</span>`,
-        `<p class="sheet-note">Mỗi ${a.name.toLowerCase()} ăn ${a.feedQty} 🌰 → ${productInfo.name} ${productInfo.emoji} sau ${fmtDuration(a.produceMs)} (bán ${productInfo.sell} ${COIN}, +${a.expCollect} EXP).</p>
+        `<p class="sheet-note">🤖 Tự cho ăn khi kho còn thức ăn. Mỗi ${a.name.toLowerCase()} ăn ${a.feedQty} 🌰 → ${productInfo.name} ${productInfo.emoji} sau ${fmtDuration(a.produceMs)} (bán ${productInfo.sell} ${COIN}, +${a.expCollect} EXP).</p>
          ${herd.length === 0 ? `<p class="sheet-note">Chuồng trống — mua ${a.name.toLowerCase()} đầu tiên đi!</p>` : `<div class="hen-row">${pens}</div>`}
          <div class="sheet-actions">
            ${hungryN ? `<button class="btn gbtn gbtn--green" data-feed-kind="${kind}" ${feedQty >= a.feedQty ? '' : 'disabled'}>🌰 Cho ăn (${hungryN} con đói)</button>` : ''}
@@ -968,7 +970,7 @@
         if (r) { updateMe(r); floatGain(x, y, '💧', `+2 ${COIN}`); render(); }
       } else if (kind === 'poach') {
         const r = await run(() => api('/poach', { ownerId: VISIT.ownerId, idx }));
-        if (r) { updateMe(r); floatGain(x, y, '😋 +1'); render(); }
+        if (r) { updateMe(r); floatGain(x, y, '😋 +2'); render(); }
       } else if (kind === 'growing' || kind === 'ripe') {
         const farm = VISIT ? VISIT.farm : me();
         const p = farm.plots[idx];

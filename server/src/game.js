@@ -24,7 +24,7 @@ export const CROPS = {
 export const GOODS = {
   trung:   { id: 'trung',   name: 'Trứng',       emoji: '🥚', sell: 28,  source: 'ga' },
   botmi:   { id: 'botmi',   name: 'Bột mì',      emoji: '🥡', sell: 32,  source: 'coixay' },
-  thucan:  { id: 'thucan',  name: 'Thức ăn gà',  emoji: '🌰', sell: 0,   source: 'shop', buy: 12 },
+  thucan:  { id: 'thucan',  name: 'Thức ăn gia súc', emoji: '🌰', sell: 0, source: 'shop', buy: 12 },
   sua:     { id: 'sua',     name: 'Sữa',         emoji: '🥛', sell: 82,  source: 'bo' },
   len:     { id: 'len',     name: 'Len',         emoji: '🧶', sell: 145, source: 'cuu' },
   canho:   { id: 'canho',   name: 'Cá nhỏ',      emoji: '🐟', sell: 35,  source: 'ho', expCatch: 12 },
@@ -69,6 +69,9 @@ export const EXPANSIONS = [
   { level: 10, gold: 9000 },
 ];
 export const MAX_PLOTS = START_PLOTS + EXPANSIONS.length * 4;
+
+// Hệ số vàng: mọi nguồn THU vàng nhân 4 (yêu cầu nhà mình — chi phí giữ nguyên).
+export const GOLD_MULT = 4;
 
 // ---- Khởi điểm & tiền tệ (mục 19) -----------------------------------------
 export const START_GOLD = 500;
@@ -122,8 +125,9 @@ export function generateOrder(level, rng) {
     base += itemInfo(id).sell * qty;
   }
   const bonus = 1.1 + rng() * 0.15; // 1,10x – 1,25x
-  const gold = Math.ceil(base * bonus);
-  const exp = Math.min(500, Math.round(30 + 10 * chosen.size + 0.05 * gold));
+  const goldBase = Math.ceil(base * bonus);
+  const gold = goldBase * GOLD_MULT;
+  const exp = Math.min(500, Math.round(30 + 10 * chosen.size + 0.05 * goldBase));
   return { items, gold, exp, stars: chosen.size };
 }
 
@@ -149,8 +153,9 @@ export const STAR_MILESTONES = [
 ];
 
 // ---- Hái ké (bản gia đình của "trộm": chủ ruộng không mất gì) --------------
-export const POACH_DAILY_LIMIT = 10;
-export const POACH_EXP = 1;
+export const POACH_DAILY_LIMIT = 10; // (không còn dùng để chặn)
+export const POACH_EXP = 1;   // mỗi vật phẩm
+export const POACH_YIELD = 2; // số vật phẩm mỗi lần hái ké
 
 // ---- Tưới: không đổi thời gian (mục 6.1) — đánh dấu "Tươi tốt", chủ +1 EXP
 // khi thu; khách tưới giúp nhận công nhỏ.
@@ -162,7 +167,7 @@ export const WATER_FRESH_EXP = 1;
 export const ENERGY = {
   max: 100,
   buyCap: 120,        // thưởng/mua được vượt trần tối đa 20%
-  regenMs: 3 * MIN,   // hồi 1 năng lượng mỗi 3 phút
+  regenMs: 1 * MIN,   // hồi 1 năng lượng mỗi phút
   buyGems: 10,        // gói nhỏ: 10 kim cương = 30 năng lượng
   buyAmount: 30,
 };
