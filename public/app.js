@@ -226,6 +226,11 @@
           <div class="hud-right">
             <button class="coin-pill" data-sheet="inventory" title="Vàng — mở kho để bán đồ">${COIN}<b>${m.gold.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
             <button class="coin-pill coin-pill--gem" data-sheet="stars" title="Kim cương — nhận từ mốc sao và rương">${GEM}<b>${m.gems.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
+            <button class="coin-pill coin-pill--star" data-sheet="stars" title="Sao Nông Trại">${STAR}<b>${m.stars.toLocaleString('vi')}</b>${starReady ? '<i class="dot"></i>' : ''}</button>
+            <span class="hud-rounds">
+              <button class="hud-round" data-sheet="events" title="Bản tin làng">✉️</button>
+              <button class="hud-round" id="btn-lb" title="Bảng xếp hạng">🏆</button>
+            </span>
           </div>
         </header>
 
@@ -233,30 +238,29 @@
           <button class="side-btn" data-sheet="quests">🧾${questsReady ? '<i class="dot"></i>' : ''}<span>Nhiệm vụ</span></button>
           <button class="side-btn" data-sheet="shop">🏪<span>Cửa hàng</span></button>
           <button class="side-btn" data-sheet="inventory">🎒<span>Kho đồ</span></button>
-          <button class="side-btn" data-sheet="events">📰<span>Bản tin</span></button>
-          <button class="side-btn" data-sheet="festival">🎪${festReady ? '<i class="dot"></i>' : ''}<span>Lễ hội</span></button>
         </div>
         <div class="side side-right">
           <button class="side-btn side-btn--gold" id="btn-harvestall"><img src="assets/art/basket.png" alt="" />${m.plots.some((p) => p.crop && p.ready) ? '<i class="dot"></i>' : ''}<span>Thu hoạch</span></button>
           ${m.level >= DATA.config.orderUnlockLevel ? `<button class="side-btn" data-sheet="orders">🚚${ordersReady ? '<i class="dot"></i>' : ''}<span>Đơn hàng</span></button>` : ''}
-          <button class="side-btn" data-sheet="stars">${STAR}${starReady ? '<i class="dot"></i>' : ''}<span>${m.stars} sao</span></button>
-          <button class="side-btn" id="btn-lb">🏆<span>Hạng</span></button>
+          <button class="side-btn" data-sheet="festival">🎪${festReady ? '<i class="dot"></i>' : ''}<span>Sự kiện</span></button>
         </div>
 
         <div class="stage-center">
-          <div class="scene-banner" aria-hidden="true">
+          <div class="scene-banner">
             <div class="sb-hills"></div>
-            <img class="sb sb-house" src="assets/art/house.png" alt="" />
-            <img class="sb sb-tree1" src="assets/art/tree.png" alt="" />
-            <img class="sb sb-barn" src="assets/art/barn.png" alt="" />
-            <img class="sb sb-green" src="assets/art/greenhouse.png" alt="" />
-            <img class="sb sb-tree2" src="assets/art/tree.png" alt="" />
-            <img class="sb sb-mill" src="assets/art/windmill.png" alt="" />
-            <img class="sb sb-cow" src="assets/art/cow.png" alt="" />
-            <img class="sb sb-sheep" src="assets/art/sheep.png" alt="" />
-            <img class="sb sb-pig" src="assets/art/pig.png" alt="" />
-            <img class="sb sb-hen" src="assets/art/chicken.png" alt="" />
-            <img class="sb sb-logo" src="assets/art/logo.png" alt="Nông Trại Vui Vẻ" />
+            <img class="sb sb-house" src="assets/pack/farm_house.png" alt="" />
+            <img class="sb sb-tree1" src="assets/pack/tree_01.png" alt="" />
+            <img class="sb sb-barn" src="assets/pack/red_barn.png" alt="" />
+            <img class="sb sb-green" src="assets/pack/greenhouse.png" alt="" />
+            <img class="sb sb-tree2" src="assets/pack/tree_02.png" alt="" />
+            <span class="sb sb-pen" aria-hidden="true"></span>
+            <img class="sb sb-sheep" src="assets/pack/sheep_adult.png" alt="" />
+            <img class="sb sb-pig" src="assets/pack/pig_adult.png" alt="" />
+            <img class="sb sb-well" src="assets/pack/well.png" alt="" />
+            <img class="sb sb-farmer" src="assets/pack/farmer_female_full.png" alt="" />
+            <img class="sb sb-dog" src="assets/pack/pet_dogs.png" alt="" />
+            ${renderSceneButtons(visiting)}
+            <img class="sb sb-logo" src="assets/pack/farm_logo.png" alt="Nông Trại Vui Vẻ" />
           </div>
 
           <div class="family-search-wrap">
@@ -279,8 +283,10 @@
             <div class="farm-grid" id="grid">${renderPlots(visiting)}</div>
           </div>
 
-          ${!visiting ? renderBuildings() : ''}
         </div>
+
+        <div class="welcome-sign" aria-hidden="true">Chào mừng đến với<br /><b>Nông Trại Vui Vẻ!</b></div>
+        <img class="pond-img" src="assets/pack/fish_pond.png" alt="" aria-hidden="true" />
 
         ${!visiting ? renderQuickbar() : ''}
       </div>
@@ -381,32 +387,41 @@
     return cells.join('');
   }
 
-  function renderBuildings() {
+  // Công trình trong cảnh: chuồng gà, cối xay, sạp chợ — bấm mở sheet tương ứng.
+  function renderSceneButtons(visiting) {
     const m = me();
-    const bits = [];
-    if (m.level >= DATA.config.chicken.level) {
-      const total = m.animals.length;
-      const readyN = m.animals.filter((a) => a.ready).length;
-      const hungry = m.animals.filter((a) => a.ready_at == null).length;
-      bits.push(`
-        <button class="building" data-sheet="coop">
-          <img src="assets/art/chicken.png" alt="" />
-          <span class="b-name">Chuồng gà</span>
-          <span class="b-note">${total === 0 ? 'Chưa có gà' : readyN ? `🥚 ${readyN} trứng chờ!` : hungry ? `${hungry} gà đói` : 'Đang đẻ trứng…'}</span>
-          ${readyN ? '<i class="dot"></i>' : ''}
-        </button>`);
+    const coopUnlocked = m.level >= DATA.config.chicken.level;
+    const millUnlocked = m.level >= DATA.config.mill.level;
+    const eggReady = m.animals.some((a) => a.ready);
+    const hungry = m.animals.some((a) => a.ready_at == null);
+    const millDone = m.mill && m.mill.ready;
+    if (visiting) {
+      return `
+        <img class="sb sb-coop" src="assets/pack/tiny_house.png" alt="" />
+        <img class="sb sb-hen2" src="assets/pack/chicken_brown.png" alt="" />
+        <img class="sb sb-mill" src="assets/pack/windmill.png" alt="" />
+        <img class="sb sb-shop" src="assets/pack/market_shop.png" alt="" />`;
     }
-    if (m.level >= DATA.config.mill.level) {
-      const mill = m.mill;
-      bits.push(`
-        <button class="building" data-sheet="mill">
-          <span class="b-emoji">⚙️</span>
-          <span class="b-name">Cối xay</span>
-          <span class="b-note">${!mill ? 'Đang rảnh' : mill.ready ? 'Xong rồi!' : 'Đang xay…'}</span>
-          ${mill && mill.ready ? '<i class="dot"></i>' : ''}
-        </button>`);
-    }
-    return bits.length ? `<div class="buildings">${bits.join('')}</div>` : '';
+    return `
+      ${coopUnlocked ? `
+        <button class="sb sb-btn sb-coop" data-sheet="coop" title="Chuồng gà">
+          <img src="assets/pack/tiny_house.png" alt="Chuồng gà" />
+          ${eggReady ? '<i class="dot"></i>' : ''}
+          <span class="sb-tag">${eggReady ? '🥚 Trứng!' : hungry ? 'Gà đói' : 'Chuồng gà'}</span>
+        </button>
+        <img class="sb sb-hen2" src="assets/pack/chicken_brown.png" alt="" />`
+      : `<img class="sb sb-coop sb--locked" src="assets/pack/tiny_house.png" alt="" title="Chuồng gà — cần Lv ${DATA.config.chicken.level}" />`}
+      ${millUnlocked ? `
+        <button class="sb sb-btn sb-mill" data-sheet="mill" title="Cối xay">
+          <img src="assets/pack/windmill.png" alt="Cối xay" />
+          ${millDone ? '<i class="dot"></i>' : ''}
+          <span class="sb-tag">${millDone ? '✅ Xong!' : m.mill ? 'Đang xay…' : 'Cối xay'}</span>
+        </button>`
+      : `<img class="sb sb-mill sb--locked" src="assets/pack/windmill.png" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
+      <button class="sb sb-btn sb-shop" data-sheet="shop" title="Cửa hàng">
+        <img src="assets/pack/market_shop.png" alt="Cửa hàng" />
+        <span class="sb-tag">Cửa hàng</span>
+      </button>`;
   }
 
   function renderQuickbar() {

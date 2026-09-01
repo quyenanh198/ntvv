@@ -1,0 +1,3098 @@
+[
+  {
+    "name": "grass_tile",
+    "category": "environment",
+    "bbox": [
+      0,
+      0,
+      68,
+      63
+    ],
+    "file": "png/environment/grass_tile.png",
+    "source_crop": "source_crops/environment/grass_tile.png"
+  },
+  {
+    "name": "dirt_tile",
+    "category": "environment",
+    "bbox": [
+      72,
+      0,
+      66,
+      63
+    ],
+    "file": "png/environment/dirt_tile.png",
+    "source_crop": "source_crops/environment/dirt_tile.png"
+  },
+  {
+    "name": "grass_flowers_tile",
+    "category": "environment",
+    "bbox": [
+      145,
+      0,
+      62,
+      65
+    ],
+    "file": "png/environment/grass_flowers_tile.png",
+    "source_crop": "source_crops/environment/grass_flowers_tile.png"
+  },
+  {
+    "name": "planted_patch_tile",
+    "category": "environment",
+    "bbox": [
+      208,
+      0,
+      59,
+      70
+    ],
+    "file": "png/environment/planted_patch_tile.png",
+    "source_crop": "source_crops/environment/planted_patch_tile.png"
+  },
+  {
+    "name": "water_tile_a",
+    "category": "environment",
+    "bbox": [
+      72,
+      68,
+      67,
+      57
+    ],
+    "file": "png/environment/water_tile_a.png",
+    "source_crop": "source_crops/environment/water_tile_a.png"
+  },
+  {
+    "name": "water_tile_b",
+    "category": "environment",
+    "bbox": [
+      142,
+      70,
+      58,
+      56
+    ],
+    "file": "png/environment/water_tile_b.png",
+    "source_crop": "source_crops/environment/water_tile_b.png"
+  },
+  {
+    "name": "grass_dirt_tile",
+    "category": "environment",
+    "bbox": [
+      0,
+      70,
+      68,
+      56
+    ],
+    "file": "png/environment/grass_dirt_tile.png",
+    "source_crop": "source_crops/environment/grass_dirt_tile.png"
+  },
+  {
+    "name": "fence_short",
+    "category": "environment",
+    "bbox": [
+      208,
+      70,
+      53,
+      59
+    ],
+    "file": "png/environment/fence_short.png",
+    "source_crop": "source_crops/environment/fence_short.png"
+  },
+  {
+    "name": "stone_tile",
+    "category": "environment",
+    "bbox": [
+      0,
+      130,
+      69,
+      60
+    ],
+    "file": "png/environment/stone_tile.png",
+    "source_crop": "source_crops/environment/stone_tile.png"
+  },
+  {
+    "name": "wood_path",
+    "category": "environment",
+    "bbox": [
+      73,
+      131,
+      117,
+      64
+    ],
+    "file": "png/environment/wood_path.png",
+    "source_crop": "source_crops/environment/wood_path.png"
+  },
+  {
+    "name": "flower_patch_a",
+    "category": "environment",
+    "bbox": [
+      0,
+      200,
+      95,
+      50
+    ],
+    "file": "png/environment/flower_patch_a.png",
+    "source_crop": "source_crops/environment/flower_patch_a.png"
+  },
+  {
+    "name": "flower_patch_b",
+    "category": "environment",
+    "bbox": [
+      98,
+      200,
+      92,
+      51
+    ],
+    "file": "png/environment/flower_patch_b.png",
+    "source_crop": "source_crops/environment/flower_patch_b.png"
+  },
+  {
+    "name": "water_tile_c",
+    "category": "environment",
+    "bbox": [
+      0,
+      250,
+      69,
+      48
+    ],
+    "file": "png/environment/water_tile_c.png",
+    "source_crop": "source_crops/environment/water_tile_c.png"
+  },
+  {
+    "name": "fence_vertical",
+    "category": "environment",
+    "bbox": [
+      75,
+      245,
+      51,
+      61
+    ],
+    "file": "png/environment/fence_vertical.png",
+    "source_crop": "source_crops/environment/fence_vertical.png"
+  },
+  {
+    "name": "rocks_small",
+    "category": "environment",
+    "bbox": [
+      135,
+      245,
+      70,
+      57
+    ],
+    "file": "png/environment/rocks_small.png",
+    "source_crop": "source_crops/environment/rocks_small.png"
+  },
+  {
+    "name": "lake_corner",
+    "category": "environment",
+    "bbox": [
+      0,
+      288,
+      180,
+      112
+    ],
+    "file": "png/environment/lake_corner.png",
+    "source_crop": "source_crops/environment/lake_corner.png"
+  },
+  {
+    "name": "rocks_large",
+    "category": "environment",
+    "bbox": [
+      180,
+      300,
+      112,
+      92
+    ],
+    "file": "png/environment/rocks_large.png",
+    "source_crop": "source_crops/environment/rocks_large.png"
+  },
+  {
+    "name": "flowers_red",
+    "category": "environment",
+    "bbox": [
+      292,
+      300,
+      65,
+      60
+    ],
+    "file": "png/environment/flowers_red.png",
+    "source_crop": "source_crops/environment/flowers_red.png"
+  },
+  {
+    "name": "flowers_pink",
+    "category": "environment",
+    "bbox": [
+      356,
+      300,
+      52,
+      60
+    ],
+    "file": "png/environment/flowers_pink.png",
+    "source_crop": "source_crops/environment/flowers_pink.png"
+  },
+  {
+    "name": "flowers_orange",
+    "category": "environment",
+    "bbox": [
+      405,
+      300,
+      57,
+      60
+    ],
+    "file": "png/environment/flowers_orange.png",
+    "source_crop": "source_crops/environment/flowers_orange.png"
+  },
+  {
+    "name": "bench_small",
+    "category": "environment",
+    "bbox": [
+      405,
+      352,
+      61,
+      46
+    ],
+    "file": "png/environment/bench_small.png",
+    "source_crop": "source_crops/environment/bench_small.png"
+  },
+  {
+    "name": "signpost_small",
+    "category": "environment",
+    "bbox": [
+      455,
+      305,
+      45,
+      92
+    ],
+    "file": "png/environment/signpost_small.png",
+    "source_crop": "source_crops/environment/signpost_small.png"
+  },
+  {
+    "name": "lamp_post",
+    "category": "environment",
+    "bbox": [
+      245,
+      175,
+      40,
+      117
+    ],
+    "file": "png/environment/lamp_post.png",
+    "source_crop": "source_crops/environment/lamp_post.png"
+  },
+  {
+    "name": "flower_arch",
+    "category": "environment",
+    "bbox": [
+      330,
+      185,
+      77,
+      117
+    ],
+    "file": "png/environment/flower_arch.png",
+    "source_crop": "source_crops/environment/flower_arch.png"
+  },
+  {
+    "name": "wood_sign",
+    "category": "environment",
+    "bbox": [
+      407,
+      188,
+      73,
+      103
+    ],
+    "file": "png/environment/wood_sign.png",
+    "source_crop": "source_crops/environment/wood_sign.png"
+  },
+  {
+    "name": "bridge_wood",
+    "category": "environment",
+    "bbox": [
+      275,
+      116,
+      75,
+      79
+    ],
+    "file": "png/environment/bridge_wood.png",
+    "source_crop": "source_crops/environment/bridge_wood.png"
+  },
+  {
+    "name": "mailbox_red",
+    "category": "environment",
+    "bbox": [
+      270,
+      255,
+      32,
+      57
+    ],
+    "file": "png/environment/mailbox_red.png",
+    "source_crop": "source_crops/environment/mailbox_red.png"
+  },
+  {
+    "name": "tree_01",
+    "category": "environment",
+    "bbox": [
+      350,
+      0,
+      65,
+      110
+    ],
+    "file": "png/environment/tree_01.png",
+    "source_crop": "source_crops/environment/tree_01.png"
+  },
+  {
+    "name": "tree_02",
+    "category": "environment",
+    "bbox": [
+      405,
+      0,
+      90,
+      118
+    ],
+    "file": "png/environment/tree_02.png",
+    "source_crop": "source_crops/environment/tree_02.png"
+  },
+  {
+    "name": "tree_03",
+    "category": "environment",
+    "bbox": [
+      350,
+      95,
+      62,
+      85
+    ],
+    "file": "png/environment/tree_03.png",
+    "source_crop": "source_crops/environment/tree_03.png"
+  },
+  {
+    "name": "tree_04",
+    "category": "environment",
+    "bbox": [
+      410,
+      90,
+      60,
+      90
+    ],
+    "file": "png/environment/tree_04.png",
+    "source_crop": "source_crops/environment/tree_04.png"
+  },
+  {
+    "name": "tree_05",
+    "category": "environment",
+    "bbox": [
+      337,
+      175,
+      48,
+      50
+    ],
+    "file": "png/environment/tree_05.png",
+    "source_crop": "source_crops/environment/tree_05.png"
+  },
+  {
+    "name": "tree_06",
+    "category": "environment",
+    "bbox": [
+      400,
+      160,
+      70,
+      65
+    ],
+    "file": "png/environment/tree_06.png",
+    "source_crop": "source_crops/environment/tree_06.png"
+  },
+  {
+    "name": "farm_house",
+    "category": "buildings",
+    "bbox": [
+      505,
+      0,
+      215,
+      190
+    ],
+    "file": "png/buildings/farm_house.png",
+    "source_crop": "source_crops/buildings/farm_house.png"
+  },
+  {
+    "name": "market_shop",
+    "category": "buildings",
+    "bbox": [
+      708,
+      0,
+      134,
+      108
+    ],
+    "file": "png/buildings/market_shop.png",
+    "source_crop": "source_crops/buildings/market_shop.png"
+  },
+  {
+    "name": "greenhouse",
+    "category": "buildings",
+    "bbox": [
+      842,
+      0,
+      160,
+      165
+    ],
+    "file": "png/buildings/greenhouse.png",
+    "source_crop": "source_crops/buildings/greenhouse.png"
+  },
+  {
+    "name": "windmill",
+    "category": "buildings",
+    "bbox": [
+      985,
+      0,
+      153,
+      205
+    ],
+    "file": "png/buildings/windmill.png",
+    "source_crop": "source_crops/buildings/windmill.png"
+  },
+  {
+    "name": "red_barn",
+    "category": "buildings",
+    "bbox": [
+      700,
+      92,
+      150,
+      128
+    ],
+    "file": "png/buildings/red_barn.png",
+    "source_crop": "source_crops/buildings/red_barn.png"
+  },
+  {
+    "name": "silo",
+    "category": "buildings",
+    "bbox": [
+      900,
+      105,
+      108,
+      186
+    ],
+    "file": "png/buildings/silo.png",
+    "source_crop": "source_crops/buildings/silo.png"
+  },
+  {
+    "name": "small_house_blue",
+    "category": "buildings",
+    "bbox": [
+      842,
+      172,
+      101,
+      107
+    ],
+    "file": "png/buildings/small_house_blue.png",
+    "source_crop": "source_crops/buildings/small_house_blue.png"
+  },
+  {
+    "name": "storage_shed",
+    "category": "buildings",
+    "bbox": [
+      1000,
+      195,
+      115,
+      93
+    ],
+    "file": "png/buildings/storage_shed.png",
+    "source_crop": "source_crops/buildings/storage_shed.png"
+  },
+  {
+    "name": "well",
+    "category": "buildings",
+    "bbox": [
+      500,
+      208,
+      80,
+      111
+    ],
+    "file": "png/buildings/well.png",
+    "source_crop": "source_crops/buildings/well.png"
+  },
+  {
+    "name": "farm_stall",
+    "category": "buildings",
+    "bbox": [
+      585,
+      190,
+      115,
+      115
+    ],
+    "file": "png/buildings/farm_stall.png",
+    "source_crop": "source_crops/buildings/farm_stall.png"
+  },
+  {
+    "name": "mailbox_house",
+    "category": "buildings",
+    "bbox": [
+      705,
+      210,
+      61,
+      78
+    ],
+    "file": "png/buildings/mailbox_house.png",
+    "source_crop": "source_crops/buildings/mailbox_house.png"
+  },
+  {
+    "name": "tiny_house",
+    "category": "buildings",
+    "bbox": [
+      790,
+      220,
+      70,
+      80
+    ],
+    "file": "png/buildings/tiny_house.png",
+    "source_crop": "source_crops/buildings/tiny_house.png"
+  },
+  {
+    "name": "food_truck",
+    "category": "buildings",
+    "bbox": [
+      675,
+      286,
+      163,
+      114
+    ],
+    "file": "png/buildings/food_truck.png",
+    "source_crop": "source_crops/buildings/food_truck.png"
+  },
+  {
+    "name": "notice_board",
+    "category": "buildings",
+    "bbox": [
+      582,
+      305,
+      96,
+      92
+    ],
+    "file": "png/buildings/notice_board.png",
+    "source_crop": "source_crops/buildings/notice_board.png"
+  },
+  {
+    "name": "bee_house",
+    "category": "buildings",
+    "bbox": [
+      960,
+      300,
+      70,
+      90
+    ],
+    "file": "png/buildings/bee_house.png",
+    "source_crop": "source_crops/buildings/bee_house.png"
+  },
+  {
+    "name": "workshop",
+    "category": "buildings",
+    "bbox": [
+      1010,
+      305,
+      100,
+      93
+    ],
+    "file": "png/buildings/workshop.png",
+    "source_crop": "source_crops/buildings/workshop.png"
+  },
+  {
+    "name": "farmer_male_full",
+    "category": "characters",
+    "bbox": [
+      1118,
+      0,
+      148,
+      255
+    ],
+    "file": "png/characters/farmer_male_full.png",
+    "source_crop": "source_crops/characters/farmer_male_full.png"
+  },
+  {
+    "name": "farmer_female_full",
+    "category": "characters",
+    "bbox": [
+      1260,
+      0,
+      148,
+      255
+    ],
+    "file": "png/characters/farmer_female_full.png",
+    "source_crop": "source_crops/characters/farmer_female_full.png"
+  },
+  {
+    "name": "pet_dogs",
+    "category": "characters",
+    "bbox": [
+      1400,
+      0,
+      136,
+      82
+    ],
+    "file": "png/characters/pet_dogs.png",
+    "source_crop": "source_crops/characters/pet_dogs.png"
+  },
+  {
+    "name": "walk_r1_c1",
+    "category": "characters",
+    "bbox": [
+      1128,
+      260,
+      46,
+      70
+    ],
+    "file": "png/characters/walk_r1_c1.png",
+    "source_crop": "source_crops/characters/walk_r1_c1.png"
+  },
+  {
+    "name": "walk_r1_c2",
+    "category": "characters",
+    "bbox": [
+      1175,
+      260,
+      46,
+      70
+    ],
+    "file": "png/characters/walk_r1_c2.png",
+    "source_crop": "source_crops/characters/walk_r1_c2.png"
+  },
+  {
+    "name": "walk_r1_c3",
+    "category": "characters",
+    "bbox": [
+      1225,
+      260,
+      46,
+      70
+    ],
+    "file": "png/characters/walk_r1_c3.png",
+    "source_crop": "source_crops/characters/walk_r1_c3.png"
+  },
+  {
+    "name": "walk_r1_c4",
+    "category": "characters",
+    "bbox": [
+      1275,
+      260,
+      46,
+      70
+    ],
+    "file": "png/characters/walk_r1_c4.png",
+    "source_crop": "source_crops/characters/walk_r1_c4.png"
+  },
+  {
+    "name": "walk_r1_c5",
+    "category": "characters",
+    "bbox": [
+      1320,
+      260,
+      46,
+      70
+    ],
+    "file": "png/characters/walk_r1_c5.png",
+    "source_crop": "source_crops/characters/walk_r1_c5.png"
+  },
+  {
+    "name": "walk_r1_c6",
+    "category": "characters",
+    "bbox": [
+      1360,
+      260,
+      46,
+      70
+    ],
+    "file": "png/characters/walk_r1_c6.png",
+    "source_crop": "source_crops/characters/walk_r1_c6.png"
+  },
+  {
+    "name": "walk_r2_c1",
+    "category": "characters",
+    "bbox": [
+      1128,
+      325,
+      46,
+      70
+    ],
+    "file": "png/characters/walk_r2_c1.png",
+    "source_crop": "source_crops/characters/walk_r2_c1.png"
+  },
+  {
+    "name": "walk_r2_c2",
+    "category": "characters",
+    "bbox": [
+      1175,
+      325,
+      46,
+      70
+    ],
+    "file": "png/characters/walk_r2_c2.png",
+    "source_crop": "source_crops/characters/walk_r2_c2.png"
+  },
+  {
+    "name": "walk_r2_c3",
+    "category": "characters",
+    "bbox": [
+      1225,
+      325,
+      46,
+      70
+    ],
+    "file": "png/characters/walk_r2_c3.png",
+    "source_crop": "source_crops/characters/walk_r2_c3.png"
+  },
+  {
+    "name": "walk_r2_c4",
+    "category": "characters",
+    "bbox": [
+      1275,
+      325,
+      46,
+      70
+    ],
+    "file": "png/characters/walk_r2_c4.png",
+    "source_crop": "source_crops/characters/walk_r2_c4.png"
+  },
+  {
+    "name": "walk_r2_c5",
+    "category": "characters",
+    "bbox": [
+      1320,
+      325,
+      46,
+      70
+    ],
+    "file": "png/characters/walk_r2_c5.png",
+    "source_crop": "source_crops/characters/walk_r2_c5.png"
+  },
+  {
+    "name": "walk_r2_c6",
+    "category": "characters",
+    "bbox": [
+      1360,
+      325,
+      46,
+      70
+    ],
+    "file": "png/characters/walk_r2_c6.png",
+    "source_crop": "source_crops/characters/walk_r2_c6.png"
+  },
+  {
+    "name": "expression_01",
+    "category": "characters",
+    "bbox": [
+      1410,
+      78,
+      55,
+      58
+    ],
+    "file": "png/characters/expression_01.png",
+    "source_crop": "source_crops/characters/expression_01.png"
+  },
+  {
+    "name": "expression_02",
+    "category": "characters",
+    "bbox": [
+      1467,
+      78,
+      58,
+      58
+    ],
+    "file": "png/characters/expression_02.png",
+    "source_crop": "source_crops/characters/expression_02.png"
+  },
+  {
+    "name": "expression_03",
+    "category": "characters",
+    "bbox": [
+      1410,
+      135,
+      55,
+      58
+    ],
+    "file": "png/characters/expression_03.png",
+    "source_crop": "source_crops/characters/expression_03.png"
+  },
+  {
+    "name": "expression_04",
+    "category": "characters",
+    "bbox": [
+      1467,
+      135,
+      58,
+      58
+    ],
+    "file": "png/characters/expression_04.png",
+    "source_crop": "source_crops/characters/expression_04.png"
+  },
+  {
+    "name": "expression_05",
+    "category": "characters",
+    "bbox": [
+      1410,
+      195,
+      55,
+      58
+    ],
+    "file": "png/characters/expression_05.png",
+    "source_crop": "source_crops/characters/expression_05.png"
+  },
+  {
+    "name": "expression_06",
+    "category": "characters",
+    "bbox": [
+      1467,
+      195,
+      58,
+      58
+    ],
+    "file": "png/characters/expression_06.png",
+    "source_crop": "source_crops/characters/expression_06.png"
+  },
+  {
+    "name": "expression_07",
+    "category": "characters",
+    "bbox": [
+      1410,
+      252,
+      55,
+      58
+    ],
+    "file": "png/characters/expression_07.png",
+    "source_crop": "source_crops/characters/expression_07.png"
+  },
+  {
+    "name": "expression_08",
+    "category": "characters",
+    "bbox": [
+      1467,
+      252,
+      58,
+      58
+    ],
+    "file": "png/characters/expression_08.png",
+    "source_crop": "source_crops/characters/expression_08.png"
+  },
+  {
+    "name": "expression_09",
+    "category": "characters",
+    "bbox": [
+      1410,
+      310,
+      55,
+      58
+    ],
+    "file": "png/characters/expression_09.png",
+    "source_crop": "source_crops/characters/expression_09.png"
+  },
+  {
+    "name": "expression_10",
+    "category": "characters",
+    "bbox": [
+      1467,
+      310,
+      58,
+      58
+    ],
+    "file": "png/characters/expression_10.png",
+    "source_crop": "source_crops/characters/expression_10.png"
+  },
+  {
+    "name": "expression_11",
+    "category": "characters",
+    "bbox": [
+      1410,
+      365,
+      55,
+      58
+    ],
+    "file": "png/characters/expression_11.png",
+    "source_crop": "source_crops/characters/expression_11.png"
+  },
+  {
+    "name": "expression_12",
+    "category": "characters",
+    "bbox": [
+      1467,
+      365,
+      58,
+      58
+    ],
+    "file": "png/characters/expression_12.png",
+    "source_crop": "source_crops/characters/expression_12.png"
+  },
+  {
+    "name": "soil_stage_01",
+    "category": "crops",
+    "bbox": [
+      10,
+      425,
+      60,
+      40
+    ],
+    "file": "png/crops/soil_stage_01.png",
+    "source_crop": "source_crops/crops/soil_stage_01.png"
+  },
+  {
+    "name": "soil_stage_02",
+    "category": "crops",
+    "bbox": [
+      10,
+      470,
+      60,
+      40
+    ],
+    "file": "png/crops/soil_stage_02.png",
+    "source_crop": "source_crops/crops/soil_stage_02.png"
+  },
+  {
+    "name": "soil_stage_03",
+    "category": "crops",
+    "bbox": [
+      10,
+      515,
+      60,
+      40
+    ],
+    "file": "png/crops/soil_stage_03.png",
+    "source_crop": "source_crops/crops/soil_stage_03.png"
+  },
+  {
+    "name": "soil_stage_04",
+    "category": "crops",
+    "bbox": [
+      10,
+      555,
+      60,
+      40
+    ],
+    "file": "png/crops/soil_stage_04.png",
+    "source_crop": "source_crops/crops/soil_stage_04.png"
+  },
+  {
+    "name": "soil_stage_05",
+    "category": "crops",
+    "bbox": [
+      10,
+      595,
+      60,
+      40
+    ],
+    "file": "png/crops/soil_stage_05.png",
+    "source_crop": "source_crops/crops/soil_stage_05.png"
+  },
+  {
+    "name": "soil_stage_06",
+    "category": "crops",
+    "bbox": [
+      10,
+      635,
+      60,
+      40
+    ],
+    "file": "png/crops/soil_stage_06.png",
+    "source_crop": "source_crops/crops/soil_stage_06.png"
+  },
+  {
+    "name": "soil_stage_07",
+    "category": "crops",
+    "bbox": [
+      10,
+      680,
+      60,
+      40
+    ],
+    "file": "png/crops/soil_stage_07.png",
+    "source_crop": "source_crops/crops/soil_stage_07.png"
+  },
+  {
+    "name": "crop_r1_c1",
+    "category": "crops",
+    "bbox": [
+      65,
+      420,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r1_c1.png",
+    "source_crop": "source_crops/crops/crop_r1_c1.png"
+  },
+  {
+    "name": "crop_r1_c2",
+    "category": "crops",
+    "bbox": [
+      105,
+      420,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r1_c2.png",
+    "source_crop": "source_crops/crops/crop_r1_c2.png"
+  },
+  {
+    "name": "crop_r1_c3",
+    "category": "crops",
+    "bbox": [
+      145,
+      420,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r1_c3.png",
+    "source_crop": "source_crops/crops/crop_r1_c3.png"
+  },
+  {
+    "name": "crop_r1_c4",
+    "category": "crops",
+    "bbox": [
+      200,
+      420,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r1_c4.png",
+    "source_crop": "source_crops/crops/crop_r1_c4.png"
+  },
+  {
+    "name": "crop_r1_c5",
+    "category": "crops",
+    "bbox": [
+      250,
+      420,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r1_c5.png",
+    "source_crop": "source_crops/crops/crop_r1_c5.png"
+  },
+  {
+    "name": "crop_r1_c6",
+    "category": "crops",
+    "bbox": [
+      305,
+      420,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r1_c6.png",
+    "source_crop": "source_crops/crops/crop_r1_c6.png"
+  },
+  {
+    "name": "crop_r1_c7",
+    "category": "crops",
+    "bbox": [
+      355,
+      420,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r1_c7.png",
+    "source_crop": "source_crops/crops/crop_r1_c7.png"
+  },
+  {
+    "name": "crop_r1_c8",
+    "category": "crops",
+    "bbox": [
+      405,
+      420,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r1_c8.png",
+    "source_crop": "source_crops/crops/crop_r1_c8.png"
+  },
+  {
+    "name": "crop_r2_c1",
+    "category": "crops",
+    "bbox": [
+      62,
+      470,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r2_c1.png",
+    "source_crop": "source_crops/crops/crop_r2_c1.png"
+  },
+  {
+    "name": "crop_r2_c2",
+    "category": "crops",
+    "bbox": [
+      105,
+      470,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r2_c2.png",
+    "source_crop": "source_crops/crops/crop_r2_c2.png"
+  },
+  {
+    "name": "crop_r2_c3",
+    "category": "crops",
+    "bbox": [
+      152,
+      470,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r2_c3.png",
+    "source_crop": "source_crops/crops/crop_r2_c3.png"
+  },
+  {
+    "name": "crop_r2_c4",
+    "category": "crops",
+    "bbox": [
+      200,
+      470,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r2_c4.png",
+    "source_crop": "source_crops/crops/crop_r2_c4.png"
+  },
+  {
+    "name": "crop_r2_c5",
+    "category": "crops",
+    "bbox": [
+      250,
+      470,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r2_c5.png",
+    "source_crop": "source_crops/crops/crop_r2_c5.png"
+  },
+  {
+    "name": "crop_r2_c6",
+    "category": "crops",
+    "bbox": [
+      305,
+      470,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r2_c6.png",
+    "source_crop": "source_crops/crops/crop_r2_c6.png"
+  },
+  {
+    "name": "crop_r2_c7",
+    "category": "crops",
+    "bbox": [
+      355,
+      470,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r2_c7.png",
+    "source_crop": "source_crops/crops/crop_r2_c7.png"
+  },
+  {
+    "name": "crop_r2_c8",
+    "category": "crops",
+    "bbox": [
+      405,
+      470,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r2_c8.png",
+    "source_crop": "source_crops/crops/crop_r2_c8.png"
+  },
+  {
+    "name": "crop_r3_c1",
+    "category": "crops",
+    "bbox": [
+      62,
+      515,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r3_c1.png",
+    "source_crop": "source_crops/crops/crop_r3_c1.png"
+  },
+  {
+    "name": "crop_r3_c2",
+    "category": "crops",
+    "bbox": [
+      105,
+      515,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r3_c2.png",
+    "source_crop": "source_crops/crops/crop_r3_c2.png"
+  },
+  {
+    "name": "crop_r3_c3",
+    "category": "crops",
+    "bbox": [
+      150,
+      515,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r3_c3.png",
+    "source_crop": "source_crops/crops/crop_r3_c3.png"
+  },
+  {
+    "name": "crop_r3_c4",
+    "category": "crops",
+    "bbox": [
+      200,
+      515,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r3_c4.png",
+    "source_crop": "source_crops/crops/crop_r3_c4.png"
+  },
+  {
+    "name": "crop_r3_c5",
+    "category": "crops",
+    "bbox": [
+      250,
+      515,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r3_c5.png",
+    "source_crop": "source_crops/crops/crop_r3_c5.png"
+  },
+  {
+    "name": "crop_r3_c6",
+    "category": "crops",
+    "bbox": [
+      305,
+      515,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r3_c6.png",
+    "source_crop": "source_crops/crops/crop_r3_c6.png"
+  },
+  {
+    "name": "crop_r3_c7",
+    "category": "crops",
+    "bbox": [
+      355,
+      515,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r3_c7.png",
+    "source_crop": "source_crops/crops/crop_r3_c7.png"
+  },
+  {
+    "name": "crop_r3_c8",
+    "category": "crops",
+    "bbox": [
+      405,
+      515,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r3_c8.png",
+    "source_crop": "source_crops/crops/crop_r3_c8.png"
+  },
+  {
+    "name": "crop_r4_c1",
+    "category": "crops",
+    "bbox": [
+      62,
+      555,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r4_c1.png",
+    "source_crop": "source_crops/crops/crop_r4_c1.png"
+  },
+  {
+    "name": "crop_r4_c2",
+    "category": "crops",
+    "bbox": [
+      105,
+      555,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r4_c2.png",
+    "source_crop": "source_crops/crops/crop_r4_c2.png"
+  },
+  {
+    "name": "crop_r4_c3",
+    "category": "crops",
+    "bbox": [
+      150,
+      555,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r4_c3.png",
+    "source_crop": "source_crops/crops/crop_r4_c3.png"
+  },
+  {
+    "name": "crop_r4_c4",
+    "category": "crops",
+    "bbox": [
+      200,
+      555,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r4_c4.png",
+    "source_crop": "source_crops/crops/crop_r4_c4.png"
+  },
+  {
+    "name": "crop_r4_c5",
+    "category": "crops",
+    "bbox": [
+      250,
+      555,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r4_c5.png",
+    "source_crop": "source_crops/crops/crop_r4_c5.png"
+  },
+  {
+    "name": "crop_r4_c6",
+    "category": "crops",
+    "bbox": [
+      305,
+      555,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r4_c6.png",
+    "source_crop": "source_crops/crops/crop_r4_c6.png"
+  },
+  {
+    "name": "crop_r4_c7",
+    "category": "crops",
+    "bbox": [
+      355,
+      555,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r4_c7.png",
+    "source_crop": "source_crops/crops/crop_r4_c7.png"
+  },
+  {
+    "name": "crop_r4_c8",
+    "category": "crops",
+    "bbox": [
+      405,
+      555,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r4_c8.png",
+    "source_crop": "source_crops/crops/crop_r4_c8.png"
+  },
+  {
+    "name": "crop_r5_c1",
+    "category": "crops",
+    "bbox": [
+      62,
+      600,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r5_c1.png",
+    "source_crop": "source_crops/crops/crop_r5_c1.png"
+  },
+  {
+    "name": "crop_r5_c2",
+    "category": "crops",
+    "bbox": [
+      105,
+      600,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r5_c2.png",
+    "source_crop": "source_crops/crops/crop_r5_c2.png"
+  },
+  {
+    "name": "crop_r5_c3",
+    "category": "crops",
+    "bbox": [
+      150,
+      600,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r5_c3.png",
+    "source_crop": "source_crops/crops/crop_r5_c3.png"
+  },
+  {
+    "name": "crop_r5_c4",
+    "category": "crops",
+    "bbox": [
+      200,
+      600,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r5_c4.png",
+    "source_crop": "source_crops/crops/crop_r5_c4.png"
+  },
+  {
+    "name": "crop_r5_c5",
+    "category": "crops",
+    "bbox": [
+      250,
+      600,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r5_c5.png",
+    "source_crop": "source_crops/crops/crop_r5_c5.png"
+  },
+  {
+    "name": "crop_r5_c6",
+    "category": "crops",
+    "bbox": [
+      305,
+      600,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r5_c6.png",
+    "source_crop": "source_crops/crops/crop_r5_c6.png"
+  },
+  {
+    "name": "crop_r5_c7",
+    "category": "crops",
+    "bbox": [
+      355,
+      600,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r5_c7.png",
+    "source_crop": "source_crops/crops/crop_r5_c7.png"
+  },
+  {
+    "name": "crop_r5_c8",
+    "category": "crops",
+    "bbox": [
+      405,
+      600,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r5_c8.png",
+    "source_crop": "source_crops/crops/crop_r5_c8.png"
+  },
+  {
+    "name": "crop_r6_c1",
+    "category": "crops",
+    "bbox": [
+      62,
+      640,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r6_c1.png",
+    "source_crop": "source_crops/crops/crop_r6_c1.png"
+  },
+  {
+    "name": "crop_r6_c2",
+    "category": "crops",
+    "bbox": [
+      105,
+      640,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r6_c2.png",
+    "source_crop": "source_crops/crops/crop_r6_c2.png"
+  },
+  {
+    "name": "crop_r6_c3",
+    "category": "crops",
+    "bbox": [
+      150,
+      640,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r6_c3.png",
+    "source_crop": "source_crops/crops/crop_r6_c3.png"
+  },
+  {
+    "name": "crop_r6_c4",
+    "category": "crops",
+    "bbox": [
+      200,
+      640,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r6_c4.png",
+    "source_crop": "source_crops/crops/crop_r6_c4.png"
+  },
+  {
+    "name": "crop_r6_c5",
+    "category": "crops",
+    "bbox": [
+      250,
+      640,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r6_c5.png",
+    "source_crop": "source_crops/crops/crop_r6_c5.png"
+  },
+  {
+    "name": "crop_r6_c6",
+    "category": "crops",
+    "bbox": [
+      305,
+      640,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r6_c6.png",
+    "source_crop": "source_crops/crops/crop_r6_c6.png"
+  },
+  {
+    "name": "crop_r6_c7",
+    "category": "crops",
+    "bbox": [
+      355,
+      640,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r6_c7.png",
+    "source_crop": "source_crops/crops/crop_r6_c7.png"
+  },
+  {
+    "name": "crop_r6_c8",
+    "category": "crops",
+    "bbox": [
+      405,
+      640,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r6_c8.png",
+    "source_crop": "source_crops/crops/crop_r6_c8.png"
+  },
+  {
+    "name": "crop_r7_c1",
+    "category": "crops",
+    "bbox": [
+      62,
+      685,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r7_c1.png",
+    "source_crop": "source_crops/crops/crop_r7_c1.png"
+  },
+  {
+    "name": "crop_r7_c2",
+    "category": "crops",
+    "bbox": [
+      105,
+      685,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r7_c2.png",
+    "source_crop": "source_crops/crops/crop_r7_c2.png"
+  },
+  {
+    "name": "crop_r7_c3",
+    "category": "crops",
+    "bbox": [
+      150,
+      685,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r7_c3.png",
+    "source_crop": "source_crops/crops/crop_r7_c3.png"
+  },
+  {
+    "name": "crop_r7_c4",
+    "category": "crops",
+    "bbox": [
+      200,
+      685,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r7_c4.png",
+    "source_crop": "source_crops/crops/crop_r7_c4.png"
+  },
+  {
+    "name": "crop_r7_c5",
+    "category": "crops",
+    "bbox": [
+      250,
+      685,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r7_c5.png",
+    "source_crop": "source_crops/crops/crop_r7_c5.png"
+  },
+  {
+    "name": "crop_r7_c6",
+    "category": "crops",
+    "bbox": [
+      305,
+      685,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r7_c6.png",
+    "source_crop": "source_crops/crops/crop_r7_c6.png"
+  },
+  {
+    "name": "crop_r7_c7",
+    "category": "crops",
+    "bbox": [
+      355,
+      685,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r7_c7.png",
+    "source_crop": "source_crops/crops/crop_r7_c7.png"
+  },
+  {
+    "name": "crop_r7_c8",
+    "category": "crops",
+    "bbox": [
+      405,
+      685,
+      47,
+      45
+    ],
+    "file": "png/crops/crop_r7_c8.png",
+    "source_crop": "source_crops/crops/crop_r7_c8.png"
+  },
+  {
+    "name": "sunflower_large",
+    "category": "crops",
+    "bbox": [
+      392,
+      645,
+      60,
+      100
+    ],
+    "file": "png/crops/sunflower_large.png",
+    "source_crop": "source_crops/crops/sunflower_large.png"
+  },
+  {
+    "name": "apple_tree",
+    "category": "fruit_trees",
+    "bbox": [
+      470,
+      410,
+      100,
+      125
+    ],
+    "file": "png/fruit_trees/apple_tree.png",
+    "source_crop": "source_crops/fruit_trees/apple_tree.png"
+  },
+  {
+    "name": "orange_tree",
+    "category": "fruit_trees",
+    "bbox": [
+      565,
+      410,
+      100,
+      125
+    ],
+    "file": "png/fruit_trees/orange_tree.png",
+    "source_crop": "source_crops/fruit_trees/orange_tree.png"
+  },
+  {
+    "name": "lemon_tree",
+    "category": "fruit_trees",
+    "bbox": [
+      650,
+      410,
+      98,
+      125
+    ],
+    "file": "png/fruit_trees/lemon_tree.png",
+    "source_crop": "source_crops/fruit_trees/lemon_tree.png"
+  },
+  {
+    "name": "peach_tree",
+    "category": "fruit_trees",
+    "bbox": [
+      745,
+      410,
+      95,
+      125
+    ],
+    "file": "png/fruit_trees/peach_tree.png",
+    "source_crop": "source_crops/fruit_trees/peach_tree.png"
+  },
+  {
+    "name": "apple_fruit",
+    "category": "fruit_trees",
+    "bbox": [
+      490,
+      515,
+      50,
+      60
+    ],
+    "file": "png/fruit_trees/apple_fruit.png",
+    "source_crop": "source_crops/fruit_trees/apple_fruit.png"
+  },
+  {
+    "name": "orange_fruit",
+    "category": "fruit_trees",
+    "bbox": [
+      580,
+      515,
+      50,
+      60
+    ],
+    "file": "png/fruit_trees/orange_fruit.png",
+    "source_crop": "source_crops/fruit_trees/orange_fruit.png"
+  },
+  {
+    "name": "lemon_fruit",
+    "category": "fruit_trees",
+    "bbox": [
+      675,
+      515,
+      55,
+      60
+    ],
+    "file": "png/fruit_trees/lemon_fruit.png",
+    "source_crop": "source_crops/fruit_trees/lemon_fruit.png"
+  },
+  {
+    "name": "peach_fruit",
+    "category": "fruit_trees",
+    "bbox": [
+      760,
+      515,
+      55,
+      60
+    ],
+    "file": "png/fruit_trees/peach_fruit.png",
+    "source_crop": "source_crops/fruit_trees/peach_fruit.png"
+  },
+  {
+    "name": "banana_tree",
+    "category": "fruit_trees",
+    "bbox": [
+      465,
+      565,
+      100,
+      135
+    ],
+    "file": "png/fruit_trees/banana_tree.png",
+    "source_crop": "source_crops/fruit_trees/banana_tree.png"
+  },
+  {
+    "name": "coconut_tree",
+    "category": "fruit_trees",
+    "bbox": [
+      560,
+      565,
+      100,
+      135
+    ],
+    "file": "png/fruit_trees/coconut_tree.png",
+    "source_crop": "source_crops/fruit_trees/coconut_tree.png"
+  },
+  {
+    "name": "cherry_tree",
+    "category": "fruit_trees",
+    "bbox": [
+      660,
+      560,
+      90,
+      140
+    ],
+    "file": "png/fruit_trees/cherry_tree.png",
+    "source_crop": "source_crops/fruit_trees/cherry_tree.png"
+  },
+  {
+    "name": "mango_tree",
+    "category": "fruit_trees",
+    "bbox": [
+      750,
+      560,
+      90,
+      140
+    ],
+    "file": "png/fruit_trees/mango_tree.png",
+    "source_crop": "source_crops/fruit_trees/mango_tree.png"
+  },
+  {
+    "name": "banana_bunch",
+    "category": "fruit_trees",
+    "bbox": [
+      480,
+      685,
+      65,
+      63
+    ],
+    "file": "png/fruit_trees/banana_bunch.png",
+    "source_crop": "source_crops/fruit_trees/banana_bunch.png"
+  },
+  {
+    "name": "coconut",
+    "category": "fruit_trees",
+    "bbox": [
+      565,
+      682,
+      70,
+      66
+    ],
+    "file": "png/fruit_trees/coconut.png",
+    "source_crop": "source_crops/fruit_trees/coconut.png"
+  },
+  {
+    "name": "cherries",
+    "category": "fruit_trees",
+    "bbox": [
+      665,
+      680,
+      65,
+      68
+    ],
+    "file": "png/fruit_trees/cherries.png",
+    "source_crop": "source_crops/fruit_trees/cherries.png"
+  },
+  {
+    "name": "orange_single",
+    "category": "fruit_trees",
+    "bbox": [
+      755,
+      680,
+      65,
+      68
+    ],
+    "file": "png/fruit_trees/orange_single.png",
+    "source_crop": "source_crops/fruit_trees/orange_single.png"
+  },
+  {
+    "name": "cow_adult",
+    "category": "animals",
+    "bbox": [
+      835,
+      405,
+      120,
+      95
+    ],
+    "file": "png/animals/cow_adult.png",
+    "source_crop": "source_crops/animals/cow_adult.png"
+  },
+  {
+    "name": "cow_calf",
+    "category": "animals",
+    "bbox": [
+      936,
+      425,
+      68,
+      75
+    ],
+    "file": "png/animals/cow_calf.png",
+    "source_crop": "source_crops/animals/cow_calf.png"
+  },
+  {
+    "name": "pig_adult",
+    "category": "animals",
+    "bbox": [
+      990,
+      405,
+      96,
+      88
+    ],
+    "file": "png/animals/pig_adult.png",
+    "source_crop": "source_crops/animals/pig_adult.png"
+  },
+  {
+    "name": "piglet",
+    "category": "animals",
+    "bbox": [
+      1070,
+      430,
+      75,
+      62
+    ],
+    "file": "png/animals/piglet.png",
+    "source_crop": "source_crops/animals/piglet.png"
+  },
+  {
+    "name": "sheep_adult",
+    "category": "animals",
+    "bbox": [
+      840,
+      500,
+      100,
+      85
+    ],
+    "file": "png/animals/sheep_adult.png",
+    "source_crop": "source_crops/animals/sheep_adult.png"
+  },
+  {
+    "name": "lamb",
+    "category": "animals",
+    "bbox": [
+      930,
+      515,
+      70,
+      65
+    ],
+    "file": "png/animals/lamb.png",
+    "source_crop": "source_crops/animals/lamb.png"
+  },
+  {
+    "name": "chicken_brown",
+    "category": "animals",
+    "bbox": [
+      1000,
+      500,
+      60,
+      75
+    ],
+    "file": "png/animals/chicken_brown.png",
+    "source_crop": "source_crops/animals/chicken_brown.png"
+  },
+  {
+    "name": "chick_yellow_a",
+    "category": "animals",
+    "bbox": [
+      1050,
+      515,
+      40,
+      42
+    ],
+    "file": "png/animals/chick_yellow_a.png",
+    "source_crop": "source_crops/animals/chick_yellow_a.png"
+  },
+  {
+    "name": "goose",
+    "category": "animals",
+    "bbox": [
+      1110,
+      495,
+      50,
+      80
+    ],
+    "file": "png/animals/goose.png",
+    "source_crop": "source_crops/animals/goose.png"
+  },
+  {
+    "name": "bee_a",
+    "category": "animals",
+    "bbox": [
+      1065,
+      565,
+      40,
+      45
+    ],
+    "file": "png/animals/bee_a.png",
+    "source_crop": "source_crops/animals/bee_a.png"
+  },
+  {
+    "name": "beehive",
+    "category": "animals",
+    "bbox": [
+      1090,
+      580,
+      70,
+      80
+    ],
+    "file": "png/animals/beehive.png",
+    "source_crop": "source_crops/animals/beehive.png"
+  },
+  {
+    "name": "horse_adult",
+    "category": "animals",
+    "bbox": [
+      845,
+      585,
+      105,
+      115
+    ],
+    "file": "png/animals/horse_adult.png",
+    "source_crop": "source_crops/animals/horse_adult.png"
+  },
+  {
+    "name": "foal",
+    "category": "animals",
+    "bbox": [
+      935,
+      610,
+      73,
+      90
+    ],
+    "file": "png/animals/foal.png",
+    "source_crop": "source_crops/animals/foal.png"
+  },
+  {
+    "name": "rabbit_a",
+    "category": "animals",
+    "bbox": [
+      1010,
+      575,
+      50,
+      50
+    ],
+    "file": "png/animals/rabbit_a.png",
+    "source_crop": "source_crops/animals/rabbit_a.png"
+  },
+  {
+    "name": "bee_b",
+    "category": "animals",
+    "bbox": [
+      1000,
+      635,
+      40,
+      45
+    ],
+    "file": "png/animals/bee_b.png",
+    "source_crop": "source_crops/animals/bee_b.png"
+  },
+  {
+    "name": "fish_pond",
+    "category": "animals",
+    "bbox": [
+      1000,
+      635,
+      190,
+      125
+    ],
+    "file": "png/animals/fish_pond.png",
+    "source_crop": "source_crops/animals/fish_pond.png"
+  },
+  {
+    "name": "rabbit_babies",
+    "category": "animals",
+    "bbox": [
+      835,
+      690,
+      100,
+      62
+    ],
+    "file": "png/animals/rabbit_babies.png",
+    "source_crop": "source_crops/animals/rabbit_babies.png"
+  },
+  {
+    "name": "chick_white",
+    "category": "animals",
+    "bbox": [
+      930,
+      690,
+      50,
+      62
+    ],
+    "file": "png/animals/chick_white.png",
+    "source_crop": "source_crops/animals/chick_white.png"
+  },
+  {
+    "name": "watering_can",
+    "category": "tools_items",
+    "bbox": [
+      1170,
+      410,
+      60,
+      82
+    ],
+    "file": "png/tools_items/watering_can.png",
+    "source_crop": "source_crops/tools_items/watering_can.png"
+  },
+  {
+    "name": "shovel",
+    "category": "tools_items",
+    "bbox": [
+      1220,
+      405,
+      50,
+      87
+    ],
+    "file": "png/tools_items/shovel.png",
+    "source_crop": "source_crops/tools_items/shovel.png"
+  },
+  {
+    "name": "hoe",
+    "category": "tools_items",
+    "bbox": [
+      1260,
+      405,
+      55,
+      87
+    ],
+    "file": "png/tools_items/hoe.png",
+    "source_crop": "source_crops/tools_items/hoe.png"
+  },
+  {
+    "name": "axe",
+    "category": "tools_items",
+    "bbox": [
+      1300,
+      405,
+      55,
+      87
+    ],
+    "file": "png/tools_items/axe.png",
+    "source_crop": "source_crops/tools_items/axe.png"
+  },
+  {
+    "name": "pickaxe",
+    "category": "tools_items",
+    "bbox": [
+      1345,
+      405,
+      55,
+      87
+    ],
+    "file": "png/tools_items/pickaxe.png",
+    "source_crop": "source_crops/tools_items/pickaxe.png"
+  },
+  {
+    "name": "scythe",
+    "category": "tools_items",
+    "bbox": [
+      1390,
+      405,
+      60,
+      87
+    ],
+    "file": "png/tools_items/scythe.png",
+    "source_crop": "source_crops/tools_items/scythe.png"
+  },
+  {
+    "name": "sickle",
+    "category": "tools_items",
+    "bbox": [
+      1440,
+      405,
+      60,
+      87
+    ],
+    "file": "png/tools_items/sickle.png",
+    "source_crop": "source_crops/tools_items/sickle.png"
+  },
+  {
+    "name": "hammer",
+    "category": "tools_items",
+    "bbox": [
+      1490,
+      405,
+      46,
+      87
+    ],
+    "file": "png/tools_items/hammer.png",
+    "source_crop": "source_crops/tools_items/hammer.png"
+  },
+  {
+    "name": "fishing_rod",
+    "category": "tools_items",
+    "bbox": [
+      1165,
+      480,
+      60,
+      85
+    ],
+    "file": "png/tools_items/fishing_rod.png",
+    "source_crop": "source_crops/tools_items/fishing_rod.png"
+  },
+  {
+    "name": "fishing_float",
+    "category": "tools_items",
+    "bbox": [
+      1210,
+      490,
+      40,
+      68
+    ],
+    "file": "png/tools_items/fishing_float.png",
+    "source_crop": "source_crops/tools_items/fishing_float.png"
+  },
+  {
+    "name": "butterfly_net",
+    "category": "tools_items",
+    "bbox": [
+      1265,
+      480,
+      63,
+      78
+    ],
+    "file": "png/tools_items/butterfly_net.png",
+    "source_crop": "source_crops/tools_items/butterfly_net.png"
+  },
+  {
+    "name": "bucket",
+    "category": "tools_items",
+    "bbox": [
+      1330,
+      485,
+      60,
+      70
+    ],
+    "file": "png/tools_items/bucket.png",
+    "source_crop": "source_crops/tools_items/bucket.png"
+  },
+  {
+    "name": "crate",
+    "category": "tools_items",
+    "bbox": [
+      1410,
+      480,
+      60,
+      70
+    ],
+    "file": "png/tools_items/crate.png",
+    "source_crop": "source_crops/tools_items/crate.png"
+  },
+  {
+    "name": "feed_sack",
+    "category": "tools_items",
+    "bbox": [
+      1470,
+      475,
+      66,
+      80
+    ],
+    "file": "png/tools_items/feed_sack.png",
+    "source_crop": "source_crops/tools_items/feed_sack.png"
+  },
+  {
+    "name": "blue_jug",
+    "category": "tools_items",
+    "bbox": [
+      1170,
+      545,
+      60,
+      65
+    ],
+    "file": "png/tools_items/blue_jug.png",
+    "source_crop": "source_crops/tools_items/blue_jug.png"
+  },
+  {
+    "name": "milk_jar",
+    "category": "tools_items",
+    "bbox": [
+      1225,
+      545,
+      60,
+      65
+    ],
+    "file": "png/tools_items/milk_jar.png",
+    "source_crop": "source_crops/tools_items/milk_jar.png"
+  },
+  {
+    "name": "lantern",
+    "category": "tools_items",
+    "bbox": [
+      1285,
+      545,
+      55,
+      65
+    ],
+    "file": "png/tools_items/lantern.png",
+    "source_crop": "source_crops/tools_items/lantern.png"
+  },
+  {
+    "name": "seed_bag_a",
+    "category": "tools_items",
+    "bbox": [
+      1345,
+      540,
+      55,
+      70
+    ],
+    "file": "png/tools_items/seed_bag_a.png",
+    "source_crop": "source_crops/tools_items/seed_bag_a.png"
+  },
+  {
+    "name": "seed_bag_b",
+    "category": "tools_items",
+    "bbox": [
+      1400,
+      540,
+      55,
+      70
+    ],
+    "file": "png/tools_items/seed_bag_b.png",
+    "source_crop": "source_crops/tools_items/seed_bag_b.png"
+  },
+  {
+    "name": "wheelbarrow",
+    "category": "tools_items",
+    "bbox": [
+      1445,
+      540,
+      91,
+      80
+    ],
+    "file": "png/tools_items/wheelbarrow.png",
+    "source_crop": "source_crops/tools_items/wheelbarrow.png"
+  },
+  {
+    "name": "seed_packet",
+    "category": "tools_items",
+    "bbox": [
+      1170,
+      610,
+      60,
+      65
+    ],
+    "file": "png/tools_items/seed_packet.png",
+    "source_crop": "source_crops/tools_items/seed_packet.png"
+  },
+  {
+    "name": "watering_can_small",
+    "category": "tools_items",
+    "bbox": [
+      1215,
+      610,
+      65,
+      70
+    ],
+    "file": "png/tools_items/watering_can_small.png",
+    "source_crop": "source_crops/tools_items/watering_can_small.png"
+  },
+  {
+    "name": "basket",
+    "category": "tools_items",
+    "bbox": [
+      1280,
+      610,
+      65,
+      70
+    ],
+    "file": "png/tools_items/basket.png",
+    "source_crop": "source_crops/tools_items/basket.png"
+  },
+  {
+    "name": "boots",
+    "category": "tools_items",
+    "bbox": [
+      1345,
+      610,
+      60,
+      70
+    ],
+    "file": "png/tools_items/boots.png",
+    "source_crop": "source_crops/tools_items/boots.png"
+  },
+  {
+    "name": "boots_pair",
+    "category": "tools_items",
+    "bbox": [
+      1395,
+      610,
+      60,
+      70
+    ],
+    "file": "png/tools_items/boots_pair.png",
+    "source_crop": "source_crops/tools_items/boots_pair.png"
+  },
+  {
+    "name": "straw_hat",
+    "category": "tools_items",
+    "bbox": [
+      1450,
+      610,
+      86,
+      70
+    ],
+    "file": "png/tools_items/straw_hat.png",
+    "source_crop": "source_crops/tools_items/straw_hat.png"
+  },
+  {
+    "name": "produce_basket_a",
+    "category": "tools_items",
+    "bbox": [
+      1180,
+      680,
+      65,
+      70
+    ],
+    "file": "png/tools_items/produce_basket_a.png",
+    "source_crop": "source_crops/tools_items/produce_basket_a.png"
+  },
+  {
+    "name": "produce_basket_b",
+    "category": "tools_items",
+    "bbox": [
+      1240,
+      680,
+      70,
+      70
+    ],
+    "file": "png/tools_items/produce_basket_b.png",
+    "source_crop": "source_crops/tools_items/produce_basket_b.png"
+  },
+  {
+    "name": "daisy",
+    "category": "tools_items",
+    "bbox": [
+      1300,
+      680,
+      50,
+      70
+    ],
+    "file": "png/tools_items/daisy.png",
+    "source_crop": "source_crops/tools_items/daisy.png"
+  },
+  {
+    "name": "heart_icon",
+    "category": "tools_items",
+    "bbox": [
+      1340,
+      675,
+      60,
+      75
+    ],
+    "file": "png/tools_items/heart_icon.png",
+    "source_crop": "source_crops/tools_items/heart_icon.png"
+  },
+  {
+    "name": "sparkle_icon",
+    "category": "tools_items",
+    "bbox": [
+      1390,
+      675,
+      60,
+      75
+    ],
+    "file": "png/tools_items/sparkle_icon.png",
+    "source_crop": "source_crops/tools_items/sparkle_icon.png"
+  },
+  {
+    "name": "star_icon",
+    "category": "tools_items",
+    "bbox": [
+      1440,
+      675,
+      60,
+      75
+    ],
+    "file": "png/tools_items/star_icon.png",
+    "source_crop": "source_crops/tools_items/star_icon.png"
+  },
+  {
+    "name": "fence_variant_1",
+    "category": "decorations",
+    "bbox": [
+      0,
+      765,
+      55,
+      60
+    ],
+    "file": "png/decorations/fence_variant_1.png",
+    "source_crop": "source_crops/decorations/fence_variant_1.png"
+  },
+  {
+    "name": "fence_variant_2",
+    "category": "decorations",
+    "bbox": [
+      55,
+      765,
+      55,
+      60
+    ],
+    "file": "png/decorations/fence_variant_2.png",
+    "source_crop": "source_crops/decorations/fence_variant_2.png"
+  },
+  {
+    "name": "fence_variant_3",
+    "category": "decorations",
+    "bbox": [
+      105,
+      765,
+      55,
+      60
+    ],
+    "file": "png/decorations/fence_variant_3.png",
+    "source_crop": "source_crops/decorations/fence_variant_3.png"
+  },
+  {
+    "name": "fence_variant_4",
+    "category": "decorations",
+    "bbox": [
+      155,
+      765,
+      55,
+      60
+    ],
+    "file": "png/decorations/fence_variant_4.png",
+    "source_crop": "source_crops/decorations/fence_variant_4.png"
+  },
+  {
+    "name": "fence_variant_5",
+    "category": "decorations",
+    "bbox": [
+      205,
+      765,
+      55,
+      60
+    ],
+    "file": "png/decorations/fence_variant_5.png",
+    "source_crop": "source_crops/decorations/fence_variant_5.png"
+  },
+  {
+    "name": "flower_planter_a",
+    "category": "decorations",
+    "bbox": [
+      210,
+      760,
+      65,
+      70
+    ],
+    "file": "png/decorations/flower_planter_a.png",
+    "source_crop": "source_crops/decorations/flower_planter_a.png"
+  },
+  {
+    "name": "flower_planter_b",
+    "category": "decorations",
+    "bbox": [
+      270,
+      760,
+      65,
+      70
+    ],
+    "file": "png/decorations/flower_planter_b.png",
+    "source_crop": "source_crops/decorations/flower_planter_b.png"
+  },
+  {
+    "name": "flower_arch_small",
+    "category": "decorations",
+    "bbox": [
+      330,
+      760,
+      70,
+      75
+    ],
+    "file": "png/decorations/flower_arch_small.png",
+    "source_crop": "source_crops/decorations/flower_arch_small.png"
+  },
+  {
+    "name": "hedge",
+    "category": "decorations",
+    "bbox": [
+      0,
+      820,
+      65,
+      45
+    ],
+    "file": "png/decorations/hedge.png",
+    "source_crop": "source_crops/decorations/hedge.png"
+  },
+  {
+    "name": "stone_fence",
+    "category": "decorations",
+    "bbox": [
+      65,
+      820,
+      70,
+      45
+    ],
+    "file": "png/decorations/stone_fence.png",
+    "source_crop": "source_crops/decorations/stone_fence.png"
+  },
+  {
+    "name": "flower_cart",
+    "category": "decorations",
+    "bbox": [
+      135,
+      820,
+      75,
+      45
+    ],
+    "file": "png/decorations/flower_cart.png",
+    "source_crop": "source_crops/decorations/flower_cart.png"
+  },
+  {
+    "name": "flower_box",
+    "category": "decorations",
+    "bbox": [
+      205,
+      820,
+      70,
+      45
+    ],
+    "file": "png/decorations/flower_box.png",
+    "source_crop": "source_crops/decorations/flower_box.png"
+  },
+  {
+    "name": "lamp_small",
+    "category": "decorations",
+    "bbox": [
+      245,
+      810,
+      45,
+      65
+    ],
+    "file": "png/decorations/lamp_small.png",
+    "source_crop": "source_crops/decorations/lamp_small.png"
+  },
+  {
+    "name": "bunting",
+    "category": "decorations",
+    "bbox": [
+      285,
+      815,
+      115,
+      55
+    ],
+    "file": "png/decorations/bunting.png",
+    "source_crop": "source_crops/decorations/bunting.png"
+  },
+  {
+    "name": "stone_fence_2",
+    "category": "decorations",
+    "bbox": [
+      0,
+      865,
+      85,
+      55
+    ],
+    "file": "png/decorations/stone_fence_2.png",
+    "source_crop": "source_crops/decorations/stone_fence_2.png"
+  },
+  {
+    "name": "flower_round",
+    "category": "decorations",
+    "bbox": [
+      80,
+      850,
+      80,
+      75
+    ],
+    "file": "png/decorations/flower_round.png",
+    "source_crop": "source_crops/decorations/flower_round.png"
+  },
+  {
+    "name": "flower_bush_pink",
+    "category": "decorations",
+    "bbox": [
+      155,
+      860,
+      60,
+      65
+    ],
+    "file": "png/decorations/flower_bush_pink.png",
+    "source_crop": "source_crops/decorations/flower_bush_pink.png"
+  },
+  {
+    "name": "flower_bush_orange",
+    "category": "decorations",
+    "bbox": [
+      210,
+      860,
+      60,
+      65
+    ],
+    "file": "png/decorations/flower_bush_orange.png",
+    "source_crop": "source_crops/decorations/flower_bush_orange.png"
+  },
+  {
+    "name": "lamp_tall",
+    "category": "decorations",
+    "bbox": [
+      245,
+      855,
+      45,
+      75
+    ],
+    "file": "png/decorations/lamp_tall.png",
+    "source_crop": "source_crops/decorations/lamp_tall.png"
+  },
+  {
+    "name": "bench",
+    "category": "decorations",
+    "bbox": [
+      280,
+      840,
+      110,
+      80
+    ],
+    "file": "png/decorations/bench.png",
+    "source_crop": "source_crops/decorations/bench.png"
+  },
+  {
+    "name": "fountain",
+    "category": "decorations",
+    "bbox": [
+      0,
+      900,
+      85,
+      105
+    ],
+    "file": "png/decorations/fountain.png",
+    "source_crop": "source_crops/decorations/fountain.png"
+  },
+  {
+    "name": "flower_pot",
+    "category": "decorations",
+    "bbox": [
+      85,
+      915,
+      65,
+      70
+    ],
+    "file": "png/decorations/flower_pot.png",
+    "source_crop": "source_crops/decorations/flower_pot.png"
+  },
+  {
+    "name": "flower_pile",
+    "category": "decorations",
+    "bbox": [
+      145,
+      915,
+      60,
+      70
+    ],
+    "file": "png/decorations/flower_pile.png",
+    "source_crop": "source_crops/decorations/flower_pile.png"
+  },
+  {
+    "name": "produce_cart",
+    "category": "decorations",
+    "bbox": [
+      190,
+      910,
+      70,
+      95
+    ],
+    "file": "png/decorations/produce_cart.png",
+    "source_crop": "source_crops/decorations/produce_cart.png"
+  },
+  {
+    "name": "barrel",
+    "category": "decorations",
+    "bbox": [
+      245,
+      925,
+      45,
+      75
+    ],
+    "file": "png/decorations/barrel.png",
+    "source_crop": "source_crops/decorations/barrel.png"
+  },
+  {
+    "name": "umbrella_table",
+    "category": "decorations",
+    "bbox": [
+      280,
+      920,
+      70,
+      90
+    ],
+    "file": "png/decorations/umbrella_table.png",
+    "source_crop": "source_crops/decorations/umbrella_table.png"
+  },
+  {
+    "name": "bird_bath",
+    "category": "decorations",
+    "bbox": [
+      345,
+      910,
+      65,
+      100
+    ],
+    "file": "png/decorations/bird_bath.png",
+    "source_crop": "source_crops/decorations/bird_bath.png"
+  },
+  {
+    "name": "player_avatar",
+    "category": "ui",
+    "bbox": [
+      410,
+      760,
+      75,
+      70
+    ],
+    "file": "png/ui/player_avatar.png",
+    "source_crop": "source_crops/ui/player_avatar.png"
+  },
+  {
+    "name": "level_bar",
+    "category": "ui",
+    "bbox": [
+      475,
+      760,
+      125,
+      65
+    ],
+    "file": "png/ui/level_bar.png",
+    "source_crop": "source_crops/ui/level_bar.png"
+  },
+  {
+    "name": "heart_bar",
+    "category": "ui",
+    "bbox": [
+      590,
+      760,
+      125,
+      65
+    ],
+    "file": "png/ui/heart_bar.png",
+    "source_crop": "source_crops/ui/heart_bar.png"
+  },
+  {
+    "name": "coin_bar",
+    "category": "ui",
+    "bbox": [
+      710,
+      760,
+      140,
+      65
+    ],
+    "file": "png/ui/coin_bar.png",
+    "source_crop": "source_crops/ui/coin_bar.png"
+  },
+  {
+    "name": "gem_bar",
+    "category": "ui",
+    "bbox": [
+      845,
+      760,
+      110,
+      65
+    ],
+    "file": "png/ui/gem_bar.png",
+    "source_crop": "source_crops/ui/gem_bar.png"
+  },
+  {
+    "name": "coin_crate",
+    "category": "ui",
+    "bbox": [
+      950,
+      755,
+      110,
+      75
+    ],
+    "file": "png/ui/coin_crate.png",
+    "source_crop": "source_crops/ui/coin_crate.png"
+  },
+  {
+    "name": "btn_shop",
+    "category": "ui",
+    "bbox": [
+      410,
+      825,
+      70,
+      95
+    ],
+    "file": "png/ui/btn_shop.png",
+    "source_crop": "source_crops/ui/btn_shop.png"
+  },
+  {
+    "name": "btn_storage",
+    "category": "ui",
+    "bbox": [
+      475,
+      825,
+      75,
+      95
+    ],
+    "file": "png/ui/btn_storage.png",
+    "source_crop": "source_crops/ui/btn_storage.png"
+  },
+  {
+    "name": "btn_quests",
+    "category": "ui",
+    "bbox": [
+      545,
+      825,
+      80,
+      95
+    ],
+    "file": "png/ui/btn_quests.png",
+    "source_crop": "source_crops/ui/btn_quests.png"
+  },
+  {
+    "name": "btn_map",
+    "category": "ui",
+    "bbox": [
+      620,
+      825,
+      80,
+      95
+    ],
+    "file": "png/ui/btn_map.png",
+    "source_crop": "source_crops/ui/btn_map.png"
+  },
+  {
+    "name": "btn_friends",
+    "category": "ui",
+    "bbox": [
+      695,
+      825,
+      85,
+      95
+    ],
+    "file": "png/ui/btn_friends.png",
+    "source_crop": "source_crops/ui/btn_friends.png"
+  },
+  {
+    "name": "btn_settings",
+    "category": "ui",
+    "bbox": [
+      775,
+      825,
+      85,
+      95
+    ],
+    "file": "png/ui/btn_settings.png",
+    "source_crop": "source_crops/ui/btn_settings.png"
+  },
+  {
+    "name": "quest_panel",
+    "category": "ui",
+    "bbox": [
+      855,
+      820,
+      205,
+      195
+    ],
+    "file": "png/ui/quest_panel.png",
+    "source_crop": "source_crops/ui/quest_panel.png"
+  },
+  {
+    "name": "inventory_carrot",
+    "category": "ui",
+    "bbox": [
+      410,
+      925,
+      65,
+      90
+    ],
+    "file": "png/ui/inventory_carrot.png",
+    "source_crop": "source_crops/ui/inventory_carrot.png"
+  },
+  {
+    "name": "inventory_tomato",
+    "category": "ui",
+    "bbox": [
+      470,
+      925,
+      65,
+      90
+    ],
+    "file": "png/ui/inventory_tomato.png",
+    "source_crop": "source_crops/ui/inventory_tomato.png"
+  },
+  {
+    "name": "inventory_eggplant",
+    "category": "ui",
+    "bbox": [
+      530,
+      925,
+      70,
+      90
+    ],
+    "file": "png/ui/inventory_eggplant.png",
+    "source_crop": "source_crops/ui/inventory_eggplant.png"
+  },
+  {
+    "name": "inventory_milk",
+    "category": "ui",
+    "bbox": [
+      595,
+      925,
+      70,
+      90
+    ],
+    "file": "png/ui/inventory_milk.png",
+    "source_crop": "source_crops/ui/inventory_milk.png"
+  },
+  {
+    "name": "inventory_egg",
+    "category": "ui",
+    "bbox": [
+      660,
+      925,
+      75,
+      90
+    ],
+    "file": "png/ui/inventory_egg.png",
+    "source_crop": "source_crops/ui/inventory_egg.png"
+  },
+  {
+    "name": "inventory_fish",
+    "category": "ui",
+    "bbox": [
+      730,
+      925,
+      80,
+      90
+    ],
+    "file": "png/ui/inventory_fish.png",
+    "source_crop": "source_crops/ui/inventory_fish.png"
+  },
+  {
+    "name": "inventory_panel",
+    "category": "ui",
+    "bbox": [
+      405,
+      915,
+      455,
+      109
+    ],
+    "file": "png/ui/inventory_panel.png",
+    "source_crop": "source_crops/ui/inventory_panel.png"
+  },
+  {
+    "name": "farm_map",
+    "category": "map_logo_dialogue",
+    "bbox": [
+      1040,
+      760,
+      265,
+      264
+    ],
+    "file": "png/map_logo_dialogue/farm_map.png",
+    "source_crop": "source_crops/map_logo_dialogue/farm_map.png"
+  },
+  {
+    "name": "dialogue_farmer",
+    "category": "map_logo_dialogue",
+    "bbox": [
+      1300,
+      760,
+      236,
+      90
+    ],
+    "file": "png/map_logo_dialogue/dialogue_farmer.png",
+    "source_crop": "source_crops/map_logo_dialogue/dialogue_farmer.png"
+  },
+  {
+    "name": "dialogue_dog",
+    "category": "map_logo_dialogue",
+    "bbox": [
+      1300,
+      835,
+      236,
+      85
+    ],
+    "file": "png/map_logo_dialogue/dialogue_dog.png",
+    "source_crop": "source_crops/map_logo_dialogue/dialogue_dog.png"
+  },
+  {
+    "name": "farm_logo",
+    "category": "map_logo_dialogue",
+    "bbox": [
+      1290,
+      885,
+      246,
+      139
+    ],
+    "file": "png/map_logo_dialogue/farm_logo.png",
+    "source_crop": "source_crops/map_logo_dialogue/farm_logo.png"
+  },
+  {
+    "name": "reward_star_effects",
+    "category": "map_logo_dialogue",
+    "bbox": [
+      1370,
+      650,
+      166,
+      130
+    ],
+    "file": "png/map_logo_dialogue/reward_star_effects.png",
+    "source_crop": "source_crops/map_logo_dialogue/reward_star_effects.png"
+  }
+]

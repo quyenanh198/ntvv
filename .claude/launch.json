@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "farm-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["dev/dev-farm.mjs"],
+      "port": 8090
+    }
+  ]
+}

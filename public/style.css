@@ -8,8 +8,8 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --sky-top: #75c9f3;
-  --sky-bottom: #e8f7dc;
+  --sky-top: #5fbef2;
+  --sky-bottom: #dff4d2;
   --grass: #86cf4b;
   --grass-2: #6fbd3e;
   --grass-3: #4f972b;
@@ -85,6 +85,57 @@ img { display: block; max-width: 100%; }
   background: radial-gradient(circle, rgba(255,255,225,.95) 0 11%, #ffe577 29%, rgba(255,222,92,.22) 55%, transparent 72%);
   animation: sun-pulse 7s ease-in-out infinite;
 }
+
+/* nền vẽ tay toàn màn: đồi xa mờ + thảm cỏ nhiều lớp + hoa lấm tấm (theo mockup) */
+.hills-far {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: 24%;
+  height: 34%;
+  background:
+    radial-gradient(38% 88% at 14% 100%, #b9e88a 0 62%, transparent 63%),
+    radial-gradient(46% 100% at 52% 100%, #a8e078 0 66%, transparent 67%),
+    radial-gradient(40% 82% at 88% 100%, #b3e484 0 60%, transparent 61%);
+  filter: blur(1px);
+  opacity: .85;
+}
+.ground {
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  bottom: -2%;
+  height: 72%;
+  border-radius: 50% 50% 0 0 / 11% 9% 0 0;
+  background:
+    radial-gradient(3px 3px at 12% 34%, rgba(255, 255, 255, .85) 45%, transparent 55%),
+    radial-gradient(3px 3px at 22% 62%, rgba(255, 227, 122, .8) 45%, transparent 55%),
+    radial-gradient(3px 3px at 33% 44%, rgba(255, 255, 255, .7) 45%, transparent 55%),
+    radial-gradient(4px 4px at 46% 71%, rgba(255, 176, 197, .8) 45%, transparent 55%),
+    radial-gradient(3px 3px at 58% 38%, rgba(255, 255, 255, .75) 45%, transparent 55%),
+    radial-gradient(3px 3px at 67% 58%, rgba(255, 227, 122, .8) 45%, transparent 55%),
+    radial-gradient(4px 4px at 78% 40%, rgba(255, 176, 197, .75) 45%, transparent 55%),
+    radial-gradient(3px 3px at 88% 66%, rgba(255, 255, 255, .8) 45%, transparent 55%),
+    radial-gradient(3px 3px at 95% 35%, rgba(255, 227, 122, .7) 45%, transparent 55%),
+    radial-gradient(42% 60% at 12% 4%, #a4e16d 0 55%, transparent 56%),
+    radial-gradient(46% 55% at 88% 2%, #93d75f 0 52%, transparent 53%),
+    radial-gradient(60% 46% at 30% 78%, rgba(58, 132, 40, .28) 0 60%, transparent 61%),
+    radial-gradient(52% 40% at 76% 88%, rgba(58, 132, 40, .24) 0 58%, transparent 59%),
+    repeating-linear-gradient(112deg, rgba(255, 255, 255, .045) 0 26px, transparent 26px 74px),
+    linear-gradient(180deg, #8fd657 0%, #77c548 46%, #5cab36 100%);
+  box-shadow: inset 0 14px 30px rgba(255, 255, 210, .18), inset 0 -60px 90px rgba(38, 92, 26, .22);
+}
+/* cây viền chân trời hai bên, sau UI */
+.bg-tree {
+  position: absolute;
+  bottom: 58%;
+  width: clamp(60px, 6.5vw, 105px);
+  filter: saturate(.82) brightness(1.04) drop-shadow(0 6px 8px rgba(55, 96, 38, .2));
+  opacity: .9;
+}
+.bg-tree-1 { left: 1.5%; }
+.bg-tree-2 { left: 7.5%; bottom: 60%; width: clamp(44px, 4.6vw, 76px); }
+.bg-tree-3 { right: 2%; bottom: 61%; transform: scaleX(-1); }
 
 .cloud {
   position: absolute;
@@ -472,11 +523,11 @@ img { display: block; max-width: 100%; }
 .stage-center::-webkit-scrollbar { width: 8px; }
 .stage-center::-webkit-scrollbar-thumb { background: rgba(103, 134, 69, .32); border-radius: 999px; }
 
-/* ---------- painted farm header ---------- */
+/* ---------- painted farm scene (asset pack) ---------- */
 .scene-banner {
   position: relative;
   width: min(100%, 860px);
-  height: clamp(165px, 22vw, 235px);
+  height: clamp(215px, 28vw, 290px);
   margin: 0 auto .45rem;
   pointer-events: none;
 }
@@ -497,20 +548,40 @@ img { display: block; max-width: 100%; }
   filter: drop-shadow(0 6px 7px rgba(55, 85, 38, .24));
   transform-origin: 50% 100%;
 }
-.sb-house { left: 8%; bottom: 18%; width: 22%; z-index: 3; }
-.sb-tree1 { left: 27%; bottom: 20%; width: 8.5%; z-index: 2; }
-.sb-barn { left: 35%; bottom: 18%; width: 21%; z-index: 4; }
-.sb-green { right: 25%; bottom: 20%; width: 15.5%; z-index: 2; }
-.sb-tree2 { right: 18%; bottom: 19%; width: 9%; z-index: 3; }
-.sb-mill { right: 3%; bottom: 19%; width: 14%; z-index: 4; animation: mill-sway 5.6s ease-in-out infinite; }
-.sb-cow { left: 34%; bottom: 0; width: 12.5%; z-index: 7; }
-.sb-sheep { left: 52%; bottom: 0; width: 9%; z-index: 7; }
-.sb-pig { right: 23%; bottom: 0; width: 9.5%; z-index: 7; }
-.sb-hen { left: 24%; bottom: 2%; width: 5.5%; z-index: 7; animation: hen-bob 2.4s ease-in-out infinite; }
+.sb-house { left: 13%; bottom: 24%; width: 18%; z-index: 3; }
+.sb-tree1 { left: 30.5%; bottom: 26%; width: 5.5%; z-index: 2; }
+.sb-barn { left: 36%; bottom: 25%; width: 18%; z-index: 4; }
+.sb-green { right: 24%; bottom: 26%; width: 13.5%; z-index: 2; }
+.sb-tree2 { right: 17.5%; bottom: 25%; width: 8%; z-index: 3; }
+.sb-mill { right: .5%; bottom: 20%; width: 13.5%; z-index: 4; }
+.sb-mill > img { animation: mill-sway 5.6s ease-in-out infinite; }
+img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
+.sb-coop { left: 1.5%; bottom: -1%; width: 12.5%; z-index: 6; }
+.sb-hen2 { left: 14.5%; bottom: 0; width: 4.5%; z-index: 7; animation: hen-bob 2.4s ease-in-out infinite; }
+.sb-shop { left: 20.5%; bottom: -2%; width: 11.5%; z-index: 6; }
+.sb-well { left: 47%; bottom: 3%; width: 7%; z-index: 5; }
+.sb-pen {
+  right: 8%;
+  bottom: -1%;
+  width: 26%;
+  height: 30%;
+  z-index: 5;
+  border: 3px solid #a5713d;
+  border-radius: 14px;
+  background:
+    repeating-linear-gradient(90deg, rgba(165, 113, 61, .5) 0 5px, transparent 5px 26px),
+    rgba(228, 197, 128, .3);
+  box-shadow: inset 0 3px 8px rgba(97, 62, 30, .14);
+  filter: none;
+}
+.sb-sheep { right: 22%; bottom: 3%; width: 9%; z-index: 6; }
+.sb-pig { right: 10.5%; bottom: 2%; width: 9.5%; z-index: 6; }
+.sb-farmer { left: 37%; bottom: -3%; width: 9%; z-index: 7; }
+.sb-dog { left: 51.5%; bottom: -2%; width: 9.5%; z-index: 7; animation: hen-bob 2.8s ease-in-out infinite; }
 .sb-logo {
   left: 0;
   top: 0;
-  width: min(31%, 220px);
+  width: min(21%, 155px);
   z-index: 9;
   transform: rotate(-2.5deg);
   filter: drop-shadow(0 7px 10px rgba(58, 76, 34, .26));
@@ -519,6 +590,96 @@ img { display: block; max-width: 100%; }
 @keyframes mill-sway { 50% { transform: rotate(1.4deg); } }
 @keyframes hen-bob { 50% { transform: translateY(-3px) rotate(-2deg); } }
 @keyframes logo-float { 50% { transform: translateY(-3px) rotate(-2.5deg) scale(1.02); } }
+
+/* buildings you can tap (chuồng gà, cối xay, sạp chợ) */
+.sb-btn {
+  pointer-events: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  filter: none;
+  transition: transform .14s ease;
+}
+.sb-btn > img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 7px rgba(55, 85, 38, .24));
+}
+.sb-btn:hover { transform: translateY(-3px); }
+.sb-btn .dot { right: 4%; top: -4px; }
+.sb-tag {
+  position: absolute;
+  left: 50%;
+  bottom: -13px;
+  transform: translateX(-50%);
+  padding: .1rem .5rem;
+  border: 1.5px solid #8a5a2b;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #c99359, #96603a);
+  color: #fff;
+  font-size: clamp(.52rem, .95vw, .66rem);
+  font-weight: 800;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(78, 45, 20, .45);
+  box-shadow: 0 3px 8px rgba(70, 46, 22, .22);
+}
+.sb--locked { filter: grayscale(.75) opacity(.75) drop-shadow(0 6px 7px rgba(55, 85, 38, .18)); }
+
+/* round HUD buttons (thư, hạng) */
+.hud-rounds { display: flex; align-items: center; gap: .4rem; }
+.hud-round {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 2.5px solid #c8811a;
+  border-radius: 999px;
+  background: radial-gradient(circle at 32% 26%, #fff3c4, #ffd25e 62%, #f5ae23);
+  font-size: 1.05rem;
+  cursor: pointer;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.55), 0 4px 0 #b06f0e, 0 7px 14px rgba(150, 96, 15, .22);
+}
+.hud-round:active { transform: translateY(2px) scale(.97); }
+.coin-pill { position: relative; }
+.coin-pill--star { border-color: #8a6413; background: linear-gradient(180deg, #8a682a, #5f4513); }
+
+/* bảng chào + ao cá góc dưới trái (như mockup) */
+.welcome-sign {
+  position: absolute;
+  z-index: 46;
+  left: clamp(.6rem, 1.5vw, 1.2rem);
+  bottom: calc(.8rem + var(--bottom-safe));
+  padding: .5rem .95rem;
+  border: 3px solid #6d4524;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.18), transparent 40%),
+    linear-gradient(180deg, #b07b43, #85552c);
+  color: #ffeeca;
+  font-size: .68rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(70, 42, 18, .5);
+  transform: rotate(-2deg);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.22), 0 5px 0 rgba(78, 46, 21, .22), 0 9px 18px rgba(55, 72, 36, .2);
+  pointer-events: none;
+}
+.welcome-sign b { display: inline-block; margin-top: .08rem; color: #ffe27a; font-size: .82rem; }
+.pond-img {
+  position: absolute;
+  z-index: 3;
+  left: clamp(.4rem, 1.8vw, 1.4rem);
+  bottom: calc(84px + var(--bottom-safe));
+  width: clamp(120px, 13vw, 190px);
+  filter: drop-shadow(0 8px 12px rgba(43, 96, 121, .25));
+  pointer-events: none;
+  animation: pond-bob 6s ease-in-out infinite;
+}
+@keyframes pond-bob { 50% { transform: translateY(-3px) } }
 
 /* ---------- social strip ---------- */
 .family-search-wrap {
@@ -820,58 +981,6 @@ img { display: block; max-width: 100%; }
 .butterfly { left: 2%; top: 12%; animation: butterfly-float 5s ease-in-out infinite; }
 @keyframes scare-sway { 50% { transform: rotate(2deg); } }
 @keyframes butterfly-float { 50% { transform: translate(18px, -8px) rotate(8deg); } }
-
-/* ---------- production buildings ---------- */
-.buildings {
-  width: min(100%, 860px);
-  margin: 0 auto 1rem;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: .65rem;
-}
-.building {
-  position: relative;
-  min-height: 84px;
-  padding: .6rem .7rem .6rem 82px;
-  display: grid;
-  align-content: center;
-  gap: .08rem;
-  text-align: left;
-  border: 3px solid #b8864f;
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(255,255,255,.35), transparent 38%), linear-gradient(180deg, #fff8e4, #f5dfb9);
-  box-shadow: var(--shadow-game);
-  cursor: pointer;
-  overflow: hidden;
-}
-.building::after {
-  content: '';
-  position: absolute;
-  inset: auto -18px -22px auto;
-  width: 82px;
-  height: 54px;
-  border-radius: 50%;
-  background: rgba(121, 184, 78, .18);
-}
-.building > img {
-  position: absolute;
-  left: .65rem;
-  bottom: .35rem;
-  width: 62px;
-  max-height: 72px;
-  object-fit: contain;
-  filter: drop-shadow(0 5px 4px rgba(72, 53, 31, .18));
-}
-.b-emoji {
-  position: absolute;
-  left: .8rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 2.3rem;
-}
-.b-name { position: relative; z-index: 2; font-size: .88rem; font-weight: 800; }
-.b-note { position: relative; z-index: 2; font-size: .68rem; color: var(--muted); font-weight: 700; }
-.building .dot { right: 7px; top: 7px; }
 
 /* ---------- inventory quick dock ---------- */
 .quickbar {
@@ -1187,7 +1296,8 @@ img { display: block; max-width: 100%; }
   .side-btn { min-height: 58px; width: 62px; border-radius: 15px; font-size: 1.35rem; }
   .side-btn > span:last-child { font-size: .55rem; }
   .stage-center { top: calc(64px + var(--top-safe)); }
-  .scene-banner { height: 145px; }
+  .scene-banner { height: 185px; }
+  .sb-logo { width: 118px; }
   .quickbar { min-height: 52px; }
 }
 
@@ -1203,7 +1313,8 @@ img { display: block; max-width: 100%; }
 
 /* ---------- mobile: management at top, actions at bottom ---------- */
 @media (max-width: 780px) {
-  body { background: linear-gradient(180deg, #72c9f4 0%, #b9eaf7 34%, #e4f5d9 100%); }
+  body { background: linear-gradient(180deg, #63c0f3 0%, #b9eaf7 34%, #e4f5d9 100%); }
+  .bg-tree, .hills-far { display: none; }
 
   .top-hud {
     min-height: calc(70px + var(--top-safe));
@@ -1294,18 +1405,27 @@ img { display: block; max-width: 100%; }
 
   .scene-banner {
     width: 100%;
-    height: clamp(135px, 35vw, 175px);
+    height: clamp(150px, 40vw, 195px);
     margin-bottom: .25rem;
   }
-  .sb-house { left: 7%; width: 24%; }
-  .sb-barn { left: 36%; width: 22%; }
-  .sb-green { right: 23%; width: 17%; }
-  .sb-mill { right: 1%; width: 15%; }
-  .sb-logo { width: 34%; }
-  .sb-cow { width: 14%; }
+  .sb-house { left: 16%; width: 21%; }
+  .sb-barn { left: 38%; width: 20%; }
+  .sb-green { right: 22%; width: 15%; }
+  .sb-mill { right: 0; width: 15%; }
+  .sb-logo { width: 28%; }
+  .sb-coop { left: 1%; width: 14%; }
+  .sb-hen2 { left: 16%; width: 5.5%; }
+  .sb-shop { left: 23%; width: 13%; }
+  .sb-well { display: none; }
   .sb-sheep { width: 10%; }
   .sb-pig { width: 10.5%; }
-  .sb-hen { width: 6%; }
+  .sb-farmer { width: 11%; }
+  .sb-dog { width: 11%; }
+  .sb-tag { display: none; }
+  .welcome-sign, .pond-img { display: none; }
+  .hud-round { width: 34px; height: 34px; border-width: 2px; font-size: .85rem; }
+  .hud-rounds { gap: .28rem; }
+  .coin-pill--star { display: none; } /* sheet Sao vẫn mở được từ pill kim cương */
 
   .family-search-wrap { margin-bottom: .3rem; }
   .family-search { min-height: 35px; font-size: .74rem; border-radius: 11px; }
