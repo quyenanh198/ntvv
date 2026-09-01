@@ -6,37 +6,45 @@ import staticPlugin from '@fastify/static';
 
 import {
   CROPS,
-  PLOT_SLOTS,
+  GOODS,
+  itemInfo,
+  CHICKEN,
+  MILL,
   START_PLOTS,
+  EXPANSIONS,
   MAX_PLOTS,
-  START_COINS,
-  DAILY_COINS,
-  DAILY_XP,
-  WATER_CUT,
-  WATER_COINS,
-  WATER_XP,
-  STEAL_XP,
-  stealCap,
-  xpForLevel,
+  START_GOLD,
+  START_GEMS,
+  speedupCost,
+  levelInfo,
   levelFor,
-  growMsFor,
+  ORDER_SLOTS,
+  ORDER_UNLOCK_LEVEL,
+  ORDER_REFRESH_MS,
+  generateOrder,
+  DAILY_QUESTS,
+  DAILY_CHEST,
+  STAR_MILESTONES,
+  POACH_DAILY_LIMIT,
+  POACH_EXP,
+  WATER_HELPER_GOLD,
+  WATER_HELPER_EXP,
+  WATER_FRESH_EXP,
+  scaleMs,
   todayVN,
 } from './game.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = resolve(__dirname, '../../public');
 
-// Cache kết quả /api/me của Chat theo cookie — đỡ gọi Chat mỗi request.
 const ME_CACHE_TTL_MS = 30_000;
 const ME_CACHE_MAX = 300;
 
 export function buildApp({ config, db, logger = true }) {
   const app = Fastify({ logger, trustProxy: true });
-  const meCache = new Map(); // cookie -> { user, until }
+  const meCache = new Map();
 
-  // ---- Xác thực: Chat là "auth oracle" -----------------------------------
-  // Trình duyệt gửi cookie lb_session (cùng domain qua caddy); farm chuyển
-  // tiếp nguyên cookie sang Chat /api/me. Chat trả ai thì người đó là farmer.
+  // ---- Xác thực: Chat là auth oracle --------------------------------------
   async function chatUserFor(request) {
     const cookie = request.headers.cookie;
     if (!cookie) return null;
@@ -57,20 +65,21 @@ export function buildApp({ config, db, logger = true }) {
   }
 
   const upsertFarmer = db.prepare(`
-    INSERT INTO farmers (user_id, name, coins, xp, plots_count, created_at)
-    VALUES (?, ?, ?, 0, ?, ?)
+    INSERT INTO farmers (user_id, name, gold, gems, plots_count, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT(user_id) DO UPDATE SET name = excluded.name
   `);
+  const getFarmer = db.prepare('SELECT * FROM farmers WHERE user_id = ?');
 
   async function requireFarmer(request, reply) {
     const user = await chatUserFor(request);
     if (!user) return reply.code(401).send({ error: 'not_logged_in' });
-    upsertFarmer.run(user.id, user.display_name || user.username, START_COINS, START_PLOTS, Date.now());
-    request.farmer = db.prepare('SELECT * FROM farmers WHERE user_id = ?').get(user.id);
+    upsertFarmer.run(user.id, user.display_name || user.username, START_GOLD, START_GEMS, START_PLOTS, Date.now());
+    request.farmer = getFarmer.get(user.id);
     request.chatUser = user;
   }
 
-  // ---- Push qua Chat (trộm rau thì báo chủ ruộng) ------------------------
+  // ---- Push qua Chat ------------------------------------------------------
   function pushTo(userIds, title, body) {
     if (!config.internalSecret) return;
     fetch(`${config.chatApiUrl}/internal/farm/notify`, {
@@ -80,7 +89,7 @@ export function buildApp({ config, db, logger = true }) {
     }).catch((err) => app.log.warn({ err }, 'farm push notify failed'));
   }
 
-  // ---- Bản tin làng ------------------------------------------------------
+  // ---- Bản tin làng -------------------------------------------------------
   const insertEvent = db.prepare('INSERT INTO events (at, text) VALUES (?, ?)');
   function logEvent(text) {
     const { lastInsertRowid } = insertEvent.run(Date.now(), text);
@@ -89,11 +98,75 @@ export function buildApp({ config, db, logger = true }) {
     }
   }
 
-  // ---- Dựng view ---------------------------------------------------------
-  function cropView(c) {
-    return { ...c, growMs: growMsFor(c, config.fast), stealCap: stealCap(c) };
+  // ---- Kho ----------------------------------------------------------------
+  const invRow = db.prepare('SELECT qty FROM inventory WHERE owner_id = ? AND item = ?');
+  const invUpsert = db.prepare(`
+    INSERT INTO inventory (owner_id, item, qty) VALUES (?, ?, ?)
+    ON CONFLICT(owner_id, item) DO UPDATE SET qty = qty + excluded.qty
+  `);
+  function invAdd(userId, item, qty) {
+    invUpsert.run(userId, item, qty);
+  }
+  function invQty(userId, item) {
+    return invRow.get(userId, item)?.qty ?? 0;
+  }
+  function invTake(userId, item, qty) {
+    if (invQty(userId, item) < qty) return false;
+    db.prepare('UPDATE inventory SET qty = qty - ? WHERE owner_id = ? AND item = ?').run(qty, userId, item);
+    db.prepare('DELETE FROM inventory WHERE owner_id = ? AND item = ? AND qty <= 0').run(userId, item);
+    return true;
+  }
+  function invAll(userId) {
+    const out = {};
+    for (const r of db.prepare('SELECT item, qty FROM inventory WHERE owner_id = ? AND qty > 0').all(userId)) {
+      out[r.item] = r.qty;
+    }
+    return out;
   }
 
+  // ---- EXP / vàng / sao ---------------------------------------------------
+  function grant(userId, { gold = 0, gems = 0, xp = 0, stars = 0 }) {
+    db.prepare('UPDATE farmers SET gold = gold + ?, gems = gems + ?, xp = xp + ?, stars = stars + ? WHERE user_id = ?')
+      .run(gold, gems, xp, stars, userId);
+  }
+
+  // ---- Nhiệm vụ ngày ------------------------------------------------------
+  const dailyRow = db.prepare('SELECT * FROM daily WHERE owner_id = ? AND day = ?');
+  function getDaily(userId) {
+    const day = todayVN();
+    let row = dailyRow.get(userId, day);
+    if (!row) {
+      db.prepare('INSERT OR IGNORE INTO daily (owner_id, day) VALUES (?, ?)').run(userId, day);
+      row = dailyRow.get(userId, day);
+    }
+    return { ...row, counters: JSON.parse(row.counters_json || '{}') };
+  }
+  function bumpQuest(userId, questId, by = 1) {
+    const d = getDaily(userId);
+    d.counters[questId] = (d.counters[questId] || 0) + by;
+    db.prepare('UPDATE daily SET counters_json = ? WHERE owner_id = ? AND day = ?')
+      .run(JSON.stringify(d.counters), userId, d.day);
+  }
+
+  // ---- Đơn hàng -----------------------------------------------------------
+  function ensureOrders(farmer) {
+    if (levelFor(farmer.xp) < ORDER_UNLOCK_LEVEL) return;
+    const now = Date.now();
+    const have = db.prepare('SELECT slot FROM orders WHERE owner_id = ?').all(farmer.user_id).map((r) => r.slot);
+    if (have.length >= ORDER_SLOTS) return;
+    if (now < farmer.next_order_at && have.length > 0) return;
+    const rng = Math.random;
+    const level = levelFor(farmer.xp);
+    for (let slot = 0; slot < ORDER_SLOTS; slot += 1) {
+      if (have.includes(slot)) continue;
+      const o = generateOrder(level, rng);
+      db.prepare('INSERT INTO orders (owner_id, slot, items_json, gold, exp, stars) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(farmer.user_id, slot, JSON.stringify(o.items), o.gold, o.exp, o.stars);
+    }
+    db.prepare('UPDATE farmers SET next_order_at = ? WHERE user_id = ?').run(now, farmer.user_id);
+  }
+
+  // ---- View ---------------------------------------------------------------
   function plotViews(ownerId, plotsCount) {
     const rows = db.prepare('SELECT * FROM plots WHERE owner_id = ?').all(ownerId);
     const byIdx = new Map(rows.map((r) => [r.idx, r]));
@@ -105,46 +178,59 @@ export function buildApp({ config, db, logger = true }) {
         out.push({ idx: i, crop: null });
         continue;
       }
-      const crop = CROPS[r.crop];
       out.push({
         idx: i,
         crop: r.crop,
         plantedAt: r.planted_at,
         readyAt: r.ready_at,
         ready: now >= r.ready_at,
-        stolen: r.stolen,
-        stealCap: stealCap(crop),
-        yieldLeft: crop.yield - r.stolen,
+        watered: !!r.watered,
       });
     }
     return out;
   }
 
   function farmerView(f) {
-    const level = levelFor(f.xp);
+    const li = levelInfo(f.xp);
+    const expandNext = f.plots_count < MAX_PLOTS
+      ? { ...EXPANSIONS[(f.plots_count - START_PLOTS) / 4], plots: 4 }
+      : null;
+    const d = getDaily(f.user_id);
+    const questsDone = DAILY_QUESTS.filter((q) => (d.counters[q.id] || 0) >= q.target).length;
+    const mill = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(f.user_id, 'coixay');
     return {
       id: f.user_id,
       name: f.name,
-      coins: f.coins,
+      gold: f.gold,
+      gems: f.gems,
       xp: f.xp,
-      level,
-      levelXp: xpForLevel(level),
-      nextLevelXp: xpForLevel(level + 1),
+      level: li.level,
+      levelInto: li.into,
+      levelNeed: li.need,
+      stars: f.stars,
       plotsCount: f.plots_count,
-      nextPlot:
-        f.plots_count < MAX_PLOTS
-          ? { ...PLOT_SLOTS[f.plots_count - START_PLOTS], idx: f.plots_count }
-          : null,
-      dailyAvailable: f.last_daily !== todayVN(),
+      expandNext,
       plots: plotViews(f.user_id, f.plots_count),
+      inventory: invAll(f.user_id),
+      animals: db.prepare('SELECT id, kind, ready_at FROM animals WHERE owner_id = ?').all(f.user_id)
+        .map((a) => ({ ...a, ready: a.ready_at != null && Date.now() >= a.ready_at })),
+      mill: mill && mill.recipe
+        ? { recipe: mill.recipe, readyAt: mill.ready_at, ready: Date.now() >= mill.ready_at }
+        : null,
+      orders: db.prepare('SELECT id, slot, items_json, gold, exp, stars FROM orders WHERE owner_id = ? ORDER BY slot').all(f.user_id)
+        .map((o) => ({ id: o.id, slot: o.slot, items: JSON.parse(o.items_json), gold: o.gold, exp: o.exp, stars: o.stars })),
+      daily: {
+        quests: DAILY_QUESTS.map((q) => ({ ...q, progress: Math.min(q.target, d.counters[q.id] || 0) })),
+        done: questsDone,
+        required: DAILY_CHEST.questsRequired,
+        chestClaimed: !!d.chest_claimed,
+      },
+      starNext: STAR_MILESTONES.find(
+        (m) => !db.prepare('SELECT 1 FROM star_claims WHERE owner_id = ? AND milestone = ?').get(f.user_id, m.stars),
+      ) || null,
     };
   }
 
-  function grantXp(userId, delta) {
-    db.prepare('UPDATE farmers SET xp = xp + ? WHERE user_id = ?').run(delta, userId);
-  }
-
-  const getFarmer = db.prepare('SELECT * FROM farmers WHERE user_id = ?');
   const getPlot = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND idx = ?');
   const hasAction = db.prepare(
     'SELECT 1 FROM plot_actions WHERE owner_id = ? AND idx = ? AND planted_at = ? AND helper_id = ? AND action = ?',
@@ -153,17 +239,20 @@ export function buildApp({ config, db, logger = true }) {
     'INSERT INTO plot_actions (owner_id, idx, planted_at, helper_id, action, at) VALUES (?, ?, ?, ?, ?, ?)',
   );
 
-  // ---- API ---------------------------------------------------------------
+  function fresh(userId) {
+    return farmerView(getFarmer.get(userId));
+  }
+
+  // ---- API ----------------------------------------------------------------
   app.register(
     async (api) => {
       api.addHook('preHandler', requireFarmer);
 
       api.get('/state', async (request) => {
+        ensureOrders(request.farmer);
         let others = [];
         try {
-          const res = await fetch(`${config.chatApiUrl}/api/users`, {
-            headers: { cookie: request.headers.cookie },
-          });
+          const res = await fetch(`${config.chatApiUrl}/api/users`, { headers: { cookie: request.headers.cookie } });
           if (res.ok) others = await res.json();
         } catch (err) {
           request.log.warn({ err }, 'chat /api/users unreachable');
@@ -175,15 +264,22 @@ export function buildApp({ config, db, logger = true }) {
           const f = getFarmer.get(u.id);
           return { ...u, level: f ? levelFor(f.xp) : null };
         });
-
         return {
-          me: farmerView(request.farmer),
+          me: fresh(request.farmer.user_id),
           family,
           config: {
-            crops: Object.fromEntries(Object.entries(CROPS).map(([k, c]) => [k, cropView(c)])),
-            plotSlots: PLOT_SLOTS,
-            maxPlots: MAX_PLOTS,
-            daily: { coins: DAILY_COINS, xp: DAILY_XP },
+            crops: Object.fromEntries(Object.entries(CROPS).map(([k, c]) => [k, { ...c, growMs: scaleMs(c.growMs, config.fast) }])),
+            goods: GOODS,
+            chicken: { ...CHICKEN, produceMs: scaleMs(CHICKEN.produceMs, config.fast) },
+            mill: {
+              ...MILL,
+              recipes: Object.fromEntries(
+                Object.entries(MILL.recipes).map(([k, r]) => [k, { ...r, ms: scaleMs(r.ms, config.fast) }]),
+              ),
+            },
+            orderUnlockLevel: ORDER_UNLOCK_LEVEL,
+            starMilestones: STAR_MILESTONES,
+            poachDailyLimit: POACH_DAILY_LIMIT,
             fast: config.fast,
           },
           events: db.prepare('SELECT at, text FROM events ORDER BY id DESC LIMIT 25').all(),
@@ -191,30 +287,12 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       api.get('/leaderboard', async () => {
-        return db
-          .prepare('SELECT user_id AS id, name, coins, xp FROM farmers ORDER BY xp DESC, coins DESC LIMIT 20')
+        return db.prepare('SELECT user_id AS id, name, gold, xp, stars FROM farmers ORDER BY xp DESC, stars DESC LIMIT 20')
           .all()
           .map((f, i) => ({ ...f, level: levelFor(f.xp), rank: i + 1 }));
       });
 
-      api.get('/farm/:id', async (request, reply) => {
-        const ownerId = Number(request.params.id);
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(404).send({ error: 'no_farm' });
-        const view = farmerView(owner);
-        const myActs = {};
-        for (const p of view.plots) {
-          if (!p.crop) continue;
-          myActs[p.idx] = {
-            watered: !!hasAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'water'),
-            stolenByMe: !!hasAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'steal'),
-          };
-        }
-        delete view.coins; // ví của người khác không phải việc của mình
-        delete view.dailyAvailable;
-        return { farm: view, myActs };
-      });
-
+      // ---- Trồng trọt ----
       api.post('/plant', async (request, reply) => {
         const { idx, crop: cropId } = request.body ?? {};
         const crop = CROPS[cropId];
@@ -223,48 +301,50 @@ export function buildApp({ config, db, logger = true }) {
           return reply.code(400).send({ error: 'bad_request' });
         }
         if (levelFor(me.xp) < crop.level) return reply.code(400).send({ error: 'level_too_low' });
-        if (me.coins < crop.cost) return reply.code(400).send({ error: 'not_enough_coins' });
+        if (me.gold < crop.seed) return reply.code(400).send({ error: 'not_enough_gold' });
         if (getPlot.get(me.user_id, idx)) return reply.code(400).send({ error: 'plot_busy' });
         const now = Date.now();
         db.transaction(() => {
-          db.prepare('UPDATE farmers SET coins = coins - ? WHERE user_id = ?').run(crop.cost, me.user_id);
-          db.prepare(
-            'INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at) VALUES (?, ?, ?, ?, ?)',
-          ).run(me.user_id, idx, crop.id, now, now + growMsFor(crop, config.fast));
+          grant(me.user_id, { gold: -crop.seed, xp: crop.expSow });
+          db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at) VALUES (?, ?, ?, ?, ?)')
+            .run(me.user_id, idx, crop.id, now, now + scaleMs(crop.growMs, config.fast));
+          bumpQuest(me.user_id, 'sow');
         })();
-        logEvent(`${crop.emoji} ${me.name} vừa gieo ${crop.name}`);
-        return { me: farmerView(getFarmer.get(me.user_id)) };
+        return { me: fresh(me.user_id) };
       });
 
-      // Gieo một loại hạt kín mọi ô trống — gieo được bao nhiêu tùy ví
-      // (không đủ tiền cho tất cả thì gieo tới khi cạn xu).
       api.post('/plant-all', async (request, reply) => {
         const { crop: cropId } = request.body ?? {};
         const crop = CROPS[cropId];
         const me = request.farmer;
         if (!crop) return reply.code(400).send({ error: 'bad_request' });
         if (levelFor(me.xp) < crop.level) return reply.code(400).send({ error: 'level_too_low' });
-        const occupied = new Set(
-          db.prepare('SELECT idx FROM plots WHERE owner_id = ?').all(me.user_id).map((r) => r.idx),
-        );
+        const occupied = new Set(db.prepare('SELECT idx FROM plots WHERE owner_id = ?').all(me.user_id).map((r) => r.idx));
         const empty = [];
         for (let i = 0; i < me.plots_count; i += 1) if (!occupied.has(i)) empty.push(i);
-        const count = Math.min(empty.length, Math.floor(me.coins / crop.cost));
-        if (count === 0) {
-          return reply.code(400).send({ error: empty.length === 0 ? 'no_empty_plot' : 'not_enough_coins' });
-        }
+        const count = Math.min(empty.length, Math.floor(me.gold / crop.seed));
+        if (count === 0) return reply.code(400).send({ error: empty.length === 0 ? 'no_empty_plot' : 'not_enough_gold' });
         const now = Date.now();
-        const readyAt = now + growMsFor(crop, config.fast);
+        const readyAt = now + scaleMs(crop.growMs, config.fast);
         db.transaction(() => {
-          db.prepare('UPDATE farmers SET coins = coins - ? WHERE user_id = ?').run(crop.cost * count, me.user_id);
-          const ins = db.prepare(
-            'INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at) VALUES (?, ?, ?, ?, ?)',
-          );
+          grant(me.user_id, { gold: -crop.seed * count, xp: crop.expSow * count });
+          const ins = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at) VALUES (?, ?, ?, ?, ?)');
           for (const i of empty.slice(0, count)) ins.run(me.user_id, i, crop.id, now, readyAt);
+          bumpQuest(me.user_id, 'sow', count);
         })();
         logEvent(`${crop.emoji} ${me.name} gieo ${crop.name} kín ${count} ô`);
-        return { me: farmerView(getFarmer.get(me.user_id)), planted: count };
+        return { me: fresh(me.user_id), planted: count };
       });
+
+      function harvestPlot(me, plot) {
+        const crop = CROPS[plot.crop];
+        const xp = crop.expHarvest + (plot.watered ? WATER_FRESH_EXP : 0);
+        grant(me.user_id, { xp });
+        invAdd(me.user_id, crop.id, 1);
+        db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, plot.idx);
+        bumpQuest(me.user_id, 'harvest');
+        return crop;
+      }
 
       api.post('/harvest', async (request, reply) => {
         const { idx } = request.body ?? {};
@@ -272,71 +352,50 @@ export function buildApp({ config, db, logger = true }) {
         const plot = getPlot.get(me.user_id, idx);
         if (!plot) return reply.code(400).send({ error: 'no_plot' });
         if (Date.now() < plot.ready_at) return reply.code(400).send({ error: 'not_ready' });
-        const crop = CROPS[plot.crop];
-        const gain = (crop.yield - plot.stolen) * crop.sell;
+        let crop;
         db.transaction(() => {
-          db.prepare('UPDATE farmers SET coins = coins + ?, xp = xp + ? WHERE user_id = ?').run(
-            gain,
-            crop.xp,
-            me.user_id,
-          );
-          db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, idx);
+          crop = harvestPlot(me, plot);
         })();
-        logEvent(`${crop.emoji} ${me.name} thu hoạch ${crop.name} được ${gain} xu`);
-        return { me: farmerView(getFarmer.get(me.user_id)), gain };
+        return { me: fresh(me.user_id), item: crop.id };
       });
 
-      api.post('/buy-plot', async (request, reply) => {
+      api.post('/harvest-all', async (request, reply) => {
         const me = request.farmer;
-        if (me.plots_count >= MAX_PLOTS) return reply.code(400).send({ error: 'max_plots' });
-        const slot = PLOT_SLOTS[me.plots_count - START_PLOTS];
-        if (levelFor(me.xp) < slot.level) return reply.code(400).send({ error: 'level_too_low' });
-        if (me.coins < slot.price) return reply.code(400).send({ error: 'not_enough_coins' });
-        db.prepare('UPDATE farmers SET coins = coins - ?, plots_count = plots_count + 1 WHERE user_id = ?').run(
-          slot.price,
-          me.user_id,
-        );
-        logEvent(`🧱 ${me.name} mở thêm ô đất thứ ${me.plots_count + 1}`);
-        return { me: farmerView(getFarmer.get(me.user_id)) };
+        const now = Date.now();
+        const ready = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
+        if (ready.length === 0) return reply.code(400).send({ error: 'nothing_ready' });
+        db.transaction(() => {
+          for (const p of ready) harvestPlot(me, p);
+        })();
+        logEvent(`🧺 ${me.name} thu hoạch ${ready.length} ô một lượt`);
+        return { me: fresh(me.user_id), harvested: ready.length };
       });
 
-      api.post('/daily', async (request, reply) => {
-        const me = request.farmer;
-        const today = todayVN();
-        if (me.last_daily === today) return reply.code(400).send({ error: 'already_claimed' });
-        db.prepare('UPDATE farmers SET coins = coins + ?, xp = xp + ?, last_daily = ? WHERE user_id = ?').run(
-          DAILY_COINS,
-          DAILY_XP,
-          today,
-          me.user_id,
-        );
-        return { me: farmerView(getFarmer.get(me.user_id)), gain: DAILY_COINS };
-      });
-
+      // Tưới: ruộng mình hoặc ruộng người khác (mỗi vụ 1 lần/ô/người).
       api.post('/water', async (request, reply) => {
-        const { ownerId, idx } = request.body ?? {};
+        const { ownerId: rawOwner, idx } = request.body ?? {};
         const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
+        const ownerId = Number.isInteger(rawOwner) ? rawOwner : me.user_id;
         const owner = getFarmer.get(ownerId);
         const plot = owner && getPlot.get(ownerId, idx);
         if (!plot) return reply.code(400).send({ error: 'no_plot' });
-        const now = Date.now();
-        if (now >= plot.ready_at) return reply.code(400).send({ error: 'already_ready' });
+        if (Date.now() >= plot.ready_at) return reply.code(400).send({ error: 'already_ready' });
+        if (plot.watered) return reply.code(400).send({ error: 'already_watered' });
         if (hasAction.get(ownerId, idx, plot.planted_at, me.user_id, 'water')) {
           return reply.code(400).send({ error: 'already_watered' });
         }
-        const newReady = plot.ready_at - Math.round((plot.ready_at - now) * WATER_CUT);
         db.transaction(() => {
-          db.prepare('UPDATE plots SET ready_at = ? WHERE owner_id = ? AND idx = ?').run(newReady, ownerId, idx);
-          markAction.run(ownerId, idx, plot.planted_at, me.user_id, 'water', now);
-          db.prepare('UPDATE farmers SET coins = coins + ? WHERE user_id = ?').run(WATER_COINS, me.user_id);
-          grantXp(me.user_id, WATER_XP);
+          db.prepare('UPDATE plots SET watered = 1 WHERE owner_id = ? AND idx = ?').run(ownerId, idx);
+          markAction.run(ownerId, idx, plot.planted_at, me.user_id, 'water', Date.now());
+          if (ownerId !== me.user_id) grant(me.user_id, { gold: WATER_HELPER_GOLD, xp: WATER_HELPER_EXP });
         })();
-        logEvent(`💧 ${me.name} tưới giúp ruộng của ${owner.name}`);
-        return refreshVisit(request, ownerId);
+        if (ownerId !== me.user_id) logEvent(`💧 ${me.name} tưới giúp ruộng của ${owner.name}`);
+        if (ownerId === me.user_id) return { me: fresh(me.user_id) };
+        return visitPayload(request, ownerId);
       });
 
-      api.post('/steal', async (request, reply) => {
+      // Hái ké: ô chín nhà người khác, chủ KHÔNG mất gì, khách +1 sản phẩm.
+      api.post('/poach', async (request, reply) => {
         const { ownerId, idx } = request.body ?? {};
         const me = request.farmer;
         if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
@@ -344,60 +403,291 @@ export function buildApp({ config, db, logger = true }) {
         const plot = owner && getPlot.get(ownerId, idx);
         if (!plot) return reply.code(400).send({ error: 'no_plot' });
         if (Date.now() < plot.ready_at) return reply.code(400).send({ error: 'not_ready' });
-        const crop = CROPS[plot.crop];
-        if (plot.stolen >= stealCap(crop)) return reply.code(400).send({ error: 'steal_capped' });
-        if (hasAction.get(ownerId, idx, plot.planted_at, me.user_id, 'steal')) {
-          return reply.code(400).send({ error: 'already_stolen' });
+        if (hasAction.get(ownerId, idx, plot.planted_at, me.user_id, 'poach')) {
+          return reply.code(400).send({ error: 'already_poached' });
         }
+        const d = getDaily(me.user_id);
+        if (d.poached >= POACH_DAILY_LIMIT) return reply.code(400).send({ error: 'poach_limit' });
+        const crop = CROPS[plot.crop];
         db.transaction(() => {
-          db.prepare('UPDATE plots SET stolen = stolen + 1 WHERE owner_id = ? AND idx = ?').run(ownerId, idx);
-          markAction.run(ownerId, idx, plot.planted_at, me.user_id, 'steal', Date.now());
-          db.prepare('UPDATE farmers SET coins = coins + ? WHERE user_id = ?').run(crop.sell, me.user_id);
-          grantXp(me.user_id, STEAL_XP);
+          markAction.run(ownerId, idx, plot.planted_at, me.user_id, 'poach', Date.now());
+          invAdd(me.user_id, crop.id, 1);
+          grant(me.user_id, { xp: POACH_EXP });
+          db.prepare('UPDATE daily SET poached = poached + 1 WHERE owner_id = ? AND day = ?').run(me.user_id, d.day);
         })();
-        logEvent(`😈 ${me.name} trộm ${crop.name} ${crop.emoji} của ${owner.name}`);
-        pushTo([ownerId], 'Nông trại vui vẻ 🌾', `😈 ${me.name} vừa trộm ${crop.name} ${crop.emoji} của bạn!`);
-        return refreshVisit(request, ownerId);
+        logEvent(`😋 ${me.name} hái ké ${crop.name} ${crop.emoji} nhà ${owner.name}`);
+        pushTo([ownerId], 'Nông trại vui vẻ 🌾', `😋 ${me.name} vừa hái ké ${crop.name} ${crop.emoji} nhà bạn!`);
+        return visitPayload(request, ownerId);
       });
 
-      // Avatar lấy thẳng từ Chat (cùng cookie) — farm không lưu ảnh.
+      // ---- Kho & cửa hàng ----
+      api.post('/sell', async (request, reply) => {
+        const { item, qty } = request.body ?? {};
+        const info = itemInfo(item);
+        const me = request.farmer;
+        const n = Math.max(1, Math.min(999, Number(qty) || 1));
+        if (!info || !info.sell) return reply.code(400).send({ error: 'bad_request' });
+        if (!invTake(me.user_id, item, n)) return reply.code(400).send({ error: 'not_enough_items' });
+        grant(me.user_id, { gold: info.sell * n });
+        bumpQuest(me.user_id, 'sell', n);
+        return { me: fresh(me.user_id), gained: info.sell * n };
+      });
+
+      api.post('/buy', async (request, reply) => {
+        const { item, qty } = request.body ?? {};
+        const info = GOODS[item];
+        const me = request.farmer;
+        const n = Math.max(1, Math.min(99, Number(qty) || 1));
+        if (!info || !info.buy) return reply.code(400).send({ error: 'bad_request' });
+        if (me.gold < info.buy * n) return reply.code(400).send({ error: 'not_enough_gold' });
+        db.transaction(() => {
+          grant(me.user_id, { gold: -info.buy * n });
+          invAdd(me.user_id, item, n);
+        })();
+        return { me: fresh(me.user_id) };
+      });
+
+      // ---- Chuồng gà ----
+      api.post('/buy-chicken', async (request, reply) => {
+        const me = request.farmer;
+        if (levelFor(me.xp) < CHICKEN.level) return reply.code(400).send({ error: 'level_too_low' });
+        const count = db.prepare('SELECT COUNT(*) c FROM animals WHERE owner_id = ?').get(me.user_id).c;
+        if (count >= CHICKEN.capacity) return reply.code(400).send({ error: 'coop_full' });
+        if (me.gold < CHICKEN.price) return reply.code(400).send({ error: 'not_enough_gold' });
+        db.transaction(() => {
+          grant(me.user_id, { gold: -CHICKEN.price });
+          db.prepare('INSERT INTO animals (owner_id, kind) VALUES (?, ?)').run(me.user_id, 'ga');
+        })();
+        logEvent(`🐔 ${me.name} đón một chú gà mới về chuồng`);
+        return { me: fresh(me.user_id) };
+      });
+
+      api.post('/feed', async (request, reply) => {
+        const me = request.farmer;
+        const hungry = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND ready_at IS NULL').all(me.user_id);
+        if (hungry.length === 0) return reply.code(400).send({ error: 'no_hungry_animal' });
+        const canFeed = Math.min(hungry.length, Math.floor(invQty(me.user_id, CHICKEN.feedItem) / CHICKEN.feedQty));
+        if (canFeed === 0) return reply.code(400).send({ error: 'not_enough_feed' });
+        const readyAt = Date.now() + scaleMs(CHICKEN.produceMs, config.fast);
+        db.transaction(() => {
+          invTake(me.user_id, CHICKEN.feedItem, canFeed * CHICKEN.feedQty);
+          const upd = db.prepare('UPDATE animals SET ready_at = ? WHERE id = ?');
+          for (const a of hungry.slice(0, canFeed)) upd.run(readyAt, a.id);
+          bumpQuest(me.user_id, 'feed', canFeed);
+        })();
+        return { me: fresh(me.user_id), fed: canFeed };
+      });
+
+      api.post('/collect', async (request, reply) => {
+        const me = request.farmer;
+        const now = Date.now();
+        const ready = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND ready_at IS NOT NULL AND ready_at <= ?')
+          .all(me.user_id, now);
+        if (ready.length === 0) return reply.code(400).send({ error: 'nothing_ready' });
+        db.transaction(() => {
+          for (const a of ready) {
+            invAdd(me.user_id, CHICKEN.product, 1);
+            grant(me.user_id, { xp: CHICKEN.expCollect });
+            db.prepare('UPDATE animals SET ready_at = NULL WHERE id = ?').run(a.id);
+          }
+        })();
+        return { me: fresh(me.user_id), collected: ready.length };
+      });
+
+      // ---- Cối xay ----
+      api.post('/mill', async (request, reply) => {
+        const { recipe: recipeId } = request.body ?? {};
+        const recipe = MILL.recipes[recipeId];
+        const me = request.farmer;
+        if (!recipe) return reply.code(400).send({ error: 'bad_request' });
+        if (levelFor(me.xp) < MILL.level) return reply.code(400).send({ error: 'level_too_low' });
+        const cur = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(me.user_id, 'coixay');
+        if (cur && cur.recipe) return reply.code(400).send({ error: 'mill_busy' });
+        for (const [item, qty] of Object.entries(recipe.in)) {
+          if (invQty(me.user_id, item) < qty) return reply.code(400).send({ error: 'not_enough_items' });
+        }
+        db.transaction(() => {
+          for (const [item, qty] of Object.entries(recipe.in)) invTake(me.user_id, item, qty);
+          db.prepare(`
+            INSERT INTO machines (owner_id, kind, recipe, ready_at) VALUES (?, 'coixay', ?, ?)
+            ON CONFLICT(owner_id, kind) DO UPDATE SET recipe = excluded.recipe, ready_at = excluded.ready_at
+          `).run(me.user_id, recipeId, Date.now() + scaleMs(recipe.ms, config.fast));
+        })();
+        return { me: fresh(me.user_id) };
+      });
+
+      api.post('/mill-collect', async (request, reply) => {
+        const me = request.farmer;
+        const cur = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(me.user_id, 'coixay');
+        if (!cur || !cur.recipe) return reply.code(400).send({ error: 'mill_empty' });
+        if (Date.now() < cur.ready_at) return reply.code(400).send({ error: 'not_ready' });
+        const recipe = MILL.recipes[cur.recipe];
+        db.transaction(() => {
+          for (const [item, qty] of Object.entries(recipe.out)) invAdd(me.user_id, item, qty);
+          grant(me.user_id, { xp: recipe.exp });
+          db.prepare('UPDATE machines SET recipe = NULL, ready_at = NULL WHERE owner_id = ? AND kind = ?').run(me.user_id, 'coixay');
+          bumpQuest(me.user_id, 'process');
+        })();
+        return { me: fresh(me.user_id) };
+      });
+
+      // ---- Đơn hàng ----
+      api.post('/order-deliver', async (request, reply) => {
+        const { id } = request.body ?? {};
+        const me = request.farmer;
+        const order = db.prepare('SELECT * FROM orders WHERE id = ? AND owner_id = ?').get(id, me.user_id);
+        if (!order) return reply.code(400).send({ error: 'no_order' });
+        const items = JSON.parse(order.items_json);
+        for (const [item, qty] of Object.entries(items)) {
+          if (invQty(me.user_id, item) < qty) return reply.code(400).send({ error: 'not_enough_items' });
+        }
+        db.transaction(() => {
+          for (const [item, qty] of Object.entries(items)) invTake(me.user_id, item, qty);
+          grant(me.user_id, { gold: order.gold, xp: order.exp, stars: order.stars });
+          db.prepare('DELETE FROM orders WHERE id = ?').run(order.id);
+          db.prepare('UPDATE farmers SET next_order_at = ? WHERE user_id = ?')
+            .run(Date.now() + scaleMs(ORDER_REFRESH_MS, config.fast), me.user_id);
+          bumpQuest(me.user_id, 'deliver');
+        })();
+        logEvent(`🚚 ${me.name} giao một đơn hàng, nhận ${order.gold} vàng`);
+        return { me: fresh(me.user_id), gained: order.gold };
+      });
+
+      api.post('/order-discard', async (request, reply) => {
+        const { id } = request.body ?? {};
+        const me = request.farmer;
+        const order = db.prepare('SELECT * FROM orders WHERE id = ? AND owner_id = ?').get(id, me.user_id);
+        if (!order) return reply.code(400).send({ error: 'no_order' });
+        db.transaction(() => {
+          db.prepare('DELETE FROM orders WHERE id = ?').run(order.id);
+          db.prepare('UPDATE farmers SET next_order_at = ? WHERE user_id = ?')
+            .run(Date.now() + scaleMs(ORDER_REFRESH_MS, config.fast), me.user_id);
+        })();
+        return { me: fresh(me.user_id) };
+      });
+
+      // ---- Nhiệm vụ ngày: rương ----
+      api.post('/quest-chest', async (request, reply) => {
+        const me = request.farmer;
+        const d = getDaily(me.user_id);
+        if (d.chest_claimed) return reply.code(400).send({ error: 'already_claimed' });
+        const done = DAILY_QUESTS.filter((q) => (d.counters[q.id] || 0) >= q.target);
+        if (done.length < DAILY_CHEST.questsRequired) return reply.code(400).send({ error: 'not_enough_quests' });
+        const gem = Math.random() < DAILY_CHEST.gemChance ? 1 : 0;
+        db.transaction(() => {
+          // Thưởng từng nhiệm vụ đã xong + rương tổng.
+          for (const q of done) grant(me.user_id, { gold: q.gold, xp: q.exp, stars: q.stars || 0 });
+          grant(me.user_id, { gold: DAILY_CHEST.gold, xp: DAILY_CHEST.exp, gems: gem });
+          db.prepare('UPDATE daily SET chest_claimed = 1 WHERE owner_id = ? AND day = ?').run(me.user_id, d.day);
+        })();
+        logEvent(`🎁 ${me.name} mở rương nhiệm vụ ngày`);
+        return { me: fresh(me.user_id), gem };
+      });
+
+      // ---- Mốc sao ----
+      api.post('/star-claim', async (request, reply) => {
+        const me = request.farmer;
+        const next = STAR_MILESTONES.find(
+          (m) => !db.prepare('SELECT 1 FROM star_claims WHERE owner_id = ? AND milestone = ?').get(me.user_id, m.stars),
+        );
+        if (!next) return reply.code(400).send({ error: 'no_milestone' });
+        if (me.stars < next.stars) return reply.code(400).send({ error: 'not_enough_stars' });
+        db.transaction(() => {
+          grant(me.user_id, { gold: next.gold || 0, gems: next.gems || 0 });
+          db.prepare('INSERT INTO star_claims (owner_id, milestone) VALUES (?, ?)').run(me.user_id, next.stars);
+        })();
+        return { me: fresh(me.user_id), claimed: next };
+      });
+
+      // ---- Mở rộng đất ----
+      api.post('/expand', async (request, reply) => {
+        const me = request.farmer;
+        if (me.plots_count >= MAX_PLOTS) return reply.code(400).send({ error: 'max_plots' });
+        const exp = EXPANSIONS[(me.plots_count - START_PLOTS) / 4];
+        if (levelFor(me.xp) < exp.level) return reply.code(400).send({ error: 'level_too_low' });
+        if (me.gold < exp.gold) return reply.code(400).send({ error: 'not_enough_gold' });
+        db.transaction(() => {
+          grant(me.user_id, { gold: -exp.gold });
+          db.prepare('UPDATE farmers SET plots_count = plots_count + 4 WHERE user_id = ?').run(me.user_id);
+        })();
+        logEvent(`🧱 ${me.name} mở rộng nông trại lên ${me.plots_count + 4} ô`);
+        return { me: fresh(me.user_id) };
+      });
+
+      // ---- Kim cương tăng tốc (cây hoặc cối xay) ----
+      api.post('/speedup', async (request, reply) => {
+        const { target, idx } = request.body ?? {};
+        const me = request.farmer;
+        const now = Date.now();
+        let remaining;
+        if (target === 'plot') {
+          const plot = getPlot.get(me.user_id, idx);
+          if (!plot || now >= plot.ready_at) return reply.code(400).send({ error: 'not_growing' });
+          remaining = plot.ready_at - now;
+          const cost = speedupCost(remaining);
+          if (me.gems < cost) return reply.code(400).send({ error: 'not_enough_gems' });
+          db.transaction(() => {
+            grant(me.user_id, { gems: -cost });
+            db.prepare('UPDATE plots SET ready_at = ? WHERE owner_id = ? AND idx = ?').run(now, me.user_id, idx);
+          })();
+          return { me: fresh(me.user_id), cost };
+        }
+        if (target === 'mill') {
+          const cur = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(me.user_id, 'coixay');
+          if (!cur || !cur.recipe || now >= cur.ready_at) return reply.code(400).send({ error: 'not_processing' });
+          remaining = cur.ready_at - now;
+          const cost = speedupCost(remaining);
+          if (me.gems < cost) return reply.code(400).send({ error: 'not_enough_gems' });
+          db.transaction(() => {
+            grant(me.user_id, { gems: -cost });
+            db.prepare('UPDATE machines SET ready_at = ? WHERE owner_id = ? AND kind = ?').run(now, me.user_id, 'coixay');
+          })();
+          return { me: fresh(me.user_id), cost };
+        }
+        return reply.code(400).send({ error: 'bad_request' });
+      });
+
+      // ---- Thăm ruộng ----
+      function visitPayload(request, ownerId) {
+        const owner = getFarmer.get(ownerId);
+        const li = levelInfo(owner.xp);
+        const plots = plotViews(ownerId, owner.plots_count);
+        const myActs = {};
+        for (const p of plots) {
+          if (!p.crop) continue;
+          myActs[p.idx] = {
+            watered: p.watered || !!hasAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'water'),
+            poached: !!hasAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'poach'),
+          };
+        }
+        return {
+          farm: { id: owner.user_id, name: owner.name, level: li.level, stars: owner.stars, plotsCount: owner.plots_count, plots },
+          myActs,
+          me: fresh(request.farmer.user_id),
+        };
+      }
+
+      api.get('/farm/:id', async (request, reply) => {
+        const ownerId = Number(request.params.id);
+        if (!getFarmer.get(ownerId)) return reply.code(404).send({ error: 'no_farm' });
+        return visitPayload(request, ownerId);
+      });
+
+      // Avatar từ Chat
       api.get('/avatar/:id', async (request, reply) => {
         const uid = Number(request.params.id);
         if (!Number.isInteger(uid)) return reply.code(400).send({ error: 'invalid_id' });
-        const res = await fetch(`${config.chatApiUrl}/api/users/${uid}/avatar`, {
-          headers: { cookie: request.headers.cookie },
-        });
+        const res = await fetch(`${config.chatApiUrl}/api/users/${uid}/avatar`, { headers: { cookie: request.headers.cookie } });
         if (!res.ok) return reply.code(res.status).send();
         reply.header('content-type', res.headers.get('content-type') || 'application/octet-stream');
         reply.header('cache-control', 'private, max-age=86400');
         return reply.send(Buffer.from(await res.arrayBuffer()));
       });
-
-      // Sau tưới/trộm trả luôn view ruộng đang thăm + ví mình — client khỏi gọi lại.
-      function refreshVisit(request, ownerId) {
-        const owner = getFarmer.get(ownerId);
-        const view = farmerView(owner);
-        const myActs = {};
-        for (const p of view.plots) {
-          if (!p.crop) continue;
-          myActs[p.idx] = {
-            watered: !!hasAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'water'),
-            stolenByMe: !!hasAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'steal'),
-          };
-        }
-        delete view.coins;
-        delete view.dailyAvailable;
-        return { farm: view, myActs, me: farmerView(getFarmer.get(request.farmer.user_id)) };
-      }
     },
     { prefix: '/farm/api' },
   );
 
-  // ---- Static + điều hướng ----------------------------------------------
-  // Chống cache cũ (trình duyệt LẪN Cloudflare edge — bài học hub-ui):
-  // index.html luôn no-store và trỏ asset kèm ?v=<phiên boot>, nên mỗi lần
-  // deploy/restart là cả nhà nhận CSS/JS mới ngay; URL có ?v thì cache
-  // thoải mái một năm.
+  // ---- Static + cache-bust (giữ nguyên bài v1) ----------------------------
   const BOOT_VERSION = Date.now().toString(36);
   const INDEX_HTML = readFileSync(join(PUBLIC_DIR, 'index.html'), 'utf8')
     .replace('href="style.css"', `href="style.css?v=${BOOT_VERSION}"`)
@@ -405,9 +695,6 @@ export function buildApp({ config, db, logger = true }) {
 
   app.register(staticPlugin, { root: PUBLIC_DIR, prefix: '/farm/', index: false });
 
-  // Cache header cho asset tĩnh: URL versioned (?v=) thì cache một năm,
-  // URL trần thì revalidate. Dùng onSend thay vì setHeaders của
-  // @fastify/static (v10 không đưa raw res ra nữa).
   app.addHook('onSend', async (request, reply, payload) => {
     const url = request.raw.url || '';
     const isAsset =
@@ -417,6 +704,7 @@ export function buildApp({ config, db, logger = true }) {
     }
     return payload;
   });
+
   const serveIndex = async (request, reply) =>
     reply.type('text/html; charset=utf-8').header('cache-control', 'no-store').send(INDEX_HTML);
   app.get('/farm/', serveIndex);

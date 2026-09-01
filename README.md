@@ -3,29 +3,20 @@
 Web game nông trại cho cả nhà, chạy trong Lazybutts hub và **dùng chung tài khoản Chat** —
 mở từ nút 🌾 trong Chat là chơi luôn, không cần đăng ký gì thêm.
 
-## Chơi thế nào
+## Chơi thế nào (v2 — theo đặc tả gameplay 1.0)
 
-- **Trồng trọt**: chạm ô đất trống → chọn hạt giống → chờ cây lớn theo thời gian thật → thu hoạch bán lấy xu.
-- **Thăm nhà nhau**: chạm avatar người nhà để sang ruộng của họ.
-  - 💧 **Tưới giúp** cây đang lớn: giảm 10% thời gian còn lại, người tưới được +2 xu +1 XP (mỗi người 1 lần/vụ).
-  - 😈 **Trộm** cây đã chín: mỗi kẻ trộm hái 1 đơn vị, tối đa 40% sản lượng mỗi ô — chủ ruộng luôn giữ ≥60%.
-    Chủ ruộng nhận **push notification qua Chat** ngay khi bị trộm.
-- **Quà mỗi ngày** 🎁: +50 xu +10 XP (theo ngày giờ VN).
-- **Mở rộng đất**: 6 ô ban đầu, mua dần tới 12 ô (giá tăng, kèm mốc level).
-- **Bảng xếp hạng** 🏆: đua XP với cả nhà.
+- **Trồng trọt**: 11 loại cây theo bảng cân bằng (Lúa mì 1 phút → Bí ngô 3 giờ), thu hoạch vào **Kho**, bán từ kho lấy vàng. Cây chín không bao giờ chết — chỉ đứng chờ.
+- **Tưới nước**: không đổi thời gian, nhưng cho trạng thái *Tươi tốt* (thưởng EXP khi thu). Tưới giúp nhà người khác được trả công nhỏ.
+- **Chuồng gà** (cấp 3): mua gà, cho ăn, 15 phút ra trứng.
+- **Đơn hàng** (cấp 5): 4 đơn, giao sản phẩm từ kho lấy vàng + EXP + **Sao Nông Trại** (mốc sao có thưởng lớn).
+- **Cối xay** (cấp 10): 2 lúa mì → bột mì, 2 ngô → 3 thức ăn gà. Chế biến luôn lời hơn bán thô.
+- **Nhiệm vụ ngày**: 6 nhiệm vụ, xong 3 mở **rương ngày** (vàng + EXP + cơ hội kim cương).
+- **Kim cương**: tăng tốc cây/máy (1 💎 mỗi 5 phút còn lại).
+- **Mở rộng đất**: 12 ô khởi điểm, mua dần tới 32 ô.
+- **Hái ké** 😋: ô chín nhà người khác hái ké được 1 sản phẩm — *chủ ruộng không mất gì* (tối đa 10 lần/ngày), chủ nhận push notification qua Chat.
+- EXP lên cấp theo công thức `100 + 12L + 3,36L²` (làm tròn 10) — đúng tài liệu thiết kế.
 
-## Kinh tế cây trồng
-
-| Cây | Giá | Thời gian | Sản lượng × giá bán | Lãi | XP | Level |
-|---|---|---|---|---|---|---|
-| 🌾 Lúa | 10 | 3 phút | 3 × 5 = 15 | +5 | 2 | 1 |
-| 🥕 Cà rốt | 25 | 15 phút | 3 × 13 = 39 | +14 | 5 | 2 |
-| 🍅 Cà chua | 60 | 45 phút | 4 × 25 = 100 | +40 | 10 | 3 |
-| 🍓 Dâu tây | 120 | 2 giờ | 5 × 40 = 200 | +80 | 18 | 5 |
-| 🌽 Ngô | 250 | 5 giờ | 5 × 90 = 450 | +200 | 35 | 7 |
-| 🎃 Bí ngô | 500 | 10 giờ | 4 × 240 = 960 | +460 | 70 | 9 |
-
-Level L cần `20·(L−1)·L` XP tích lũy. Xu khởi điểm: 200.
+Toàn bộ số liệu nằm trong `server/src/game.js`, bám tài liệu đặc tả (bảng cây trồng mục 6, vật nuôi mục 7, chế biến mục 8, đơn hàng mục 10, cấu hình nền mục 19).
 
 ## Kiến trúc
 

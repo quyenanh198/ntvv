@@ -1,60 +1,159 @@
-// Luật chơi Nông trại vui vẻ — thuần logic/cấu hình, không I/O.
-// Kinh tế: cây càng lâu lãi càng dày; trộm bị chặn ở 40% sản lượng nên
-// chủ ruộng lười thu hoạch vẫn giữ được đa số công sức.
+// Luật chơi Nông trại vui vẻ v2 — bám tài liệu đặc tả gameplay 1.0
+// (docs/gameplay: cây trồng, EXP, vàng, đơn hàng, nhiệm vụ ngày, chuồng gà,
+// cối xay). Thuần cấu hình/logic, không I/O.
 
 const MIN = 60_000;
 
+// ---- Cây trồng (bảng mục 6, MVP tới Bí ngô) --------------------------------
+// Mỗi ô cho 1 sản phẩm. expSow khi gieo, expHarvest khi thu.
 export const CROPS = {
-  lua:    { id: 'lua',    name: 'Lúa',     emoji: '🌾', cost: 10,  growMs: 3 * MIN,   yield: 3, sell: 5,   xp: 2,  level: 1 },
-  carot:  { id: 'carot',  name: 'Cà rốt',  emoji: '🥕', cost: 25,  growMs: 15 * MIN,  yield: 3, sell: 13,  xp: 5,  level: 2 },
-  cachua: { id: 'cachua', name: 'Cà chua', emoji: '🍅', cost: 60,  growMs: 45 * MIN,  yield: 4, sell: 25,  xp: 10, level: 3 },
-  dau:    { id: 'dau',    name: 'Dâu tây', emoji: '🍓', cost: 120, growMs: 120 * MIN, yield: 5, sell: 40,  xp: 18, level: 5 },
-  ngo:    { id: 'ngo',    name: 'Ngô',     emoji: '🌽', cost: 250, growMs: 300 * MIN, yield: 5, sell: 90,  xp: 35, level: 7 },
-  bingo:  { id: 'bingo',  name: 'Bí ngô',  emoji: '🎃', cost: 500, growMs: 600 * MIN, yield: 4, sell: 240, xp: 70, level: 9 },
+  luami:    { id: 'luami',    name: 'Lúa mì',   emoji: '🌾', level: 1,  growMs: 1 * MIN,   seed: 2,   sell: 6,   expSow: 1, expHarvest: 2 },
+  carot:    { id: 'carot',    name: 'Cà rốt',   emoji: '🥕', level: 1,  growMs: 3 * MIN,   seed: 4,   sell: 11,  expSow: 1, expHarvest: 4 },
+  ngo:      { id: 'ngo',      name: 'Ngô',      emoji: '🌽', level: 4,  growMs: 6 * MIN,   seed: 7,   sell: 18,  expSow: 2, expHarvest: 7 },
+  khoaitay: { id: 'khoaitay', name: 'Khoai tây', emoji: '🥔', level: 5,  growMs: 10 * MIN,  seed: 11,  sell: 28,  expSow: 2, expHarvest: 10 },
+  bapcai:   { id: 'bapcai',   name: 'Bắp cải',  emoji: '🥬', level: 7,  growMs: 15 * MIN,  seed: 14,  sell: 36,  expSow: 2, expHarvest: 14 },
+  cachua:   { id: 'cachua',   name: 'Cà chua',  emoji: '🍅', level: 8,  growMs: 25 * MIN,  seed: 18,  sell: 48,  expSow: 3, expHarvest: 21 },
+  hanhtay:  { id: 'hanhtay',  name: 'Hành tây', emoji: '🧅', level: 10, growMs: 60 * MIN,  seed: 30,  sell: 84,  expSow: 4, expHarvest: 43 },
+  mia:      { id: 'mia',      name: 'Mía',      emoji: '🎋', level: 12, growMs: 120 * MIN, seed: 46,  sell: 135, expSow: 5, expHarvest: 78 },
+  dautay:   { id: 'dautay',   name: 'Dâu tây',  emoji: '🍓', level: 13, growMs: 45 * MIN,  seed: 24,  sell: 70,  expSow: 3, expHarvest: 33 },
+  gao:      { id: 'gao',      name: 'Gạo',      emoji: '🍚', level: 16, growMs: 90 * MIN,  seed: 38,  sell: 110, expSow: 4, expHarvest: 60 },
+  bingo:    { id: 'bingo',    name: 'Bí ngô',   emoji: '🎃', level: 18, growMs: 180 * MIN, seed: 60,  sell: 180, expSow: 6, expHarvest: 110 },
 };
 
-// Ô đất 7..12: giá + level yêu cầu (ô 1..6 có sẵn).
-export const PLOT_SLOTS = [
-  { price: 300,   level: 3 },
-  { price: 800,   level: 4 },
-  { price: 2000,  level: 6 },
-  { price: 5000,  level: 8 },
-  { price: 12000, level: 10 },
-  { price: 30000, level: 12 },
-];
+// ---- Sản phẩm ngoài cây (kho dùng chung một catalogue) ---------------------
+export const GOODS = {
+  trung:   { id: 'trung',   name: 'Trứng',       emoji: '🥚', sell: 28,  source: 'ga' },
+  botmi:   { id: 'botmi',   name: 'Bột mì',      emoji: '🥡', sell: 32,  source: 'coixay' },
+  thucan:  { id: 'thucan',  name: 'Thức ăn gà',  emoji: '🌰', sell: 0,   source: 'shop', buy: 12 },
+};
 
-export const START_PLOTS = 6;
-export const MAX_PLOTS = 12;
-export const START_COINS = 200;
-export const DAILY_COINS = 50;
-export const DAILY_XP = 10;
-export const WATER_CUT = 0.1; // tưới giúp: giảm 10% thời gian còn lại
-export const WATER_COINS = 2;
-export const WATER_XP = 1;
-export const STEAL_XP = 1;
-
-// Mỗi ô bị trộm tối đa 40% sản lượng (làm tròn xuống), mỗi kẻ trộm 1 lần/vụ.
-export function stealCap(crop) {
-  return Math.floor(crop.yield * 0.4);
+export function itemInfo(id) {
+  return CROPS[id] || GOODS[id] || null;
 }
 
-// XP tích lũy cần để ĐẠT level l (level 1 = 0).
-export function xpForLevel(l) {
-  return 20 * (l - 1) * l;
+// ---- Vật nuôi (mục 7 — MVP: gà) -------------------------------------------
+export const CHICKEN = {
+  level: 3,
+  price: 250,
+  capacity: 3, // chuồng cấp 1
+  produceMs: 15 * MIN,
+  feedItem: 'thucan',
+  feedQty: 1,
+  product: 'trung',
+  expCollect: 8,
+};
+
+// ---- Cối xay (mục 8 — MVP) -------------------------------------------------
+export const MILL = {
+  level: 10,
+  recipes: {
+    botmi:  { id: 'botmi',  name: 'Bột mì',     emoji: '🥡', in: { luami: 2 }, out: { botmi: 1 },  ms: 10 * MIN, exp: 10 },
+    thucan: { id: 'thucan', name: 'Thức ăn gà', emoji: '🌰', in: { ngo: 2 },   out: { thucan: 3 }, ms: 8 * MIN,  exp: 8 },
+  },
+};
+
+// ---- Đất ------------------------------------------------------------------
+export const START_PLOTS = 12;
+// Mở rộng theo bảng mục 9.2 (MVP: 5 lần đầu, mỗi lần +4 ô → tối đa 32).
+export const EXPANSIONS = [
+  { level: 2,  gold: 500 },
+  { level: 4,  gold: 1200 },
+  { level: 6,  gold: 2500 },
+  { level: 8,  gold: 5000 },
+  { level: 10, gold: 9000 },
+];
+export const MAX_PLOTS = START_PLOTS + EXPANSIONS.length * 4;
+
+// ---- Khởi điểm & tiền tệ (mục 19) -----------------------------------------
+export const START_GOLD = 500;
+export const START_GEMS = 50;
+
+// Kim cương tăng tốc: 1 KC / 5 phút còn lại, làm tròn lên, tối thiểu 1.
+export function speedupCost(remainingMs) {
+  return Math.max(1, Math.ceil(remainingMs / (5 * MIN)));
+}
+
+// ---- EXP & cấp (mục 4: 100 + 12L + 3,36L², làm tròn 10) --------------------
+export function xpNeedFor(level) {
+  return Math.round((100 + 12 * level + 3.36 * level * level) / 10) * 10;
+}
+
+export function levelInfo(xp) {
+  let level = 1;
+  let rest = xp;
+  while (level < 60 && rest >= xpNeedFor(level)) {
+    rest -= xpNeedFor(level);
+    level += 1;
+  }
+  return { level, into: rest, need: xpNeedFor(level) };
 }
 
 export function levelFor(xp) {
-  let l = 1;
-  while (xp >= xpForLevel(l + 1)) l += 1;
-  return l;
+  return levelInfo(xp).level;
 }
 
-// FARM_FAST (test): thời gian trồng chia 60, sàn 3 giây.
-export function growMsFor(crop, fast) {
-  return fast ? Math.max(3000, Math.round(crop.growMs / 60)) : crop.growMs;
+// ---- Đơn hàng (mục 10.2 + 16.2/16.3) --------------------------------------
+export const ORDER_SLOTS = 4;
+export const ORDER_UNLOCK_LEVEL = 5;
+export const ORDER_REFRESH_MS = 20 * MIN; // đơn mới sau khi bỏ/giao
+
+// Sinh một đơn từ các sản phẩm đã mở khóa. rng: () => [0,1).
+export function generateOrder(level, rng) {
+  const pool = Object.values(CROPS).filter((c) => c.level <= level).map((c) => c.id);
+  if (level >= CHICKEN.level) pool.push('trung');
+  if (level >= MILL.level) pool.push('botmi');
+  const kinds = 1 + Math.floor(rng() * Math.min(3, Math.max(1, Math.floor(level / 4) + 1)));
+  const chosen = new Set();
+  while (chosen.size < kinds) chosen.add(pool[Math.floor(rng() * pool.length)]);
+  const items = {};
+  let base = 0;
+  for (const id of chosen) {
+    const qty = 1 + Math.floor(rng() * 4);
+    items[id] = qty;
+    base += itemInfo(id).sell * qty;
+  }
+  const bonus = 1.1 + rng() * 0.15; // 1,10x – 1,25x
+  const gold = Math.ceil(base * bonus);
+  const exp = Math.min(500, Math.round(30 + 10 * chosen.size + 0.05 * gold));
+  return { items, gold, exp, stars: chosen.size };
 }
 
-// Ngày hiện tại theo giờ VN — mốc cho thưởng điểm danh.
+// ---- Nhiệm vụ ngày (mục 10.3) ---------------------------------------------
+export const DAILY_QUESTS = [
+  { id: 'harvest', name: 'Thu hoạch cây',    emoji: '🧺', target: 15, gold: 120, exp: 50 },
+  { id: 'sow',     name: 'Gieo hạt',         emoji: '🌱', target: 10, gold: 100, exp: 40 },
+  { id: 'deliver', name: 'Giao đơn hàng',    emoji: '🚚', target: 2,  gold: 300, exp: 80, stars: 3 },
+  { id: 'process', name: 'Chế biến sản phẩm', emoji: '⚙️', target: 3,  gold: 250, exp: 70 },
+  { id: 'feed',    name: 'Cho gà ăn',        emoji: '🐔', target: 5,  gold: 150, exp: 50 },
+  { id: 'sell',    name: 'Bán nông sản',     emoji: '💰', target: 10, gold: 180, exp: 50 },
+];
+export const DAILY_CHEST = { gold: 500, exp: 100, gemChance: 0.1, questsRequired: 3 };
+
+// ---- Sao Nông Trại (mục 13.2, các mốc đầu) --------------------------------
+export const STAR_MILESTONES = [
+  { stars: 50,   gold: 500 },
+  { stars: 100,  gems: 5 },
+  { stars: 250,  gold: 2000 },
+  { stars: 500,  gems: 10 },
+  { stars: 1000, gems: 10, gold: 5000 },
+];
+
+// ---- Hái ké (bản gia đình của "trộm": chủ ruộng không mất gì) --------------
+export const POACH_DAILY_LIMIT = 10;
+export const POACH_EXP = 1;
+
+// ---- Tưới: không đổi thời gian (mục 6.1) — đánh dấu "Tươi tốt", chủ +1 EXP
+// khi thu; khách tưới giúp nhận công nhỏ.
+export const WATER_HELPER_GOLD = 2;
+export const WATER_HELPER_EXP = 1;
+export const WATER_FRESH_EXP = 1;
+
+// ---- FARM_FAST (test): mọi đồng hồ chia 60, sàn 3 giây ---------------------
+export function scaleMs(ms, fast) {
+  return fast ? Math.max(3000, Math.round(ms / 60)) : ms;
+}
+
+// Ngày hiện tại theo giờ VN (mốc nhiệm vụ ngày / hái ké).
 export function todayVN(now = Date.now()) {
   return new Date(now).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
 }
