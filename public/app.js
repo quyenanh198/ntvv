@@ -11,6 +11,11 @@
   let pending = false;
   let familyFilter = ''; // ô tìm người nhà
 
+  // Sprite vector tự vẽ theo bộ asset thiết kế (public/assets/) — cây trồng
+  // theo giai đoạn, đồng xu... Emoji chỉ còn dùng trong text bản tin.
+  const COIN = '<img class="coin-img" src="assets/ui/coin.svg" alt="xu" />';
+  const cropSprite = (id, stage) => `assets/crops/${stage === 1 ? 'seed-1' : `${id}-${stage}`}.svg`;
+
   // ---------- helpers ----------
   const esc = (s) =>
     String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -100,7 +105,7 @@
     el.className = 'float-gain';
     el.style.left = `${x - 20}px`;
     el.style.top = `${y - 20}px`;
-    el.textContent = text;
+    el.innerHTML = text;
     layer.appendChild(el);
     setTimeout(() => el.remove(), 1300);
     if (xpText) {
@@ -108,7 +113,7 @@
       xe.className = 'float-gain float-gain--xp';
       xe.style.left = `${x + 14}px`;
       xe.style.top = `${y + 4}px`;
-      xe.textContent = xpText;
+      xe.innerHTML = xpText;
       layer.appendChild(xe);
       setTimeout(() => xe.remove(), 1300);
     }
@@ -166,7 +171,7 @@
         </div>
         <div class="hud-right">
           <span class="coin-pill">
-            <span class="coin-ico">🪙</span><b>${m.coins.toLocaleString('vi')}</b>
+            <span class="coin-ico">${COIN}</span><b>${m.coins.toLocaleString('vi')}</b>
             <button class="gbtn gbtn--green coin-plus" id="btn-daily" title="Quà mỗi ngày">＋${m.dailyAvailable ? '<span class="dot"></span>' : ''}</button>
           </span>
           <button class="gbtn gbtn--gold round-btn" id="btn-lb" title="Bảng xếp hạng">🏆</button>
@@ -188,7 +193,7 @@
       <div class="field-wrap">
         <span class="field-decor decor-1">🌻</span>
         <span class="field-decor decor-2">🍄</span>
-        <span class="field-decor decor-3">🌼</span>
+        <img class="scarecrow-img" src="assets/ui/scarecrow.svg" alt="" />
         <span class="butterfly">🦋</span>
         <div class="farm-grid" id="grid">${renderPlots(visiting)}</div>
       </div>
@@ -274,7 +279,7 @@
         const acts = visiting ? visiting.myActs[p.idx] : null;
         const canSteal = visiting && !acts?.stolenByMe && p.stolen < p.stealCap;
         return `<button class="plot plot--ready" data-idx="${p.idx}" data-kind="${mine ? 'harvest' : canSteal ? 'steal' : 'ripe'}">
-          <span class="plot-crops"><span>${c.emoji}</span><b>${c.emoji}</b><span>${c.emoji}</span></span>
+          <img class="crop-sprite crop-sprite--ready" src="${cropSprite(p.crop, 3)}" alt="${c.name}" />
           <span class="plot-note">${mine ? 'Thu hoạch!' : canSteal ? 'Trộm được!' : 'Chín rồi'}</span>
           <span class="plot-badge">×${p.yieldLeft}</span>
           ${!mine && canSteal ? '<span class="plot-act">😈</span>' : ''}
@@ -283,11 +288,10 @@
       const total = c.growMs;
       const left = p.readyAt - now;
       const pct = Math.min(100, Math.max(3, Math.round(((total - left) / total) * 100)));
-      const stage = pct < 50 ? '🌱' : '🌿';
       const acts = visiting ? visiting.myActs[p.idx] : null;
       const canWater = visiting && !acts?.watered;
-      return `<button class="plot plot--growing" data-idx="${p.idx}" data-kind="${canWater ? 'water' : 'growing'}" data-ready="${p.readyAt}" data-total="${total}">
-        <span class="plot-main">${stage}</span>
+      return `<button class="plot plot--growing" data-idx="${p.idx}" data-kind="${canWater ? 'water' : 'growing'}" data-ready="${p.readyAt}" data-total="${total}" data-cropid="${p.crop}">
+        <img class="crop-sprite" src="${cropSprite(p.crop, pct < 45 ? 1 : 2)}" alt="${c.name}" />
         <span class="plot-timer">${fmtTime(left)}</span>
         <div class="plot-progress"><i style="width:${pct}%"></i></div>
         ${canWater ? '<span class="plot-act">💧</span>' : ''}
@@ -299,7 +303,7 @@
       const affordable = me().level >= s.level && me().coins >= s.price;
       cells.push(`<button class="plot plot--locked${affordable ? ' plot--buyable' : ''}" data-kind="buyplot">
         <span class="plot-main">🔒</span>
-        <span class="plot-note">${s.price.toLocaleString('vi')} 🪙 · Lv ${s.level}</span>
+        <span class="plot-note">${s.price.toLocaleString('vi')} ${COIN} · Lv ${s.level}</span>
       </button>`);
     }
     return cells.join('');
@@ -317,13 +321,13 @@
           const profit = c.yield * c.sell - c.cost;
           const canPlant = sheet.all ? Math.min(emptyCount, Math.floor(m.coins / c.cost)) : 1;
           const costLabel = sheet.all
-            ? `${canPlant} ô · ${(c.cost * canPlant).toLocaleString('vi')} 🪙`
-            : `${c.cost} 🪙`;
+            ? `${canPlant} ô · ${(c.cost * canPlant).toLocaleString('vi')} ${COIN}`
+            : `${c.cost} ${COIN}`;
           return `<button class="seed-row${locked ? ' seed-row--locked' : ''}" data-crop="${locked ? '' : c.id}">
-            <span class="seed-emoji">${c.emoji}</span>
+            <img class="seed-sprite" src="${cropSprite(c.id, 3)}" alt="" />
             <span class="seed-info">
               <span class="seed-name">${c.name}</span>
-              <div class="seed-meta">⏱ ${fmtDuration(c.growMs)} · bán ${c.yield}×${c.sell} 🪙 · lãi +${profit}</div>
+              <div class="seed-meta">⏱ ${fmtDuration(c.growMs)} · bán ${c.yield}×${c.sell} ${COIN} · lãi +${profit}</div>
             </span>
             ${lockLevel ? `<span class="seed-lock">Cần Lv ${c.level}</span>` : `<span class="seed-cost">${costLabel}</span>`}
           </button>`;
@@ -332,7 +336,7 @@
       return `
         <div class="sheet-backdrop" data-close="1"></div>
         <div class="sheet">
-          <h3>${sheet.all ? `🧺 Gieo hết ${emptyCount} ô trống` : '🛒 Chợ hạt giống'} <span style="margin-left:auto;font-size:0.85rem;color:var(--muted)">🪙 ${m.coins.toLocaleString('vi')}</span></h3>
+          <h3>${sheet.all ? `🧺 Gieo hết ${emptyCount} ô trống` : '🛒 Chợ hạt giống'} <span style="margin-left:auto;font-size:0.85rem;color:var(--muted)">${COIN} ${m.coins.toLocaleString('vi')}</span></h3>
           ${sheet.all ? '<p class="sheet-note">Chọn một loại hạt — thiếu xu thì gieo được bao nhiêu ô hay bấy nhiêu.</p>' : ''}
           ${rows}
         </div>`;
@@ -344,7 +348,7 @@
         <div class="sheet-backdrop" data-close="1"></div>
         <div class="sheet">
           <h3>🧱 Mở rộng đất</h3>
-          <p class="sheet-note">Ô đất thứ ${s.idx + 1}: giá <b>${s.price.toLocaleString('vi')} 🪙</b>, cần <b>Lv ${s.level}</b>.</p>
+          <p class="sheet-note">Ô đất thứ ${s.idx + 1}: giá <b>${s.price.toLocaleString('vi')} ${COIN}</b>, cần <b>Lv ${s.level}</b>.</p>
           <div class="sheet-actions">
             <button class="btn btn-ghost" data-close="1">Thôi</button>
             <button class="btn gbtn gbtn--green" id="btn-buyplot" ${can ? '' : 'disabled'}>${can ? 'Mua luôn!' : m.level < s.level ? `Cần Lv ${s.level}` : 'Thiếu xu'}</button>
@@ -365,7 +369,7 @@
               (f) => `<div class="lb-row">
                 <span class="lb-rank">${medal(f.rank)}</span>
                 <span class="lb-name">${esc(f.name)}</span>
-                <span class="lb-stat">Lv ${f.level} · ${f.xp} XP · ${f.coins.toLocaleString('vi')} 🪙</span>
+                <span class="lb-stat">Lv ${f.level} · ${f.xp} XP · ${f.coins.toLocaleString('vi')} ${COIN}</span>
               </div>`,
             )
             .join('')}
@@ -380,7 +384,7 @@
       const r = await run(() => api('/daily', {}));
       if (r) {
         DATA.me = r.me;
-        floatGain(e.clientX || innerWidth / 2, e.clientY || 100, `+${r.gain} 🪙`, `+${DATA.config.daily.xp} XP`);
+        floatGain(e.clientX || innerWidth / 2, e.clientY || 100, `+${r.gain} ${COIN}`, `+${DATA.config.daily.xp} XP`);
         render();
       }
     });
@@ -477,7 +481,7 @@
         const r = await run(() => api('/harvest', { idx }));
         if (r) {
           DATA.me = r.me;
-          floatGain(x, y, `+${r.gain} 🪙`);
+          floatGain(x, y, `+${r.gain} ${COIN}`);
           const layer = document.querySelector('.toast-layer');
           if (layer) {
             const el = document.createElement('div');
@@ -495,7 +499,7 @@
         if (r) {
           VISIT = { ownerId: VISIT.ownerId, farm: r.farm, myActs: r.myActs };
           DATA.me = r.me;
-          floatGain(x, y, '💧', '+2 🪙');
+          floatGain(x, y, '💧', `+2 ${COIN}`);
           render();
         }
       } else if (kind === 'steal') {
@@ -503,7 +507,7 @@
         if (r) {
           VISIT = { ownerId: VISIT.ownerId, farm: r.farm, myActs: r.myActs };
           DATA.me = r.me;
-          floatGain(x, y, '😈 +🪙');
+          floatGain(x, y, `😈 +${COIN}`);
           render();
         }
       } else if (kind === 'growing' || kind === 'ripe') {
@@ -561,11 +565,12 @@
       const total = Number(el.dataset.total);
       const timer = el.querySelector('.plot-timer');
       if (timer) timer.textContent = fmtTime(left);
+      const pct = ((total - left) / total) * 100;
       const bar = el.querySelector('.plot-progress i');
-      if (bar) bar.style.width = `${Math.min(100, Math.max(3, Math.round(((total - left) / total) * 100)))}%`;
-      const main = el.querySelector('.plot-main');
-      const pct = (total - left) / total;
-      if (main) main.textContent = pct < 0.5 ? '🌱' : '🌿';
+      if (bar) bar.style.width = `${Math.min(100, Math.max(3, Math.round(pct)))}%`;
+      const img = el.querySelector('.crop-sprite');
+      const want = cropSprite(el.dataset.cropid, pct < 45 ? 1 : 2);
+      if (img && img.getAttribute('src') !== want) img.setAttribute('src', want);
     });
   }, 1000);
 

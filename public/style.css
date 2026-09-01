@@ -307,13 +307,14 @@ body {
 }
 .plot--locked.plot--buyable { cursor: pointer; }
 .plot-main { font-size: 2rem; line-height: 1; filter: drop-shadow(0 3px 2px rgba(70, 40, 10, 0.35)); }
-.plot--growing .plot-main { animation: sway 3s ease-in-out infinite; transform-origin: bottom center; }
+.plot--growing .crop-sprite { animation: sway 3s ease-in-out infinite; transform-origin: bottom center; }
 @keyframes sway { 50% { transform: rotate(7deg); } }
 
-/* Luống chín: cụm 3 cây như vườn thật */
-.plot-crops { display: flex; align-items: flex-end; line-height: 1; filter: drop-shadow(0 3px 2px rgba(70, 40, 10, 0.35)); }
-.plot-crops span { font-size: 1.25rem; }
-.plot-crops b { font-size: 1.8rem; margin: 0 -0.18rem; }
+/* Sprite cây trồng (SVG asset) */
+.crop-sprite {
+  width: 68%; max-height: 60%; object-fit: contain;
+  filter: drop-shadow(0 3px 2px rgba(70, 40, 10, 0.35));
+}
 
 .plot--ready {
   box-shadow:
@@ -327,7 +328,7 @@ body {
   animation: twinkle 1.2s ease-in-out infinite;
 }
 @keyframes twinkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.7) rotate(20deg); } }
-.plot--ready .plot-crops { animation: bounce 0.9s ease-in-out infinite; }
+.plot--ready .crop-sprite--ready { width: 80%; max-height: 68%; animation: bounce 0.9s ease-in-out infinite; }
 @keyframes bounce { 50% { transform: translateY(-6px) scale(1.08); } }
 
 .plot-timer {
@@ -467,4 +468,15 @@ body {
   .farm-grid { grid-template-columns: repeat(4, 1fr); }
   .plot-main { font-size: 2.35rem; }
   .hud-name { max-width: 11rem; }
+}
+
+/* ---------- Sprite assets ---------- */
+.seed-sprite { width: 2.3rem; height: 2.3rem; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(70, 40, 10, 0.25)); }
+.coin-img { width: 1.02em; height: 1.02em; vertical-align: -0.14em; }
+.coin-ico .coin-img { width: 1.25rem; height: 1.25rem; display: block; }
+.sheet-coins { margin-left: auto; font-size: 0.85rem; color: var(--muted); display: inline-flex; align-items: center; gap: 0.25rem; }
+.scarecrow-img {
+  position: absolute; top: -2rem; right: 9%; height: 3.4rem; z-index: 2;
+  pointer-events: none; filter: drop-shadow(0 3px 3px rgba(60, 80, 20, 0.3));
+  animation: sway 5s ease-in-out infinite; transform-origin: bottom center;
 }
