@@ -1395,17 +1395,24 @@
   }
 
   // ---------- vòng lặp ----------
+  // Chữ ký trạng thái: refresh định kỳ mà không có gì đổi thì khỏi vẽ lại
+  // (vẽ lại toàn trang tốn kém trên điện thoại).
+  let lastStateSig = null;
   async function refresh() {
     try {
-      DATA = await api('/state');
-      if (checkServerBoot(DATA)) return;
+      const next = await api('/state');
+      if (checkServerBoot(next)) return;
+      const sig = JSON.stringify([next.me, next.family, next.events?.[0]?.at, next.wants]);
+      const changed = sig !== lastStateSig;
+      lastStateSig = sig;
+      DATA = next;
       if (lastLevel && DATA.me.level > lastLevel) toast(`🎉 Lên cấp ${DATA.me.level}!`);
       lastLevel = DATA.me.level;
       if (VISIT) {
         const r = await api(`/farm/${VISIT.ownerId}`);
         VISIT = { ownerId: VISIT.ownerId, farm: r.farm, myActs: r.myActs };
       }
-      render();
+      if (changed || VISIT || !document.querySelector('.stage')) render();
       scheduleCritter();
     } catch { /* gate/waking đã render */ }
   }
