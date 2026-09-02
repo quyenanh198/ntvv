@@ -1720,3 +1720,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 /* ---- Nhóm nút số lượng trên một hàng ---- */
 .btn-group { display: inline-flex; gap: .3rem; flex-wrap: nowrap; grid-column: span 2; justify-self: end; }
 .btn-group .btn-mini { min-width: 2.6rem; padding-inline: .5rem; }
+
+/* ---- Chó canh vườn ---- */
+.coin-pill--dog { background: linear-gradient(180deg, #ffe7b3, #f2c97a); }
+.dog-warn { color: #b3261e; font-weight: 800; font-size: .78rem; }

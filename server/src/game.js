@@ -344,6 +344,16 @@ export const MACHINE_QUEUE_MAX = 50; // mẻ tối đa xếp trong một máy
 export const WANT_MARKUP = 1.3;
 export const WANT_MAX_QTY = 999;
 export const WANT_MAX_OPEN = 5;
+// Chó canh vườn: thuê theo giờ, 20% tóm được kẻ trộm; kẻ bị tóm nộp phạt cho CHỦ VƯỜN.
+// Lần bị tóm đầu 200, bị tóm liên tiếp lần 2 là 300, lần 3 là 400… (+100 mỗi lần);
+// trộm trót lọt một lần là chuỗi reset về 200.
+export const DOG = {
+  pricePerHour: 5000,
+  hoursOptions: [1, 4, 12],
+  catchChance: 0.2,
+  fine: 200,
+  fineStep: 100,
+};
 
 // Sinh một đơn từ các sản phẩm đã mở khóa. rng: () => [0,1).
 export function generateOrder(level, rng) {

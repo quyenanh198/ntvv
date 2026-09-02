@@ -76,7 +76,7 @@
     }
     const data = await res.json();
     if (!res.ok) {
-      toast(ERRORS[data.error] || 'Có lỗi rồi, thử lại nhé!');
+      toast(data.message || ERRORS[data.error] || 'Có lỗi rồi, thử lại nhé!');
       throw new Error(data.error || 'error');
     }
     return data;
@@ -297,6 +297,7 @@
             <button class="coin-pill" data-sheet="inventory" title="Vàng — mở kho để bán đồ">${COIN}<b>${m.gold.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
             <button class="coin-pill coin-pill--gem" data-sheet="stars" title="Kim cương — nhận từ mốc sao và rương">${GEM}<b>${m.gems.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
             <button class="coin-pill coin-pill--energy" data-sheet="fishing" title="Năng lượng — mở Hồ câu cá">⚡<b>${m.energy.current}</b><span class="pill-plus">＋</span></button>
+            ${m.dog?.active ? `<button class="coin-pill coin-pill--dog" data-sheet="shop" title="Chó canh vườn đang trực">🐕<b>${fmtTime(m.dog.until - Date.now())}</b></button>` : ''}
             <button class="coin-pill coin-pill--star" data-sheet="stars" title="Sao Nông Trại">${STAR}<b>${m.stars.toLocaleString('vi')}</b>${starReady ? '<i class="dot"></i>' : ''}</button>
             <span class="hud-rounds">
               <button class="hud-round" data-sheet="events" title="Bản tin làng">✉️</button>
@@ -362,7 +363,7 @@
 
           ${visiting ? `
             <div class="visit-bar">
-              <span>👀 Ruộng của <b>${esc(visiting.farm.name)}</b> · Lv ${visiting.farm.level}</span>
+              <span>👀 Ruộng của <b>${esc(visiting.farm.name)}</b> · Lv ${visiting.farm.level}${visiting.farm.dogUntil > Date.now() ? ' <span class="dog-warn">🐕 Có chó canh — 20% bị tóm!</span>' : ''}</span>
           ${visiting.farm.loot?.animalsReady ? (Date.now() < (visiting.farm.loot.animalPoachAt || 0)
             ? `<button class="gbtn btn-mini" disabled>⏳ Chuồng (${Math.max(1, Math.ceil((visiting.farm.loot.animalPoachAt - Date.now()) / 60000))}p)</button>`
             : `<button class="gbtn gbtn--green btn-mini" id="btn-poach-animal">😋 Cuỗm chuồng (${visiting.farm.loot.animalsReady})</button>`) : ''}
@@ -650,6 +651,14 @@
              <button class="gbtn gbtn--green btn-mini" data-buy="thucan" data-qty="1" title="Mua 1 túi">1</button>
              <button class="gbtn gbtn--gold btn-mini" data-buy="thucan" data-qty="10" title="Mua 10 túi">10</button>
              <button class="gbtn gbtn--gold btn-mini" data-buy="thucan" data-qty="100" title="Mua 100 túi">100</button>
+           </span>
+         </div>
+         <div class="inv-row">
+           <span class="emoji-ic emoji-ic--barn">🐕</span>
+           <span class="seed-info"><span class="seed-name">Chó canh vườn</span>
+             <div class="seed-meta">${DATA.config.dog.pricePerHour.toLocaleString('vi')} ${COIN}/giờ · ${Math.round(DATA.config.dog.catchChance * 100)}% tóm được trộm → kẻ trộm nộp phạt cho bạn ${DATA.config.dog.fine} ${COIN}, bị tóm liên tiếp +${DATA.config.dog.fineStep} mỗi lần (trộm trót lọt thì về ${DATA.config.dog.fine})${m.dog?.active ? ` · <b>đang trực, còn ${fmtTime(m.dog.until - Date.now())}</b>` : ''}</div></span>
+           <span class="btn-group">
+             ${DATA.config.dog.hoursOptions.map((h) => `<button class="gbtn ${h === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-dog-hire="${h}" ${m.gold >= DATA.config.dog.pricePerHour * h ? '' : 'disabled'} title="${(DATA.config.dog.pricePerHour * h).toLocaleString('vi')} vàng">${h}h</button>`).join('')}
            </span>
          </div>
          ${m.level >= DATA.config.chicken.level ? `
@@ -1032,6 +1041,11 @@
       el.addEventListener('click', () => {
         if (el.dataset.sheet === 'market') { openMarket(); return; }
         sheet = { type: el.dataset.sheet }; render();
+      }));
+    document.querySelectorAll('[data-dog-hire]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        const r = await run(() => api('/dog-hire', { hours: Number(el.dataset.dogHire) }));
+        if (r) { updateMe(r); toast(`🐕 Chó canh vườn nhận ca ${el.dataset.dogHire} giờ!`); render(); }
       }));
     document.getElementById('btn-want-create')?.addEventListener('click', async () => {
       const item = document.getElementById('want-item')?.value;

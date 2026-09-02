@@ -39,6 +39,7 @@ import {
   WANT_MARKUP,
   WANT_MAX_QTY,
   WANT_MAX_OPEN,
+  DOG,
   generateOrder,
   DAILY_QUESTS,
   DAILY_CHEST,
@@ -439,6 +440,7 @@ export function buildApp({ config, db, logger = true }) {
       energy: energyView(f0),
       coop: barnView(f0, 'ga'),
       barns: Object.fromEntries(Object.keys(ANIMALS).map((k) => [k, barnView(f0, k)])),
+      dog: { until: f.dog_until || 0, active: (f.dog_until || 0) > Date.now() },
       pond: {
         level: f.pond_level,
         fishPerCast: POND_LEVELS[f.pond_level - 1],
@@ -579,6 +581,7 @@ export function buildApp({ config, db, logger = true }) {
             },
             energy: ENERGY,
             machineQueueMax: MACHINE_QUEUE_MAX,
+            dog: DOG,
             skillTree: SKILLS,
             trees: Object.fromEntries(Object.entries(TREES).map(([k, t]) => [k, { ...t, sell: t.sell * GOLD_MULT, growMs: scaleMs(t.growMs, config.fast) }])),
             starMilestones: STAR_MILESTONES.map((m2) => ({ ...m2, gold: (m2.gold || 0) * GOLD_MULT })),
@@ -748,6 +751,7 @@ export function buildApp({ config, db, logger = true }) {
         // Chủ chậm thu: mỗi POACH_AGAIN_MS quá hạn mở thêm 1 lượt hái ké trên ô.
         const allowed = 1 + Math.floor((Date.now() - plot.ready_at) / scaleMs(POACH_AGAIN_MS, config.fast));
         if ((plot.poached || 0) >= allowed) return reply.code(400).send({ error: 'already_poached' });
+        if (dogCheck(reply, owner, me)) return reply;
         const d = getDaily(me.user_id);
         const crop = plot.tree ? TREES[plot.crop] : CROPS[plot.crop];
         db.transaction(() => {
@@ -757,6 +761,7 @@ export function buildApp({ config, db, logger = true }) {
           grant(me.user_id, { xp: POACH_EXP * POACH_YIELD });
           bumpPoached(me.user_id, POACH_YIELD);
         })();
+        thiefEscaped.run(me.user_id);
         logEvent(`😋 ${me.name} hái ké ${POACH_YIELD} ${crop.name} ${crop.emoji} nhà ${owner.name}`);
         pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa hái ké ${POACH_YIELD} ${crop.name} ${crop.emoji} nhà bạn!`);
         return visitPayload(request, ownerId);
@@ -1149,6 +1154,45 @@ export function buildApp({ config, db, logger = true }) {
         return { me: fresh(me.user_id) };
       });
 
+      // ---- Chó canh vườn ----
+      // Gọi trước mỗi lần trộm nhà người khác. Trả về null nếu thoát; nếu bị tóm
+      // thì đã trừ tiền phạt, chuyển cho chủ, ghi log — trả về reply 400.
+      function dogCheck(reply, owner, thief) {
+        const now = Date.now();
+        if (!owner || (owner.dog_until || 0) <= now) return null;
+        if (Math.random() >= DOG.catchChance) return null;
+        const streak = thief.caught_streak || 0; // số lần bị tóm liên tiếp trước đó
+        const fine = DOG.fine + DOG.fineStep * streak;
+        const paid = Math.min(fine, Math.max(0, thief.gold));
+        db.transaction(() => {
+          grant(thief.user_id, { gold: -paid });
+          grant(owner.user_id, { gold: paid });
+          db.prepare('UPDATE farmers SET last_caught_at = ?, caught_streak = ? WHERE user_id = ?').run(now, streak + 1, thief.user_id);
+        })();
+        const nth = streak + 1;
+        logEvent(`🐕 Chó nhà ${owner.name} tóm được ${thief.name}${nth > 1 ? ` (lần ${nth} liên tiếp)` : ''} — nộp phạt ${paid.toLocaleString('vi')} vàng cho chủ vườn`);
+        pushTo([owner.user_id], 'Ăn trộm dzui dzẻ 😋', `🐕 Chó nhà bạn vừa tóm được ${thief.name} — thu ${paid.toLocaleString('vi')} vàng tiền phạt!`);
+        return reply.code(400).send({ error: 'caught_by_dog', fine: paid, streak: nth, message: `🐕 Gâu! Chó nhà ${owner.name} tóm được bạn — nộp phạt ${paid.toLocaleString('vi')} vàng${nth > 1 ? ` (bị tóm ${nth} lần liên tiếp)` : ''}. Trộm trót lọt một lần là phạt về lại ${DOG.fine}.` });
+      }
+      // Trộm trót lọt: chuỗi bị tóm về 0.
+      const thiefEscaped = db.prepare('UPDATE farmers SET caught_streak = 0 WHERE user_id = ? AND caught_streak > 0');
+
+      api.post('/dog-hire', async (request, reply) => {
+        const me = request.farmer;
+        const hours = Number(request.body?.hours);
+        if (!DOG.hoursOptions.includes(hours)) return reply.code(400).send({ error: 'bad_request' });
+        const cost = DOG.pricePerHour * hours;
+        if (me.gold < cost) return reply.code(400).send({ error: 'not_enough_gold' });
+        const now = Date.now();
+        const until = Math.max(now, me.dog_until || 0) + scaleMs(hours * 60 * 60 * 1000, config.fast);
+        db.transaction(() => {
+          grant(me.user_id, { gold: -cost });
+          db.prepare('UPDATE farmers SET dog_until = ? WHERE user_id = ?').run(until, me.user_id);
+        })();
+        logEvent(`🐕 ${me.name} thuê chó canh vườn ${hours} giờ`);
+        return { me: fresh(me.user_id) };
+      });
+
       // ---- Cướp chuồng / cướp máy (chủ chưa thu kịp) ----
       // Giới hạn thiệt hại: mỗi nhà mỗi giờ chỉ mất tối đa 1 sản phẩm chuồng
       // + 1 mẻ máy, bất kể bao nhiêu kẻ trộm ghé.
@@ -1170,6 +1214,7 @@ export function buildApp({ config, db, logger = true }) {
         const row = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND ready_at IS NOT NULL AND ready_at <= ? ORDER BY ready_at LIMIT 1')
           .get(ownerId, now);
         if (!row) return reply.code(400).send({ error: 'nothing_to_poach' });
+        if (dogCheck(reply, owner, me)) return reply;
         const a = ANIMALS[row.kind];
         const got = 2 + Math.round(Math.random()); // khách nhận 2-3, chủ chỉ mất 1
         db.transaction(() => {
@@ -1180,6 +1225,7 @@ export function buildApp({ config, db, logger = true }) {
           bumpPoached(me.user_id, got);
         })();
         const info = GOODS[a.product];
+        thiefEscaped.run(me.user_id);
         logEvent(`😋 ${me.name} cuỗm ${got} ${info.name} ${info.emoji} trong chuồng nhà ${owner.name}`);
         pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa cuỗm ${info.name} ${info.emoji} trong chuồng nhà bạn — thu hoạch nhanh kẻo mất!`);
         return { ...visitPayload(request, ownerId), got };
@@ -1196,6 +1242,7 @@ export function buildApp({ config, db, logger = true }) {
         const row = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND recipe IS NOT NULL AND ready_at <= ? AND poached = 0 ORDER BY ready_at LIMIT 1')
           .get(ownerId, now);
         if (!row) return reply.code(400).send({ error: 'nothing_to_poach' });
+        if (dogCheck(reply, owner, me)) return reply;
         const recipe = MACHINES[row.kind].recipes[row.recipe];
         const product = Object.keys(recipe.out)[0];
         const got = 2 + Math.round(Math.random()); // khách nhận 2-3, chủ chỉ mất 1 mẻ
@@ -1207,6 +1254,7 @@ export function buildApp({ config, db, logger = true }) {
           bumpPoached(me.user_id, got);
         })();
         const info = itemInfo(product);
+        thiefEscaped.run(me.user_id);
         logEvent(`😋 ${me.name} cuỗm ${got} ${info.name} ${info.emoji} từ ${MACHINES[row.kind].name} nhà ${owner.name}`);
         pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa cuỗm ${info.name} ${info.emoji} từ máy nhà bạn — thu vào kho kẻo mất!`);
         return { ...visitPayload(request, ownerId), got };
@@ -1411,7 +1459,7 @@ export function buildApp({ config, db, logger = true }) {
           machinesReady: db.prepare('SELECT COUNT(*) c FROM machines WHERE owner_id = ? AND recipe IS NOT NULL AND ready_at <= ? AND poached = 0').get(ownerId, now2).c,
         };
         return {
-          farm: { id: owner.user_id, name: owner.name, level: li.level, stars: owner.stars, plotsCount: owner.plots_count, plots, loot },
+          farm: { id: owner.user_id, name: owner.name, level: li.level, stars: owner.stars, plotsCount: owner.plots_count, plots, loot, dogUntil: owner.dog_until || 0 },
           myActs,
           me: fresh(request.farmer.user_id),
         };
