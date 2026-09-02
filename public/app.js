@@ -578,37 +578,35 @@
     const t = sheet.type;
 
     if (t === 'seed') {
-      const rows = Object.values(crops()).map((c) => {
+      // Lưới thẻ: cây trồng + cây ăn quả; chế độ gieo hết không hiện số ô/tổng giá.
+      const cropCards = Object.values(crops()).map((c) => {
         const lockLevel = m.level < c.level;
-        const canAfford = m.gold >= c.seed;
-        const count = sheet.all ? Math.min(m.plots.filter((p) => !p.crop).length, Math.floor(m.gold / c.seed)) : 1;
-        const locked = lockLevel || !canAfford;
-        return `<button class="seed-row${locked ? ' seed-row--locked' : ''}" data-crop="${locked ? '' : c.id}">
+        const locked = lockLevel || m.gold < c.seed;
+        return `<button class="seed-card${locked ? ' seed-card--locked' : ''}" data-crop="${locked ? '' : c.id}" title="${c.name}">
           <img class="seed-sprite" src="${cropSprite(c.id, 3)}" alt="" />
-          <span class="seed-info">
-            <span class="seed-name">${c.name}</span>
-            <div class="seed-meta">⏱ ${fmtDuration(c.growMs)} · bán ${c.sell} ${COIN} · +${c.expHarvest} EXP</div>
-          </span>
-          ${lockLevel ? `<span class="seed-lock">Cần Lv ${c.level}</span>`
-            : `<span class="seed-cost">${sheet.all ? `${count} ô · ${(c.seed * count).toLocaleString('vi')}` : c.seed} ${COIN}</span>`}
+          <span class="seed-name">${c.name}</span>
+          <span class="seed-meta">⏱ ${fmtDuration(c.growMs)} · ${c.sell} ${COIN}</span>
+          ${lockLevel ? `<span class="seed-lock">Lv ${c.level}</span>` : `<span class="seed-cost">${c.seed} ${COIN}</span>`}
         </button>`;
       }).join('');
-      const treeRows = sheet.all ? '' : Object.values(trees()).map((t) => {
+      const treeCards = Object.values(trees()).map((t) => {
         const lockLevel = m.level < t.level;
         const locked = lockLevel || m.gold < t.price;
-        return `<button class="seed-row${locked ? ' seed-row--locked' : ''}" data-tree="${locked ? '' : t.id}">
+        return `<button class="seed-card seed-card--tree${locked ? ' seed-card--locked' : ''}" data-tree="${locked ? '' : t.id}" title="${t.name} — trồng 1 lần, ${t.yield} quả mỗi ${fmtDuration(t.growMs)}">
           <img class="seed-sprite" src="${treeArt(t.id)}" alt="" />
-          <span class="seed-info">
-            <span class="seed-name">${t.name} ${t.emoji}</span>
-            <div class="seed-meta">🌳 trồng 1 lần · ${t.yield} quả mỗi ${fmtDuration(t.growMs)} · bán ${t.sell.toLocaleString('vi')} ${COIN}/quả · +${t.exp} EXP</div>
-          </span>
-          ${lockLevel ? `<span class="seed-lock">Cần Lv ${t.level}</span>` : `<span class="seed-cost">${t.price.toLocaleString('vi')} ${COIN}</span>`}
+          <span class="seed-name">${t.name} ${t.emoji}</span>
+          <span class="seed-meta">🌳 ${t.yield} quả/${fmtDuration(t.growMs)} · ${t.sell.toLocaleString('vi')} ${COIN}</span>
+          ${lockLevel ? `<span class="seed-lock">Lv ${t.level}</span>` : `<span class="seed-cost">${t.price.toLocaleString('vi')} ${COIN}</span>`}
         </button>`;
       }).join('');
       return sheetShell(
         sheet.all ? `🧺 Gieo hết ô trống <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`
           : `🌱 Chọn hạt giống <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
-        rows + (treeRows ? `<p class="sheet-note" style="margin-top:0.5rem">🌳 Cây ăn quả — chiếm ô lâu dài, tự ra quả lại sau mỗi lần hái:</p>${treeRows}` : ''),
+        `${sheet.all ? '<p class="sheet-note">Chọn một giống — gieo kín mọi ô trống theo số vàng đang có.</p>' : ''}
+         <div class="seed-grid">${cropCards}</div>
+         <p class="sheet-note" style="margin-top:.5rem">🌳 Cây ăn quả — chiếm ô lâu dài, tự ra quả lại sau mỗi lần hái:</p>
+         <div class="seed-grid">${treeCards}</div>`,
+        'sheet--wide',
       );
     }
 
@@ -1144,17 +1142,18 @@
       if (r) { updateMe(r); floatGain(e.clientX || 200, e.clientY || 300, `🧺 +${r.harvested}`); render(); }
     });
 
-    document.querySelectorAll('.seed-row[data-tree]').forEach((el) =>
+    document.querySelectorAll('[data-tree]').forEach((el) =>
       el.addEventListener('click', async () => {
         if (!el.dataset.tree) return;
-        const r = await run(() => api('/plant-tree', { idx: sheet.idx, tree: el.dataset.tree }));
-        if (r) { updateMe(r); sheet = null; toast('🌳 Cây đã bén rễ!'); render(); }
+        const wasAll = sheet.all;
+        const r = await run(() => wasAll ? api('/plant-all', { crop: el.dataset.tree }) : api('/plant-tree', { idx: sheet.idx, tree: el.dataset.tree }));
+        if (r) { updateMe(r); sheet = null; toast(wasAll ? `🌳 Đã trồng ${r.planted} cây!` : '🌳 Cây đã bén rễ!'); render(); }
       }));
     document.getElementById('btn-remove-tree')?.addEventListener('click', async () => {
       const r = await run(() => api('/remove-tree', { idx: sheet.idx }));
       if (r) { updateMe(r); sheet = null; toast('🪓 Đã nhổ cây.'); render(); }
     });
-    document.querySelectorAll('.seed-row[data-crop]').forEach((el) =>
+    document.querySelectorAll('[data-crop]').forEach((el) =>
       el.addEventListener('click', async () => {
         const cropId = el.dataset.crop;
         if (!cropId) return;

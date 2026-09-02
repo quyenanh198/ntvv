@@ -660,12 +660,27 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/plant-all', async (request, reply) => {
         const { crop: cropId } = request.body ?? {};
         const crop = CROPS[cropId];
+        const tree = TREES[cropId];
         const me = request.farmer;
-        if (!crop) return reply.code(400).send({ error: 'bad_request' });
-        if (levelFor(me.xp) < crop.level) return reply.code(400).send({ error: 'level_too_low' });
+        if (!crop && !tree) return reply.code(400).send({ error: 'bad_request' });
+        if (levelFor(me.xp) < (crop || tree).level) return reply.code(400).send({ error: 'level_too_low' });
         const occupied = new Set(db.prepare('SELECT idx FROM plots WHERE owner_id = ?').all(me.user_id).map((r) => r.idx));
         const empty = [];
         for (let i = 0; i < me.plots_count; i += 1) if (!occupied.has(i)) empty.push(i);
+        if (tree) {
+          // Cây ăn quả trồng kín ô trống: mỗi cây giá price, chiếm ô lâu dài.
+          const n = Math.min(empty.length, Math.floor(me.gold / tree.price));
+          if (n === 0) return reply.code(400).send({ error: empty.length === 0 ? 'no_empty_plot' : 'not_enough_gold' });
+          const now = Date.now();
+          const readyAt = now + cropTime(me, scaleMs(tree.growMs, config.fast));
+          db.transaction(() => {
+            grant(me.user_id, { gold: -tree.price * n });
+            const ins = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, tree) VALUES (?, ?, ?, ?, ?, 1)');
+            for (const i of empty.slice(0, n)) ins.run(me.user_id, i, tree.id, now, readyAt);
+          })();
+          logEvent(`${tree.emoji} ${me.name} trồng ${n} cây ${tree.name}`);
+          return { me: fresh(me.user_id), planted: n };
+        }
         const count = Math.min(empty.length, Math.floor(me.gold / crop.seed));
         if (count === 0) return reply.code(400).send({ error: empty.length === 0 ? 'no_empty_plot' : 'not_enough_gold' });
         const now = Date.now();

@@ -1769,3 +1769,20 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 }
 
 .mc-plus[data-off] { opacity: .3; filter: grayscale(1); box-shadow: none; cursor: pointer; }
+
+/* ---- Chọn giống: lưới thẻ ---- */
+.sheet--wide { width: min(1100px, 100%); }
+.seed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: .45rem; }
+.seed-card {
+  display: grid; justify-items: center; gap: .15rem; padding: .5rem .35rem .45rem;
+  border: 2px solid #dec393; border-radius: 14px; background: rgba(255, 252, 242, .82);
+  box-shadow: 0 3px 8px rgba(103, 82, 50, .07); cursor: pointer; text-align: center; font: inherit; color: inherit;
+}
+.seed-card .seed-sprite { width: 46px; height: 46px; }
+.seed-card .seed-name { font-size: .78rem; font-weight: 800; line-height: 1.1; }
+.seed-card .seed-meta { font-size: .62rem; color: var(--muted); font-weight: 650; line-height: 1.2; }
+.seed-card .seed-cost, .seed-card .seed-lock { font-size: .66rem; padding: .1rem .4rem; margin-top: .1rem; }
+.seed-card--locked { opacity: .55; filter: grayscale(.3); cursor: default; }
+.seed-card--tree { background: rgba(232, 246, 222, .85); border-color: #b8d59a; }
+.seed-card:not(.seed-card--locked):active { transform: translateY(1px); }
+@media (max-width: 480px) { .seed-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
