@@ -1724,3 +1724,6 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 /* ---- Chó canh vườn ---- */
 .coin-pill--dog { background: linear-gradient(180deg, #ffe7b3, #f2c97a); }
 .dog-warn { color: #b3261e; font-weight: 800; font-size: .78rem; }
+
+.btn-group { align-items: center; }
+.btn-group .qty-ctl { margin: 0; }

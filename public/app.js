@@ -625,13 +625,15 @@
               <span class="seed-info"><span class="seed-name">${info?.name || id}</span>
                 <div class="seed-meta">x${q}${info?.sell ? ` · ${info.sell} ${COIN}/cái` : ' · không bán được'}</div></span>
               ${info?.sell ? `
-                <span class="qty-ctl">
-                  <button type="button" data-qstep="-1">−</button>
-                  <input class="qty-input" type="number" inputmode="numeric" min="1" max="${q}" value="1" />
-                  <button type="button" data-qstep="1">＋</button>
-                </span>
-                <button class="gbtn gbtn--gold btn-mini" data-sell="${id}">Bán 1</button>
-                <button class="gbtn gbtn--green btn-mini" data-sell="${id}" data-qty="${q}">Hết</button>` : ''}
+                <span class="btn-group">
+                  <span class="qty-ctl">
+                    <button type="button" data-qstep="-1">−</button>
+                    <input class="qty-input" type="number" inputmode="numeric" min="1" max="${q}" value="1" />
+                    <button type="button" data-qstep="1">＋</button>
+                  </span>
+                  <button class="gbtn gbtn--gold btn-mini" data-sell="${id}">Bán 1</button>
+                  <button class="gbtn gbtn--green btn-mini" data-sell="${id}" data-qty="${q}">Hết</button>
+                </span>` : ''}
             </div>`;
           }).join('');
       return sheetShell(`🎒 Kho đồ <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, rows);
@@ -747,12 +749,12 @@
         return `<div class="inv-row" data-want="${w.id}">${itemImg(w.item)}
           <span class="seed-info"><span class="seed-name">${esc(w.ownerName)} cần ${itemInfo(w.item)?.name || w.item}</span>
             <div class="seed-meta">còn ${rem}/${w.qty} · trả <b>${w.price.toLocaleString('vi')}</b> ${COIN}/cái · bạn có ${have}</div></span>
-          ${can > 0 ? `<span class="qty-ctl">
+          ${can > 0 ? `<span class="btn-group"><span class="qty-ctl">
               <button type="button" data-qstep="-1">−</button>
               <input class="qty-input" type="number" inputmode="numeric" min="1" max="${can}" value="${can}" />
               <button type="button" data-qstep="1">＋</button>
             </span>
-            <button class="gbtn gbtn--green btn-mini" data-want-fill="${w.id}">Bán</button>` : '<span class="seed-lock">Không có hàng</span>'}
+            <button class="gbtn gbtn--green btn-mini" data-want-fill="${w.id}">Bán</button></span>` : '<span class="seed-lock">Không có hàng</span>'}
         </div>`;
       }).join('');
       return sheetShell(
