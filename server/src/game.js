@@ -347,6 +347,14 @@ export const EXPANSIONS = [
   { level: 30, gold: 250000 },
   { level: 32, gold: 310000 },
   { level: 34, gold: 380000 },
+  { level: 36, gold: 460000 },
+  { level: 38, gold: 550000 },
+  { level: 40, gold: 650000 },
+  { level: 42, gold: 760000 },
+  { level: 44, gold: 880000 },
+  { level: 46, gold: 1000000 },
+  { level: 48, gold: 1150000 },
+  { level: 50, gold: 1300000 },
 ];
 export const MAX_PLOTS = START_PLOTS + EXPANSIONS.length * 4;
 
