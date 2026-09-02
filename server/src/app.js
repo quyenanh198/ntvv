@@ -27,6 +27,7 @@ import {
   EXPANSIONS,
   MAX_PLOTS,
   START_GOLD,
+  welcomeGift,
   START_GEMS,
   speedupCost,
   levelInfo,
@@ -114,9 +115,19 @@ export function buildApp({ config, db, logger = true }) {
   async function requireFarmer(request, reply) {
     const user = await chatUserFor(request);
     if (!user) return reply.code(401).send({ error: 'not_logged_in' });
+    const existed = !!getFarmer.get(user.id);
     upsertFarmer.run(user.id, user.display_name || user.username, START_GOLD, START_GEMS, START_PLOTS, Date.now());
     const legacy = db.prepare('SELECT xp FROM legacy_levels WHERE user_id = ?').get(user.id);
     if (legacy) db.prepare('UPDATE farmers SET xp = ? WHERE user_id = ? AND xp < ?').run(legacy.xp, user.id, legacy.xp);
+    if (!existed) {
+      // Nông dân mới: quà hỗ trợ theo cấp (cấp có thể đã được nâng từ bản v1).
+      const f0 = getFarmer.get(user.id);
+      const gift = welcomeGift(levelFor(f0.xp));
+      if (gift > 0) {
+        db.prepare('UPDATE farmers SET gold = gold + ?, gift_gold = gift_gold + ? WHERE user_id = ?').run(gift, gift, user.id);
+        logEvent(`🎁 ${f0.name} gia nhập làng, nhận ${gift.toLocaleString('vi')} vàng hỗ trợ tân binh`);
+      }
+    }
     request.farmer = getFarmer.get(user.id);
     request.chatUser = user;
   }

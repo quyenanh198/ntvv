@@ -355,6 +355,9 @@ export const GOLD_MULT = 4;
 
 // ---- Khởi điểm & tiền tệ (mục 19) -----------------------------------------
 export const START_GOLD = 500;
+// Hỗ trợ tân binh: nông dân mới dưới Lv40 nhận 2 triệu vàng, mỗi 10 cấp thấp hơn
+// cộng thêm 2 triệu (Lv1 = 8 triệu). Tính là vàng tặng (không vào kinh tế làng).
+export const welcomeGift = (level) => (level >= 40 ? 0 : 2_000_000 * (1 + Math.floor((39 - level) / 10)));
 export const START_GEMS = 50;
 
 // Kim cương tăng tốc: 1 KC / 5 phút còn lại, làm tròn lên, tối thiểu 1.
