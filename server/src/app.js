@@ -64,6 +64,7 @@ import {
   todayVN,
   yesterdayVN,
   THIEF_REWARDS,
+  thiefEconomyMult,
 } from './game.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -192,14 +193,16 @@ export function buildApp({ config, db, logger = true }) {
     const day = yesterdayVN();
     if (thiefSettledDay === day) return;
     if (db.prepare('SELECT 1 FROM thief_awards WHERE day = ?').get(day)) { thiefSettledDay = day; return; }
-    const winners = thiefRows(day, 3).map((w) => ({ ...w, gems: THIEF_REWARDS[w.rank - 1].gems, gold: THIEF_REWARDS[w.rank - 1].gold * GOLD_MULT }));
+    const villageGold = db.prepare('SELECT COALESCE(SUM(gold), 0) g FROM farmers').get().g;
+    const econ = thiefEconomyMult(villageGold);
+    const winners = thiefRows(day, 3).map((w) => ({ ...w, gems: THIEF_REWARDS[w.rank - 1].gems, gold: THIEF_REWARDS[w.rank - 1].gold * GOLD_MULT * econ, econ }));
     db.transaction(() => {
       for (const w of winners) grant(w.id, { gems: w.gems, gold: w.gold });
       db.prepare('INSERT INTO thief_awards (day, winners_json, at) VALUES (?, ?, ?)').run(day, JSON.stringify(winners), Date.now());
     })();
     thiefSettledDay = day;
     if (!winners.length) return;
-    logEvent(`🥷 Bảng vàng trộm ${day}: ${winners.map((w) => `${MEDALS[w.rank - 1]} ${w.name} (${w.count} món)`).join(' · ')}`);
+    logEvent(`🥷 Bảng vàng trộm ${day}${econ > 1 ? ` (thưởng ×${econ})` : ''}: ${winners.map((w) => `${MEDALS[w.rank - 1]} ${w.name} (${w.count} món · ${w.gold.toLocaleString('vi')} vàng)`).join(' · ')}`);
     for (const w of winners) {
       pushTo([w.id], 'Ăn trộm dzui dzẻ 😋', `${MEDALS[w.rank - 1]} Hạng ${w.rank} bảng trộm hôm qua (${w.count} món) — nhận ${w.gems} kim cương + ${w.gold.toLocaleString('vi')} vàng!`);
     }
@@ -580,7 +583,15 @@ export function buildApp({ config, db, logger = true }) {
           today: thiefRows(todayVN(), 10),
           myCount: getDaily(request.farmer.user_id).poached,
           yesterday: { day: yday, winners: row ? JSON.parse(row.winners_json) : [] },
-          rewards: THIEF_REWARDS.map((r) => ({ gems: r.gems, gold: r.gold * GOLD_MULT })),
+          rewards: (() => {
+            const villageGold = db.prepare('SELECT COALESCE(SUM(gold), 0) g FROM farmers').get().g;
+            const econ = thiefEconomyMult(villageGold);
+            return THIEF_REWARDS.map((r) => ({ gems: r.gems, gold: r.gold * GOLD_MULT * econ }));
+          })(),
+          economy: (() => {
+            const villageGold = db.prepare('SELECT COALESCE(SUM(gold), 0) g FROM farmers').get().g;
+            return { villageGold, mult: thiefEconomyMult(villageGold) };
+          })(),
         };
       });
 

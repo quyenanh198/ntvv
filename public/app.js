@@ -950,7 +950,8 @@
           <span class="lb-name">${esc(w.name)}</span>
           <span class="lb-stat">${w.count} món</span>
         </div>`).join('') : '<p class="sheet-note">Chưa ai ra tay hôm nay. Cơ hội của bạn đó 😏</p>'}
-      <p class="sheet-note">Chốt sổ lúc 0h: ${tb.rewards.map((r, i) => `${medal(i + 1)} ${r.gems} ${GEM} + ${r.gold.toLocaleString('vi')} ${COIN}`).join(' · ')}</p>`;
+      <p class="sheet-note">Chốt sổ lúc 0h: ${tb.rewards.map((r, i) => `${medal(i + 1)} ${r.gems} ${GEM} + ${r.gold.toLocaleString('vi')} ${COIN}`).join(' · ')}</p>
+      <p class="sheet-note">💹 Kinh tế làng: ${(tb.economy?.villageGold || 0).toLocaleString('vi')} ${COIN} → thưởng ×${tb.economy?.mult || 1} (mỗi 5 triệu vàng cả làng cộng thêm ×1).</p>`;
     return `
       <div class="modal-backdrop" data-close="1">
         <div class="modal" onclick="event.stopPropagation()">

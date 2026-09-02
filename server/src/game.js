@@ -442,7 +442,7 @@ export function rollFish(rng) {
 
 // ---- Kỹ năng chuyên môn hóa nông dân (mục 9.5) -----------------------------
 // Mở ở cấp 10; mỗi cấp sau đó +1 điểm. Hoàn trả 20 kim cương, 1 lần/7 ngày.
-export const SKILL_MAX_RANK = 5;
+export const SKILL_MAX_RANK = 10;
 // Chi phí nâng lên bậc r = cost × r (bậc 1..5), hiệu ứng cộng dồn theo bậc.
 export const skillCost = (node, rank) => node.cost * rank;
 export const SKILLS = {
@@ -452,22 +452,22 @@ export const SKILLS = {
   respecCooldownMs: 7 * 24 * 3600 * 1000,
   branches: [
     { id: 'trong', name: 'Trồng Trọt', emoji: '🌱', nodes: [
-      { id: 'bantayxanh',   name: 'Bàn tay xanh',        cost: 1, desc: 'Mỗi bậc giảm 5% thời gian cây trồng (tối đa 25%)' },
+      { id: 'bantayxanh',   name: 'Bàn tay xanh',        cost: 1, desc: 'Mỗi bậc giảm 5% thời gian cây trồng (tối đa 50%)' },
       { id: 'datmaumo',     name: 'Đất màu mỡ',          cost: 2, desc: 'Mỗi bậc +5% cơ hội cây tự Tươi tốt khi gieo' },
       { id: 'hatgiongtk',   name: 'Hạt giống tiết kiệm', cost: 3, desc: 'Mỗi bậc +5% cơ hội hoàn tiền hạt khi thu' },
-      { id: 'muaboithu',    name: 'Mùa bội thu',         cost: 4, desc: '+1 quả mỗi lần thu cây ăn quả ở bậc 1, 3, 5' },
+      { id: 'muaboithu',    name: 'Mùa bội thu',         cost: 4, desc: '+1 quả mỗi lần thu cây ăn quả ở bậc lẻ (1, 3, 5, 7, 9)' },
     ] },
     { id: 'nuoi', name: 'Chăn Nuôi', emoji: '🐄', nodes: [
-      { id: 'nguoibannho',  name: 'Người bạn nhỏ',    cost: 1, desc: 'Mỗi bậc giảm 5% thời gian vật nuôi (tối đa 25%)' },
+      { id: 'nguoibannho',  name: 'Người bạn nhỏ',    cost: 1, desc: 'Mỗi bậc giảm 5% thời gian vật nuôi (tối đa 50%)' },
       { id: 'mangantot',    name: 'Máng ăn tốt',      cost: 2, desc: 'Mỗi bậc +5% cơ hội không tốn thức ăn' },
       { id: 'chamsoc',      name: 'Chăm sóc tận tâm', cost: 3, desc: 'Mỗi bậc +10% EXP từ sản phẩm vật nuôi' },
       { id: 'spcaocap',     name: 'Sản phẩm cao cấp', cost: 4, desc: 'Mỗi bậc +8% giá bán sản phẩm vật nuôi' },
     ] },
     { id: 'che', name: 'Chế Biến & Bán Hàng', emoji: '🏭', nodes: [
-      { id: 'lamnhanh',     name: 'Làm nhanh',      cost: 1, desc: 'Mỗi bậc giảm 5% thời gian máy chế biến (tối đa 25%)' },
+      { id: 'lamnhanh',     name: 'Làm nhanh',      cost: 1, desc: 'Mỗi bậc giảm 5% thời gian máy chế biến (tối đa 50%)' },
       { id: 'donggoidep',   name: 'Đóng gói đẹp',   cost: 2, desc: 'Mỗi bậc +5% giá bán sản phẩm chế biến' },
       { id: 'nguoibankheo', name: 'Người bán khéo', cost: 3, desc: 'Mỗi bậc đơn hàng thưởng thêm 5% vàng' },
-      { id: 'khachquen',    name: 'Khách quen',     cost: 4, desc: 'Mở thêm 1 ô đơn hàng ở bậc 1, 3, 5' },
+      { id: 'khachquen',    name: 'Khách quen',     cost: 4, desc: 'Mở thêm 1 ô đơn hàng ở bậc lẻ (1, 3, 5, 7, 9)' },
     ] },
   ],
 };
@@ -528,7 +528,11 @@ export function yesterdayVN(now = Date.now()) {
 // ---- Bảng vàng trộm: top 3 số món cuỗm/hái ké trong ngày (giờ VN) ----------
 // gold là giá gốc, phát thưởng nhân GOLD_MULT như mọi nguồn thu khác.
 export const THIEF_REWARDS = [
-  { gems: 20, gold: 500 },
-  { gems: 10, gold: 250 },
-  { gems: 5,  gold: 100 },
+  { gems: 50, gold: 250000 }, // ×GOLD_MULT = 1.000.000 vàng/ngày cho hạng nhất
+  { gems: 25, gold: 125000 },
+  { gems: 10, gold: 50000 },
 ];
+// Kinh tế làng phình to thì thưởng phình theo: mỗi 5 triệu vàng tổng của cả
+// làng (giá hiển thị) cộng thêm ×1, tối đa ×10.
+export const THIEF_ECON_STEP_GOLD = 5_000_000;
+export const thiefEconomyMult = (villageGold) => Math.min(10, 1 + Math.floor(villageGold / THIEF_ECON_STEP_GOLD));
