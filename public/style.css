@@ -1786,3 +1786,5 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .seed-card--tree { background: rgba(232, 246, 222, .85); border-color: #b8d59a; }
 .seed-card:not(.seed-card--locked):active { transform: translateY(1px); }
 @media (max-width: 480px) { .seed-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+.seed-sort { display: flex; gap: .3rem; flex-wrap: wrap; margin: .2rem 0 .5rem; }
