@@ -38,6 +38,12 @@ export const CROPS = {
   bongvai:    { id: 'bongvai',    name: 'Bông vải',   emoji: '🌼', level: 21, growMs: 120 * MIN, seed: 55,  sell: 160, expSow: 6, expHarvest: 95 },
   oliu:       { id: 'oliu',       name: 'Ô liu',      emoji: '🫒', level: 26, growMs: 180 * MIN, seed: 90,  sell: 260, expSow: 9, expHarvest: 150 },
   vani:       { id: 'vani',       name: 'Vani',       emoji: '🌿', level: 29, growMs: 300 * MIN, seed: 170, sell: 520, expSow: 14, expHarvest: 320 },
+  // Gia vị & nguyên liệu ăn vặt Việt Nam
+  rauthom:    { id: 'rauthom',    name: 'Rau thơm',   emoji: '🌿', level: 4,  growMs: 10 * MIN,  seed: 5,   sell: 14,  expSow: 1, expHarvest: 5 },
+  toi:        { id: 'toi',        name: 'Tỏi',        emoji: '🧄', level: 5,  growMs: 25 * MIN,  seed: 10,  sell: 28,  expSow: 2, expHarvest: 10 },
+  sa:         { id: 'sa',         name: 'Sả',         emoji: '🎍', level: 6,  growMs: 20 * MIN,  seed: 9,   sell: 26,  expSow: 2, expHarvest: 9 },
+  dauphong:   { id: 'dauphong',   name: 'Đậu phộng',  emoji: '🥜', level: 7,  growMs: 35 * MIN,  seed: 14,  sell: 40,  expSow: 2, expHarvest: 15 },
+  me:         { id: 'me',         name: 'Mè',         emoji: '⚪', level: 9,  growMs: 40 * MIN,  seed: 16,  sell: 48,  expSow: 3, expHarvest: 20 },
 };
 
 // ---- Sản phẩm ngoài cây (kho dùng chung một catalogue) ---------------------
@@ -143,6 +149,19 @@ export const GOODS = {
   kemsaurieng:  { id: 'kemsaurieng',  name: 'Kem sầu riêng',   emoji: '🍨', sell: 1500, source: 'nhamaysua' },
   cocdam:       { id: 'cocdam',       name: 'Cóc dầm muối ớt', emoji: '🍏', sell: 400,  source: 'bepan' },
   nuoccoc:      { id: 'nuoccoc',      name: 'Nước ép cóc',     emoji: '🥤', sell: 300,  source: 'mayep' },
+  // Quán ăn vặt
+  banhtrangtron: { id: 'banhtrangtron', name: 'Bánh tráng trộn', emoji: '🥡', sell: 800,  source: 'quanvat' },
+  chedauxanh:    { id: 'chedauxanh',    name: 'Chè đậu xanh',    emoji: '🍵', sell: 1150, source: 'quanvat' },
+  chuoichien:    { id: 'chuoichien',    name: 'Chuối chiên',     emoji: '🍌', sell: 850,  source: 'quanvat' },
+  khoailangken:  { id: 'khoailangken',  name: 'Khoai lang kén',  emoji: '🍠', sell: 600,  source: 'quanvat' },
+  merim:         { id: 'merim',         name: 'Me rim ớt',       emoji: '🍯', sell: 1000, source: 'quanvat' },
+  keodauphong:   { id: 'keodauphong',   name: 'Kẹo đậu phộng',   emoji: '🍬', sell: 800,  source: 'quanvat' },
+  botchien:      { id: 'botchien',      name: 'Bột chiên',       emoji: '🍳', sell: 700,  source: 'quanvat' },
+  nemchua:       { id: 'nemchua',       name: 'Nem chua',        emoji: '🥩', sell: 950,  source: 'quanvat' },
+  xoidauphong:   { id: 'xoidauphong',   name: 'Xôi đậu phộng',   emoji: '🍚', sell: 750,  source: 'quanvat' },
+  cavienchien:   { id: 'cavienchien',   name: 'Cá viên chiên',   emoji: '🍢', sell: 650,  source: 'quanvat' },
+  bapxao:        { id: 'bapxao',        name: 'Bắp xào bơ',      emoji: '🌽', sell: 1100, source: 'quanvat' },
+  trasa:         { id: 'trasa',         name: 'Trà sả mật ong',  emoji: '🍵', sell: 620,  source: 'quanvat' },
   canho:   { id: 'canho',   name: 'Cá nhỏ',      emoji: '🐟', sell: 35,  source: 'ho', expCatch: 12 },
   caro:    { id: 'caro',    name: 'Cá rô',       emoji: '🐠', sell: 95,  source: 'ho', expCatch: 18 },
   cachep:  { id: 'cachep',  name: 'Cá chép',     emoji: '🐡', sell: 180, source: 'ho', expCatch: 40 },
@@ -162,6 +181,8 @@ export const TREES = {
   dao:       { id: 'dao',       name: 'Đào',        emoji: '🍑', level: 26, price: 1500, growMs: 360 * MIN, yield: 3, sell: 260, exp: 320 },
   anhdao:    { id: 'anhdao',    name: 'Anh đào',    emoji: '🍒', level: 32, price: 2400, growMs: 420 * MIN, yield: 4, sell: 380, exp: 460 },
   coc:       { id: 'coc',       name: 'Cóc',        emoji: '🍏', level: 21, price: 800,  growMs: 240 * MIN, yield: 5, sell: 60,  exp: 150 },
+  chuoi:     { id: 'chuoi',     name: 'Chuối',      emoji: '🍌', level: 8,  price: 300,  growMs: 120 * MIN, yield: 5, sell: 35,  exp: 60 },
+  quame:     { id: 'quame',     name: 'Me',         emoji: '🟤', level: 15, price: 600,  growMs: 180 * MIN, yield: 4, sell: 70,  exp: 120 },
 };
 
 export function itemInfo(id) {
@@ -224,6 +245,20 @@ export const MACHINES = {
     buatiec:      { id: 'buatiec',      name: 'Tiệc gia đình',      emoji: '🍽️', in: { pizza: 1, lauca: 1, kem: 1 }, out: { buatiec: 1 }, ms: 120 * MIN, exp: 450 },
     hopqua:       { id: 'hopqua',       name: 'Hộp quà nông trại',  emoji: '🎁', in: { banhkem: 1, socola: 1, trasua: 1 }, out: { hopqua: 1 }, ms: 120 * MIN, exp: 500 },
     caphehaohang: { id: 'caphehaohang', name: 'Cà phê hảo hạng',    emoji: '☕', in: { capherang: 2, caphesua: 1 }, out: { caphehaohang: 1 }, ms: 150 * MIN, exp: 600 },
+  } },
+  quanvat: { id: 'quanvat', name: 'Quán ăn vặt', emoji: '🍢', level: 11, recipes: {
+    banhtrangtron: { id: 'banhtrangtron', name: 'Bánh tráng trộn', emoji: '🥡', in: { botgao: 1, rauthom: 1, ot: 1, dauphong: 1, trungcut: 2 }, out: { banhtrangtron: 1 }, ms: 25 * MIN, exp: 60 },
+    chedauxanh:    { id: 'chedauxanh',    name: 'Chè đậu xanh',    emoji: '🍵', in: { dauxanh: 2, duongmia: 1, dua: 1 }, out: { chedauxanh: 1 }, ms: 30 * MIN, exp: 80 },
+    chuoichien:    { id: 'chuoichien',    name: 'Chuối chiên',     emoji: '🍌', in: { chuoi: 3, botmi: 1, duongmia: 1 }, out: { chuoichien: 1 }, ms: 20 * MIN, exp: 55 },
+    khoailangken:  { id: 'khoailangken',  name: 'Khoai lang kén',  emoji: '🍠', in: { khoailang: 2, botmi: 1, dua: 1 }, out: { khoailangken: 1 }, ms: 25 * MIN, exp: 45 },
+    merim:         { id: 'merim',         name: 'Me rim ớt',       emoji: '🍯', in: { quame: 3, ot: 1, duongmia: 1 }, out: { merim: 1 }, ms: 35 * MIN, exp: 70 },
+    keodauphong:   { id: 'keodauphong',   name: 'Kẹo đậu phộng',   emoji: '🍬', in: { dauphong: 2, me: 1, duongmia: 1 }, out: { keodauphong: 1 }, ms: 30 * MIN, exp: 60 },
+    botchien:      { id: 'botchien',      name: 'Bột chiên',       emoji: '🍳', in: { botgao: 1, trung: 1, hanhtay: 1 }, out: { botchien: 1 }, ms: 25 * MIN, exp: 50 },
+    nemchua:       { id: 'nemchua',       name: 'Nem chua',        emoji: '🥩', in: { thit: 1, toi: 1, ot: 1, rauthom: 1 }, out: { nemchua: 1 }, ms: 60 * MIN, exp: 110 },
+    xoidauphong:   { id: 'xoidauphong',   name: 'Xôi đậu phộng',   emoji: '🍚', in: { gao: 2, dauphong: 1, dua: 1 }, out: { xoidauphong: 1 }, ms: 30 * MIN, exp: 55 },
+    cavienchien:   { id: 'cavienchien',   name: 'Cá viên chiên',   emoji: '🍢', in: { canho: 2, botgao: 1, toi: 1 }, out: { cavienchien: 1 }, ms: 25 * MIN, exp: 45 },
+    bapxao:        { id: 'bapxao',        name: 'Bắp xào bơ',      emoji: '🌽', in: { ngo: 2, bo: 1, rauthom: 1 }, out: { bapxao: 1 }, ms: 20 * MIN, exp: 60 },
+    trasa:         { id: 'trasa',         name: 'Trà sả mật ong',  emoji: '🍵', in: { tra: 1, sa: 2, matong: 1 }, out: { trasa: 1 }, ms: 20 * MIN, exp: 45 },
   } },
   coixay: { id: 'coixay', name: 'Cối xay bột', emoji: '⚙️', level: 10, recipes: {
     botmi:  { id: 'botmi',  name: 'Bột mì', emoji: '🥡', in: { luami: 2 }, out: { botmi: 1 },  ms: 10 * MIN, exp: 10 },
