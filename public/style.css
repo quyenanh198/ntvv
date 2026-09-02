@@ -1749,3 +1749,6 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .machine-grid .mc-plus { height: 30px; min-width: 30px; font-size: .95rem; padding: 0 .45rem; }
 @media (max-width: 1000px) { .machine-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .machine-grid { grid-template-columns: 1fr; } }
+
+.mc-toolbar { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .6rem; }
+.mc-toolbar .btn { flex: 1 1 200px; }

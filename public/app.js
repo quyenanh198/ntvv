@@ -893,7 +893,15 @@
         }).join('');
         return `<div class="machine-block"><h4>${mc.emoji} ${mc.name}</h4>${head}${rows}</div>`;
       }).join('');
-      return sheetShell('🏭 Khu chế biến', `<div class="machine-grid">${blocks}</div>`, 'sheet--factory');
+      const readyTotal = Object.values(m.machines).reduce((acc, jobs) => acc + Object.values(jobs || {}).filter((j) => j.ready).length, 0);
+      const canCookAny = Object.values(DATA.config.machines).some((mc) => m.level >= mc.level && Object.values(mc.recipes).some((r) => r.id !== 'thucan'
+        && Object.entries(r.in).every(([iid, q]) => (m.inventory[iid] || 0) >= q)
+        && ((m.machines[mc.id] || {})[r.id]?.queue || 0) < QMAX));
+      const toolbar = `<div class="mc-toolbar">
+        <button class="btn gbtn gbtn--gold" id="btn-collect-all" ${readyTotal ? '' : 'disabled'}>✅ Thu hết${readyTotal ? ` (${readyTotal} món xong)` : ''}</button>
+        <button class="btn gbtn gbtn--green" id="btn-cook-all" ${canCookAny ? '' : 'disabled'} title="Xếp tối đa mọi công thức đủ nguyên liệu (trừ thức ăn gia súc)">🏭 Chế biến hết</button>
+      </div>`;
+      return sheetShell('🏭 Khu chế biến', `${toolbar}<div class="machine-grid">${blocks}</div>`, 'sheet--factory');
     }
 
     if (t === 'expand') {
@@ -1160,6 +1168,20 @@
         const r = await run(() => api('/machine-run', { machine: el.dataset.machineRun, recipe: el.dataset.recipe, count: Number(el.dataset.count) || 1 }));
         if (r) { updateMe(r); toast(r.total > r.queued ? `🏭 +${r.queued} mẻ (hàng đợi ${r.total})` : `🏭 Đã xếp ${r.queued} mẻ!`); render(); }
       }));
+    document.getElementById('btn-collect-all')?.addEventListener('click', async (e) => {
+      const r = await run(() => api('/machine-collect-all', {}));
+      if (r) {
+        updateMe(r);
+        const desc = Object.entries(r.items || {}).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(', ');
+        floatGain(e.clientX || 200, e.clientY || 300, `+${r.collected}`);
+        toast(`✅ Đã thu ${r.collected} mẻ: ${desc}`);
+        render();
+      }
+    });
+    document.getElementById('btn-cook-all')?.addEventListener('click', async () => {
+      const r = await run(() => api('/machine-run-all', {}));
+      if (r) { updateMe(r); toast(`🏭 Đã xếp ${r.queued} mẻ vào ${new Set(r.jobs.map((j) => j.machine)).size} máy!`); render(); }
+    });
     document.querySelectorAll('[data-machine-collect]').forEach((el) =>
       el.addEventListener('click', async (e) => {
         const r = await run(() => api('/machine-collect', { machine: el.dataset.machineCollect, recipe: el.dataset.recipe || undefined }));

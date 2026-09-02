@@ -985,21 +985,21 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       // ---- Cối xay ----
-      async function machineRun(request, reply, machineId, recipeId, count = 1) {
+      // Xếp `count` mẻ công thức vào máy (mỗi món một job riêng, chạy song song).
+      // Trả { n, total } hoặc { error }. Không tự trả lời HTTP.
+      function queueRecipe(me, machineId, recipeId, count = 1) {
         const machine = MACHINES[machineId];
         const recipe = machine?.recipes[recipeId];
-        const me = request.farmer;
-        if (!machine || !recipe) return reply.code(400).send({ error: 'bad_request' });
-        if (levelFor(me.xp) < machine.level) return reply.code(400).send({ error: 'level_too_low' });
-        // Mỗi món một dòng job riêng — các món trong cùng máy chạy song song.
+        if (!machine || !recipe) return { error: 'bad_request' };
+        if (levelFor(me.xp) < machine.level) return { error: 'level_too_low' };
         const cur = db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').get(me.user_id, machineId, recipeId);
         const queued = cur ? (cur.queue_count || 1) : 0;
         // Số mẻ xếp được: theo yêu cầu, chỗ trống trong hàng đợi và nguyên liệu trong kho.
-        let n = Math.max(1, Math.min(MACHINE_QUEUE_MAX - queued, Math.floor(Number(count) || 1)));
+        let n = Math.max(0, Math.min(MACHINE_QUEUE_MAX - queued, Math.floor(Number(count) || 1)));
         for (const [item, qty] of Object.entries(recipe.in)) {
           n = Math.min(n, Math.floor(invQty(me.user_id, item) / qty));
         }
-        if (n < 1) return reply.code(400).send({ error: queued >= MACHINE_QUEUE_MAX ? 'queue_full' : 'not_enough_items' });
+        if (n < 1) return { error: queued >= MACHINE_QUEUE_MAX ? 'queue_full' : 'not_enough_items' };
         db.transaction(() => {
           for (const [item, qty] of Object.entries(recipe.in)) invTake(me.user_id, item, qty * n);
           if (queued) {
@@ -1009,25 +1009,41 @@ export function buildApp({ config, db, logger = true }) {
               .run(me.user_id, machineId, recipeId, Date.now() + machineTime(me, scaleMs(recipe.ms, config.fast)), n);
           }
         })();
-        return { me: fresh(me.user_id), queued: n, total: queued + n };
+        return { n, total: queued + n };
+      }
+      async function machineRun(request, reply, machineId, recipeId, count = 1) {
+        const r = queueRecipe(request.farmer, machineId, recipeId, count);
+        if (r.error) return reply.code(400).send({ error: r.error });
+        return { me: fresh(request.farmer.user_id), queued: r.n, total: r.total };
       }
 
-      // Lấy một món (recipeId) hoặc mọi món đã chín của máy (recipeId bỏ trống).
-      async function machineCollect(request, reply, machineId, recipeId) {
-        const machine = MACHINES[machineId];
+      // Chế biến hết: duyệt mọi máy đã mở, mọi công thức, xếp tối đa theo kho
+      // (kho dùng chung nên công thức đứng trước được ưu tiên nguyên liệu).
+      api.post('/machine-run-all', async (request, reply) => {
         const me = request.farmer;
-        if (!machine) return reply.code(400).send({ error: 'bad_request' });
-        const now = Date.now();
-        const jobs = recipeId
-          ? db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').all(me.user_id, machineId, recipeId)
-          : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND ready_at <= ?').all(me.user_id, machineId, now);
-        if (!jobs.length) return reply.code(400).send({ error: recipeId ? 'mill_empty' : 'not_ready' });
-        if (recipeId && now < jobs[0].ready_at) return reply.code(400).send({ error: 'not_ready' });
-        const got = {};
-        let collected = 0;
+        const jobs = [];
+        let total = 0;
+        for (const machine of Object.values(MACHINES)) {
+          if (levelFor(me.xp) < machine.level) continue;
+          for (const recipe of Object.values(machine.recipes)) {
+            if (recipe.id === FEED_ITEM) continue; // thức ăn gia súc: tự chọn tay
+            const r = queueRecipe(me, machine.id, recipe.id, MACHINE_QUEUE_MAX);
+            if (!r.error) { jobs.push({ machine: machine.id, recipe: recipe.id, n: r.n }); total += r.n; }
+          }
+        }
+        if (!total) return reply.code(400).send({ error: 'not_enough_items' });
+        logEvent(`🏭 ${me.name} xếp một lượt ${total} mẻ vào ${new Set(jobs.map((j) => j.machine)).size} máy`);
+        return { me: fresh(me.user_id), queued: total, jobs };
+      });
+
+      // Lấy một món (recipeId) hoặc mọi món đã chín của máy (recipeId bỏ trống).
+      // Thu các job đã chín (danh sách dòng machine_jobs) — cộng dồn vào got/collected.
+      function collectJobs(me, jobs, now, got, counter) {
         db.transaction(() => {
           for (const cur of jobs) {
-            const recipe = machine.recipes[cur.recipe];
+            const machine = MACHINES[cur.kind];
+            const machineId = cur.kind;
+            const recipe = machine?.recipes[cur.recipe];
             if (!recipe) { db.prepare('DELETE FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').run(me.user_id, machineId, cur.recipe); continue; }
             const cycle = machineTime(me, scaleMs(recipe.ms, config.fast));
             const total = cur.queue_count || 1;
@@ -1044,13 +1060,35 @@ export function buildApp({ config, db, logger = true }) {
               db.prepare('UPDATE machine_jobs SET ready_at = ?, queue_count = ?, poached = 0 WHERE owner_id = ? AND kind = ? AND recipe = ?')
                 .run(cur.ready_at + done * cycle, total - done, me.user_id, machineId, cur.recipe);
             }
-            collected += done;
+            counter.n += done;
           }
-          bumpQuest(me.user_id, 'process', collected);
-          bumpFest(me.user_id, 'process', collected);
+          if (counter.n) { bumpQuest(me.user_id, 'process', counter.n); bumpFest(me.user_id, 'process', counter.n); }
         })();
-        return { me: fresh(me.user_id), product: Object.keys(got)[0], items: got, collected };
       }
+      async function machineCollect(request, reply, machineId, recipeId) {
+        const machine = MACHINES[machineId];
+        const me = request.farmer;
+        if (!machine) return reply.code(400).send({ error: 'bad_request' });
+        const now = Date.now();
+        const jobs = recipeId
+          ? db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').all(me.user_id, machineId, recipeId)
+          : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND ready_at <= ?').all(me.user_id, machineId, now);
+        if (!jobs.length) return reply.code(400).send({ error: recipeId ? 'mill_empty' : 'not_ready' });
+        if (recipeId && now < jobs[0].ready_at) return reply.code(400).send({ error: 'not_ready' });
+        const got = {}; const counter = { n: 0 };
+        collectJobs(me, jobs, now, got, counter);
+        return { me: fresh(me.user_id), product: Object.keys(got)[0], items: got, collected: counter.n };
+      }
+      // Thu hết: mọi job đã chín ở mọi máy.
+      api.post('/machine-collect-all', async (request, reply) => {
+        const me = request.farmer;
+        const now = Date.now();
+        const jobs = db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
+        if (!jobs.length) return reply.code(400).send({ error: 'not_ready' });
+        const got = {}; const counter = { n: 0 };
+        collectJobs(me, jobs, now, got, counter);
+        return { me: fresh(me.user_id), product: Object.keys(got)[0], items: got, collected: counter.n };
+      });
 
       api.post('/machine-run', async (request, reply) => machineRun(request, reply, request.body?.machine, request.body?.recipe, request.body?.count));
       api.post('/machine-collect', async (request, reply) => machineCollect(request, reply, request.body?.machine, request.body?.recipe));
