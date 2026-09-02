@@ -1716,3 +1716,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .want-form { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; margin: .3rem 0; }
 .want-form select { flex: 1 1 200px; min-width: 0; padding: .45rem .5rem; border-radius: 10px; border: 2px solid #b4814a; background: #fff8e6; font: inherit; font-weight: 700; color: #4a2e0a; }
 .want-form input { width: 84px; padding: .45rem .5rem; border-radius: 10px; border: 2px solid #b4814a; background: #fff8e6; font: inherit; font-weight: 700; color: #4a2e0a; }
+
+/* ---- Nhóm nút số lượng trên một hàng ---- */
+.btn-group { display: inline-flex; gap: .3rem; flex-wrap: nowrap; grid-column: span 2; justify-self: end; }
+.btn-group .btn-mini { min-width: 2.6rem; padding-inline: .5rem; }

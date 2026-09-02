@@ -646,9 +646,11 @@
            <img src="assets/ui/feed.svg" alt="" />
            <span class="seed-info"><span class="seed-name">Thức ăn gia súc</span>
              <div class="seed-meta">${feed.buy} ${COIN}/túi · gà ăn 1 túi cho 1 trứng</div></span>
-           <button class="gbtn gbtn--green btn-mini" data-buy="thucan" data-qty="1">Mua 1</button>
-           <button class="gbtn gbtn--gold btn-mini" data-buy="thucan" data-qty="10">Mua 10</button>
-           <button class="gbtn gbtn--gold btn-mini" data-buy="thucan" data-qty="100">Mua 100</button>
+           <span class="btn-group">
+             <button class="gbtn gbtn--green btn-mini" data-buy="thucan" data-qty="1" title="Mua 1 túi">1</button>
+             <button class="gbtn gbtn--gold btn-mini" data-buy="thucan" data-qty="10" title="Mua 10 túi">10</button>
+             <button class="gbtn gbtn--gold btn-mini" data-buy="thucan" data-qty="100" title="Mua 100 túi">100</button>
+           </span>
          </div>
          ${m.level >= DATA.config.chicken.level ? `
          <div class="inv-row">
