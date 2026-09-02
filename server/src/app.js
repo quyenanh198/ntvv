@@ -760,7 +760,8 @@ export function buildApp({ config, db, logger = true }) {
         return visitPayload(request, ownerId);
       });
 
-      // Trộm hết: mọi ô chín còn lượt, dừng ngay khi bị chó tóm.
+      // Trộm hết: mọi ô chín còn lượt; MỖI Ô là một lần trộm riêng — chó xét
+      // 20% từng ô, bị tóm ô nào nộp phạt ô đó (chuỗi phạt tăng/reset theo từng ô).
       api.post('/poach-all', async (request, reply) => {
         const { ownerId } = request.body ?? {};
         const me = request.farmer;
@@ -773,22 +774,28 @@ export function buildApp({ config, db, logger = true }) {
           .filter((p) => (p.poached || 0) < 1 + Math.floor((now - p.ready_at) / again));
         if (!targets.length) return reply.code(400).send({ error: 'nothing_to_poach' });
         const got = {};
-        let caught = null;
-        let thief = me;
+        let times = 0;
+        let fines = 0;
         for (const plot of targets) {
-          caught = dogCatch(owner, thief);
-          if (caught) break;
+          const thief = getFarmer.get(me.user_id); // vàng + chuỗi phạt mới nhất
+          const c = dogCatch(owner, thief, { quiet: true });
+          if (c) { times += 1; fines += c.paid; continue; }
           const crop = poachPlot(me, owner, plot);
           got[crop.id] = (got[crop.id] || 0) + POACH_YIELD;
-          thief = getFarmer.get(me.user_id);
         }
         const n = Object.values(got).reduce((x, y) => x + y, 0);
         const desc = Object.entries(got).map(([id, q]) => `${q} ${itemInfo(id).name} ${itemInfo(id).emoji}`).join(', ');
-        if (n) {
-          logEvent(`😋 ${me.name} hái ké một lượt ${desc} nhà ${owner.name}`);
-          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa hái ké ${desc} nhà bạn!`);
+        const dogNote = times ? ` — chó tóm ${times} lần, nộp phạt ${fines.toLocaleString('vi')} vàng` : '';
+        if (n || times) {
+          logEvent(`😋 ${me.name} hái ké một lượt ${targets.length} ô nhà ${owner.name}: ${desc || 'trắng tay'}${dogNote}`);
+          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa hái ké ${desc || 'hụt'} nhà bạn${times ? ` — chó nhà bạn tóm được ${times} lần, thu ${fines.toLocaleString('vi')} vàng` : ''}!`);
         }
-        return { ...visitPayload(request, ownerId), poached: n, items: got, caught: caught ? { fine: caught.paid, message: caught.message } : null };
+        return {
+          ...visitPayload(request, ownerId),
+          poached: n,
+          items: got,
+          caught: times ? { times, fine: fines, message: `🐕 Chó nhà ${owner.name} tóm được bạn ${times}/${targets.length} lần — nộp phạt ${fines.toLocaleString('vi')} vàng` } : null,
+        };
       });
 
       // Tưới giúp hết: mọi ô đang lớn mà lượt 15 phút đã mở.
@@ -1210,7 +1217,7 @@ export function buildApp({ config, db, logger = true }) {
       // ---- Chó canh vườn ----
       // Gọi trước mỗi lần trộm nhà người khác. Trả về null nếu thoát; nếu bị tóm
       // thì đã trừ tiền phạt, chuyển cho chủ, ghi log — trả về reply 400.
-      function dogCatch(owner, thief) {
+      function dogCatch(owner, thief, { quiet = false } = {}) {
         const now = Date.now();
         if (!owner || (owner.dog_until || 0) <= now) return null;
         if (Math.random() >= DOG.catchChance) return null;
@@ -1223,8 +1230,10 @@ export function buildApp({ config, db, logger = true }) {
           db.prepare('UPDATE farmers SET last_caught_at = ?, caught_streak = ? WHERE user_id = ?').run(now, streak + 1, thief.user_id);
         })();
         const nth = streak + 1;
-        logEvent(`🐕 Chó nhà ${owner.name} tóm được ${thief.name}${nth > 1 ? ` (lần ${nth} liên tiếp)` : ''} — nộp phạt ${paid.toLocaleString('vi')} vàng cho chủ vườn`);
-        pushTo([owner.user_id], 'Ăn trộm dzui dzẻ 😋', `🐕 Chó nhà bạn vừa tóm được ${thief.name} — thu ${paid.toLocaleString('vi')} vàng tiền phạt!`);
+        if (!quiet) {
+          logEvent(`🐕 Chó nhà ${owner.name} tóm được ${thief.name}${nth > 1 ? ` (lần ${nth} liên tiếp)` : ''} — nộp phạt ${paid.toLocaleString('vi')} vàng cho chủ vườn`);
+          pushTo([owner.user_id], 'Ăn trộm dzui dzẻ 😋', `🐕 Chó nhà bạn vừa tóm được ${thief.name} — thu ${paid.toLocaleString('vi')} vàng tiền phạt!`);
+        }
         return { paid, nth, message: `🐕 Gâu! Chó nhà ${owner.name} tóm được bạn — nộp phạt ${paid.toLocaleString('vi')} vàng${nth > 1 ? ` (bị tóm ${nth} lần liên tiếp)` : ''}. Trộm trót lọt một lần là phạt về lại ${DOG.fine}.` };
       }
       function dogCheck(reply, owner, thief) {
