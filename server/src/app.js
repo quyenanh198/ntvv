@@ -383,7 +383,7 @@ export function buildApp({ config, db, logger = true }) {
       : null;
     const d = getDaily(f.user_id);
     const questsDone = DAILY_QUESTS.filter((q) => (d.counters[q.id] || 0) >= q.target).length;
-    const mill = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(f.user_id, 'coixay');
+    const mill = db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? ORDER BY ready_at LIMIT 1').get(f.user_id, 'coixay');
     return {
       id: f.user_id,
       name: f.name,
@@ -403,10 +403,12 @@ export function buildApp({ config, db, logger = true }) {
       mill: mill && mill.recipe
         ? { recipe: mill.recipe, readyAt: mill.ready_at, ready: Date.now() >= mill.ready_at }
         : null,
+      // machines: { kind: { recipe: job } } — mỗi món trong máy chạy độc lập.
       machines: (() => {
         const out = {};
-        for (const row of db.prepare('SELECT * FROM machines WHERE owner_id = ?').all(f.user_id)) {
-          if (row.recipe) out[row.kind] = { recipe: row.recipe, readyAt: row.ready_at, ready: Date.now() >= row.ready_at, queue: row.queue_count || 1, poached: !!row.poached };
+        for (const row of db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ?').all(f.user_id)) {
+          if (!out[row.kind]) out[row.kind] = {};
+          out[row.kind][row.recipe] = { recipe: row.recipe, readyAt: row.ready_at, ready: Date.now() >= row.ready_at, queue: row.queue_count || 1, poached: !!row.poached };
         }
         return out;
       })(),
@@ -986,10 +988,9 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         if (!machine || !recipe) return reply.code(400).send({ error: 'bad_request' });
         if (levelFor(me.xp) < machine.level) return reply.code(400).send({ error: 'level_too_low' });
-        const cur = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(me.user_id, machineId);
-        // Máy đang chạy: chỉ được xếp thêm CÙNG công thức vào hàng đợi.
-        if (cur && cur.recipe && cur.recipe !== recipeId) return reply.code(400).send({ error: 'mill_busy' });
-        const queued = cur && cur.recipe ? (cur.queue_count || 1) : 0;
+        // Mỗi món một dòng job riêng — các món trong cùng máy chạy song song.
+        const cur = db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').get(me.user_id, machineId, recipeId);
+        const queued = cur ? (cur.queue_count || 1) : 0;
         // Số mẻ xếp được: theo yêu cầu, chỗ trống trong hàng đợi và nguyên liệu trong kho.
         let n = Math.max(1, Math.min(MACHINE_QUEUE_MAX - queued, Math.floor(Number(count) || 1)));
         for (const [item, qty] of Object.entries(recipe.in)) {
@@ -999,48 +1000,57 @@ export function buildApp({ config, db, logger = true }) {
         db.transaction(() => {
           for (const [item, qty] of Object.entries(recipe.in)) invTake(me.user_id, item, qty * n);
           if (queued) {
-            db.prepare('UPDATE machines SET queue_count = queue_count + ? WHERE owner_id = ? AND kind = ?').run(n, me.user_id, machineId);
+            db.prepare('UPDATE machine_jobs SET queue_count = queue_count + ? WHERE owner_id = ? AND kind = ? AND recipe = ?').run(n, me.user_id, machineId, recipeId);
           } else {
-            db.prepare(`
-              INSERT INTO machines (owner_id, kind, recipe, ready_at, queue_count, poached) VALUES (?, ?, ?, ?, ?, 0)
-              ON CONFLICT(owner_id, kind) DO UPDATE SET recipe = excluded.recipe, ready_at = excluded.ready_at, queue_count = excluded.queue_count, poached = 0
-            `).run(me.user_id, machineId, recipeId, Date.now() + machineTime(me, scaleMs(recipe.ms, config.fast)), n);
+            db.prepare('INSERT INTO machine_jobs (owner_id, kind, recipe, ready_at, queue_count, poached) VALUES (?, ?, ?, ?, ?, 0)')
+              .run(me.user_id, machineId, recipeId, Date.now() + machineTime(me, scaleMs(recipe.ms, config.fast)), n);
           }
         })();
         return { me: fresh(me.user_id), queued: n, total: queued + n };
       }
 
-      async function machineCollect(request, reply, machineId) {
+      // Lấy một món (recipeId) hoặc mọi món đã chín của máy (recipeId bỏ trống).
+      async function machineCollect(request, reply, machineId, recipeId) {
         const machine = MACHINES[machineId];
         const me = request.farmer;
         if (!machine) return reply.code(400).send({ error: 'bad_request' });
-        const cur = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(me.user_id, machineId);
-        if (!cur || !cur.recipe) return reply.code(400).send({ error: 'mill_empty' });
         const now = Date.now();
-        if (now < cur.ready_at) return reply.code(400).send({ error: 'not_ready' });
-        const recipe = machine.recipes[cur.recipe];
-        const cycle = machineTime(me, scaleMs(recipe.ms, config.fast));
-        const total = cur.queue_count || 1;
-        const done = Math.min(total, 1 + Math.floor((now - cur.ready_at) / cycle));
+        const jobs = recipeId
+          ? db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').all(me.user_id, machineId, recipeId)
+          : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND ready_at <= ?').all(me.user_id, machineId, now);
+        if (!jobs.length) return reply.code(400).send({ error: recipeId ? 'mill_empty' : 'not_ready' });
+        if (recipeId && now < jobs[0].ready_at) return reply.code(400).send({ error: 'not_ready' });
+        const got = {};
+        let collected = 0;
         db.transaction(() => {
-          for (const [item, qty] of Object.entries(recipe.out)) {
-            invAdd(me.user_id, item, Math.max(0, qty * done - (cur.poached ? 1 : 0)));
+          for (const cur of jobs) {
+            const recipe = machine.recipes[cur.recipe];
+            if (!recipe) { db.prepare('DELETE FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').run(me.user_id, machineId, cur.recipe); continue; }
+            const cycle = machineTime(me, scaleMs(recipe.ms, config.fast));
+            const total = cur.queue_count || 1;
+            const done = Math.min(total, 1 + Math.floor((now - cur.ready_at) / cycle));
+            for (const [item, qty] of Object.entries(recipe.out)) {
+              const q = Math.max(0, qty * done - (cur.poached ? 1 : 0));
+              invAdd(me.user_id, item, q);
+              got[item] = (got[item] || 0) + q;
+            }
+            grant(me.user_id, { xp: recipe.exp * done });
+            if (done >= total) {
+              db.prepare('DELETE FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').run(me.user_id, machineId, cur.recipe);
+            } else {
+              db.prepare('UPDATE machine_jobs SET ready_at = ?, queue_count = ?, poached = 0 WHERE owner_id = ? AND kind = ? AND recipe = ?')
+                .run(cur.ready_at + done * cycle, total - done, me.user_id, machineId, cur.recipe);
+            }
+            collected += done;
           }
-          grant(me.user_id, { xp: recipe.exp * done });
-          if (done >= total) {
-            db.prepare('UPDATE machines SET recipe = NULL, ready_at = NULL, queue_count = 1, poached = 0 WHERE owner_id = ? AND kind = ?').run(me.user_id, machineId);
-          } else {
-            db.prepare('UPDATE machines SET ready_at = ?, queue_count = ?, poached = 0 WHERE owner_id = ? AND kind = ?')
-              .run(cur.ready_at + done * cycle, total - done, me.user_id, machineId);
-          }
-          bumpQuest(me.user_id, 'process', done);
-          bumpFest(me.user_id, 'process', done);
+          bumpQuest(me.user_id, 'process', collected);
+          bumpFest(me.user_id, 'process', collected);
         })();
-        return { me: fresh(me.user_id), product: Object.keys(recipe.out)[0], collected: done };
+        return { me: fresh(me.user_id), product: Object.keys(got)[0], items: got, collected };
       }
 
       api.post('/machine-run', async (request, reply) => machineRun(request, reply, request.body?.machine, request.body?.recipe, request.body?.count));
-      api.post('/machine-collect', async (request, reply) => machineCollect(request, reply, request.body?.machine));
+      api.post('/machine-collect', async (request, reply) => machineCollect(request, reply, request.body?.machine, request.body?.recipe));
       api.post('/mill', async (request, reply) => machineRun(request, reply, 'coixay', request.body?.recipe));
       api.post('/mill-collect', async (request, reply) => machineCollect(request, reply, 'coixay'));
 
@@ -1170,14 +1180,17 @@ export function buildApp({ config, db, logger = true }) {
         }
         if (target === 'mill' || target === 'machine') {
           const mk = target === 'machine' && MACHINES[request.body?.kind] ? request.body.kind : 'coixay';
-          const cur = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(me.user_id, mk);
-          if (!cur || !cur.recipe || now >= cur.ready_at) return reply.code(400).send({ error: 'not_processing' });
+          const rc = request.body?.recipe;
+          const cur = rc
+            ? db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').get(me.user_id, mk, rc)
+            : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND ready_at > ? ORDER BY ready_at LIMIT 1').get(me.user_id, mk, now);
+          if (!cur || now >= cur.ready_at) return reply.code(400).send({ error: 'not_processing' });
           remaining = cur.ready_at - now;
           const cost = speedupCost(remaining);
           if (me.gems < cost) return reply.code(400).send({ error: 'not_enough_gems' });
           db.transaction(() => {
             grant(me.user_id, { gems: -cost });
-            db.prepare('UPDATE machines SET ready_at = ? WHERE owner_id = ? AND kind = ?').run(now, me.user_id, mk);
+            db.prepare('UPDATE machine_jobs SET ready_at = ? WHERE owner_id = ? AND kind = ? AND recipe = ?').run(now, me.user_id, mk, cur.recipe);
           })();
           return { me: fresh(me.user_id), cost };
         }
@@ -1319,9 +1332,9 @@ export function buildApp({ config, db, logger = true }) {
         if (!owner) return reply.code(400).send({ error: 'no_farm' });
         const now = Date.now();
         if (now < lootGuardAt(ownerId, 'machine')) return reply.code(400).send({ error: 'poach_cooldown' });
-        const row = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND recipe IS NOT NULL AND ready_at <= ? AND poached = 0 ORDER BY ready_at LIMIT 1')
+        const row = db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND ready_at <= ? AND poached = 0 ORDER BY ready_at LIMIT 1')
           .get(ownerId, now);
-        if (!row) return reply.code(400).send({ error: 'nothing_to_poach' });
+        if (!row || !MACHINES[row.kind]?.recipes[row.recipe]) return reply.code(400).send({ error: 'nothing_to_poach' });
         if (dogCheck(reply, owner, me)) return reply;
         const recipe = MACHINES[row.kind].recipes[row.recipe];
         const product = Object.keys(recipe.out)[0];
@@ -1329,7 +1342,7 @@ export function buildApp({ config, db, logger = true }) {
         db.transaction(() => {
           invAdd(me.user_id, product, got);
           grant(me.user_id, { xp: POACH_EXP * got });
-          db.prepare('UPDATE machines SET poached = 1 WHERE owner_id = ? AND kind = ?').run(ownerId, row.kind);
+          db.prepare('UPDATE machine_jobs SET poached = 1 WHERE owner_id = ? AND kind = ? AND recipe = ?').run(ownerId, row.kind, row.recipe);
           markLootGuard.run(ownerId, 'machine', now);
           bumpPoached(me.user_id, got);
         })();
@@ -1536,7 +1549,7 @@ export function buildApp({ config, db, logger = true }) {
           machinePoachAt: lootGuardAt(ownerId, 'machine'),
           emptyPlots: owner.plots_count - db.prepare('SELECT COUNT(*) c FROM plots WHERE owner_id = ?').get(ownerId).c,
           animalsReady: db.prepare('SELECT COUNT(*) c FROM animals WHERE owner_id = ? AND ready_at IS NOT NULL AND ready_at <= ?').get(ownerId, now2).c,
-          machinesReady: db.prepare('SELECT COUNT(*) c FROM machines WHERE owner_id = ? AND recipe IS NOT NULL AND ready_at <= ? AND poached = 0').get(ownerId, now2).c,
+          machinesReady: db.prepare('SELECT COUNT(*) c FROM machine_jobs WHERE owner_id = ? AND ready_at <= ? AND poached = 0').get(ownerId, now2).c,
         };
         return {
           farm: { id: owner.user_id, name: owner.name, level: li.level, stars: owner.stars, plotsCount: owner.plots_count, plots, loot, dogUntil: owner.dog_until || 0 },

@@ -97,6 +97,15 @@ CREATE TABLE IF NOT EXISTS festival (
 );
 
 -- Level chuyển từ thế giới v1 (farm.sqlite3): xp v2 tối thiểu theo level cũ.
+CREATE TABLE IF NOT EXISTS machine_jobs (
+  owner_id INTEGER NOT NULL,
+  kind TEXT NOT NULL,
+  recipe TEXT NOT NULL,
+  ready_at INTEGER NOT NULL,
+  queue_count INTEGER NOT NULL DEFAULT 1,
+  poached INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (owner_id, kind, recipe)
+);
 CREATE TABLE IF NOT EXISTS wants (
   id INTEGER PRIMARY KEY,
   owner_id INTEGER NOT NULL,
@@ -166,6 +175,13 @@ export function openDb(dataDir) {
   if (!cols.includes('skills_json')) db.exec("ALTER TABLE farmers ADD COLUMN skills_json TEXT NOT NULL DEFAULT '[]'");
   if (!cols.includes('last_respec_at')) db.exec('ALTER TABLE farmers ADD COLUMN last_respec_at INTEGER NOT NULL DEFAULT 0');
   const mcols = db.prepare('PRAGMA table_info(machines)').all().map((c) => c.name);
+  // Mỗi máy chạy nhiều món song song: chuyển mẻ đang chạy từ machines (1 món/máy)
+  // sang machine_jobs (1 dòng/món). Idempotent — machines được dọn sau khi chuyển.
+  if (mcols.includes('recipe')) {
+    db.exec(`INSERT OR IGNORE INTO machine_jobs (owner_id, kind, recipe, ready_at, queue_count, poached)
+      SELECT owner_id, kind, recipe, ready_at, COALESCE(queue_count, 1), COALESCE(poached, 0) FROM machines WHERE recipe IS NOT NULL AND ready_at IS NOT NULL`);
+    db.exec('UPDATE machines SET recipe = NULL, ready_at = NULL WHERE recipe IS NOT NULL');
+  }
   if (!mcols.includes('poached')) db.exec('ALTER TABLE machines ADD COLUMN poached INTEGER NOT NULL DEFAULT 0');
   if (!mcols.includes('queue_count')) db.exec('ALTER TABLE machines ADD COLUMN queue_count INTEGER NOT NULL DEFAULT 1');
   const pcols = db.prepare('PRAGMA table_info(plots)').all().map((c) => c.name);

@@ -317,7 +317,7 @@
           <button class="side-btn" data-sheet="festival">🎪${festReady ? '<i class="dot"></i>' : ''}<span>Sự kiện</span></button>
           ${m.skills.unlocked ? `<button class="side-btn" data-sheet="skills">🎓${m.skills.points > 0 ? '<i class="dot"></i>' : ''}<span>Kỹ năng</span></button>` : ''}
           ${m.level >= DATA.config.animals.vit.level ? `<button class="side-btn" data-sheet="barns">🐾${m.animals.some((x) => x.ready) ? '<i class="dot"></i>' : ''}<span>Chuồng</span></button>` : ''}
-          ${m.level >= Math.min(...Object.values(DATA.config.machines).map((x) => x.level)) ? `<button class="side-btn" data-sheet="mill">🏭${Object.values(m.machines).some((x) => x && x.ready) ? '<i class="dot"></i>' : ''}<span>Nhà máy</span></button>` : ''}
+          ${m.level >= Math.min(...Object.values(DATA.config.machines).map((x) => x.level)) ? `<button class="side-btn" data-sheet="mill">🏭${Object.values(m.machines).some((jobs) => Object.values(jobs || {}).some((j) => j.ready)) ? '<i class="dot"></i>' : ''}<span>Nhà máy</span></button>` : ''}
           ${m.level >= DATA.config.fishing.level ? `<button class="side-btn" data-sheet="fishing">🎣${m.energy.current >= DATA.config.fishing.energyCost ? '<i class="dot"></i>' : ''}<span>Ao cá</span></button>` : ''}
           <button class="side-btn" data-sheet="market">🤝<span>Thu mua</span></button>
         </div>
@@ -839,31 +839,39 @@
         if (m.level < mc.level) {
           return `<div class="machine-block machine-block--locked"><h4>${mc.emoji} ${mc.name}</h4><p class="sheet-note">🔒 Mở ở cấp ${mc.level}</p></div>`;
         }
-        const st = m.machines[mc.id];
-        const running = st ? mc.recipes[st.recipe] : null;
+        const jobs = m.machines[mc.id] || {};
+        const jobList = Object.values(jobs);
+        const readyJobs = jobList.filter((j) => j.ready);
         let head;
-        if (st && running) {
-          const left = st.readyAt - Date.now();
-          head = st.ready
-            ? `<button class="btn gbtn gbtn--gold mc-collect" data-machine-collect="${mc.id}">✅ Lấy ${running.name} ${running.emoji}${st.queue > 1 ? ` · ${st.queue} mẻ` : ''}</button>`
-            : `<div class="mc-status">🔄 <b>${running.name}</b> · ${st.queue} mẻ · còn ${fmtTime(left)}
-                 <button class="btn-mini gbtn gbtn--gold" data-machine-speed="${mc.id}">${GEM} ${Math.max(1, Math.ceil(left / 300000))} · Xong ngay</button></div>`;
+        if (readyJobs.length) {
+          head = `<button class="btn gbtn gbtn--gold mc-collect" data-machine-collect="${mc.id}">✅ Lấy hết ${readyJobs.length} món xong</button>`;
+        } else if (jobList.length) {
+          head = `<div class="mc-status">🔄 Đang nấu <b>${jobList.length}</b> món song song</div>`;
         } else {
-          head = '<div class="mc-status mc-status--idle">💤 Rảnh — bấm ＋ để nấu</div>';
+          head = '<div class="mc-status mc-status--idle">💤 Rảnh — bấm ＋ để nấu, mỗi món chạy riêng</div>';
         }
         const rows = Object.values(mc.recipes).map((r) => {
-          const active = !!(st && st.recipe === r.id);
-          const room = QMAX - (active ? st.queue : 0);
+          const job = jobs[r.id];
+          const room = QMAX - (job ? job.queue : 0);
           const maxBatches = Math.max(0, Math.min(room, ...Object.entries(r.in).map(([iid, q]) => Math.floor((m.inventory[iid] || 0) / q))));
-          const canAdd = maxBatches > 0 && (!st || active);
+          const canAdd = maxBatches > 0;
           const ins = Object.entries(r.in).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(' + ');
           const outId = Object.keys(r.out)[0];
           const outInfo = itemInfo(outId);
-          return `<div class="seed-row mc-row${active ? ' mc-row--active' : ''}${canAdd ? '' : ' mc-row--dim'}" style="cursor:default">
+          let state = '';
+          if (job && job.ready) {
+            state = `<button class="mc-plus mc-plus--done" data-machine-collect="${mc.id}" data-recipe="${r.id}" title="Lấy ${r.name}">✅ Lấy${job.queue > 1 ? ` ${job.queue}` : ''}</button>`;
+          } else if (job) {
+            const left = job.readyAt - Date.now();
+            state = `<small class="mc-run">🔄 ${job.queue} mẻ · ${fmtTime(left)}</small>
+              <button class="mc-plus mc-plus--gem" data-machine-speed="${mc.id}" data-recipe="${r.id}" title="Xong ngay">${GEM}${Math.max(1, Math.ceil(left / 300000))}</button>`;
+          }
+          return `<div class="seed-row mc-row${job ? ' mc-row--active' : ''}${canAdd ? '' : ' mc-row--dim'}" style="cursor:default">
             ${itemImg(outId, 'seed-sprite')}
-            <span class="seed-info"><span class="seed-name">${r.name}${active ? ` <small>· đang nấu ${st.queue} mẻ</small>` : ''}</span>
+            <span class="seed-info"><span class="seed-name">${r.name}</span>
               <div class="seed-meta">${ins} → ${Object.values(r.out)[0]} ${outInfo?.name || ''} · ⏱ ${fmtDuration(r.ms)} · bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp}EXP</div></span>
             <span class="mc-add">
+              ${state}
               <button class="mc-plus" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="1" ${canAdd ? '' : 'disabled'} title="Thêm 1 mẻ">＋</button>
               <button class="mc-plus mc-plus--max" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="${maxBatches}" ${canAdd && maxBatches > 1 ? '' : 'disabled'} title="Xếp hết nguyên liệu">＋${maxBatches > 1 ? maxBatches : ''}</button>
             </span>
@@ -1140,12 +1148,12 @@
       }));
     document.querySelectorAll('[data-machine-collect]').forEach((el) =>
       el.addEventListener('click', async (e) => {
-        const r = await run(() => api('/machine-collect', { machine: el.dataset.machineCollect }));
-        if (r) { updateMe(r); floatGain(e.clientX || 200, e.clientY || 300, `${itemImg(r.product, 'coin-img')} +1`); render(); }
+        const r = await run(() => api('/machine-collect', { machine: el.dataset.machineCollect, recipe: el.dataset.recipe || undefined }));
+        if (r) { updateMe(r); floatGain(e.clientX || 200, e.clientY || 300, `${itemImg(r.product, 'coin-img')} +${Object.values(r.items || {}).reduce((x, y) => x + y, 0) || r.collected}`); render(); }
       }));
     document.querySelectorAll('[data-machine-speed]').forEach((el) =>
       el.addEventListener('click', async () => {
-        const r = await run(() => api('/speedup', { target: 'machine', kind: el.dataset.machineSpeed }));
+        const r = await run(() => api('/speedup', { target: 'machine', kind: el.dataset.machineSpeed, recipe: el.dataset.recipe || undefined }));
         if (r) { updateMe(r); toast(`💎 -${r.cost} kim cương!`); render(); }
       }));
 

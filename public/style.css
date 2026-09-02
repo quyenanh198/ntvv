@@ -1727,3 +1727,10 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 .btn-group { align-items: center; }
 .btn-group .qty-ctl { margin: 0; }
+
+/* ---- Máy chạy nhiều món song song ---- */
+.mc-run { font-size: .7rem; font-weight: 800; color: #b47a12; white-space: nowrap; align-self: center; }
+.mc-plus--done { background: linear-gradient(180deg, #b9f0a3, #6fcf62); border-color: #3c7d2a; color: #1f4a12; font-size: .8rem; }
+.mc-plus--gem { background: linear-gradient(180deg, #f3d8ff, #d69cf5); border-color: #8a3fc2; color: #3a1656; font-size: .8rem; display: inline-flex; align-items: center; gap: 2px; }
+.mc-plus--gem .coin-img { width: 14px; height: 14px; }
+.mc-add { flex-wrap: wrap; justify-content: flex-end; max-width: 46%; }
