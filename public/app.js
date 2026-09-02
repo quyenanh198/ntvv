@@ -333,7 +333,7 @@
           ${m.level >= DATA.config.animals.vit.level ? `<button class="side-btn" data-sheet="barns">🐾${m.animals.some((x) => x.ready) ? '<i class="dot"></i>' : ''}<span>Chuồng</span></button>` : ''}
           ${m.level >= Math.min(...Object.values(DATA.config.machines).map((x) => x.level)) ? `<button class="side-btn" data-sheet="mill">🏭${Object.values(m.machines).some((jobs) => Object.values(jobs || {}).some((j) => j.ready)) ? '<i class="dot"></i>' : ''}<span>Nhà máy</span></button>` : ''}
           ${m.level >= DATA.config.fishing.level ? `<button class="side-btn" data-sheet="fishing">🎣${m.energy.current >= DATA.config.fishing.energyCost ? '<i class="dot"></i>' : ''}<span>Ao cá</span></button>` : ''}
-          <button class="side-btn" data-sheet="market">🤝<span>Thu mua</span></button>
+          <button class="side-btn" data-sheet="market">🤝${DATA.wants?.canFill ? '<i class="dot"></i>' : ''}<span>Thu mua</span></button>
         </div>
 
         <div class="stage-center">
@@ -880,7 +880,8 @@
             state = `<small class="mc-run">🔄 ${job.queue} mẻ · ${fmtTime(left)}</small>
               <button class="mc-plus mc-plus--gem" data-machine-speed="${mc.id}" data-recipe="${r.id}" title="Xong ngay">${GEM}${Math.max(1, Math.ceil(left / 300000))}</button>`;
           }
-          return `<div class="seed-row mc-row${job ? ' mc-row--active' : ''}${canAdd ? '' : ' mc-row--dim'}" style="cursor:default">
+          const missing = Object.entries(r.in).filter(([iid, q]) => (m.inventory[iid] || 0) < q).map(([iid, q]) => `${iid}:${q - (m.inventory[iid] || 0)}`).join(',');
+          return `<div class="seed-row mc-row${job ? ' mc-row--active' : ''}${canAdd ? '' : ' mc-row--dim'}" ${missing ? `data-missing="${missing}" data-missing-name="${r.name}" title="Thiếu nguyên liệu — bấm để đăng tin thu mua" style="cursor:pointer"` : 'style="cursor:default"'}>
             ${itemImg(outId, 'seed-sprite')}
             <span class="seed-info"><span class="seed-name">${r.name}</span>
               <div class="seed-meta">${ins} → ${Object.values(r.out)[0]} ${outInfo?.name || ''} · ⏱ ${fmtDuration(r.ms)} · bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp}EXP</div></span>
@@ -1167,6 +1168,22 @@
         if (!el.dataset.recipe) return;
         const r = await run(() => api('/machine-run', { machine: el.dataset.machineRun, recipe: el.dataset.recipe, count: Number(el.dataset.count) || 1 }));
         if (r) { updateMe(r); toast(r.total > r.queued ? `🏭 +${r.queued} mẻ (hàng đợi ${r.total})` : `🏭 Đã xếp ${r.queued} mẻ!`); render(); }
+      }));
+    // Thiếu nguyên liệu → hỏi đăng tin thu mua phần thiếu (giá 130% chợ, ký quỹ).
+    document.querySelectorAll('[data-missing]').forEach((el) =>
+      el.addEventListener('click', async (e) => {
+        if (e.target.closest('button')) return;
+        const need = el.dataset.missing.split(',').map((x) => { const [id, q] = x.split(':'); return { id, q: Number(q) }; });
+        const lines = need.map((x) => `• ${x.q} ${itemInfo(x.id)?.name || x.id} — ${(Math.round((itemInfo(x.id)?.sell || 0) * 1.3) * x.q).toLocaleString('vi')} vàng`).join('\n');
+        const total = need.reduce((a, x) => a + Math.round((itemInfo(x.id)?.sell || 0) * 1.3) * x.q, 0);
+        if (!window.confirm(`Thiếu nguyên liệu cho ${el.dataset.missingName}:\n${lines}\n\nĐăng tin thu mua từ bạn bè (trả 130% giá chợ, ký quỹ ${total.toLocaleString('vi')} vàng)?`)) return;
+        let ok = 0;
+        for (const x of need) {
+          const r = await run(() => api('/want-create', { item: x.id, qty: x.q }));
+          if (r) { ok += 1; updateMe(r); MARKET = r.wants; }
+        }
+        if (ok) toast(`📣 Đã đăng ${ok} tin cần mua — cả làng được báo!`);
+        render();
       }));
     document.getElementById('btn-collect-all')?.addEventListener('click', async (e) => {
       const r = await run(() => api('/machine-collect-all', {}));

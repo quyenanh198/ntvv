@@ -14,30 +14,30 @@ export const CROPS = {
   bapcai:   { id: 'bapcai',   name: 'Bắp cải',  emoji: '🥬', level: 7,  growMs: 15 * MIN,  seed: 14,  sell: 36,  expSow: 2, expHarvest: 14 },
   cachua:   { id: 'cachua',   name: 'Cà chua',  emoji: '🍅', level: 8,  growMs: 25 * MIN,  seed: 18,  sell: 48,  expSow: 3, expHarvest: 21 },
   hanhtay:  { id: 'hanhtay',  name: 'Hành tây', emoji: '🧅', level: 10, growMs: 60 * MIN,  seed: 30,  sell: 84,  expSow: 4, expHarvest: 43 },
-  mia:      { id: 'mia',      name: 'Mía',      emoji: '🎋', level: 12, growMs: 90 * MIN, seed: 46,  sell: 135, expSow: 5, expHarvest: 78 },
+  mia:      { id: 'mia',      name: 'Mía',      emoji: '🎋', level: 12, growMs: 80 * MIN, seed: 46,  sell: 135, expSow: 5, expHarvest: 78 },
   dautay:   { id: 'dautay',   name: 'Dâu tây',  emoji: '🍓', level: 13, growMs: 45 * MIN,  seed: 24,  sell: 70,  expSow: 3, expHarvest: 33 },
-  catim:    { id: 'catim',    name: 'Cà tím',   emoji: '🍆', level: 14, growMs: 150 * MIN, seed: 72,  sell: 215, expSow: 7, expHarvest: 145 },
-  gao:      { id: 'gao',      name: 'Gạo',      emoji: '🍚', level: 16, growMs: 75 * MIN,  seed: 38,  sell: 110, expSow: 4, expHarvest: 60 },
-  bingo:    { id: 'bingo',    name: 'Bí ngô',   emoji: '🎃', level: 18, growMs: 120 * MIN, seed: 60,  sell: 180, expSow: 6, expHarvest: 110 },
-  duahau:   { id: 'duahau',   name: 'Dưa hấu',  emoji: '🍉', level: 21, growMs: 180 * MIN, seed: 90,  sell: 275, expSow: 8, expHarvest: 185 },
-  nho:      { id: 'nho',      name: 'Nho',      emoji: '🍇', level: 22, growMs: 210 * MIN, seed: 110, sell: 340, expSow: 9, expHarvest: 230 },
-  caphe:    { id: 'caphe',    name: 'Cà phê',   emoji: '☕', level: 23, growMs: 240 * MIN, seed: 145, sell: 450, expSow: 12, expHarvest: 300 },
-  cacao:    { id: 'cacao',    name: 'Ca cao',   emoji: '🍫', level: 28, growMs: 300 * MIN, seed: 190, sell: 585, expSow: 15, expHarvest: 380 },
+  catim:    { id: 'catim',    name: 'Cà tím',   emoji: '🍆', level: 14, growMs: 120 * MIN, seed: 72,  sell: 215, expSow: 7, expHarvest: 145 },
+  gao:      { id: 'gao',      name: 'Gạo',      emoji: '🍚', level: 16, growMs: 65 * MIN,  seed: 38,  sell: 110, expSow: 4, expHarvest: 60 },
+  bingo:    { id: 'bingo',    name: 'Bí ngô',   emoji: '🎃', level: 18, growMs: 100 * MIN, seed: 60,  sell: 180, expSow: 6, expHarvest: 110 },
+  duahau:   { id: 'duahau',   name: 'Dưa hấu',  emoji: '🍉', level: 21, growMs: 150 * MIN, seed: 90,  sell: 275, expSow: 8, expHarvest: 185 },
+  nho:      { id: 'nho',      name: 'Nho',      emoji: '🍇', level: 22, growMs: 180 * MIN, seed: 110, sell: 340, expSow: 9, expHarvest: 230 },
+  caphe:    { id: 'caphe',    name: 'Cà phê',   emoji: '☕', level: 23, growMs: 200 * MIN, seed: 145, sell: 450, expSow: 12, expHarvest: 300 },
+  cacao:    { id: 'cacao',    name: 'Ca cao',   emoji: '🍫', level: 28, growMs: 240 * MIN, seed: 190, sell: 585, expSow: 15, expHarvest: 380 },
   // Đợt mở rộng: lấp các cấp trống
   dualeo:     { id: 'dualeo',     name: 'Dưa leo',    emoji: '🥒', level: 6,  growMs: 12 * MIN,  seed: 12,  sell: 30,  expSow: 2, expHarvest: 11 },
   ot:         { id: 'ot',         name: 'Ớt',         emoji: '🌶️', level: 9,  growMs: 40 * MIN,  seed: 22,  sell: 60,  expSow: 3, expHarvest: 28 },
   dauxanh:    { id: 'dauxanh',    name: 'Đậu xanh',   emoji: '🫛', level: 11, growMs: 50 * MIN,  seed: 26,  sell: 72,  expSow: 4, expHarvest: 36 },
   huongduong: { id: 'huongduong', name: 'Hướng dương', emoji: '🌻', level: 15, growMs: 120 * MIN, seed: 42,  sell: 120, expSow: 5, expHarvest: 70 },
   bongcai:    { id: 'bongcai',    name: 'Bông cải',   emoji: '🥦', level: 17, growMs: 100 * MIN, seed: 36,  sell: 100, expSow: 4, expHarvest: 55 },
-  tra:        { id: 'tra',        name: 'Trà',        emoji: '🍵', level: 19, growMs: 150 * MIN, seed: 50,  sell: 150, expSow: 5, expHarvest: 85 },
-  hoahong:    { id: 'hoahong',    name: 'Hoa hồng',   emoji: '🌹', level: 25, growMs: 200 * MIN, seed: 80,  sell: 240, expSow: 8, expHarvest: 140 },
+  tra:        { id: 'tra',        name: 'Trà',        emoji: '🍵', level: 19, growMs: 130 * MIN, seed: 50,  sell: 150, expSow: 5, expHarvest: 85 },
+  hoahong:    { id: 'hoahong',    name: 'Hoa hồng',   emoji: '🌹', level: 25, growMs: 170 * MIN, seed: 80,  sell: 240, expSow: 8, expHarvest: 140 },
   nam:        { id: 'nam',        name: 'Nấm',        emoji: '🍄', level: 27, growMs: 90 * MIN,  seed: 60,  sell: 170, expSow: 7, expHarvest: 95 },
   khoailang:  { id: 'khoailang',  name: 'Khoai lang', emoji: '🍠', level: 8,  growMs: 30 * MIN,  seed: 16,  sell: 45,  expSow: 2, expHarvest: 18 },
   gung:       { id: 'gung',       name: 'Gừng',       emoji: '🫚', level: 13, growMs: 70 * MIN,  seed: 34,  sell: 95,  expSow: 4, expHarvest: 50 },
-  thom:       { id: 'thom',       name: 'Dứa',        emoji: '🍍', level: 20, growMs: 160 * MIN, seed: 58,  sell: 175, expSow: 6, expHarvest: 100 },
-  bongvai:    { id: 'bongvai',    name: 'Bông vải',   emoji: '🌼', level: 21, growMs: 140 * MIN, seed: 55,  sell: 160, expSow: 6, expHarvest: 95 },
-  oliu:       { id: 'oliu',       name: 'Ô liu',      emoji: '🫒', level: 26, growMs: 220 * MIN, seed: 90,  sell: 260, expSow: 9, expHarvest: 150 },
-  vani:       { id: 'vani',       name: 'Vani',       emoji: '🌿', level: 29, growMs: 360 * MIN, seed: 170, sell: 520, expSow: 14, expHarvest: 320 },
+  thom:       { id: 'thom',       name: 'Dứa',        emoji: '🍍', level: 20, growMs: 135 * MIN, seed: 58,  sell: 175, expSow: 6, expHarvest: 100 },
+  bongvai:    { id: 'bongvai',    name: 'Bông vải',   emoji: '🌼', level: 21, growMs: 120 * MIN, seed: 55,  sell: 160, expSow: 6, expHarvest: 95 },
+  oliu:       { id: 'oliu',       name: 'Ô liu',      emoji: '🫒', level: 26, growMs: 180 * MIN, seed: 90,  sell: 260, expSow: 9, expHarvest: 150 },
+  vani:       { id: 'vani',       name: 'Vani',       emoji: '🌿', level: 29, growMs: 300 * MIN, seed: 170, sell: 520, expSow: 14, expHarvest: 320 },
 };
 
 // ---- Sản phẩm ngoài cây (kho dùng chung một catalogue) ---------------------
@@ -137,6 +137,12 @@ export const GOODS = {
   banhgung:   { id: 'banhgung',   name: 'Bánh gừng',       emoji: '🍪', sell: 750,  source: 'lobanh' },
   banhdua:    { id: 'banhdua',    name: 'Bánh dứa',        emoji: '🍍', sell: 1900, source: 'lobanh' },
   banhxeo:    { id: 'banhxeo',    name: 'Bánh xèo',        emoji: '🥞', sell: 1250, source: 'bepan' },
+  // Sầu riêng & cóc
+  mutsaurieng:  { id: 'mutsaurieng',  name: 'Mứt sầu riêng',   emoji: '🫙', sell: 1300, source: 'noimut' },
+  saurienchien: { id: 'saurienchien', name: 'Sầu riêng chiên', emoji: '🥟', sell: 1200, source: 'bepan' },
+  kemsaurieng:  { id: 'kemsaurieng',  name: 'Kem sầu riêng',   emoji: '🍨', sell: 1500, source: 'nhamaysua' },
+  cocdam:       { id: 'cocdam',       name: 'Cóc dầm muối ớt', emoji: '🍏', sell: 400,  source: 'bepan' },
+  nuoccoc:      { id: 'nuoccoc',      name: 'Nước ép cóc',     emoji: '🥤', sell: 300,  source: 'mayep' },
   canho:   { id: 'canho',   name: 'Cá nhỏ',      emoji: '🐟', sell: 35,  source: 'ho', expCatch: 12 },
   caro:    { id: 'caro',    name: 'Cá rô',       emoji: '🐠', sell: 95,  source: 'ho', expCatch: 18 },
   cachep:  { id: 'cachep',  name: 'Cá chép',     emoji: '🐡', sell: 180, source: 'ho', expCatch: 40 },
@@ -155,6 +161,7 @@ export const TREES = {
   quabo:     { id: 'quabo',     name: 'Bơ trái',    emoji: '🥑', level: 22, price: 1000, growMs: 300 * MIN, yield: 3, sell: 160, exp: 240 },
   dao:       { id: 'dao',       name: 'Đào',        emoji: '🍑', level: 26, price: 1500, growMs: 360 * MIN, yield: 3, sell: 260, exp: 320 },
   anhdao:    { id: 'anhdao',    name: 'Anh đào',    emoji: '🍒', level: 32, price: 2400, growMs: 420 * MIN, yield: 4, sell: 380, exp: 460 },
+  coc:       { id: 'coc',       name: 'Cóc',        emoji: '🍏', level: 21, price: 800,  growMs: 240 * MIN, yield: 5, sell: 60,  exp: 150 },
 };
 
 export function itemInfo(id) {
@@ -197,6 +204,8 @@ export const MACHINES = {
     khoailangnuong: { id: 'khoailangnuong', name: 'Khoai lang nướng', emoji: '🍠', in: { khoailang: 2 }, out: { khoailangnuong: 1 }, ms: 20 * MIN, exp: 22 },
     trungmuoi:  { id: 'trungmuoi',  name: 'Trứng muối',      emoji: '🥚', in: { trungngong: 1, trungcut: 2 }, out: { trungmuoi: 1 }, ms: 40 * MIN, exp: 40 },
     banhxeo:    { id: 'banhxeo',    name: 'Bánh xèo',        emoji: '🥞', in: { botgao: 1, trung: 1, thit: 1 }, out: { banhxeo: 1 }, ms: 50 * MIN, exp: 130 },
+    saurienchien: { id: 'saurienchien', name: 'Sầu riêng chiên', emoji: '🥟', in: { saurieng: 1, botmi: 1 }, out: { saurienchien: 1 }, ms: 45 * MIN, exp: 110 },
+    cocdam:     { id: 'cocdam',     name: 'Cóc dầm muối ớt', emoji: '🍏', in: { coc: 3, ot: 1 }, out: { cocdam: 1 }, ms: 20 * MIN, exp: 40 },
   } },
   lonuong: { id: 'lonuong', name: 'Lò nướng cá', emoji: '🔥', level: 8, recipes: {
     canuong: { id: 'canuong', name: 'Cá nướng',    emoji: '🍢', in: { canho: 2 }, out: { canuong: 1 }, ms: 20 * MIN, exp: 20 },
@@ -231,6 +240,7 @@ export const MACHINES = {
     nuocchanh:  { id: 'nuocchanh',  name: 'Nước chanh',      emoji: '🍋', in: { chanh: 2, mia: 1 }, out: { nuocchanh: 1 }, ms: 30 * MIN, exp: 60 },
     nuocthom:   { id: 'nuocthom',   name: 'Nước dứa',        emoji: '🍍', in: { thom: 2 }, out: { nuocthom: 1 }, ms: 35 * MIN, exp: 70 },
     dauoliu:    { id: 'dauoliu',    name: 'Dầu ô liu',       emoji: '🫒', in: { oliu: 2 }, out: { dauoliu: 1 }, ms: 60 * MIN, exp: 110 },
+    nuoccoc:    { id: 'nuoccoc',    name: 'Nước ép cóc',     emoji: '🥤', in: { coc: 3 }, out: { nuoccoc: 1 }, ms: 25 * MIN, exp: 35 },
   } },
   noimut: { id: 'noimut', name: 'Nồi mứt', emoji: '🍯', level: 13, recipes: {
     mutdau:    { id: 'mutdau',    name: 'Mứt dâu',     emoji: '🫙', in: { dautay: 2 }, out: { mutdau: 1 },    ms: 35 * MIN, exp: 32 },
@@ -238,6 +248,7 @@ export const MACHINES = {
     mutcam:    { id: 'mutcam',    name: 'Mứt cam',     emoji: '🍯', in: { cam: 2, mia: 1 }, out: { mutcam: 1 }, ms: 40 * MIN, exp: 40 },
     siro:      { id: 'siro',      name: 'Siro thanh long', emoji: '🧴', in: { thanhlong: 2, mia: 1 }, out: { siro: 1 }, ms: 60 * MIN, exp: 70 },
     mutgung:   { id: 'mutgung',   name: 'Mứt gừng',    emoji: '🫙', in: { gung: 1, mia: 1 }, out: { mutgung: 1 }, ms: 45 * MIN, exp: 50 },
+    mutsaurieng: { id: 'mutsaurieng', name: 'Mứt sầu riêng', emoji: '🫙', in: { saurieng: 1, mia: 1 }, out: { mutsaurieng: 1 }, ms: 60 * MIN, exp: 120 },
   } },
   nhamaysua: { id: 'nhamaysua', name: 'Nhà máy sữa', emoji: '🧀', level: 15, recipes: {
     phomai:  { id: 'phomai',  name: 'Phô mai',      emoji: '🧀', in: { sua: 2 }, out: { phomai: 1 }, ms: 50 * MIN, exp: 52 },
@@ -247,6 +258,7 @@ export const MACHINES = {
     phomaide: { id: 'phomaide', name: 'Phô mai dê', emoji: '🧀', in: { suade: 2 }, out: { phomaide: 1 }, ms: 60 * MIN, exp: 110 },
     kemvani:  { id: 'kemvani',  name: 'Kem vani',   emoji: '🍦', in: { sua: 2, vani: 1 }, out: { kemvani: 1 }, ms: 70 * MIN, exp: 170 },
     phomaitrau: { id: 'phomaitrau', name: 'Phô mai trâu', emoji: '🧀', in: { suatrau: 2 }, out: { phomaitrau: 1 }, ms: 80 * MIN, exp: 200 },
+    kemsaurieng: { id: 'kemsaurieng', name: 'Kem sầu riêng', emoji: '🍨', in: { saurieng: 1, sua: 2 }, out: { kemsaurieng: 1 }, ms: 70 * MIN, exp: 170 },
   } },
   lobanh: { id: 'lobanh', name: 'Lò bánh', emoji: '🥖', level: 17, recipes: {
     banhmi: { id: 'banhmi', name: 'Bánh mì trứng', emoji: '🥖', in: { botmi: 1, trung: 1 }, out: { banhmi: 1 }, ms: 45 * MIN, exp: 45 },

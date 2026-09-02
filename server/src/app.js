@@ -596,6 +596,11 @@ export function buildApp({ config, db, logger = true }) {
           // Phiên bản server lúc boot: client so với ?v= của app.js đang chạy,
           // lệch là tự tải lại (tránh tab mở sẵn chạy client cũ với server mới).
           boot: BOOT_VERSION,
+          // Tin thu mua của người khác mà mình có hàng để bán → chấm đỏ nút Thu mua.
+          wants: (() => {
+            const rows = db.prepare('SELECT item, qty, filled FROM wants WHERE owner_id != ?').all(request.farmer.user_id);
+            return { open: rows.length, canFill: rows.filter((w) => invQty(request.farmer.user_id, w.item) > 0).length };
+          })(),
         };
       });
 
@@ -870,6 +875,8 @@ export function buildApp({ config, db, logger = true }) {
           db.prepare('INSERT INTO wants (owner_id, item, qty, filled, price, created_at) VALUES (?, ?, ?, 0, ?, ?)').run(me.user_id, item, n, price, Date.now());
         })();
         logEvent(`🤝 ${me.name} cần mua ${n} ${info.name} ${info.emoji} — trả ${price.toLocaleString('vi')} vàng/cái`);
+        const others = db.prepare('SELECT user_id FROM farmers WHERE user_id != ?').all(me.user_id).map((r) => r.user_id);
+        pushTo(others, 'Ăn trộm dzui dzẻ 😋', `🤝 ${me.name} cần mua ${n} ${info.name} ${info.emoji} — trả ${price.toLocaleString('vi')} vàng/cái (130% giá chợ). Có hàng thì vào Thu mua bán ngay!`);
         return { me: fresh(me.user_id), wants: wantsView(me.user_id) };
       });
 
