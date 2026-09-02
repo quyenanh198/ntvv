@@ -139,6 +139,7 @@ export function openDb(dataDir) {
   }
   // Vật nuôi đợt sau: cấp chuồng gom vào JSON thay vì mỗi loại một cột.
   if (!cols.includes('barn_levels_json')) db.exec("ALTER TABLE farmers ADD COLUMN barn_levels_json TEXT NOT NULL DEFAULT '{}'");
+  if (!cols.includes('orders_refresh_at')) db.exec('ALTER TABLE farmers ADD COLUMN orders_refresh_at INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('critter_next_at')) db.exec('ALTER TABLE farmers ADD COLUMN critter_next_at INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('skills_json')) db.exec("ALTER TABLE farmers ADD COLUMN skills_json TEXT NOT NULL DEFAULT '[]'");
   if (!cols.includes('last_respec_at')) db.exec('ALTER TABLE farmers ADD COLUMN last_respec_at INTEGER NOT NULL DEFAULT 0');

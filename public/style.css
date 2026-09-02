@@ -1481,7 +1481,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .seed-name { font-size: .76rem; }
   .seed-meta { font-size: .59rem; }
   .seed-cost, .seed-lock { font-size: .59rem; }
-  .inv-row { grid-template-columns: 42px minmax(0, 1fr) auto auto; gap: .3rem; }
+  .inv-row { grid-template-columns: 42px minmax(0, 1fr) auto auto auto; gap: .3rem; }
   .inv-row > .btn-mini { padding-inline: .45rem; font-size: .76rem; }
   .inv-row > img { width: 38px; height: 38px; }
   .quest-row { grid-template-columns: 34px minmax(0, 1fr) auto; padding: .42rem .46rem; }
@@ -1691,3 +1691,23 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .pips { display: inline-flex; gap: 2px; margin-left: .3rem; vertical-align: middle; }
 .pip { width: 8px; height: 8px; border-radius: 50%; background: rgba(120, 90, 40, .18); border: 1px solid rgba(120, 90, 40, .35); }
 .pip--on { background: #f0b429; border-color: #b47a12; }
+
+/* ---- Khu chế biến: thẻ cố định, trạng thái + nút ＋ ---- */
+.machine-grid { align-items: stretch; }
+.machine-block--locked { opacity: .7; }
+.mc-status { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; font-size: .8rem; font-weight: 700; margin-bottom: .4rem; }
+.mc-status--idle { color: #9c8468; }
+.mc-collect { width: 100%; margin-bottom: .4rem; }
+.mc-row--active { background: rgba(255, 214, 102, .35) !important; border-color: #e1aa27 !important; }
+.mc-row--dim .seed-sprite, .mc-row--dim .emoji-ic { filter: grayscale(.6); opacity: .7; }
+.mc-row .seed-name small { font-weight: 700; color: #b47a12; font-size: .72rem; }
+.mc-add { display: flex; gap: .25rem; flex: none; }
+.mc-plus {
+  min-width: 34px; height: 34px; padding: 0 .4rem;
+  border-radius: 10px; border: 2px solid #b47a12; background: linear-gradient(180deg, #ffd766, #f0b429);
+  color: #4a2e0a; font-weight: 900; font-size: 1.05rem; line-height: 1; cursor: pointer;
+  box-shadow: 0 2px 0 #b47a12;
+}
+.mc-plus--max { font-size: .82rem; }
+.mc-plus:disabled { opacity: .3; filter: grayscale(1); cursor: default; box-shadow: none; }
+.mc-plus:not(:disabled):active { transform: translateY(1px); box-shadow: 0 1px 0 #b47a12; }

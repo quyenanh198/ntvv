@@ -34,6 +34,8 @@ import {
   ORDER_SLOTS,
   ORDER_UNLOCK_LEVEL,
   ORDER_REFRESH_MS,
+  ORDER_BOARD_REFRESH_MS,
+  MACHINE_QUEUE_MAX,
   generateOrder,
   DAILY_QUESTS,
   DAILY_CHEST,
@@ -312,6 +314,14 @@ export function buildApp({ config, db, logger = true }) {
     if (levelFor(farmer.xp) < ORDER_UNLOCK_LEVEL) return;
     const now = Date.now();
     const slots = ORDER_SLOTS + Math.ceil(skillRank(farmer, 'khachquen') / 2);
+    // Cả bảng đơn thay mới mỗi ORDER_BOARD_REFRESH_MS: xoá đơn cũ, đặt hạn kế.
+    const row = db.prepare('SELECT orders_refresh_at FROM farmers WHERE user_id = ?').get(farmer.user_id);
+    if (now >= (row?.orders_refresh_at || 0)) {
+      db.prepare('DELETE FROM orders WHERE owner_id = ?').run(farmer.user_id);
+      db.prepare('UPDATE farmers SET orders_refresh_at = ?, next_order_at = 0 WHERE user_id = ?')
+        .run(now + scaleMs(ORDER_BOARD_REFRESH_MS, config.fast), farmer.user_id);
+      farmer.next_order_at = 0;
+    }
     const have = db.prepare('SELECT slot FROM orders WHERE owner_id = ?').all(farmer.user_id).map((r) => r.slot);
     if (have.length >= slots) return;
     if (now < farmer.next_order_at && have.length > 0) return;
@@ -406,6 +416,7 @@ export function buildApp({ config, db, logger = true }) {
         }
         return { at, windowMs: CRITTER.windowMs, kind: critterKindFor(at) };
       })(),
+      ordersRefreshAt: f.orders_refresh_at || 0,
       orders: db.prepare('SELECT id, slot, items_json, gold, exp, stars FROM orders WHERE owner_id = ? ORDER BY slot').all(f.user_id)
         .map((o) => ({ id: o.id, slot: o.slot, items: JSON.parse(o.items_json), gold: o.gold, exp: o.exp, stars: o.stars })),
       daily: {
@@ -550,6 +561,7 @@ export function buildApp({ config, db, logger = true }) {
               loot: FISHING.loot.map((l) => ({ ...l, pct: Math.round((l.weight / FISHING.loot.reduce((a, x) => a + x.weight, 0)) * 100) })),
             },
             energy: ENERGY,
+            machineQueueMax: MACHINE_QUEUE_MAX,
             skillTree: SKILLS,
             trees: Object.fromEntries(Object.entries(TREES).map(([k, t]) => [k, { ...t, sell: t.sell * GOLD_MULT, growMs: scaleMs(t.growMs, config.fast) }])),
             starMilestones: STAR_MILESTONES.map((m2) => ({ ...m2, gold: (m2.gold || 0) * GOLD_MULT })),
@@ -741,7 +753,7 @@ export function buildApp({ config, db, logger = true }) {
         const { item, qty } = request.body ?? {};
         const info = GOODS[item];
         const me = request.farmer;
-        const n = Math.max(1, Math.min(99, Number(qty) || 1));
+        const n = Math.max(1, Math.min(999, Number(qty) || 1));
         if (!info || !info.buy) return reply.code(400).send({ error: 'bad_request' });
         if (me.gold < info.buy * n) return reply.code(400).send({ error: 'not_enough_gold' });
         db.transaction(() => {
@@ -752,22 +764,27 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       // ---- Chuồng gà ----
-      async function buyAnimal(request, reply, kind) {
+      // want: số con muốn mua, hoặc 'max' = mua đầy chuồng (tới hết vàng).
+      async function buyAnimal(request, reply, kind, want = 1) {
         const a = ANIMALS[kind];
         const me = request.farmer;
         if (!a) return reply.code(400).send({ error: 'bad_request' });
         if (levelFor(me.xp) < a.level) return reply.code(400).send({ error: 'level_too_low' });
         const count = db.prepare('SELECT COUNT(*) c FROM animals WHERE owner_id = ? AND kind = ?').get(me.user_id, kind).c;
-        if (count >= a.capacities[barnLevel(me, kind) - 1]) return reply.code(400).send({ error: 'coop_full' });
+        const space = a.capacities[barnLevel(me, kind) - 1] - count;
+        if (space <= 0) return reply.code(400).send({ error: 'coop_full' });
         if (me.gold < a.price) return reply.code(400).send({ error: 'not_enough_gold' });
+        const asked = want === 'max' ? space : Math.max(1, Math.floor(Number(want) || 1));
+        const n = Math.min(asked, space, Math.floor(me.gold / a.price));
         db.transaction(() => {
-          grant(me.user_id, { gold: -a.price });
-          db.prepare('INSERT INTO animals (owner_id, kind) VALUES (?, ?)').run(me.user_id, kind);
+          grant(me.user_id, { gold: -a.price * n });
+          const ins = db.prepare('INSERT INTO animals (owner_id, kind) VALUES (?, ?)');
+          for (let i = 0; i < n; i += 1) ins.run(me.user_id, kind);
         })();
-        logEvent(`${a.emoji} ${me.name} đón một chú ${a.name} mới về chuồng`);
-        return { me: fresh(me.user_id) };
+        logEvent(n > 1 ? `${a.emoji} ${me.name} đón ${n} chú ${a.name} mới về chuồng` : `${a.emoji} ${me.name} đón một chú ${a.name} mới về chuồng`);
+        return { me: fresh(me.user_id), bought: n };
       }
-      api.post('/buy-animal', async (request, reply) => buyAnimal(request, reply, request.body?.kind));
+      api.post('/buy-animal', async (request, reply) => buyAnimal(request, reply, request.body?.kind, request.body?.count ?? 1));
       api.post('/buy-chicken', async (request, reply) => buyAnimal(request, reply, 'ga'));
 
       api.post('/feed', async (request, reply) => {
@@ -814,21 +831,27 @@ export function buildApp({ config, db, logger = true }) {
         if (!machine || !recipe) return reply.code(400).send({ error: 'bad_request' });
         if (levelFor(me.xp) < machine.level) return reply.code(400).send({ error: 'level_too_low' });
         const cur = db.prepare('SELECT * FROM machines WHERE owner_id = ? AND kind = ?').get(me.user_id, machineId);
-        if (cur && cur.recipe) return reply.code(400).send({ error: 'mill_busy' });
-        // Số mẻ xếp được: theo yêu cầu và theo nguyên liệu trong kho (tối đa 10).
-        let n = Math.max(1, Math.min(10, Math.floor(Number(count) || 1)));
+        // Máy đang chạy: chỉ được xếp thêm CÙNG công thức vào hàng đợi.
+        if (cur && cur.recipe && cur.recipe !== recipeId) return reply.code(400).send({ error: 'mill_busy' });
+        const queued = cur && cur.recipe ? (cur.queue_count || 1) : 0;
+        // Số mẻ xếp được: theo yêu cầu, chỗ trống trong hàng đợi và nguyên liệu trong kho.
+        let n = Math.max(1, Math.min(MACHINE_QUEUE_MAX - queued, Math.floor(Number(count) || 1)));
         for (const [item, qty] of Object.entries(recipe.in)) {
           n = Math.min(n, Math.floor(invQty(me.user_id, item) / qty));
         }
-        if (n < 1) return reply.code(400).send({ error: 'not_enough_items' });
+        if (n < 1) return reply.code(400).send({ error: queued >= MACHINE_QUEUE_MAX ? 'queue_full' : 'not_enough_items' });
         db.transaction(() => {
           for (const [item, qty] of Object.entries(recipe.in)) invTake(me.user_id, item, qty * n);
-          db.prepare(`
-            INSERT INTO machines (owner_id, kind, recipe, ready_at, queue_count, poached) VALUES (?, ?, ?, ?, ?, 0)
-            ON CONFLICT(owner_id, kind) DO UPDATE SET recipe = excluded.recipe, ready_at = excluded.ready_at, queue_count = excluded.queue_count, poached = 0
-          `).run(me.user_id, machineId, recipeId, Date.now() + machineTime(me, scaleMs(recipe.ms, config.fast)), n);
+          if (queued) {
+            db.prepare('UPDATE machines SET queue_count = queue_count + ? WHERE owner_id = ? AND kind = ?').run(n, me.user_id, machineId);
+          } else {
+            db.prepare(`
+              INSERT INTO machines (owner_id, kind, recipe, ready_at, queue_count, poached) VALUES (?, ?, ?, ?, ?, 0)
+              ON CONFLICT(owner_id, kind) DO UPDATE SET recipe = excluded.recipe, ready_at = excluded.ready_at, queue_count = excluded.queue_count, poached = 0
+            `).run(me.user_id, machineId, recipeId, Date.now() + machineTime(me, scaleMs(recipe.ms, config.fast)), n);
+          }
         })();
-        return { me: fresh(me.user_id), queued: n };
+        return { me: fresh(me.user_id), queued: n, total: queued + n };
       }
 
       async function machineCollect(request, reply, machineId) {

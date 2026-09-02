@@ -127,6 +127,16 @@ export const GOODS = {
   buatiec:    { id: 'buatiec',    name: 'Tiệc gia đình',   emoji: '🍽️', sell: 6600, source: 'xuongcaocap' },
   hopqua:     { id: 'hopqua',     name: 'Hộp quà nông trại', emoji: '🎁', sell: 7500, source: 'xuongcaocap' },
   caphehaohang: { id: 'caphehaohang', name: 'Cà phê hảo hạng', emoji: '☕', sell: 8000, source: 'xuongcaocap' },
+  // Đợt bổ sung
+  botbap:     { id: 'botbap',     name: 'Bột bắp',         emoji: '🌽', sell: 90,   source: 'coixay' },
+  botgao:     { id: 'botgao',     name: 'Bột gạo',         emoji: '🍚', sell: 300,  source: 'coixay' },
+  duongmia:   { id: 'duongmia',   name: 'Đường mía',       emoji: '🍬', sell: 380,  source: 'coixay' },
+  tratui:     { id: 'tratui',     name: 'Trà túi lọc',     emoji: '🍵', sell: 650,  source: 'mayrang' },
+  botcacao:   { id: 'botcacao',   name: 'Bột ca cao',      emoji: '🍫', sell: 1550, source: 'mayrang' },
+  goicuon:    { id: 'goicuon',    name: 'Gỏi cuốn cá',     emoji: '🥗', sell: 280,  source: 'lonuong' },
+  banhgung:   { id: 'banhgung',   name: 'Bánh gừng',       emoji: '🍪', sell: 750,  source: 'lobanh' },
+  banhdua:    { id: 'banhdua',    name: 'Bánh dứa',        emoji: '🍍', sell: 1900, source: 'lobanh' },
+  banhxeo:    { id: 'banhxeo',    name: 'Bánh xèo',        emoji: '🥞', sell: 1250, source: 'bepan' },
   canho:   { id: 'canho',   name: 'Cá nhỏ',      emoji: '🐟', sell: 35,  source: 'ho', expCatch: 12 },
   caro:    { id: 'caro',    name: 'Cá rô',       emoji: '🐠', sell: 95,  source: 'ho', expCatch: 18 },
   cachep:  { id: 'cachep',  name: 'Cá chép',     emoji: '🐡', sell: 180, source: 'ho', expCatch: 40 },
@@ -186,6 +196,7 @@ export const MACHINES = {
     trasua:     { id: 'trasua',     name: 'Trà sữa',         emoji: '🧋', in: { tra: 2, sua: 1, mia: 1 }, out: { trasua: 1 }, ms: 40 * MIN, exp: 120 },
     khoailangnuong: { id: 'khoailangnuong', name: 'Khoai lang nướng', emoji: '🍠', in: { khoailang: 2 }, out: { khoailangnuong: 1 }, ms: 20 * MIN, exp: 22 },
     trungmuoi:  { id: 'trungmuoi',  name: 'Trứng muối',      emoji: '🥚', in: { trungngong: 1, trungcut: 2 }, out: { trungmuoi: 1 }, ms: 40 * MIN, exp: 40 },
+    banhxeo:    { id: 'banhxeo',    name: 'Bánh xèo',        emoji: '🥞', in: { botgao: 1, trung: 1, thit: 1 }, out: { banhxeo: 1 }, ms: 50 * MIN, exp: 130 },
   } },
   lonuong: { id: 'lonuong', name: 'Lò nướng cá', emoji: '🔥', level: 8, recipes: {
     canuong: { id: 'canuong', name: 'Cá nướng',    emoji: '🍢', in: { canho: 2 }, out: { canuong: 1 }, ms: 20 * MIN, exp: 20 },
@@ -193,6 +204,7 @@ export const MACHINES = {
     cakho:   { id: 'cakho',   name: 'Cá kho tiêu', emoji: '🥘', in: { caro: 1, mia: 1, hanhtay: 1 }, out: { cakho: 1 }, ms: 45 * MIN, exp: 55 },
     sushi:   { id: 'sushi',   name: 'Sushi',       emoji: '🍣', in: { cachep: 1, gao: 2 }, out: { sushi: 1 }, ms: 60 * MIN, exp: 80 },
     lauca:   { id: 'lauca',   name: 'Lẩu cá koi',  emoji: '🍲', in: { cakoi: 1, cachua: 2, nam: 1 }, out: { lauca: 1 }, ms: 90 * MIN, exp: 160 },
+    goicuon: { id: 'goicuon', name: 'Gỏi cuốn cá', emoji: '🥗', in: { canho: 1, bapcai: 1, gao: 1 }, out: { goicuon: 1 }, ms: 25 * MIN, exp: 30 },
   } },
   xuongcaocap: { id: 'xuongcaocap', name: 'Xưởng cao cấp', emoji: '🏭', level: 26, recipes: {
     ruouvang:     { id: 'ruouvang',     name: 'Rượu nho ủ',         emoji: '🍷', in: { nho: 4, mia: 2 }, out: { ruouvang: 1 }, ms: 180 * MIN, exp: 400 },
@@ -207,6 +219,9 @@ export const MACHINES = {
   coixay: { id: 'coixay', name: 'Cối xay bột', emoji: '⚙️', level: 10, recipes: {
     botmi:  { id: 'botmi',  name: 'Bột mì', emoji: '🥡', in: { luami: 2 }, out: { botmi: 1 },  ms: 10 * MIN, exp: 10 },
     thucan: { id: 'thucan', name: 'Thức ăn gia súc', emoji: '🌰', in: { ngo: 2 }, out: { thucan: 3 }, ms: 8 * MIN, exp: 8 },
+    botbap:   { id: 'botbap',   name: 'Bột bắp',   emoji: '🌽', in: { ngo: 3 }, out: { botbap: 1 }, ms: 12 * MIN, exp: 12 },
+    botgao:   { id: 'botgao',   name: 'Bột gạo',   emoji: '🍚', in: { gao: 2 }, out: { botgao: 1 }, ms: 25 * MIN, exp: 30 },
+    duongmia: { id: 'duongmia', name: 'Đường mía', emoji: '🍬', in: { mia: 2 }, out: { duongmia: 1 }, ms: 30 * MIN, exp: 35 },
   } },
   mayep: { id: 'mayep', name: 'Máy ép nước', emoji: '🧃', level: 12, recipes: {
     nuoccarot:  { id: 'nuoccarot',  name: 'Nước ép cà rốt',  emoji: '🥤', in: { carot: 2 },  out: { nuoccarot: 1 },  ms: 20 * MIN, exp: 18 },
@@ -241,11 +256,15 @@ export const MACHINES = {
     pizza:     { id: 'pizza',     name: 'Pizza',        emoji: '🍕', in: { botmi: 2, sotcachua: 1, phomai: 1 }, out: { pizza: 1 }, ms: 70 * MIN, exp: 110 },
     banhkem:   { id: 'banhkem',   name: 'Bánh kem dâu', emoji: '🍰', in: { botmi: 1, trung: 2, bo: 1, mutdau: 1 }, out: { banhkem: 1 }, ms: 90 * MIN, exp: 160 },
     banhmatong: { id: 'banhmatong', name: 'Bánh mật ong', emoji: '🥞', in: { botmi: 1, matong: 1, trungvit: 1 }, out: { banhmatong: 1 }, ms: 50 * MIN, exp: 70 },
+    banhgung:  { id: 'banhgung',  name: 'Bánh gừng',    emoji: '🍪', in: { botmi: 1, mutgung: 1, trung: 1 }, out: { banhgung: 1 }, ms: 60 * MIN, exp: 90 },
+    banhdua:   { id: 'banhdua',   name: 'Bánh dứa',     emoji: '🍍', in: { botmi: 1, nuocthom: 1, bo: 1 }, out: { banhdua: 1 }, ms: 80 * MIN, exp: 200 },
   } },
   mayrang: { id: 'mayrang', name: 'Máy rang cà phê', emoji: '🫘', level: 23, recipes: {
     capherang: { id: 'capherang', name: 'Cà phê rang', emoji: '🫘', in: { caphe: 2 }, out: { capherang: 1 }, ms: 120 * MIN, exp: 180 },
     caphesua:  { id: 'caphesua',  name: 'Cà phê sữa',  emoji: '☕', in: { capherang: 1, sua: 1 }, out: { caphesua: 1 }, ms: 60 * MIN, exp: 200 },
     socola:    { id: 'socola',    name: 'Sô-cô-la',    emoji: '🍫', in: { cacao: 2, sua: 1, mia: 1 }, out: { socola: 1 }, ms: 100 * MIN, exp: 220 },
+    tratui:    { id: 'tratui',    name: 'Trà túi lọc', emoji: '🍵', in: { tra: 3 }, out: { tratui: 1 }, ms: 60 * MIN, exp: 90 },
+    botcacao:  { id: 'botcacao',  name: 'Bột ca cao',  emoji: '🍫', in: { cacao: 2 }, out: { botcacao: 1 }, ms: 90 * MIN, exp: 190 },
   } },
   xuongdet: { id: 'xuongdet', name: 'Xưởng dệt', emoji: '🧵', level: 25, recipes: {
     cuonlen: { id: 'cuonlen', name: 'Cuộn len', emoji: '🧵', in: { len: 2 }, out: { cuonlen: 1 }, ms: 150 * MIN, exp: 150 },
@@ -319,6 +338,8 @@ export function levelFor(xp) {
 export const ORDER_SLOTS = 4;
 export const ORDER_UNLOCK_LEVEL = 5;
 export const ORDER_REFRESH_MS = 20 * MIN; // đơn mới sau khi bỏ/giao
+export const ORDER_BOARD_REFRESH_MS = 120 * MIN; // cả bảng đơn thay mới mỗi 2 giờ
+export const MACHINE_QUEUE_MAX = 50; // mẻ tối đa xếp trong một máy
 
 // Sinh một đơn từ các sản phẩm đã mở khóa. rng: () => [0,1).
 export function generateOrder(level, rng) {

@@ -116,6 +116,7 @@
     critter_gone: 'Nó chạy mất rồi 😅 — canh lần sau nhé!',
     no_skill_points: 'Chưa đủ điểm kỹ năng — lên cấp để nhận thêm!',
     already_learned: 'Học rồi mà!',
+    queue_full: 'Hàng đợi máy đầy rồi.',
     max_rank: 'Kỹ năng này đã tối đa rồi!',
     respec_cooldown: 'Mới hoàn trả gần đây — 7 ngày mới được làm lại.',
     nothing_to_poach: 'Không có gì để cuỗm cả 😅',
@@ -639,6 +640,7 @@
              <div class="seed-meta">${feed.buy} ${COIN}/túi · gà ăn 1 túi cho 1 trứng</div></span>
            <button class="gbtn gbtn--green btn-mini" data-buy="thucan" data-qty="1">Mua 1</button>
            <button class="gbtn gbtn--gold btn-mini" data-buy="thucan" data-qty="10">Mua 10</button>
+           <button class="gbtn gbtn--gold btn-mini" data-buy="thucan" data-qty="100">Mua 100</button>
          </div>
          ${m.level >= DATA.config.chicken.level ? `
          <div class="inv-row">
@@ -705,7 +707,8 @@
               </div>
             </div>`;
           }).join('');
-      return sheetShell(`🚚 Đơn hàng <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, rows);
+      const refreshNote = m.ordersRefreshAt > Date.now() ? `<p class="sheet-note">🔄 Bảng đơn thay mới toàn bộ sau <b>${fmtTime(m.ordersRefreshAt - Date.now())}</b>.</p>` : '';
+      return sheetShell(`🚚 Đơn hàng <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, refreshNote + rows);
     }
 
     if (t === 'barns') {
@@ -723,6 +726,7 @@
           </div>
           ${locked ? '' : `<div class="barn-actions">
             <button class="gbtn gbtn--green btn-mini" data-buy-animal="${a.id}" ${full || m.gold < a.price ? 'disabled' : ''}>＋ Mua ${a.name.toLowerCase()} · ${a.price.toLocaleString('vi')} ${COIN}</button>
+            <button class="gbtn gbtn--green btn-mini" data-buy-animal="${a.id}" data-count="max" ${full || m.gold < a.price ? 'disabled' : ''}>Mua đầy (${barn.capacity - herd.length})</button>
             ${barn.next
               ? `<button class="gbtn gbtn--gold btn-mini" data-upgrade-barn="${a.id}" ${m.gold >= barn.next.gold ? '' : 'disabled'}>⬆️ Cấp ${barn.next.level} (${barn.next.capacity} con) · ${barn.next.gold.toLocaleString('vi')} ${COIN}</button>`
               : '<span class="seed-meta">Chuồng đã tối đa</span>'}
@@ -757,7 +761,8 @@
          <div class="sheet-actions">
            ${hungryN ? `<button class="btn gbtn gbtn--green" data-feed-kind="${kind}" ${feedQty >= a.feedQty ? '' : 'disabled'}>🌰 Cho ăn (${hungryN} con đói)</button>` : ''}
            ${readyN ? `<button class="btn gbtn gbtn--gold" data-collect-kind="${kind}">${productInfo.emoji} Thu ${readyN}</button>` : ''}
-           ${herd.length < barn.capacity ? `<button class="btn btn-ghost" data-buy-animal="${kind}">＋ Mua ${a.name} (${a.price.toLocaleString('vi')} vàng)</button>` : ''}
+           ${herd.length < barn.capacity ? `<button class="btn btn-ghost" data-buy-animal="${kind}">＋ Mua ${a.name} (${a.price.toLocaleString('vi')} vàng)</button>
+           <button class="btn gbtn gbtn--green" data-buy-animal="${kind}" data-count="max" ${m.gold >= a.price ? '' : 'disabled'}>＋ Mua đầy chuồng (${barn.capacity - herd.length} con · ${((barn.capacity - herd.length) * a.price).toLocaleString('vi')} vàng)</button>` : ''}
            ${barn.next ? `<button class="btn gbtn gbtn--gold" data-upgrade-barn="${kind}" ${m.gold >= barn.next.gold ? '' : 'disabled'}>⬆️ Nâng chuồng cấp ${barn.next.level} (${barn.next.capacity} con) — ${barn.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}
          </div>
          ${feedQty < a.feedQty && hungryN ? '<p class="sheet-note">Hết thức ăn: mua ở Cửa hàng (12 vàng/túi) hoặc xay 2 ngô ở Cối xay (Lv 10).</p>' : ''}`,
@@ -765,39 +770,42 @@
     }
 
     if (t === 'mill') {
+      const QMAX = DATA.config.machineQueueMax || 50;
       const blocks = Object.values(DATA.config.machines).map((mc) => {
         if (m.level < mc.level) {
-          return `<div class="inv-row"><span class="emoji-ic">${mc.emoji}</span>
-            <span class="seed-info"><span class="seed-name">${mc.name}</span><div class="seed-meta">🔒 Mở ở cấp ${mc.level}</div></span></div>`;
+          return `<div class="machine-block machine-block--locked"><h4>${mc.emoji} ${mc.name}</h4><p class="sheet-note">🔒 Mở ở cấp ${mc.level}</p></div>`;
         }
         const st = m.machines[mc.id];
-        let body = '';
-        if (st) {
-          const r = mc.recipes[st.recipe];
+        const running = st ? mc.recipes[st.recipe] : null;
+        let head;
+        if (st && running) {
           const left = st.readyAt - Date.now();
-          const qNote = st.queue > 1 ? ` (hàng đợi ${st.queue} mẻ)` : '';
-          body = st.ready
-            ? `<button class="btn gbtn gbtn--gold" data-machine-collect="${mc.id}" style="width:100%">✅ Lấy ${r.name} ${r.emoji}${qNote}!</button>`
-            : `<p class="sheet-note">${mc.emoji} Đang làm <b>${r.name}</b>${qNote} — mẻ kế còn ${fmtTime(left)}.
-                 <button class="btn-mini gbtn gbtn--gold" data-machine-speed="${mc.id}">${GEM} ${Math.max(1, Math.ceil(left / 300000))} · Xong ngay</button></p>`;
+          head = st.ready
+            ? `<button class="btn gbtn gbtn--gold mc-collect" data-machine-collect="${mc.id}">✅ Lấy ${running.name} ${running.emoji}${st.queue > 1 ? ` · ${st.queue} mẻ` : ''}</button>`
+            : `<div class="mc-status">🔄 <b>${running.name}</b> · ${st.queue} mẻ · còn ${fmtTime(left)}
+                 <button class="btn-mini gbtn gbtn--gold" data-machine-speed="${mc.id}">${GEM} ${Math.max(1, Math.ceil(left / 300000))} · Xong ngay</button></div>`;
         } else {
-          body = Object.values(mc.recipes).map((r) => {
-            const haveAll = Object.entries(r.in).every(([id, q]) => (m.inventory[id] || 0) >= q);
-            const ins = Object.entries(r.in).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(' + ');
-            const outQty = Object.values(r.out)[0];
-            const outInfo = itemInfo(Object.keys(r.out)[0]);
-            const maxBatches = Math.min(10, ...Object.entries(r.in).map(([iid, q]) => Math.floor((m.inventory[iid] || 0) / q)));
-            return `<div class="seed-row${haveAll ? '' : ' seed-row--locked'}" style="cursor:default">
-              ${itemImg(Object.keys(r.out)[0], 'seed-sprite')}
-              <span class="seed-info"><span class="seed-name">${r.name}</span>
-                <div class="seed-meta">${ins} → ${outQty} ${outInfo?.name || ''} · ⏱ ${fmtDuration(r.ms)} · bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp}EXP</div></span>
-              ${haveAll ? `<button class="gbtn gbtn--green btn-mini" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="1">Nấu 1</button>
-                ${maxBatches > 1 ? `<button class="gbtn gbtn--gold btn-mini" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="${maxBatches}">Hết (${maxBatches})</button>` : ''}`
-                : '<span class="seed-lock">Thiếu đồ</span>'}
-            </div>`;
-          }).join('');
+          head = '<div class="mc-status mc-status--idle">💤 Rảnh — bấm ＋ để nấu</div>';
         }
-        return `<div class="machine-block"><h4>${mc.emoji} ${mc.name}</h4>${body}</div>`;
+        const rows = Object.values(mc.recipes).map((r) => {
+          const active = !!(st && st.recipe === r.id);
+          const room = QMAX - (active ? st.queue : 0);
+          const maxBatches = Math.max(0, Math.min(room, ...Object.entries(r.in).map(([iid, q]) => Math.floor((m.inventory[iid] || 0) / q))));
+          const canAdd = maxBatches > 0 && (!st || active);
+          const ins = Object.entries(r.in).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(' + ');
+          const outId = Object.keys(r.out)[0];
+          const outInfo = itemInfo(outId);
+          return `<div class="seed-row mc-row${active ? ' mc-row--active' : ''}${canAdd ? '' : ' mc-row--dim'}" style="cursor:default">
+            ${itemImg(outId, 'seed-sprite')}
+            <span class="seed-info"><span class="seed-name">${r.name}${active ? ` <small>· đang nấu ${st.queue} mẻ</small>` : ''}</span>
+              <div class="seed-meta">${ins} → ${Object.values(r.out)[0]} ${outInfo?.name || ''} · ⏱ ${fmtDuration(r.ms)} · bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp}EXP</div></span>
+            <span class="mc-add">
+              <button class="mc-plus" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="1" ${canAdd ? '' : 'disabled'} title="Thêm 1 mẻ">＋</button>
+              <button class="mc-plus mc-plus--max" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="${maxBatches}" ${canAdd && maxBatches > 1 ? '' : 'disabled'} title="Xếp hết nguyên liệu">＋${maxBatches > 1 ? maxBatches : ''}</button>
+            </span>
+          </div>`;
+        }).join('');
+        return `<div class="machine-block"><h4>${mc.emoji} ${mc.name}</h4>${head}${rows}</div>`;
       }).join('');
       return sheetShell('🏭 Khu chế biến', `<div class="machine-grid">${blocks}</div>`, 'sheet--factory');
     }
@@ -1021,7 +1029,7 @@
       el.addEventListener('click', async () => {
         if (!el.dataset.recipe) return;
         const r = await run(() => api('/machine-run', { machine: el.dataset.machineRun, recipe: el.dataset.recipe, count: Number(el.dataset.count) || 1 }));
-        if (r) { updateMe(r); if (r.queued > 1) toast(`🏭 Đã xếp ${r.queued} mẻ!`); render(); }
+        if (r) { updateMe(r); toast(r.total > r.queued ? `🏭 +${r.queued} mẻ (hàng đợi ${r.total})` : `🏭 Đã xếp ${r.queued} mẻ!`); render(); }
       }));
     document.querySelectorAll('[data-machine-collect]').forEach((el) =>
       el.addEventListener('click', async (e) => {
@@ -1052,7 +1060,7 @@
       }));
     document.querySelectorAll('[data-buy-animal]').forEach((el) =>
       el.addEventListener('click', async () => {
-        const r = await run(() => api('/buy-animal', { kind: el.dataset.buyAnimal }));
+        const r = await run(() => api('/buy-animal', { kind: el.dataset.buyAnimal, count: el.dataset.count || 1 }));
         if (r) { updateMe(r); toast('🎉 Thành viên mới về chuồng!'); render(); }
       }));
     document.querySelectorAll('[data-upgrade-barn]').forEach((el) =>
