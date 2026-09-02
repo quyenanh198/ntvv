@@ -373,9 +373,29 @@ export function buildApp({ config, db, logger = true }) {
   }
 
   // ---- View ---------------------------------------------------------------
+  // Cây ăn quả: quả cộng dồn theo vụ — mỗi vụ qua đi cộng `yield` quả lên cây
+  // (tới lúc tàn thì thôi). Ghi lại DB khi có vụ mới. Trả trạng thái hiện tại.
+  function treeSettle(owner, plot, now = Date.now()) {
+    const tree = TREES[plot.crop];
+    if (!plot.tree || !tree) return null;
+    const cycle = Math.max(1000, cropTime(owner, scaleMs(tree.cycleMs, config.fast)));
+    const endsAt = (plot.tree_at || plot.planted_at) + scaleMs(tree.lifeMs, config.fast);
+    let stock = plot.fruit_stock || 0;
+    let readyAt = plot.ready_at;
+    let cycles = 0;
+    while (readyAt <= now && readyAt <= endsAt && cycles < 2000) { stock += tree.yield; readyAt += cycle; cycles += 1; }
+    if (cycles) {
+      db.prepare('UPDATE plots SET fruit_stock = ?, ready_at = ? WHERE owner_id = ? AND idx = ?').run(stock, readyAt, owner.user_id, plot.idx);
+      plot.fruit_stock = stock;
+      plot.ready_at = readyAt;
+    }
+    return { stock, readyAt, endsAt, dead: now >= endsAt };
+  }
+
   function plotViews(ownerId, plotsCount) {
     const rows = db.prepare('SELECT * FROM plots WHERE owner_id = ?').all(ownerId);
     const byIdx = new Map(rows.map((r) => [r.idx, r]));
+    const owner = getFarmer.get(ownerId);
     const now = Date.now();
     const out = [];
     for (let i = 0; i < plotsCount; i += 1) {
@@ -384,17 +404,19 @@ export function buildApp({ config, db, logger = true }) {
         out.push({ idx: i, crop: null });
         continue;
       }
+      const st = r.tree ? treeSettle(owner, r, now) : null;
       out.push({
         idx: i,
         crop: r.crop,
         plantedAt: r.planted_at,
         readyAt: r.ready_at,
-        ready: now >= r.ready_at,
+        ready: st ? st.stock > 0 : now >= r.ready_at,
         watered: !!r.watered,
         poached: !!r.poached,
         poachedN: r.poached || 0,
         tree: !!r.tree,
-        treeEndsAt: r.tree ? (r.tree_at || r.planted_at) + scaleMs(TREES[r.crop]?.lifeMs || 0, config.fast) : null,
+        fruits: st ? st.stock : undefined,
+        treeEndsAt: st ? st.endsAt : null,
       });
     }
     return out;
@@ -721,17 +743,19 @@ export function buildApp({ config, db, logger = true }) {
       function harvestPlot(me, plot) {
         if (plot.tree) {
           const tree = TREES[plot.crop];
-          grant(me.user_id, { xp: tree.exp + (plot.watered ? WATER_FRESH_EXP : 0) });
-          invAdd(me.user_id, tree.id, Math.max(1, tree.yield + Math.ceil(skillRank(me, 'muaboithu') / 2) - (plot.poached || 0)));
           const now = Date.now();
-          const endsAt = (plot.tree_at || plot.planted_at) + scaleMs(tree.lifeMs, config.fast);
-          if (now >= endsAt) {
+          const st = treeSettle(me, plot, now);
+          // Quả cộng dồn; hái ké 3 lần mới trừ 1 quả.
+          const loss = Math.floor((plot.poached || 0) / 3);
+          const got = Math.max(st.stock > 0 ? 1 : 0, st.stock + Math.ceil(skillRank(me, 'muaboithu') / 2) - loss);
+          grant(me.user_id, { xp: tree.exp + (plot.watered ? WATER_FRESH_EXP : 0) });
+          if (got > 0) invAdd(me.user_id, tree.id, got);
+          if (st.dead) {
             // Hết tuổi thọ: vụ cuối xong là cây tàn, trả lại ô trống.
             db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, plot.idx);
             logEvent(`🍂 Cây ${tree.name} nhà ${me.name} đã tàn sau vụ cuối`);
           } else {
-            db.prepare('UPDATE plots SET planted_at = ?, ready_at = ?, watered = 0, poached = 0 WHERE owner_id = ? AND idx = ?')
-              .run(now, Math.min(endsAt + 1, now + cropTime(me, scaleMs(tree.cycleMs, config.fast))), me.user_id, plot.idx);
+            db.prepare('UPDATE plots SET fruit_stock = 0, poached = 0, watered = 0, planted_at = ? WHERE owner_id = ? AND idx = ?').run(now, me.user_id, plot.idx);
           }
           bumpQuest(me.user_id, 'harvest');
           bumpFest(me.user_id, 'harvest');
@@ -753,7 +777,8 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         const plot = getPlot.get(me.user_id, idx);
         if (!plot) return reply.code(400).send({ error: 'no_plot' });
-        if (Date.now() < plot.ready_at) return reply.code(400).send({ error: 'not_ready' });
+        const ripe = plot.tree ? treeSettle(me, plot).stock > 0 : Date.now() >= plot.ready_at;
+        if (!ripe) return reply.code(400).send({ error: 'not_ready' });
         let crop;
         db.transaction(() => {
           crop = harvestPlot(me, plot);
@@ -764,7 +789,8 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/harvest-all', async (request, reply) => {
         const me = request.farmer;
         const now = Date.now();
-        const ready = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
+        for (const p of db.prepare('SELECT * FROM plots WHERE owner_id = ? AND tree = 1').all(me.user_id)) treeSettle(me, p, now);
+        const ready = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0))').all(me.user_id, now);
         if (ready.length === 0) return reply.code(400).send({ error: 'nothing_ready' });
         db.transaction(() => {
           for (const p of ready) harvestPlot(me, p);
@@ -815,9 +841,17 @@ export function buildApp({ config, db, logger = true }) {
         const owner = getFarmer.get(ownerId);
         const plot = owner && getPlot.get(ownerId, idx);
         if (!plot) return reply.code(400).send({ error: 'no_plot' });
-        if (Date.now() < plot.ready_at) return reply.code(400).send({ error: 'not_ready' });
-        // Chủ chậm thu: mỗi POACH_AGAIN_MS quá hạn mở thêm 1 lượt hái ké trên ô.
-        const allowed = 1 + Math.floor((Date.now() - plot.ready_at) / scaleMs(POACH_AGAIN_MS, config.fast));
+        let allowed;
+        if (plot.tree) {
+          // Cây ăn quả: mỗi quả trên cây mở 1 lượt hái ké (chủ chỉ mất 1 quả sau mỗi 3 lượt).
+          const st = treeSettle(owner, plot);
+          if (st.stock <= 0) return reply.code(400).send({ error: 'not_ready' });
+          allowed = st.stock;
+        } else {
+          if (Date.now() < plot.ready_at) return reply.code(400).send({ error: 'not_ready' });
+          // Chủ chậm thu: mỗi POACH_AGAIN_MS quá hạn mở thêm 1 lượt hái ké trên ô.
+          allowed = 1 + Math.floor((Date.now() - plot.ready_at) / scaleMs(POACH_AGAIN_MS, config.fast));
+        }
         if ((plot.poached || 0) >= allowed) return reply.code(400).send({ error: 'already_poached' });
         if (dogCheck(reply, owner, me)) return reply;
         const crop = poachPlot(me, owner, plot);
@@ -836,8 +870,9 @@ export function buildApp({ config, db, logger = true }) {
         if (!owner) return reply.code(400).send({ error: 'no_farm' });
         const now = Date.now();
         const again = scaleMs(POACH_AGAIN_MS, config.fast);
-        const targets = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ready_at <= ? ORDER BY idx').all(ownerId, now)
-          .filter((p) => (p.poached || 0) < 1 + Math.floor((now - p.ready_at) / again));
+        for (const p of db.prepare('SELECT * FROM plots WHERE owner_id = ? AND tree = 1').all(ownerId)) treeSettle(owner, p, now);
+        const targets = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0)) ORDER BY idx').all(ownerId, now)
+          .filter((p) => (p.poached || 0) < (p.tree ? (p.fruit_stock || 0) : 1 + Math.floor((now - p.ready_at) / again)));
         if (!targets.length) return reply.code(400).send({ error: 'nothing_to_poach' });
         const got = {};
         let times = 0;
@@ -1692,7 +1727,7 @@ export function buildApp({ config, db, logger = true }) {
             watered: p.watered || !!lastWater,
             canWater: !p.ready && (!lastWater || now2 - lastWater.at >= scaleMs(WATER_HELP_COOLDOWN_MS, config.fast)),
             poached: p.poached,
-            canPoach: p.ready && (p.poachedN || 0) < 1 + Math.floor(Math.max(0, now2 - p.readyAt) / again),
+            canPoach: p.ready && (p.poachedN || 0) < (p.tree ? (p.fruits || 0) : 1 + Math.floor(Math.max(0, now2 - p.readyAt) / again)),
           };
         }
         const loot = {

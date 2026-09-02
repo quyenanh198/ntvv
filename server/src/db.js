@@ -196,6 +196,7 @@ export function openDb(dataDir) {
   if (!pcols.includes('poached')) db.exec('ALTER TABLE plots ADD COLUMN poached INTEGER NOT NULL DEFAULT 0');
   if (!pcols.includes('tree')) db.exec('ALTER TABLE plots ADD COLUMN tree INTEGER NOT NULL DEFAULT 0');
   if (!pcols.includes('tree_at')) db.exec('ALTER TABLE plots ADD COLUMN tree_at INTEGER');
+  if (!pcols.includes('fruit_stock')) db.exec('ALTER TABLE plots ADD COLUMN fruit_stock INTEGER NOT NULL DEFAULT 0');
   // Cây trồng trước khi có tuổi thọ: tính tuổi từ lúc nâng cấp.
   db.prepare('UPDATE plots SET tree_at = ? WHERE tree = 1 AND tree_at IS NULL').run(Date.now());
   return db;
