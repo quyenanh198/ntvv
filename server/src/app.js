@@ -593,6 +593,9 @@ export function buildApp({ config, db, logger = true }) {
             fast: config.fast,
           },
           events: db.prepare('SELECT at, text FROM events ORDER BY id DESC LIMIT 80').all(),
+          // Phiên bản server lúc boot: client so với ?v= của app.js đang chạy,
+          // lệch là tự tải lại (tránh tab mở sẵn chạy client cũ với server mới).
+          boot: BOOT_VERSION,
         };
       });
 

@@ -1342,9 +1342,23 @@
   }
 
   // ---------- vòng lặp ----------
+  // ?v= của app.js đang chạy = phiên bản server lúc tải trang.
+  const MY_BOOT = (() => {
+    try { return new URL(document.querySelector('script[src*="app.js"]').src).searchParams.get('v'); } catch { return null; }
+  })();
+  let reloading = false;
+  function checkServerBoot(state) {
+    if (reloading || !MY_BOOT || !state?.boot || state.boot === MY_BOOT) return false;
+    reloading = true;
+    toast('🔄 Có bản mới — đang tải lại…');
+    setTimeout(() => location.reload(), 800);
+    return true;
+  }
+
   async function refresh() {
     try {
       DATA = await api('/state');
+      if (checkServerBoot(DATA)) return;
       if (lastLevel && DATA.me.level > lastLevel) toast(`🎉 Lên cấp ${DATA.me.level}!`);
       lastLevel = DATA.me.level;
       if (VISIT) {
