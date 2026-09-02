@@ -71,7 +71,7 @@
     not_ready: 'Chưa xong mà, từ từ đã!',
     already_ready: 'Cây chín rồi, khỏi tưới.',
     already_watered: 'Ô này tưới rồi.',
-    already_poached: 'Ô này bạn hái ké rồi 😤',
+    already_poached: 'Ô này hái ké rồi — chủ chậm thu thêm 1 giờ sẽ mở lượt mới 😏',
     poach_limit: 'Hôm nay hái ké đủ rồi, mai lại nhé!',
     already_claimed: 'Nhận rồi mà!',
     not_enough_quests: 'Xong 3 nhiệm vụ đã rồi mở rương.',
@@ -94,6 +94,10 @@
     not_enough_energy: 'Hết năng lượng — nghỉ tay chút hoặc mua thêm bằng kim cương.',
     energy_full: 'Năng lượng còn đầy mà!',
     critter_gone: 'Nó chạy mất rồi 😅 — canh lần sau nhé!',
+    no_skill_points: 'Chưa đủ điểm kỹ năng — lên cấp để nhận thêm!',
+    already_learned: 'Học rồi mà!',
+    respec_cooldown: 'Mới hoàn trả gần đây — 7 ngày mới được làm lại.',
+    nothing_to_poach: 'Không có gì để cuỗm cả 😅',
     max_level: 'Đã nâng tối đa rồi!',
   };
 
@@ -186,7 +190,7 @@
     app.innerHTML = `
       <div class="gate">
         <div style="font-size:3.5rem">🌾🐔</div>
-        <h1>Nông trại vui vẻ</h1>
+        <h1>Ăn trộm dzui dzẻ 😋</h1>
         <p>Đăng nhập Chat trước rồi quay lại làm nông dân nhé!</p>
         <a href="/">Mở Chat</a>
       </div>`;
@@ -195,7 +199,7 @@
     app.innerHTML = `
       <div class="gate">
         <div style="font-size:3.5rem">🌱☀️</div>
-        <h1>Nông trại đang thức dậy…</h1>
+        <h1>Trại trộm đang thức dậy…</h1>
         <p>Gà đang gáy, đợi vài giây nha!</p>
       </div>`;
   }
@@ -260,6 +264,7 @@
           <button class="side-btn side-btn--gold" id="btn-harvestall"><img src="assets/art/basket.png" alt="" />${m.plots.some((p) => p.crop && p.ready) ? '<i class="dot"></i>' : ''}<span>Thu hoạch</span></button>
           ${m.level >= DATA.config.orderUnlockLevel ? `<button class="side-btn" data-sheet="orders">🚚${ordersReady ? '<i class="dot"></i>' : ''}<span>Đơn hàng</span></button>` : ''}
           <button class="side-btn" data-sheet="festival">🎪${festReady ? '<i class="dot"></i>' : ''}<span>Sự kiện</span></button>
+          ${m.skills.unlocked ? `<button class="side-btn" data-sheet="skills">🎓${m.skills.points > 0 ? '<i class="dot"></i>' : ''}<span>Kỹ năng</span></button>` : ''}
         </div>
 
         <div class="stage-center">
@@ -304,6 +309,9 @@
           ${visiting ? `
             <div class="visit-bar">
               <span>👀 Ruộng của <b>${esc(visiting.farm.name)}</b> · Lv ${visiting.farm.level}</span>
+          ${visiting.farm.loot?.animalsReady ? `<button class="gbtn gbtn--green btn-mini" id="btn-poach-animal">😋 Cuỗm chuồng (${visiting.farm.loot.animalsReady})</button>` : ''}
+          ${visiting.farm.loot?.machinesReady ? `<button class="gbtn gbtn--green btn-mini" id="btn-poach-machine">😋 Cuỗm máy (${visiting.farm.loot.machinesReady})</button>` : ''}
+          ${visiting.farm.loot?.emptyPlots ? `<button class="gbtn gbtn--gold btn-mini" id="btn-plant-help">🌱 Trồng giúp (${visiting.farm.loot.emptyPlots})</button>` : ''}
               <button id="btn-home" class="gbtn gbtn--gold">🏡 Về nhà</button>
             </div>` : renderToolbar()}
 
@@ -386,12 +394,12 @@
       if (p.tree) {
         const t = trees()[p.crop];
         const acts = visiting ? visiting.myActs[p.idx] : null;
-        const canPoach = visiting && p.ready && !acts?.poached && !p.poached;
+        const canPoach = visiting && p.ready && acts?.canPoach;
         const left = p.readyAt - now;
         return `<button class="plot plot--tree${p.ready ? ' plot--ready' : ' plot--growing'}" data-idx="${p.idx}" data-kind="${p.ready ? (mine ? 'harvest' : canPoach ? 'poach' : 'ripe') : (mine ? (p.watered ? 'plotmenu' : 'waterplot') : (!p.watered && visiting && !acts?.watered ? 'water' : 'growing'))}" data-ready="${p.readyAt}" data-total="${t.growMs}" data-cropid="${p.crop}">
           <img class="tree-sprite${p.ready ? '' : ' tree-sprite--wait'}" src="assets/art/trees/${p.crop}.png" alt="${t.name}" />
           ${p.ready
-            ? `<span class="plot-note">${mine ? (p.poached ? 'Bị hái ké 😭' : 'Hái quả!') : canPoach ? 'Hái ké!' : 'Chín rồi'}</span><span class="plot-badge">×${t.yield - (p.poached ? 1 : 0)}</span>`
+            ? `<span class="plot-note">${mine ? (p.poached ? 'Bị hái ké 😭' : 'Hái quả!') : canPoach ? 'Hái ké!' : 'Chín rồi'}</span><span class="plot-badge">×${Math.max(1, t.yield - (p.poachedN || 0))}</span>`
             : `<span class="plot-timer">${fmtTime(left)}</span>`}
           ${p.poached && p.ready ? '<span class="plot-act">😋</span>' : ''}
         </button>`;
@@ -399,7 +407,7 @@
       const c = crops()[p.crop];
       if (p.ready) {
         const acts = visiting ? visiting.myActs[p.idx] : null;
-        const canPoach = visiting && !acts?.poached;
+        const canPoach = visiting && acts?.canPoach;
         return `<button class="plot plot--ready" data-idx="${p.idx}" data-kind="${mine ? 'harvest' : canPoach ? 'poach' : 'ripe'}">
           <img class="crop-sprite crop-sprite--ready" src="${cropSprite(p.crop, 3)}" alt="${c.name}" />
           <span class="plot-note">${mine ? (p.poached ? 'Bị hái ké 😭' : 'Thu hoạch!') : canPoach ? 'Hái ké!' : 'Chín rồi'}</span>
@@ -693,9 +701,10 @@
         if (st) {
           const r = mc.recipes[st.recipe];
           const left = st.readyAt - Date.now();
+          const qNote = st.queue > 1 ? ` (hàng đợi ${st.queue} mẻ)` : '';
           body = st.ready
-            ? `<button class="btn gbtn gbtn--gold" data-machine-collect="${mc.id}" style="width:100%">✅ Lấy ${r.name} ${r.emoji}!</button>`
-            : `<p class="sheet-note">${mc.emoji} Đang làm <b>${r.name}</b> — còn ${fmtTime(left)}.
+            ? `<button class="btn gbtn gbtn--gold" data-machine-collect="${mc.id}" style="width:100%">✅ Lấy ${r.name} ${r.emoji}${qNote}!</button>`
+            : `<p class="sheet-note">${mc.emoji} Đang làm <b>${r.name}</b>${qNote} — mẻ kế còn ${fmtTime(left)}.
                  <button class="btn-mini gbtn gbtn--gold" data-machine-speed="${mc.id}">${GEM} ${Math.max(1, Math.ceil(left / 300000))} · Xong ngay</button></p>`;
         } else {
           body = Object.values(mc.recipes).map((r) => {
@@ -703,12 +712,15 @@
             const ins = Object.entries(r.in).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(' + ');
             const outQty = Object.values(r.out)[0];
             const outInfo = itemInfo(Object.keys(r.out)[0]);
-            return `<button class="seed-row${haveAll ? '' : ' seed-row--locked'}" data-machine-run="${mc.id}" data-recipe="${haveAll ? r.id : ''}">
+            const maxBatches = Math.min(10, ...Object.entries(r.in).map(([iid, q]) => Math.floor((m.inventory[iid] || 0) / q)));
+            return `<div class="seed-row${haveAll ? '' : ' seed-row--locked'}" style="cursor:default">
               ${itemImg(Object.keys(r.out)[0], 'seed-sprite')}
               <span class="seed-info"><span class="seed-name">${r.name}</span>
                 <div class="seed-meta">${ins} → ${outQty} ${outInfo?.name || ''} · ⏱ ${fmtDuration(r.ms)} · bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp}EXP</div></span>
-              ${haveAll ? '' : '<span class="seed-lock">Thiếu đồ</span>'}
-            </button>`;
+              ${haveAll ? `<button class="gbtn gbtn--green btn-mini" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="1">Nấu 1</button>
+                ${maxBatches > 1 ? `<button class="gbtn gbtn--gold btn-mini" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="${maxBatches}">Hết (${maxBatches})</button>` : ''}`
+                : '<span class="seed-lock">Thiếu đồ</span>'}
+            </div>`;
           }).join('');
         }
         return `<div class="machine-block"><h4>${mc.emoji} ${mc.name}</h4>${body}</div>`;
@@ -757,6 +769,31 @@
         ${lootRows}
         <button class="btn btn-ghost" id="btn-buy-energy" style="width:100%;margin-top:0.3rem">⚡ Mua ${DATA.config.energy.buyAmount} năng lượng — ${DATA.config.energy.buyGems} ${GEM}</button>
         ${!locked && m.pond.next ? `<button class="btn gbtn gbtn--gold" id="btn-upgrade-pond" ${m.gold >= m.pond.next.gold ? '' : 'disabled'} style="width:100%;margin-top:0.3rem">⬆️ Nâng ao cấp ${m.pond.next.level} (${m.pond.next.fishPerCast} cá/lượt) — ${m.pond.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}`,
+      );
+    }
+
+    if (t === 'skills') {
+      const sk = m.skills;
+      const tree = DATA.config.skillTree;
+      const branches = tree.branches.map((b) => {
+        const nodes = b.nodes.map((n) => {
+          const learned = sk.learned.includes(n.id);
+          const can = !learned && sk.points >= n.cost;
+          return `<div class="quest-row${learned ? ' quest-row--done' : ''}">
+            <span class="q-emoji">${learned ? '✅' : '🎓'}</span>
+            <span class="seed-info"><span class="seed-name">${n.name}</span><div class="seed-meta">${n.desc}</div></span>
+            <span class="q-right">${learned ? 'Đã học' : can
+              ? `<button class="gbtn gbtn--gold btn-mini" data-skill-learn="${n.id}">Học (${n.cost}đ)</button>`
+              : `${n.cost} điểm`}</span>
+          </div>`;
+        }).join('');
+        return `<div class="machine-block"><h4>${b.emoji} ${b.name}</h4>${nodes}</div>`;
+      }).join('');
+      const canRespec = Date.now() >= sk.nextRespecAt;
+      return sheetShell(
+        `🎓 Kỹ năng <span class="sheet-coins">✨ ${sk.points} điểm</span>`,
+        `<p class="sheet-note">Mỗi cấp sau cấp ${tree.unlockLevel} tặng 1 điểm kỹ năng.</p>${branches}
+         ${sk.learned.length ? `<button class="btn btn-ghost" id="btn-skill-respec" ${canRespec && m.gems >= tree.respecGems ? '' : 'disabled'} style="width:100%">♻️ Hoàn trả toàn bộ điểm — ${tree.respecGems} ${GEM}${canRespec ? '' : ' (chờ đủ 7 ngày)'}</button>` : ''}`,
       );
     }
 
@@ -881,8 +918,8 @@
     document.querySelectorAll('[data-machine-run]').forEach((el) =>
       el.addEventListener('click', async () => {
         if (!el.dataset.recipe) return;
-        const r = await run(() => api('/machine-run', { machine: el.dataset.machineRun, recipe: el.dataset.recipe }));
-        if (r) { updateMe(r); render(); }
+        const r = await run(() => api('/machine-run', { machine: el.dataset.machineRun, recipe: el.dataset.recipe, count: Number(el.dataset.count) || 1 }));
+        if (r) { updateMe(r); if (r.queued > 1) toast(`🏭 Đã xếp ${r.queued} mẻ!`); render(); }
       }));
     document.querySelectorAll('[data-machine-collect]').forEach((el) =>
       el.addEventListener('click', async (e) => {
@@ -930,6 +967,24 @@
     simple('btn-star-claim', '/star-claim', (r) => toast(`🌟 Nhận thưởng mốc ${r.claimed.stars} sao!`));
     simple('btn-waterall', '/water-all', (r) => toast(`💧 Đã tưới ${r.watered} ô!`));
     simple('btn-buy-energy', '/buy-energy', () => toast('⚡ +30 năng lượng!'));
+    simple('btn-skill-respec', '/skill-respec', () => toast('♻️ Đã hoàn trả toàn bộ điểm kỹ năng!'));
+    document.querySelectorAll('[data-skill-learn]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        const r = await run(() => api('/skill-learn', { id: el.dataset.skillLearn }));
+        if (r) { updateMe(r); toast('🎓 Đã học kỹ năng mới!'); render(); }
+      }));
+    document.getElementById('btn-poach-animal')?.addEventListener('click', async (e) => {
+      const r = await run(() => api('/poach-animal', { ownerId: VISIT.ownerId }));
+      if (r) { updateMe(r); floatGain(e.clientX, e.clientY, '😋 +1'); render(); }
+    });
+    document.getElementById('btn-poach-machine')?.addEventListener('click', async (e) => {
+      const r = await run(() => api('/poach-machine', { ownerId: VISIT.ownerId }));
+      if (r) { updateMe(r); floatGain(e.clientX, e.clientY, '😋 +1'); render(); }
+    });
+    document.getElementById('btn-plant-help')?.addEventListener('click', async () => {
+      const r = await run(() => api('/plant-help', { ownerId: VISIT.ownerId }));
+      if (r) { updateMe(r); toast(`🌱 Đã trồng giúp ${r.helped} ô (−${r.cost.toLocaleString('vi')} vàng)!`); render(); }
+    });
     simple('btn-upgrade-coop', '/upgrade-coop', (r) => toast(`🐔 Chuồng lên cấp ${r.me.coop.level} — chứa ${r.me.coop.capacity} gà!`));
     simple('btn-upgrade-pond', '/upgrade-pond', (r) => toast(`🎣 Ao lên cấp ${r.me.pond.level} — ${r.me.pond.fishPerCast} cá mỗi lượt!`));
     document.getElementById('btn-fish')?.addEventListener('click', async (e) => {

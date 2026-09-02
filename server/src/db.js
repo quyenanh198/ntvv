@@ -124,6 +124,11 @@ export function openDb(dataDir) {
   if (!cols.includes('cow_level')) db.exec('ALTER TABLE farmers ADD COLUMN cow_level INTEGER NOT NULL DEFAULT 1');
   if (!cols.includes('sheep_level')) db.exec('ALTER TABLE farmers ADD COLUMN sheep_level INTEGER NOT NULL DEFAULT 1');
   if (!cols.includes('critter_next_at')) db.exec('ALTER TABLE farmers ADD COLUMN critter_next_at INTEGER NOT NULL DEFAULT 0');
+  if (!cols.includes('skills_json')) db.exec("ALTER TABLE farmers ADD COLUMN skills_json TEXT NOT NULL DEFAULT '[]'");
+  if (!cols.includes('last_respec_at')) db.exec('ALTER TABLE farmers ADD COLUMN last_respec_at INTEGER NOT NULL DEFAULT 0');
+  const mcols = db.prepare('PRAGMA table_info(machines)').all().map((c) => c.name);
+  if (!mcols.includes('poached')) db.exec('ALTER TABLE machines ADD COLUMN poached INTEGER NOT NULL DEFAULT 0');
+  if (!mcols.includes('queue_count')) db.exec('ALTER TABLE machines ADD COLUMN queue_count INTEGER NOT NULL DEFAULT 1');
   const pcols = db.prepare('PRAGMA table_info(plots)').all().map((c) => c.name);
   if (!pcols.includes('poached')) db.exec('ALTER TABLE plots ADD COLUMN poached INTEGER NOT NULL DEFAULT 0');
   if (!pcols.includes('tree')) db.exec('ALTER TABLE plots ADD COLUMN tree INTEGER NOT NULL DEFAULT 0');

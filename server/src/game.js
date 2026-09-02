@@ -14,15 +14,15 @@ export const CROPS = {
   bapcai:   { id: 'bapcai',   name: 'Bắp cải',  emoji: '🥬', level: 7,  growMs: 15 * MIN,  seed: 14,  sell: 36,  expSow: 2, expHarvest: 14 },
   cachua:   { id: 'cachua',   name: 'Cà chua',  emoji: '🍅', level: 8,  growMs: 25 * MIN,  seed: 18,  sell: 48,  expSow: 3, expHarvest: 21 },
   hanhtay:  { id: 'hanhtay',  name: 'Hành tây', emoji: '🧅', level: 10, growMs: 60 * MIN,  seed: 30,  sell: 84,  expSow: 4, expHarvest: 43 },
-  mia:      { id: 'mia',      name: 'Mía',      emoji: '🎋', level: 12, growMs: 120 * MIN, seed: 46,  sell: 135, expSow: 5, expHarvest: 78 },
+  mia:      { id: 'mia',      name: 'Mía',      emoji: '🎋', level: 12, growMs: 90 * MIN, seed: 46,  sell: 135, expSow: 5, expHarvest: 78 },
   dautay:   { id: 'dautay',   name: 'Dâu tây',  emoji: '🍓', level: 13, growMs: 45 * MIN,  seed: 24,  sell: 70,  expSow: 3, expHarvest: 33 },
-  catim:    { id: 'catim',    name: 'Cà tím',   emoji: '🍆', level: 14, growMs: 240 * MIN, seed: 72,  sell: 215, expSow: 7, expHarvest: 145 },
-  gao:      { id: 'gao',      name: 'Gạo',      emoji: '🍚', level: 16, growMs: 90 * MIN,  seed: 38,  sell: 110, expSow: 4, expHarvest: 60 },
-  bingo:    { id: 'bingo',    name: 'Bí ngô',   emoji: '🎃', level: 18, growMs: 180 * MIN, seed: 60,  sell: 180, expSow: 6, expHarvest: 110 },
-  duahau:   { id: 'duahau',   name: 'Dưa hấu',  emoji: '🍉', level: 21, growMs: 300 * MIN, seed: 90,  sell: 275, expSow: 8, expHarvest: 185 },
-  nho:      { id: 'nho',      name: 'Nho',      emoji: '🍇', level: 22, growMs: 360 * MIN, seed: 110, sell: 340, expSow: 9, expHarvest: 230 },
-  caphe:    { id: 'caphe',    name: 'Cà phê',   emoji: '☕', level: 23, growMs: 480 * MIN, seed: 145, sell: 450, expSow: 12, expHarvest: 300 },
-  cacao:    { id: 'cacao',    name: 'Ca cao',   emoji: '🍫', level: 28, growMs: 600 * MIN, seed: 190, sell: 585, expSow: 15, expHarvest: 380 },
+  catim:    { id: 'catim',    name: 'Cà tím',   emoji: '🍆', level: 14, growMs: 150 * MIN, seed: 72,  sell: 215, expSow: 7, expHarvest: 145 },
+  gao:      { id: 'gao',      name: 'Gạo',      emoji: '🍚', level: 16, growMs: 75 * MIN,  seed: 38,  sell: 110, expSow: 4, expHarvest: 60 },
+  bingo:    { id: 'bingo',    name: 'Bí ngô',   emoji: '🎃', level: 18, growMs: 120 * MIN, seed: 60,  sell: 180, expSow: 6, expHarvest: 110 },
+  duahau:   { id: 'duahau',   name: 'Dưa hấu',  emoji: '🍉', level: 21, growMs: 180 * MIN, seed: 90,  sell: 275, expSow: 8, expHarvest: 185 },
+  nho:      { id: 'nho',      name: 'Nho',      emoji: '🍇', level: 22, growMs: 210 * MIN, seed: 110, sell: 340, expSow: 9, expHarvest: 230 },
+  caphe:    { id: 'caphe',    name: 'Cà phê',   emoji: '☕', level: 23, growMs: 240 * MIN, seed: 145, sell: 450, expSow: 12, expHarvest: 300 },
+  cacao:    { id: 'cacao',    name: 'Ca cao',   emoji: '🍫', level: 28, growMs: 300 * MIN, seed: 190, sell: 585, expSow: 15, expHarvest: 380 },
 };
 
 // ---- Sản phẩm ngoài cây (kho dùng chung một catalogue) ---------------------
@@ -49,10 +49,10 @@ export const GOODS = {
 
 // ---- Cây ăn quả (mục 6.4): trồng một lần, tự ra quả theo chu kỳ ------------
 export const TREES = {
-  cam:       { id: 'cam',       name: 'Cam',        emoji: '🍊', level: 12, price: 250, growMs: 240 * MIN, yield: 3, sell: 55,  exp: 48 },
-  tao:       { id: 'tao',       name: 'Táo',        emoji: '🍎', level: 14, price: 360, growMs: 360 * MIN, yield: 3, sell: 80,  exp: 75 },
-  xoai:      { id: 'xoai',      name: 'Xoài',       emoji: '🥭', level: 16, price: 500, growMs: 480 * MIN, yield: 4, sell: 95,  exp: 110 },
-  thanhlong: { id: 'thanhlong', name: 'Thanh long', emoji: '🌵', level: 18, price: 700, growMs: 720 * MIN, yield: 4, sell: 150, exp: 180 },
+  cam:       { id: 'cam',       name: 'Cam',        emoji: '🍊', level: 12, price: 250, growMs: 150 * MIN, yield: 3, sell: 55,  exp: 48 },
+  tao:       { id: 'tao',       name: 'Táo',        emoji: '🍎', level: 14, price: 360, growMs: 210 * MIN, yield: 3, sell: 80,  exp: 75 },
+  xoai:      { id: 'xoai',      name: 'Xoài',       emoji: '🥭', level: 16, price: 500, growMs: 270 * MIN, yield: 4, sell: 95,  exp: 110 },
+  thanhlong: { id: 'thanhlong', name: 'Thanh long', emoji: '🌵', level: 18, price: 700, growMs: 360 * MIN, yield: 4, sell: 150, exp: 180 },
 };
 
 export function itemInfo(id) {
@@ -63,8 +63,8 @@ export function itemInfo(id) {
 // capacities: sức chứa chuồng cấp 1..5. Tất cả ăn chung 'thucan'.
 export const ANIMALS = {
   ga:  { id: 'ga',  name: 'Gà',  emoji: '🐔', level: 3,  price: 250,  produceMs: 15 * MIN, feedQty: 1, product: 'trung', expCollect: 8,  capacities: [3, 4, 6, 8, 10] },
-  bo:  { id: 'bo',  name: 'Bò',  emoji: '🐄', level: 8,  price: 850,  produceMs: 45 * MIN, feedQty: 2, product: 'sua',   expCollect: 16, capacities: [2, 3, 4, 6, 8] },
-  cuu: { id: 'cuu', name: 'Cừu', emoji: '🐑', level: 14, price: 1400, produceMs: 60 * MIN, feedQty: 3, product: 'len',   expCollect: 22, capacities: [2, 3, 4, 6, 8] },
+  bo:  { id: 'bo',  name: 'Bò',  emoji: '🐄', level: 8,  price: 850,  produceMs: 30 * MIN, feedQty: 2, product: 'sua',   expCollect: 16, capacities: [2, 3, 4, 6, 8] },
+  cuu: { id: 'cuu', name: 'Cừu', emoji: '🐑', level: 14, price: 1400, produceMs: 40 * MIN, feedQty: 3, product: 'len',   expCollect: 22, capacities: [2, 3, 4, 6, 8] },
 };
 export const FEED_ITEM = 'thucan';
 export const BARN_UPGRADE_GOLD = [1000, 3000, 8000, 20000]; // lên cấp 2..5, mọi chuồng
@@ -203,6 +203,8 @@ export const POACH_DAILY_LIMIT = 10; // (không còn dùng để chặn)
 export const POACH_EXP = 1;   // mỗi vật phẩm
 export const POACH_YIELD = 2; // số vật phẩm mỗi lần hái ké
 export const HARVEST_YIELD = 4; // mỗi ô thu 4 sản phẩm (+3 bù trộm); ô bị hái ké trừ 1
+export const POACH_AGAIN_MS = 60 * MIN; // chủ chậm thu 1 giờ = thêm 1 lượt hái ké/ô
+export const PLANT_HELP_EXP = 1; // EXP mỗi ô trồng giúp
 
 // ---- Tưới: không đổi thời gian (mục 6.1) — đánh dấu "Tươi tốt", chủ +1 EXP
 // khi thu; khách tưới giúp nhận công nhỏ.
@@ -248,6 +250,38 @@ export function rollFish(rng) {
   }
   return FISHING.loot[0].id;
 }
+
+// ---- Kỹ năng chuyên môn hóa nông dân (mục 9.5) -----------------------------
+// Mở ở cấp 10; mỗi cấp sau đó +1 điểm. Hoàn trả 20 kim cương, 1 lần/7 ngày.
+export const SKILLS = {
+  unlockLevel: 10,
+  respecGems: 20,
+  respecCooldownMs: 7 * 24 * 3600 * 1000,
+  branches: [
+    { id: 'trong', name: 'Trồng Trọt', emoji: '🌱', nodes: [
+      { id: 'bantayxanh',   name: 'Bàn tay xanh',        cost: 1, desc: 'Giảm 5% thời gian cây trồng' },
+      { id: 'datmaumo',     name: 'Đất màu mỡ',          cost: 2, desc: '5% cơ hội cây tự Tươi tốt khi gieo' },
+      { id: 'hatgiongtk',   name: 'Hạt giống tiết kiệm', cost: 3, desc: '5% cơ hội hoàn tiền hạt khi thu' },
+      { id: 'muaboithu',    name: 'Mùa bội thu',         cost: 4, desc: '+1 quả mỗi lần thu cây ăn quả' },
+    ] },
+    { id: 'nuoi', name: 'Chăn Nuôi', emoji: '🐄', nodes: [
+      { id: 'nguoibannho',  name: 'Người bạn nhỏ',    cost: 1, desc: 'Giảm 5% thời gian tạo sản phẩm vật nuôi' },
+      { id: 'mangantot',    name: 'Máng ăn tốt',      cost: 2, desc: '5% cơ hội không tốn thức ăn' },
+      { id: 'chamsoc',      name: 'Chăm sóc tận tâm', cost: 3, desc: '+10% EXP từ sản phẩm vật nuôi' },
+      { id: 'spcaocap',     name: 'Sản phẩm cao cấp', cost: 4, desc: '+8% giá bán sản phẩm vật nuôi' },
+    ] },
+    { id: 'che', name: 'Chế Biến & Bán Hàng', emoji: '🏭', nodes: [
+      { id: 'lamnhanh',     name: 'Làm nhanh',      cost: 1, desc: 'Giảm 5% thời gian máy chế biến' },
+      { id: 'donggoidep',   name: 'Đóng gói đẹp',   cost: 2, desc: '+5% giá bán sản phẩm chế biến' },
+      { id: 'nguoibankheo', name: 'Người bán khéo', cost: 3, desc: 'Đơn hàng thưởng thêm 5% vàng' },
+      { id: 'khachquen',    name: 'Khách quen',     cost: 4, desc: 'Mở thêm 1 ô đơn hàng' },
+    ] },
+  ],
+};
+export const SKILL_NODES = Object.fromEntries(SKILLS.branches.flatMap((b) => b.nodes.map((n) => [n.id, n])));
+// Sản phẩm vật nuôi / chế biến (để áp kỹ năng giá bán).
+export const ANIMAL_PRODUCTS = new Set(['trung', 'sua', 'len']);
+export const MACHINE_PRODUCTS = new Set(['botmi', 'nuoccarot', 'nuocduahau', 'mutdau', 'sotcachua', 'phomai', 'banhmi', 'banhbi', 'capherang', 'cuonlen']);
 
 // ---- Con vật may mắn: chạy ngang vườn ~mỗi tiếng, bấm trúng ăn kim cương ---
 export const CRITTER = {
