@@ -1060,6 +1060,9 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   width: min(620px, 100%);
   max-height: min(82dvh, 760px);
   overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding: 1rem 1rem calc(1rem + var(--bottom-safe));
   border: 3px solid #b4814a;
   border-bottom: 0;
@@ -1628,3 +1631,17 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .lb-tabs { display: flex; gap: .4rem; margin-bottom: .6rem; }
 .lb-sec { margin: .7rem 0 .3rem; font-size: .82rem; font-weight: 900; color: #6b4a1f; }
 .lb-row--win { background: rgba(255, 214, 102, .28); border-radius: 10px; }
+
+/* ---- Bản tin: khung cuộn riêng, cao cố định để vuốt được trên điện thoại ---- */
+.sheet--feed { display: flex; flex-direction: column; }
+.sheet-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(min(82dvh, 760px) - 5.5rem - var(--bottom-safe));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding-right: .15rem;
+  scrollbar-width: thin;
+}

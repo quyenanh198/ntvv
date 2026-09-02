@@ -747,9 +747,9 @@
 
     if (t === 'events') {
       const rows = DATA.events.length
-        ? `<ul class="event-list">${DATA.events.map((e) => `<li><time>${timeAgo(e.at)}</time><span>${esc(e.text)}</span></li>`).join('')}</ul>`
+        ? `<div class="sheet-scroll"><ul class="event-list">${DATA.events.map((e) => `<li><time>${timeAgo(e.at)}</time><span>${esc(e.text)}</span></li>`).join('')}</ul></div>`
         : '<p class="sheet-note">Chưa có gì — gieo hạt đầu tiên đi!</p>';
-      return sheetShell('📰 Bản tin làng', rows);
+      return sheetShell('📰 Bản tin làng', rows, 'sheet--feed');
     }
 
     if (t === 'fishing') {

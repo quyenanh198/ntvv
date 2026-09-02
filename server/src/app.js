@@ -531,7 +531,7 @@ export function buildApp({ config, db, logger = true }) {
             poachDailyLimit: POACH_DAILY_LIMIT,
             fast: config.fast,
           },
-          events: db.prepare('SELECT at, text FROM events ORDER BY id DESC LIMIT 25').all(),
+          events: db.prepare('SELECT at, text FROM events ORDER BY id DESC LIMIT 80').all(),
         };
       });
 
