@@ -531,6 +531,12 @@ export function todayVN(now = Date.now()) {
 export function yesterdayVN(now = Date.now()) {
   return todayVN(now - 24 * 60 * MIN);
 }
+// Ngày tính bảng trộm: chốt sổ 9h sáng giờ Los Angeles. Khóa có tiền tố 'la-'
+// để không đụng các bản ghi thief_awards cũ chốt theo ngày Việt Nam.
+export const THIEF_SETTLE_HOUR_LA = 9;
+export function thiefDayKey(now = Date.now()) {
+  return `la-${new Date(now - THIEF_SETTLE_HOUR_LA * 60 * MIN).toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })}`;
+}
 
 // ---- Bảng vàng trộm: top 3 số món cuỗm/hái ké trong ngày (giờ VN) ----------
 // gold là giá gốc, phát thưởng nhân GOLD_MULT như mọi nguồn thu khác.

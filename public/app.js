@@ -317,6 +317,7 @@
           ${m.skills.unlocked ? `<button class="side-btn" data-sheet="skills">🎓${m.skills.points > 0 ? '<i class="dot"></i>' : ''}<span>Kỹ năng</span></button>` : ''}
           ${m.level >= DATA.config.animals.vit.level ? `<button class="side-btn" data-sheet="barns">🐾${m.animals.some((x) => x.ready) ? '<i class="dot"></i>' : ''}<span>Chuồng</span></button>` : ''}
           ${m.level >= Math.min(...Object.values(DATA.config.machines).map((x) => x.level)) ? `<button class="side-btn" data-sheet="mill">🏭${Object.values(m.machines).some((x) => x && x.ready) ? '<i class="dot"></i>' : ''}<span>Nhà máy</span></button>` : ''}
+          ${m.level >= DATA.config.fishing.level ? `<button class="side-btn" data-sheet="fishing">🎣${m.energy.current >= DATA.config.fishing.energyCost ? '<i class="dot"></i>' : ''}<span>Ao cá</span></button>` : ''}
           <button class="side-btn" data-sheet="market">🤝<span>Thu mua</span></button>
         </div>
 
@@ -998,7 +999,7 @@
           <span class="lb-name">${esc(w.name)}</span>
           <span class="lb-stat">${w.count} món</span>
         </div>`).join('') : '<p class="sheet-note">Chưa ai ra tay hôm nay. Cơ hội của bạn đó 😏</p>'}
-      <p class="sheet-note">Chốt sổ lúc 0h: ${tb.rewards.map((r, i) => `${medal(i + 1)} ${r.gems} ${GEM} + ${r.gold.toLocaleString('vi')} ${COIN}`).join(' · ')}</p>
+      <p class="sheet-note">Chốt sổ <b>9h sáng giờ Los Angeles</b> mỗi ngày: ${tb.rewards.map((r, i) => `${medal(i + 1)} ${r.gems} ${GEM} + ${r.gold.toLocaleString('vi')} ${COIN}`).join(' · ')}</p>
       <p class="sheet-note">💹 Kinh tế làng (không tính vàng được tặng): ${(tb.economy?.villageGold || 0).toLocaleString('vi')} ${COIN} → thưởng ×${tb.economy?.mult || 1} (mỗi 5 triệu vàng cả làng cộng thêm ×1).</p>`;
     return `
       <div class="modal-backdrop" data-close="1">

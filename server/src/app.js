@@ -68,6 +68,7 @@ import {
   scaleMs,
   todayVN,
   yesterdayVN,
+  thiefDayKey,
   THIEF_REWARDS,
   thiefEconomyMult,
 } from './game.js';
@@ -184,18 +185,21 @@ export function buildApp({ config, db, logger = true }) {
   function bumpPoached(userId, by) {
     const d = getDaily(userId);
     db.prepare('UPDATE daily SET poached = poached + ? WHERE owner_id = ? AND day = ?').run(by, userId, d.day);
+    // Bảng trộm tính theo ngày Los Angeles (chốt 9h sáng), tách khỏi ngày nhiệm vụ.
+    db.prepare(`INSERT INTO theft_days (owner_id, day, count) VALUES (?, ?, ?)
+      ON CONFLICT(owner_id, day) DO UPDATE SET count = count + excluded.count`).run(userId, thiefDayKey(), by);
   }
 
   // ---- Bảng vàng trộm: chốt sổ hôm qua (lười, lần đầu có người ghé mỗi ngày)
   const MEDALS = ['🥇', '🥈', '🥉'];
   let thiefSettledDay = null;
   function thiefRows(day, limit) {
-    return db.prepare(`SELECT d.owner_id AS id, f.name, d.poached AS count FROM daily d
-      JOIN farmers f ON f.user_id = d.owner_id WHERE d.day = ? AND d.poached > 0
-      ORDER BY d.poached DESC, f.xp DESC LIMIT ?`).all(day, limit).map((r, i) => ({ ...r, rank: i + 1 }));
+    return db.prepare(`SELECT t.owner_id AS id, f.name, t.count AS count FROM theft_days t
+      JOIN farmers f ON f.user_id = t.owner_id WHERE t.day = ? AND t.count > 0
+      ORDER BY t.count DESC, f.xp DESC LIMIT ?`).all(day, limit).map((r, i) => ({ ...r, rank: i + 1 }));
   }
   function settleThiefBoard() {
-    const day = yesterdayVN();
+    const day = thiefDayKey(Date.now() - 24 * 60 * 60 * 1000);
     if (thiefSettledDay === day) return;
     if (db.prepare('SELECT 1 FROM thief_awards WHERE day = ?').get(day)) { thiefSettledDay = day; return; }
     const econ = thiefEconomyMult(villageGold());
@@ -206,7 +210,7 @@ export function buildApp({ config, db, logger = true }) {
     })();
     thiefSettledDay = day;
     if (!winners.length) return;
-    logEvent(`🥷 Bảng vàng trộm ${day}${econ > 1 ? ` (thưởng ×${econ})` : ''}: ${winners.map((w) => `${MEDALS[w.rank - 1]} ${w.name} (${w.count} món · ${w.gold.toLocaleString('vi')} vàng)`).join(' · ')}`);
+    logEvent(`🥷 Bảng vàng trộm ${day.replace(/^la-/, '')}${econ > 1 ? ` (thưởng ×${econ})` : ''}: ${winners.map((w) => `${MEDALS[w.rank - 1]} ${w.name} (${w.count} món · ${w.gold.toLocaleString('vi')} vàng)`).join(' · ')}`);
     for (const w of winners) {
       pushTo([w.id], 'Ăn trộm dzui dzẻ 😋', `${MEDALS[w.rank - 1]} Hạng ${w.rank} bảng trộm hôm qua (${w.count} món) — nhận ${w.gems} kim cương + ${w.gold.toLocaleString('vi')} vàng!`);
     }
@@ -587,12 +591,13 @@ export function buildApp({ config, db, logger = true }) {
 
       api.get('/thief-board', async (request) => {
         settleThiefBoard();
-        const yday = yesterdayVN();
+        const yday = thiefDayKey(Date.now() - 24 * 60 * 60 * 1000);
         const row = db.prepare('SELECT winners_json FROM thief_awards WHERE day = ?').get(yday);
+        const mine = db.prepare('SELECT count FROM theft_days WHERE owner_id = ? AND day = ?').get(request.farmer.user_id, thiefDayKey());
         return {
-          today: thiefRows(todayVN(), 10),
-          myCount: getDaily(request.farmer.user_id).poached,
-          yesterday: { day: yday, winners: row ? JSON.parse(row.winners_json) : [] },
+          today: thiefRows(thiefDayKey(), 10),
+          myCount: mine ? mine.count : 0,
+          yesterday: { day: yday.replace(/^la-/, ''), winners: row ? JSON.parse(row.winners_json) : [] },
           rewards: THIEF_REWARDS.map((r) => ({ gems: r.gems, gold: r.gold * GOLD_MULT * thiefEconomyMult(villageGold()) })),
           economy: { villageGold: villageGold(), mult: thiefEconomyMult(villageGold()) },
         };

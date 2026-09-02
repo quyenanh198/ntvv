@@ -106,6 +106,12 @@ CREATE TABLE IF NOT EXISTS wants (
   price INTEGER NOT NULL,
   created_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS theft_days (
+  owner_id INTEGER NOT NULL,
+  day TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (owner_id, day)
+);
 CREATE TABLE IF NOT EXISTS thief_awards (
   day TEXT PRIMARY KEY,
   winners_json TEXT NOT NULL,
