@@ -233,8 +233,30 @@
   const itemInfo = (id) => crops()[id] || goods()[id] || trees()[id];
 
   // ---------- render ----------
+  // render() thay cả app.innerHTML nên mọi vùng cuộn về 0 — giữ lại vị trí
+  // cuộn của ruộng, sidebar gia đình và thân sheet (chỉ khi vẫn là sheet đó).
+  const SCROLL_KEEP = ['.stage-center', '.family-strip', '.sheet-scroll', '.modal'];
+  function captureScroll() {
+    const out = { sheetKey: sheet ? `${sheet.type}:${sheet.kind || ''}` : '' };
+    for (const sel of SCROLL_KEEP) {
+      const el = document.querySelector(sel);
+      if (el && el.scrollTop > 0) out[sel] = el.scrollTop;
+    }
+    return out;
+  }
+  function restoreScroll(saved) {
+    const sameSheet = saved.sheetKey === (sheet ? `${sheet.type}:${sheet.kind || ''}` : '');
+    for (const sel of SCROLL_KEEP) {
+      if (!(sel in saved)) continue;
+      if (sel === '.sheet-scroll' && !sameSheet) continue;
+      const el = document.querySelector(sel);
+      if (el) el.scrollTop = saved[sel];
+    }
+  }
+
   function render() {
     if (!DATA) return;
+    const savedScroll = captureScroll();
     const searchWasFocused = document.activeElement?.classList?.contains('family-search');
     const m = me();
     const visiting = VISIT && VISIT.ownerId !== m.id ? VISIT : null;
@@ -360,6 +382,7 @@
       ${sheet ? renderSheet() : ''}
       ${showLb ? renderLb() : ''}
     `;
+    restoreScroll(savedScroll);
     bind();
     if (searchWasFocused) {
       const input = document.querySelector('.family-search');
