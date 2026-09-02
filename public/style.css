@@ -1711,3 +1711,8 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .mc-plus--max { font-size: .82rem; }
 .mc-plus:disabled { opacity: .3; filter: grayscale(1); cursor: default; box-shadow: none; }
 .mc-plus:not(:disabled):active { transform: translateY(1px); box-shadow: 0 1px 0 #b47a12; }
+
+/* ---- Thu mua từ bạn bè ---- */
+.want-form { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; margin: .3rem 0; }
+.want-form select { flex: 1 1 200px; min-width: 0; padding: .45rem .5rem; border-radius: 10px; border: 2px solid #b4814a; background: #fff8e6; font: inherit; font-weight: 700; color: #4a2e0a; }
+.want-form input { width: 84px; padding: .45rem .5rem; border-radius: 10px; border: 2px solid #b4814a; background: #fff8e6; font: inherit; font-weight: 700; color: #4a2e0a; }

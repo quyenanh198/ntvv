@@ -6,6 +6,7 @@
 
   let DATA = null;   // /state
   let VISIT = null;  // { ownerId, farm, myActs }
+  let MARKET = null; // { mine, others } — tin thu mua, nạp khi mở sheet
   let sheet = null;  // { type: 'seed'|'plotmenu'|'shop'|'inventory'|'quests'|'orders'|'coop'|'mill'|'expand'|'stars', ... }
   let showLb = null;
   let pending = false;
@@ -117,6 +118,10 @@
     no_skill_points: 'Chưa đủ điểm kỹ năng — lên cấp để nhận thêm!',
     already_learned: 'Học rồi mà!',
     queue_full: 'Hàng đợi máy đầy rồi.',
+    too_many_wants: 'Tối đa 5 tin đang cần — huỷ bớt hoặc chờ đủ hàng.',
+    no_want: 'Tin này đã đóng rồi.',
+    own_want: 'Tin của bạn mà 😅',
+    water_cooldown: 'Ô này bạn vừa tưới giúp — 15 phút nữa tưới tiếp nhé 💧',
     max_rank: 'Kỹ năng này đã tối đa rồi!',
     respec_cooldown: 'Mới hoàn trả gần đây — 7 ngày mới được làm lại.',
     nothing_to_poach: 'Không có gì để cuỗm cả 😅',
@@ -311,6 +316,8 @@
           <button class="side-btn" data-sheet="festival">🎪${festReady ? '<i class="dot"></i>' : ''}<span>Sự kiện</span></button>
           ${m.skills.unlocked ? `<button class="side-btn" data-sheet="skills">🎓${m.skills.points > 0 ? '<i class="dot"></i>' : ''}<span>Kỹ năng</span></button>` : ''}
           ${m.level >= DATA.config.animals.vit.level ? `<button class="side-btn" data-sheet="barns">🐾${m.animals.some((x) => x.ready) ? '<i class="dot"></i>' : ''}<span>Chuồng</span></button>` : ''}
+          ${m.level >= Math.min(...Object.values(DATA.config.machines).map((x) => x.level)) ? `<button class="side-btn" data-sheet="mill">🏭${Object.values(m.machines).some((x) => x && x.ready) ? '<i class="dot"></i>' : ''}<span>Nhà máy</span></button>` : ''}
+          <button class="side-btn" data-sheet="market">🤝<span>Thu mua</span></button>
         </div>
 
         <div class="stage-center">
@@ -447,7 +454,7 @@
         const acts = visiting ? visiting.myActs[p.idx] : null;
         const canPoach = visiting && p.ready && acts?.canPoach;
         const left = p.readyAt - now;
-        return `<button class="plot plot--tree${p.ready ? ' plot--ready' : ' plot--growing'}" data-idx="${p.idx}" data-kind="${p.ready ? (mine ? 'harvest' : canPoach ? 'poach' : 'ripe') : (mine ? (p.watered ? 'plotmenu' : 'waterplot') : (!p.watered && visiting && !acts?.watered ? 'water' : 'growing'))}" data-ready="${p.readyAt}" data-total="${t.growMs}" data-cropid="${p.crop}">
+        return `<button class="plot plot--tree${p.ready ? ' plot--ready' : ' plot--growing'}" data-idx="${p.idx}" data-kind="${p.ready ? (mine ? 'harvest' : canPoach ? 'poach' : 'ripe') : (mine ? (p.watered ? 'plotmenu' : 'waterplot') : (visiting && acts?.canWater ? 'water' : 'growing'))}" data-ready="${p.readyAt}" data-total="${t.growMs}" data-cropid="${p.crop}">
           <img class="tree-sprite${p.ready ? '' : ' tree-sprite--wait'}" src="${treeArt(p.crop)}" alt="${t.name}" />${TREE_PNG.has(p.crop) ? '' : `<span class="tree-emoji">${t.emoji}</span>`}
           ${p.ready
             ? `<span class="plot-note">${mine ? (p.poached ? 'Bị hái ké 😭' : 'Hái quả!') : canPoach ? 'Hái ké!' : 'Chín rồi'}</span><span class="plot-badge">×${Math.max(1, t.yield - (p.poachedN || 0))}</span>`
@@ -470,7 +477,7 @@
       const left = p.readyAt - now;
       const pct = Math.min(100, Math.max(3, Math.round(((total - left) / total) * 100)));
       const acts = visiting ? visiting.myActs[p.idx] : null;
-      const canWater = !p.watered && (!visiting || !acts?.watered);
+      const canWater = visiting ? !!acts?.canWater : !p.watered;
       return `<button class="plot plot--growing" data-idx="${p.idx}" data-kind="${mine ? (p.watered ? 'plotmenu' : 'waterplot') : canWater ? 'water' : 'growing'}" data-ready="${p.readyAt}" data-total="${total}" data-cropid="${p.crop}">
         <img class="crop-sprite" src="${cropSprite(p.crop, pct < 45 ? 1 : 2)}" alt="${c.name}" />
         <span class="plot-timer">${fmtTime(left)}</span>
@@ -709,6 +716,47 @@
           }).join('');
       const refreshNote = m.ordersRefreshAt > Date.now() ? `<p class="sheet-note">🔄 Bảng đơn thay mới toàn bộ sau <b>${fmtTime(m.ordersRefreshAt - Date.now())}</b>.</p>` : '';
       return sheetShell(`🚚 Đơn hàng <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, refreshNote + rows);
+    }
+
+    if (t === 'market') {
+      const mk = MARKET || { mine: [], others: [] };
+      const catalog = [...Object.values(crops()), ...Object.values(goods()).filter((x) => x.sell > 0), ...Object.values(trees())];
+      const unitPrice = (id) => Math.round((itemInfo(id)?.sell || 0) * 1.3);
+      const options = catalog.map((x) => `<option value="${x.id}">${x.emoji} ${x.name} — ${unitPrice(x.id).toLocaleString('vi')}/cái</option>`).join('');
+      const mine = mk.mine.map((w) => `<div class="inv-row">${itemImg(w.item)}
+          <span class="seed-info"><span class="seed-name">${itemInfo(w.item)?.name || w.item}</span>
+            <div class="seed-meta">đã nhận ${w.filled}/${w.qty} · trả ${w.price.toLocaleString('vi')} ${COIN}/cái</div></span>
+          <button class="gbtn btn-mini" data-want-cancel="${w.id}">Huỷ · hoàn ${((w.qty - w.filled) * w.price).toLocaleString('vi')}</button>
+        </div>`).join('');
+      const others = mk.others.map((w) => {
+        const have = m.inventory[w.item] || 0;
+        const rem = w.qty - w.filled;
+        const can = Math.min(have, rem);
+        return `<div class="inv-row" data-want="${w.id}">${itemImg(w.item)}
+          <span class="seed-info"><span class="seed-name">${esc(w.ownerName)} cần ${itemInfo(w.item)?.name || w.item}</span>
+            <div class="seed-meta">còn ${rem}/${w.qty} · trả <b>${w.price.toLocaleString('vi')}</b> ${COIN}/cái · bạn có ${have}</div></span>
+          ${can > 0 ? `<span class="qty-ctl">
+              <button type="button" data-qstep="-1">−</button>
+              <input class="qty-input" type="number" inputmode="numeric" min="1" max="${can}" value="${can}" />
+              <button type="button" data-qstep="1">＋</button>
+            </span>
+            <button class="gbtn gbtn--green btn-mini" data-want-fill="${w.id}">Bán</button>` : '<span class="seed-lock">Không có hàng</span>'}
+        </div>`;
+      }).join('');
+      return sheetShell(
+        `🤝 Thu mua <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
+        `<div class="machine-block"><h4>📣 Đăng tin cần mua</h4>
+          <p class="sheet-note">Giá thu mua = <b>130%</b> giá bán cho hệ thống. Vàng ký quỹ lúc đăng; huỷ thì hoàn phần chưa nhận. Tối đa 5 tin.</p>
+          <div class="want-form">
+            <select id="want-item">${options}</select>
+            <input id="want-qty" type="number" inputmode="numeric" min="1" max="999" value="10" />
+            <button class="gbtn gbtn--gold btn-mini" id="btn-want-create">Đăng tin</button>
+          </div>
+          <p class="sheet-note" id="want-preview"></p>
+        </div>
+        <div class="machine-block"><h4>🧾 Tin của tôi</h4>${mine || '<p class="sheet-note">Chưa có tin nào.</p>'}</div>
+        <div class="machine-block"><h4>🏘️ Làng đang cần</h4>${others || '<p class="sheet-note">Chưa ai đăng tin — bạn đăng trước đi!</p>'}</div>`,
+      );
     }
 
     if (t === 'barns') {
@@ -951,7 +999,7 @@
           <span class="lb-stat">${w.count} món</span>
         </div>`).join('') : '<p class="sheet-note">Chưa ai ra tay hôm nay. Cơ hội của bạn đó 😏</p>'}
       <p class="sheet-note">Chốt sổ lúc 0h: ${tb.rewards.map((r, i) => `${medal(i + 1)} ${r.gems} ${GEM} + ${r.gold.toLocaleString('vi')} ${COIN}`).join(' · ')}</p>
-      <p class="sheet-note">💹 Kinh tế làng: ${(tb.economy?.villageGold || 0).toLocaleString('vi')} ${COIN} → thưởng ×${tb.economy?.mult || 1} (mỗi 5 triệu vàng cả làng cộng thêm ×1).</p>`;
+      <p class="sheet-note">💹 Kinh tế làng (không tính vàng được tặng): ${(tb.economy?.villageGold || 0).toLocaleString('vi')} ${COIN} → thưởng ×${tb.economy?.mult || 1} (mỗi 5 triệu vàng cả làng cộng thêm ×1).</p>`;
     return `
       <div class="modal-backdrop" data-close="1">
         <div class="modal" onclick="event.stopPropagation()">
@@ -964,13 +1012,50 @@
       </div>`;
   }
 
+  async function openMarket() {
+    const r = await run(() => api('/wants'));
+    if (!r) return;
+    MARKET = r;
+    sheet = { type: 'market' };
+    render();
+  }
+
   // ---------- events ----------
   function bind() {
     document.querySelectorAll('[data-close]').forEach((el) =>
       el.addEventListener('click', () => { sheet = null; showLb = null; render(); }));
 
     document.querySelectorAll('[data-sheet]').forEach((el) =>
-      el.addEventListener('click', () => { sheet = { type: el.dataset.sheet }; render(); }));
+      el.addEventListener('click', () => {
+        if (el.dataset.sheet === 'market') { openMarket(); return; }
+        sheet = { type: el.dataset.sheet }; render();
+      }));
+    document.getElementById('btn-want-create')?.addEventListener('click', async () => {
+      const item = document.getElementById('want-item')?.value;
+      const qty = Number(document.getElementById('want-qty')?.value) || 1;
+      const r = await run(() => api('/want-create', { item, qty }));
+      if (r) { updateMe(r); MARKET = r.wants; toast('📣 Đã đăng tin cần mua!'); render(); }
+    });
+    document.querySelectorAll('[data-want-cancel]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        const r = await run(() => api('/want-cancel', { id: Number(el.dataset.wantCancel) }));
+        if (r) { updateMe(r); MARKET = r.wants; toast(`Đã huỷ tin — hoàn ${r.refund.toLocaleString('vi')} vàng.`); render(); }
+      }));
+    document.querySelectorAll('[data-want-fill]').forEach((el) =>
+      el.addEventListener('click', async (e) => {
+        const r = await run(() => api('/want-fill', { id: Number(el.dataset.wantFill), qty: rowQty(el) }));
+        if (r) { updateMe(r); MARKET = r.wants; floatGain(e.clientX, e.clientY, `+${r.gained.toLocaleString('vi')} ${COIN}`); toast(`🤝 Đã bán ${r.sold} món cho bạn bè!`); render(); }
+      }));
+    const wantPreview = () => {
+      const sel = document.getElementById('want-item'); const q = document.getElementById('want-qty'); const p = document.getElementById('want-preview');
+      if (!sel || !p) return;
+      const unit = Math.round((itemInfo(sel.value)?.sell || 0) * 1.3);
+      const n = Math.max(1, Math.min(999, Number(q?.value) || 1));
+      p.innerHTML = `Trả <b>${unit.toLocaleString('vi')}</b> vàng/cái × ${n} = <b>${(unit * n).toLocaleString('vi')}</b> vàng (ký quỹ ngay, hoàn phần chưa nhận khi huỷ).`;
+    };
+    document.getElementById('want-item')?.addEventListener('change', wantPreview);
+    document.getElementById('want-qty')?.addEventListener('input', wantPreview);
+    wantPreview();
 
     document.getElementById('btn-lb')?.addEventListener('click', async () => {
       const r = await run(async () => {
@@ -1198,7 +1283,7 @@
         }
       } else if (kind === 'water') {
         const r = await run(() => api('/water', { ownerId: VISIT.ownerId, idx }));
-        if (r) { updateMe(r); floatGain(x, y, '💧', `+2 ${COIN}`); render(); }
+        if (r) { updateMe(r); floatGain(x, y, '💧 −10p', `+${2 * 4} ${COIN}`); render(); }
       } else if (kind === 'poach') {
         const r = await run(() => api('/poach', { ownerId: VISIT.ownerId, idx }));
         if (r) { updateMe(r); floatGain(x, y, '😋 +2'); render(); }

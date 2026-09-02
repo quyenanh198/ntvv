@@ -36,6 +36,9 @@ import {
   ORDER_REFRESH_MS,
   ORDER_BOARD_REFRESH_MS,
   MACHINE_QUEUE_MAX,
+  WANT_MARKUP,
+  WANT_MAX_QTY,
+  WANT_MAX_OPEN,
   generateOrder,
   DAILY_QUESTS,
   DAILY_CHEST,
@@ -48,6 +51,8 @@ import {
   PLANT_HELP_EXP,
   HARVEST_YIELD,
   WATER_HELPER_GOLD,
+  WATER_HELP_COOLDOWN_MS,
+  WATER_HELP_BOOST_MS,
   WATER_HELPER_EXP,
   WATER_FRESH_EXP,
   FESTIVAL,
@@ -193,8 +198,7 @@ export function buildApp({ config, db, logger = true }) {
     const day = yesterdayVN();
     if (thiefSettledDay === day) return;
     if (db.prepare('SELECT 1 FROM thief_awards WHERE day = ?').get(day)) { thiefSettledDay = day; return; }
-    const villageGold = db.prepare('SELECT COALESCE(SUM(gold), 0) g FROM farmers').get().g;
-    const econ = thiefEconomyMult(villageGold);
+    const econ = thiefEconomyMult(villageGold());
     const winners = thiefRows(day, 3).map((w) => ({ ...w, gems: THIEF_REWARDS[w.rank - 1].gems, gold: THIEF_REWARDS[w.rank - 1].gold * GOLD_MULT * econ, econ }));
     db.transaction(() => {
       for (const w of winners) grant(w.id, { gems: w.gems, gold: w.gold });
@@ -467,6 +471,12 @@ export function buildApp({ config, db, logger = true }) {
   const markAction = db.prepare(
     'INSERT OR IGNORE INTO plot_actions (owner_id, idx, planted_at, helper_id, action, at) VALUES (?, ?, ?, ?, ?, ?)',
   );
+  const lastAction = db.prepare(
+    'SELECT at FROM plot_actions WHERE owner_id = ? AND idx = ? AND planted_at = ? AND helper_id = ? AND action = ?',
+  );
+  const touchAction = db.prepare(`INSERT INTO plot_actions (owner_id, idx, planted_at, helper_id, action, at) VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(owner_id, idx, planted_at, helper_id, action) DO UPDATE SET at = excluded.at`);
+  const villageGold = () => Math.max(0, db.prepare('SELECT COALESCE(SUM(gold), 0) - COALESCE(SUM(gift_gold), 0) g FROM farmers').get().g);
 
   // Chuồng tự vận hành (yêu cầu nhà mình): tới giờ là sản phẩm TỰ vào kho,
   // con vật tự ăn tiếp (chu kỳ nối từ mốc cũ nên offline lâu vẫn tích đủ);
@@ -583,15 +593,8 @@ export function buildApp({ config, db, logger = true }) {
           today: thiefRows(todayVN(), 10),
           myCount: getDaily(request.farmer.user_id).poached,
           yesterday: { day: yday, winners: row ? JSON.parse(row.winners_json) : [] },
-          rewards: (() => {
-            const villageGold = db.prepare('SELECT COALESCE(SUM(gold), 0) g FROM farmers').get().g;
-            const econ = thiefEconomyMult(villageGold);
-            return THIEF_REWARDS.map((r) => ({ gems: r.gems, gold: r.gold * GOLD_MULT * econ }));
-          })(),
-          economy: (() => {
-            const villageGold = db.prepare('SELECT COALESCE(SUM(gold), 0) g FROM farmers').get().g;
-            return { villageGold, mult: thiefEconomyMult(villageGold) };
-          })(),
+          rewards: THIEF_REWARDS.map((r) => ({ gems: r.gems, gold: r.gold * GOLD_MULT * thiefEconomyMult(villageGold()) })),
+          economy: { villageGold: villageGold(), mult: thiefEconomyMult(villageGold()) },
         };
       });
 
@@ -702,18 +705,29 @@ export function buildApp({ config, db, logger = true }) {
         const owner = getFarmer.get(ownerId);
         const plot = owner && getPlot.get(ownerId, idx);
         if (!plot) return reply.code(400).send({ error: 'no_plot' });
-        if (Date.now() >= plot.ready_at) return reply.code(400).send({ error: 'already_ready' });
-        if (plot.watered) return reply.code(400).send({ error: 'already_watered' });
-        if (hasAction.get(ownerId, idx, plot.planted_at, me.user_id, 'water')) {
-          return reply.code(400).send({ error: 'already_watered' });
+        const now = Date.now();
+        if (now >= plot.ready_at) return reply.code(400).send({ error: 'already_ready' });
+        if (ownerId === me.user_id) {
+          // Ruộng mình: tưới 1 lần/vụ cho bonus Tươi tốt.
+          if (plot.watered) return reply.code(400).send({ error: 'already_watered' });
+          db.transaction(() => {
+            db.prepare('UPDATE plots SET watered = 1 WHERE owner_id = ? AND idx = ?').run(ownerId, idx);
+            markAction.run(ownerId, idx, plot.planted_at, me.user_id, 'water', now);
+          })();
+          return { me: fresh(me.user_id) };
         }
+        // Tưới giúp nhà bạn: mỗi 15 phút một lần/ô, mỗi lần cây chín sớm 10 phút.
+        const last = lastAction.get(ownerId, idx, plot.planted_at, me.user_id, 'water');
+        if (last && now - last.at < scaleMs(WATER_HELP_COOLDOWN_MS, config.fast)) {
+          return reply.code(400).send({ error: 'water_cooldown' });
+        }
+        const boost = scaleMs(WATER_HELP_BOOST_MS, config.fast);
         db.transaction(() => {
-          db.prepare('UPDATE plots SET watered = 1 WHERE owner_id = ? AND idx = ?').run(ownerId, idx);
-          markAction.run(ownerId, idx, plot.planted_at, me.user_id, 'water', Date.now());
-          if (ownerId !== me.user_id) grant(me.user_id, { gold: WATER_HELPER_GOLD * GOLD_MULT, xp: WATER_HELPER_EXP });
+          db.prepare('UPDATE plots SET watered = 1, ready_at = MAX(?, ready_at - ?) WHERE owner_id = ? AND idx = ?').run(now, boost, ownerId, idx);
+          touchAction.run(ownerId, idx, plot.planted_at, me.user_id, 'water', now);
+          grant(me.user_id, { gold: WATER_HELPER_GOLD * GOLD_MULT, xp: WATER_HELPER_EXP });
         })();
-        if (ownerId !== me.user_id) logEvent(`💧 ${me.name} tưới giúp ruộng của ${owner.name}`);
-        if (ownerId === me.user_id) return { me: fresh(me.user_id) };
+        logEvent(`💧 ${me.name} tưới giúp ruộng của ${owner.name} — cây chín sớm 10 phút`);
         return visitPayload(request, ownerId);
       });
 
@@ -758,6 +772,69 @@ export function buildApp({ config, db, logger = true }) {
         grant(me.user_id, { gold: gained });
         bumpQuest(me.user_id, 'sell', n);
         return { me: fresh(me.user_id), gained };
+      });
+
+      // ---- Thu mua từ bạn bè: đăng tin cần hàng, vàng ký quỹ lúc đăng ----
+      const wantPrice = (item) => Math.round(itemInfo(item).sell * GOLD_MULT * WANT_MARKUP);
+      function wantsView(meId) {
+        const rows = db.prepare('SELECT w.*, f.name AS owner_name FROM wants w JOIN farmers f ON f.user_id = w.owner_id ORDER BY w.created_at DESC').all();
+        const view = (w) => ({ id: w.id, ownerId: w.owner_id, ownerName: w.owner_name, item: w.item, qty: w.qty, filled: w.filled, price: w.price, createdAt: w.created_at });
+        return { mine: rows.filter((w) => w.owner_id === meId).map(view), others: rows.filter((w) => w.owner_id !== meId).map(view) };
+      }
+      api.get('/wants', async (request) => wantsView(request.farmer.user_id));
+
+      api.post('/want-create', async (request, reply) => {
+        const { item, qty } = request.body ?? {};
+        const me = request.farmer;
+        const info = itemInfo(item);
+        const n = Math.floor(Number(qty) || 0);
+        if (!info || !info.sell || n < 1 || n > WANT_MAX_QTY) return reply.code(400).send({ error: 'bad_request' });
+        const open = db.prepare('SELECT COUNT(*) c FROM wants WHERE owner_id = ?').get(me.user_id).c;
+        if (open >= WANT_MAX_OPEN) return reply.code(400).send({ error: 'too_many_wants' });
+        const price = wantPrice(item);
+        if (me.gold < price * n) return reply.code(400).send({ error: 'not_enough_gold' });
+        db.transaction(() => {
+          grant(me.user_id, { gold: -price * n });
+          db.prepare('INSERT INTO wants (owner_id, item, qty, filled, price, created_at) VALUES (?, ?, ?, 0, ?, ?)').run(me.user_id, item, n, price, Date.now());
+        })();
+        logEvent(`🤝 ${me.name} cần mua ${n} ${info.name} ${info.emoji} — trả ${price.toLocaleString('vi')} vàng/cái`);
+        return { me: fresh(me.user_id), wants: wantsView(me.user_id) };
+      });
+
+      api.post('/want-cancel', async (request, reply) => {
+        const me = request.farmer;
+        const w = db.prepare('SELECT * FROM wants WHERE id = ? AND owner_id = ?').get(Number(request.body?.id), me.user_id);
+        if (!w) return reply.code(400).send({ error: 'no_want' });
+        const refund = (w.qty - w.filled) * w.price;
+        db.transaction(() => {
+          grant(me.user_id, { gold: refund });
+          db.prepare('DELETE FROM wants WHERE id = ?').run(w.id);
+        })();
+        return { me: fresh(me.user_id), wants: wantsView(me.user_id), refund };
+      });
+
+      api.post('/want-fill', async (request, reply) => {
+        const { id, qty } = request.body ?? {};
+        const me = request.farmer;
+        const w = db.prepare('SELECT * FROM wants WHERE id = ?').get(Number(id));
+        if (!w) return reply.code(400).send({ error: 'no_want' });
+        if (w.owner_id === me.user_id) return reply.code(400).send({ error: 'own_want' });
+        const remaining = w.qty - w.filled;
+        const n = Math.max(1, Math.min(remaining, Math.floor(Number(qty) || 1)));
+        if (invQty(me.user_id, w.item) < n) return reply.code(400).send({ error: 'not_enough_items' });
+        const info = itemInfo(w.item);
+        const owner = getFarmer.get(w.owner_id);
+        db.transaction(() => {
+          invTake(me.user_id, w.item, n);
+          invAdd(w.owner_id, w.item, n);
+          grant(me.user_id, { gold: w.price * n });
+          if (w.filled + n >= w.qty) db.prepare('DELETE FROM wants WHERE id = ?').run(w.id);
+          else db.prepare('UPDATE wants SET filled = filled + ? WHERE id = ?').run(n, w.id);
+          bumpQuest(me.user_id, 'sell', n);
+        })();
+        logEvent(`🤝 ${me.name} bán ${n} ${info.name} ${info.emoji} cho ${owner?.name || '?'} — ${(w.price * n).toLocaleString('vi')} vàng`);
+        pushTo([w.owner_id], 'Ăn trộm dzui dzẻ 😋', `🤝 ${me.name} vừa bán cho bạn ${n} ${info.name} ${info.emoji}${w.filled + n >= w.qty ? ' — đủ hàng rồi!' : ''}`);
+        return { me: fresh(me.user_id), wants: wantsView(me.user_id), gained: w.price * n, sold: n };
       });
 
       api.post('/buy', async (request, reply) => {
@@ -1313,8 +1390,10 @@ export function buildApp({ config, db, logger = true }) {
         const again = scaleMs(POACH_AGAIN_MS, config.fast);
         for (const p of plots) {
           if (!p.crop) continue;
+          const lastWater = lastAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'water');
           myActs[p.idx] = {
-            watered: p.watered || !!hasAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'water'),
+            watered: p.watered || !!lastWater,
+            canWater: !p.ready && (!lastWater || now2 - lastWater.at >= scaleMs(WATER_HELP_COOLDOWN_MS, config.fast)),
             poached: p.poached,
             canPoach: p.ready && (p.poachedN || 0) < 1 + Math.floor(Math.max(0, now2 - p.readyAt) / again),
           };

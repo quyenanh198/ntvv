@@ -97,6 +97,15 @@ CREATE TABLE IF NOT EXISTS festival (
 );
 
 -- Level chuyển từ thế giới v1 (farm.sqlite3): xp v2 tối thiểu theo level cũ.
+CREATE TABLE IF NOT EXISTS wants (
+  id INTEGER PRIMARY KEY,
+  owner_id INTEGER NOT NULL,
+  item TEXT NOT NULL,
+  qty INTEGER NOT NULL,
+  filled INTEGER NOT NULL DEFAULT 0,
+  price INTEGER NOT NULL,
+  created_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS thief_awards (
   day TEXT PRIMARY KEY,
   winners_json TEXT NOT NULL,
@@ -140,6 +149,8 @@ export function openDb(dataDir) {
   // Vật nuôi đợt sau: cấp chuồng gom vào JSON thay vì mỗi loại một cột.
   if (!cols.includes('barn_levels_json')) db.exec("ALTER TABLE farmers ADD COLUMN barn_levels_json TEXT NOT NULL DEFAULT '{}'");
   if (!cols.includes('orders_refresh_at')) db.exec('ALTER TABLE farmers ADD COLUMN orders_refresh_at INTEGER NOT NULL DEFAULT 0');
+  // Vàng được tặng (admin cấp) — không tính vào "kinh tế làng" của bảng trộm.
+  if (!cols.includes('gift_gold')) db.exec('ALTER TABLE farmers ADD COLUMN gift_gold INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('critter_next_at')) db.exec('ALTER TABLE farmers ADD COLUMN critter_next_at INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('skills_json')) db.exec("ALTER TABLE farmers ADD COLUMN skills_json TEXT NOT NULL DEFAULT '[]'");
   if (!cols.includes('last_respec_at')) db.exec('ALTER TABLE farmers ADD COLUMN last_respec_at INTEGER NOT NULL DEFAULT 0');

@@ -340,6 +340,10 @@ export const ORDER_UNLOCK_LEVEL = 5;
 export const ORDER_REFRESH_MS = 20 * MIN; // đơn mới sau khi bỏ/giao
 export const ORDER_BOARD_REFRESH_MS = 120 * MIN; // cả bảng đơn thay mới mỗi 2 giờ
 export const MACHINE_QUEUE_MAX = 50; // mẻ tối đa xếp trong một máy
+// Thu mua từ bạn bè: giá trả = 130% giá bán cho hệ thống, tối đa 5 tin mở/người.
+export const WANT_MARKUP = 1.3;
+export const WANT_MAX_QTY = 999;
+export const WANT_MAX_OPEN = 5;
 
 // Sinh một đơn từ các sản phẩm đã mở khóa. rng: () => [0,1).
 export function generateOrder(level, rng) {
@@ -398,6 +402,9 @@ export const PLANT_HELP_EXP = 1; // EXP mỗi ô trồng giúp
 // ---- Tưới: không đổi thời gian (mục 6.1) — đánh dấu "Tươi tốt", chủ +1 EXP
 // khi thu; khách tưới giúp nhận công nhỏ.
 export const WATER_HELPER_GOLD = 2;
+// Tưới giúp nhà bạn: mỗi ô, mỗi người giúp được 15 phút một lần, mỗi lần cây chín sớm 10 phút.
+export const WATER_HELP_COOLDOWN_MS = 15 * MIN;
+export const WATER_HELP_BOOST_MS = 10 * MIN;
 export const WATER_HELPER_EXP = 1;
 export const WATER_FRESH_EXP = 1;
 
