@@ -97,6 +97,11 @@ CREATE TABLE IF NOT EXISTS festival (
 );
 
 -- Level chuyển từ thế giới v1 (farm.sqlite3): xp v2 tối thiểu theo level cũ.
+CREATE TABLE IF NOT EXISTS thief_awards (
+  day TEXT PRIMARY KEY,
+  winners_json TEXT NOT NULL,
+  at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS poach_guard (
   owner_id INTEGER NOT NULL,
   kind TEXT NOT NULL,

@@ -327,3 +327,14 @@ export function scaleMs(ms, fast) {
 export function todayVN(now = Date.now()) {
   return new Date(now).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
 }
+export function yesterdayVN(now = Date.now()) {
+  return todayVN(now - 24 * 60 * MIN);
+}
+
+// ---- Bảng vàng trộm: top 3 số món cuỗm/hái ké trong ngày (giờ VN) ----------
+// gold là giá gốc, phát thưởng nhân GOLD_MULT như mọi nguồn thu khác.
+export const THIEF_REWARDS = [
+  { gems: 20, gold: 500 },
+  { gems: 10, gold: 250 },
+  { gems: 5,  gold: 100 },
+];

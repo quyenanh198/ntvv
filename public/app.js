@@ -850,15 +850,35 @@
 
   function renderLb() {
     const medal = (r) => (r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : r);
+    const { lb, tb } = showLb;
+    const thiefTab = showLb.tab === 'thief';
+    const village = lb.map((f) => `<div class="lb-row">
+        <span class="lb-rank">${medal(f.rank)}</span>
+        <span class="lb-name">${esc(f.name)}</span>
+        <span class="lb-stat">Lv ${f.level} · ${f.stars}${STAR} · ${f.gold.toLocaleString('vi')} ${COIN}</span>
+      </div>`).join('');
+    const thief = `
+      <h4 class="lb-sec">👑 Vinh danh hôm qua (${tb.yesterday.day})</h4>
+      ${tb.yesterday.winners.length ? tb.yesterday.winners.map((w) => `<div class="lb-row lb-row--win">
+          <span class="lb-rank">${medal(w.rank)}</span>
+          <span class="lb-name">${esc(w.name)}</span>
+          <span class="lb-stat">${w.count} món · +${w.gems} ${GEM} +${w.gold.toLocaleString('vi')} ${COIN}</span>
+        </div>`).join('') : '<p class="sheet-note">Hôm qua làng yên bình, không ai trộm gì 😇</p>'}
+      <h4 class="lb-sec">🥷 Hôm nay — bạn đã chôm ${tb.myCount} món</h4>
+      ${tb.today.length ? tb.today.map((w) => `<div class="lb-row">
+          <span class="lb-rank">${medal(w.rank)}</span>
+          <span class="lb-name">${esc(w.name)}</span>
+          <span class="lb-stat">${w.count} món</span>
+        </div>`).join('') : '<p class="sheet-note">Chưa ai ra tay hôm nay. Cơ hội của bạn đó 😏</p>'}
+      <p class="sheet-note">Chốt sổ lúc 0h: ${tb.rewards.map((r, i) => `${medal(i + 1)} ${r.gems} ${GEM} + ${r.gold.toLocaleString('vi')} ${COIN}`).join(' · ')}</p>`;
     return `
       <div class="modal-backdrop" data-close="1">
         <div class="modal" onclick="event.stopPropagation()">
-          <h3>🏆 Bảng xếp hạng làng</h3>
-          ${showLb.map((f) => `<div class="lb-row">
-            <span class="lb-rank">${medal(f.rank)}</span>
-            <span class="lb-name">${esc(f.name)}</span>
-            <span class="lb-stat">Lv ${f.level} · ${f.stars}${STAR} · ${f.gold.toLocaleString('vi')} ${COIN}</span>
-          </div>`).join('')}
+          <div class="lb-tabs">
+            <button class="gbtn btn-mini${thiefTab ? '' : ' gbtn--gold'}" data-lb-tab="village">🏆 Làng</button>
+            <button class="gbtn btn-mini${thiefTab ? ' gbtn--gold' : ''}" data-lb-tab="thief">🥷 Trộm</button>
+          </div>
+          ${thiefTab ? thief : village}
         </div>
       </div>`;
   }
@@ -872,9 +892,14 @@
       el.addEventListener('click', () => { sheet = { type: el.dataset.sheet }; render(); }));
 
     document.getElementById('btn-lb')?.addEventListener('click', async () => {
-      showLb = await run(() => api('/leaderboard'));
-      if (showLb) render();
+      const r = await run(async () => {
+        const [lb, tb] = await Promise.all([api('/leaderboard'), api('/thief-board')]);
+        return { lb, tb, tab: 'thief' };
+      });
+      if (r) { showLb = r; render(); }
     });
+    document.querySelectorAll('[data-lb-tab]').forEach((el) =>
+      el.addEventListener('click', () => { showLb.tab = el.dataset.lbTab; render(); }));
 
     document.getElementById('btn-home')?.addEventListener('click', () => { VISIT = null; refresh(); });
 

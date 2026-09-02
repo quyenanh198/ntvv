@@ -58,6 +58,8 @@ import {
   POND_UPGRADE_GOLD,
   scaleMs,
   todayVN,
+  yesterdayVN,
+  THIEF_REWARDS,
 } from './game.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -169,6 +171,36 @@ export function buildApp({ config, db, logger = true }) {
     }
     return { ...row, counters: JSON.parse(row.counters_json || '{}') };
   }
+  function bumpPoached(userId, by) {
+    const d = getDaily(userId);
+    db.prepare('UPDATE daily SET poached = poached + ? WHERE owner_id = ? AND day = ?').run(by, userId, d.day);
+  }
+
+  // ---- Bảng vàng trộm: chốt sổ hôm qua (lười, lần đầu có người ghé mỗi ngày)
+  const MEDALS = ['🥇', '🥈', '🥉'];
+  let thiefSettledDay = null;
+  function thiefRows(day, limit) {
+    return db.prepare(`SELECT d.owner_id AS id, f.name, d.poached AS count FROM daily d
+      JOIN farmers f ON f.user_id = d.owner_id WHERE d.day = ? AND d.poached > 0
+      ORDER BY d.poached DESC, f.xp DESC LIMIT ?`).all(day, limit).map((r, i) => ({ ...r, rank: i + 1 }));
+  }
+  function settleThiefBoard() {
+    const day = yesterdayVN();
+    if (thiefSettledDay === day) return;
+    if (db.prepare('SELECT 1 FROM thief_awards WHERE day = ?').get(day)) { thiefSettledDay = day; return; }
+    const winners = thiefRows(day, 3).map((w) => ({ ...w, gems: THIEF_REWARDS[w.rank - 1].gems, gold: THIEF_REWARDS[w.rank - 1].gold * GOLD_MULT }));
+    db.transaction(() => {
+      for (const w of winners) grant(w.id, { gems: w.gems, gold: w.gold });
+      db.prepare('INSERT INTO thief_awards (day, winners_json, at) VALUES (?, ?, ?)').run(day, JSON.stringify(winners), Date.now());
+    })();
+    thiefSettledDay = day;
+    if (!winners.length) return;
+    logEvent(`🥷 Bảng vàng trộm ${day}: ${winners.map((w) => `${MEDALS[w.rank - 1]} ${w.name} (${w.count} món)`).join(' · ')}`);
+    for (const w of winners) {
+      pushTo([w.id], 'Ăn trộm dzui dzẻ 😋', `${MEDALS[w.rank - 1]} Hạng ${w.rank} bảng trộm hôm qua (${w.count} món) — nhận ${w.gems} kim cương + ${w.gold.toLocaleString('vi')} vàng!`);
+    }
+  }
+
   function bumpQuest(userId, questId, by = 1) {
     const d = getDaily(userId);
     d.counters[questId] = (d.counters[questId] || 0) + by;
@@ -453,6 +485,7 @@ export function buildApp({ config, db, logger = true }) {
 
       api.get('/state', async (request) => {
         ensureOrders(request.farmer);
+        settleThiefBoard();
         let others = [];
         try {
           const res = await fetch(`${config.chatApiUrl}/api/users`, { headers: { cookie: request.headers.cookie } });
@@ -499,6 +532,18 @@ export function buildApp({ config, db, logger = true }) {
             fast: config.fast,
           },
           events: db.prepare('SELECT at, text FROM events ORDER BY id DESC LIMIT 25').all(),
+        };
+      });
+
+      api.get('/thief-board', async (request) => {
+        settleThiefBoard();
+        const yday = yesterdayVN();
+        const row = db.prepare('SELECT winners_json FROM thief_awards WHERE day = ?').get(yday);
+        return {
+          today: thiefRows(todayVN(), 10),
+          myCount: getDaily(request.farmer.user_id).poached,
+          yesterday: { day: yday, winners: row ? JSON.parse(row.winners_json) : [] },
+          rewards: THIEF_REWARDS.map((r) => ({ gems: r.gems, gold: r.gold * GOLD_MULT })),
         };
       });
 
@@ -643,7 +688,7 @@ export function buildApp({ config, db, logger = true }) {
           db.prepare('UPDATE plots SET poached = poached + 1 WHERE owner_id = ? AND idx = ?').run(ownerId, idx);
           invAdd(me.user_id, crop.id, POACH_YIELD);
           grant(me.user_id, { xp: POACH_EXP * POACH_YIELD });
-          db.prepare('UPDATE daily SET poached = poached + 1 WHERE owner_id = ? AND day = ?').run(me.user_id, d.day);
+          bumpPoached(me.user_id, POACH_YIELD);
         })();
         logEvent(`😋 ${me.name} hái ké ${POACH_YIELD} ${crop.name} ${crop.emoji} nhà ${owner.name}`);
         pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa hái ké ${POACH_YIELD} ${crop.name} ${crop.emoji} nhà bạn!`);
@@ -989,6 +1034,7 @@ export function buildApp({ config, db, logger = true }) {
           grant(me.user_id, { xp: POACH_EXP * got });
           db.prepare('UPDATE animals SET ready_at = NULL WHERE id = ?').run(row.id);
           markLootGuard.run(ownerId, 'animal', now);
+          bumpPoached(me.user_id, got);
         })();
         const info = GOODS[a.product];
         logEvent(`😋 ${me.name} cuỗm ${got} ${info.name} ${info.emoji} trong chuồng nhà ${owner.name}`);
@@ -1015,6 +1061,7 @@ export function buildApp({ config, db, logger = true }) {
           grant(me.user_id, { xp: POACH_EXP * got });
           db.prepare('UPDATE machines SET poached = 1 WHERE owner_id = ? AND kind = ?').run(ownerId, row.kind);
           markLootGuard.run(ownerId, 'machine', now);
+          bumpPoached(me.user_id, got);
         })();
         const info = itemInfo(product);
         logEvent(`😋 ${me.name} cuỗm ${got} ${info.name} ${info.emoji} từ ${MACHINES[row.kind].name} nhà ${owner.name}`);

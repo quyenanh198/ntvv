@@ -1623,3 +1623,8 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .tree-sprite { max-width: 78%; max-height: 72%; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(50, 80, 20, 0.35)); }
 .tree-sprite--wait { filter: grayscale(0.35) opacity(0.8) drop-shadow(0 4px 4px rgba(50, 80, 20, 0.25)); }
 .plot--tree.plot--growing .tree-sprite { animation: sway 4s ease-in-out infinite; transform-origin: bottom center; }
+
+/* ---- Bảng vàng trộm ---- */
+.lb-tabs { display: flex; gap: .4rem; margin-bottom: .6rem; }
+.lb-sec { margin: .7rem 0 .3rem; font-size: .82rem; font-weight: 900; color: #6b4a1f; }
+.lb-row--win { background: rgba(255, 214, 102, .28); border-radius: 10px; }
