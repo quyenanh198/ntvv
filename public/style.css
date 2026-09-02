@@ -1481,8 +1481,8 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .seed-name { font-size: .76rem; }
   .seed-meta { font-size: .59rem; }
   .seed-cost, .seed-lock { font-size: .59rem; }
-  .inv-row { grid-template-columns: 42px minmax(0, 1fr) auto; }
-  .inv-row > .btn-mini:last-child { display: none; }
+  .inv-row { grid-template-columns: 42px minmax(0, 1fr) auto auto; gap: .3rem; }
+  .inv-row > .btn-mini { padding-inline: .45rem; font-size: .76rem; }
   .inv-row > img { width: 38px; height: 38px; }
   .quest-row { grid-template-columns: 34px minmax(0, 1fr) auto; padding: .42rem .46rem; }
   .q-emoji { width: 32px; font-size: 1.1rem; }
