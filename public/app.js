@@ -23,6 +23,7 @@
   const treeArt = (id) => (TREE_PNG.has(id) ? `assets/art/trees/${id}.png` : 'assets/art/tree.png');
   // Vật nuôi có tranh: gà/bò/cừu/lợn; loại khác hiện emoji.
   const BARN_ART = { ga: 'assets/art/chicken.png', bo: 'assets/art/cow.png', cuu: 'assets/art/sheep.png', heo: 'assets/art/pig.png' };
+  const AQUA = new Set(['tom', 'catra', 'ech', 'caloc']);
   const barnArtImg = (kind) => (BARN_ART[kind]
     ? `<img src="${BARN_ART[kind]}" alt="" />`
     : `<span class="emoji-ic emoji-ic--barn">${DATA?.config.animals[kind]?.emoji || '🐾'}</span>`);
@@ -808,7 +809,7 @@
         const full = herd.length >= barn.capacity;
         return `<div class="barn-card${locked ? ' barn-card--locked' : ''}">
           <div class="barn-head">${barnArtImg(a.id)}
-            <span class="seed-info"><span class="seed-name">${a.name}${locked ? '' : ` · chuồng cấp ${barn.level}`}</span>
+            <span class="seed-info"><span class="seed-name">${a.name}${locked ? '' : ` · ${AQUA.has(a.id) ? 'ao' : 'chuồng'} cấp ${barn.level}`}</span>
               <div class="seed-meta">${locked ? `🔒 Mở ở cấp ${a.level}` : `${herd.length}/${barn.capacity} con · ${info.name} ${info.emoji} mỗi ${fmtDuration(a.produceMs)}${readyN ? ` · <b>${readyN} sẵn sàng</b>` : ''}`}</div></span>
           </div>
           ${locked ? '' : `<div class="barn-actions">
