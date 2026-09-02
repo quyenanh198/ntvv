@@ -160,6 +160,8 @@ export function openDb(dataDir) {
   if (!cols.includes('dog_until')) db.exec('ALTER TABLE farmers ADD COLUMN dog_until INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('last_caught_at')) db.exec('ALTER TABLE farmers ADD COLUMN last_caught_at INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('caught_streak')) db.exec('ALTER TABLE farmers ADD COLUMN caught_streak INTEGER NOT NULL DEFAULT 0');
+  // Tổng vàng thu được nhờ BÁN HÀNG (hệ thống, đơn hàng, bạn bè) — thước đo kinh tế làng.
+  if (!cols.includes('sold_gold')) db.exec('ALTER TABLE farmers ADD COLUMN sold_gold INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('critter_next_at')) db.exec('ALTER TABLE farmers ADD COLUMN critter_next_at INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('skills_json')) db.exec("ALTER TABLE farmers ADD COLUMN skills_json TEXT NOT NULL DEFAULT '[]'");
   if (!cols.includes('last_respec_at')) db.exec('ALTER TABLE farmers ADD COLUMN last_respec_at INTEGER NOT NULL DEFAULT 0');

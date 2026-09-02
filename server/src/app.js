@@ -482,7 +482,9 @@ export function buildApp({ config, db, logger = true }) {
   );
   const touchAction = db.prepare(`INSERT INTO plot_actions (owner_id, idx, planted_at, helper_id, action, at) VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT(owner_id, idx, planted_at, helper_id, action) DO UPDATE SET at = excluded.at`);
-  const villageGold = () => Math.max(0, db.prepare('SELECT COALESCE(SUM(gold), 0) - COALESCE(SUM(gift_gold), 0) g FROM farmers').get().g);
+  // Kinh tế làng = tổng vàng cả làng đã thu từ bán hàng (không tính vàng tặng, trộm, thưởng).
+  const villageGold = () => db.prepare('SELECT COALESCE(SUM(sold_gold), 0) g FROM farmers').get().g;
+  const addSold = db.prepare('UPDATE farmers SET sold_gold = sold_gold + ? WHERE user_id = ?');
 
   // Chuồng tự vận hành (yêu cầu nhà mình): tới giờ là sản phẩm TỰ vào kho,
   // con vật tự ăn tiếp (chu kỳ nối từ mốc cũ nên offline lâu vẫn tích đủ);
@@ -780,6 +782,7 @@ export function buildApp({ config, db, logger = true }) {
         if (MACHINE_PRODUCTS.has(item)) mult = 1 + 0.05 * skillRank(me, 'donggoidep');
         const gained = Math.round(info.sell * n * GOLD_MULT * mult);
         grant(me.user_id, { gold: gained });
+        addSold.run(gained, me.user_id);
         bumpQuest(me.user_id, 'sell', n);
         return { me: fresh(me.user_id), gained };
       });
@@ -838,6 +841,7 @@ export function buildApp({ config, db, logger = true }) {
           invTake(me.user_id, w.item, n);
           invAdd(w.owner_id, w.item, n);
           grant(me.user_id, { gold: w.price * n });
+          addSold.run(w.price * n, me.user_id);
           if (w.filled + n >= w.qty) db.prepare('DELETE FROM wants WHERE id = ?').run(w.id);
           else db.prepare('UPDATE wants SET filled = filled + ? WHERE id = ?').run(n, w.id);
           bumpQuest(me.user_id, 'sell', n);
@@ -1018,7 +1022,9 @@ export function buildApp({ config, db, logger = true }) {
         }
         db.transaction(() => {
           for (const [item, qty] of Object.entries(items)) invTake(me.user_id, item, qty);
-          grant(me.user_id, { gold: Math.round(order.gold * (1 + 0.05 * skillRank(me, 'nguoibankheo'))), xp: order.exp, stars: order.stars });
+          const orderGold = Math.round(order.gold * (1 + 0.05 * skillRank(me, 'nguoibankheo')));
+          grant(me.user_id, { gold: orderGold, xp: order.exp, stars: order.stars });
+          addSold.run(orderGold, me.user_id);
           db.prepare('DELETE FROM orders WHERE id = ?').run(order.id);
           db.prepare('UPDATE farmers SET next_order_at = ? WHERE user_id = ?')
             .run(Date.now() + scaleMs(ORDER_REFRESH_MS, config.fast), me.user_id);

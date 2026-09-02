@@ -1011,7 +1011,7 @@
           <span class="lb-stat">${w.count} món</span>
         </div>`).join('') : '<p class="sheet-note">Chưa ai ra tay hôm nay. Cơ hội của bạn đó 😏</p>'}
       <p class="sheet-note">Chốt sổ <b>9h sáng giờ Los Angeles</b> mỗi ngày: ${tb.rewards.map((r, i) => `${medal(i + 1)} ${r.gems} ${GEM} + ${r.gold.toLocaleString('vi')} ${COIN}`).join(' · ')}</p>
-      <p class="sheet-note">💹 Kinh tế làng (không tính vàng được tặng): ${(tb.economy?.villageGold || 0).toLocaleString('vi')} ${COIN} → thưởng ×${tb.economy?.mult || 1} (mỗi 5 triệu vàng cả làng cộng thêm ×1).</p>`;
+      <p class="sheet-note">💹 Kinh tế làng = tổng vàng cả làng đã <b>bán hàng</b> (hệ thống + đơn hàng + bạn bè; không tính vàng tặng/trộm/thưởng): ${(tb.economy?.villageGold || 0).toLocaleString('vi')} ${COIN} → thưởng ×${tb.economy?.mult || 1} (mỗi 5 triệu cộng thêm ×1).</p>`;
     return `
       <div class="modal-backdrop" data-close="1">
         <div class="modal" onclick="event.stopPropagation()">
