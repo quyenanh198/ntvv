@@ -478,7 +478,7 @@
           ${p.ready
             ? `<span class="plot-note">${mine ? (p.poached ? 'Bị hái ké 😭' : 'Hái quả!') : canPoach ? 'Hái ké!' : 'Chín rồi'}</span><span class="plot-badge">×${Math.max(1, t.yield - (p.poachedN || 0))}</span>`
             : `<span class="plot-timer">${fmtTime(left)}</span>`}
-          ${p.poached && p.ready ? '<span class="plot-act">😋</span>' : ''}
+          ${p.poached && p.ready ? '<span class="plot-act">😋</span>' : ''}${p.treeEndsAt && p.treeEndsAt - Date.now() < t.cycleMs ? '<span class="plot-act" title="Cây sắp tàn">🍂</span>' : ''}
         </button>`;
       }
       const c = crops()[p.crop];
@@ -661,10 +661,10 @@
       const treeCards = sortBy(Object.values(trees()), 'growMs', 'sell').map((t) => {
         const lockLevel = m.level < t.level;
         const locked = lockLevel || m.gold < t.price;
-        return `<button class="seed-card seed-card--tree${locked ? ' seed-card--locked' : ''}" data-tree="${locked ? '' : t.id}" title="${t.name} — trồng 1 lần, ${t.yield} quả mỗi ${fmtDuration(t.growMs)}">
+        return `<button class="seed-card seed-card--tree${locked ? ' seed-card--locked' : ''}" data-tree="${locked ? '' : t.id}" title="${t.name} — lớn ${fmtDuration(t.growMs)}, rồi ${t.yield} quả mỗi ${fmtDuration(t.cycleMs)}, tàn sau ${fmtDuration(t.lifeMs)}">
           <img class="seed-sprite" src="${treeArt(t.id)}" alt="" />
           <span class="seed-name">${t.name} ${t.emoji}</span>
-          <span class="seed-meta">🌳 ${t.yield} quả/${fmtDuration(t.growMs)} · ${t.sell.toLocaleString('vi')} ${COIN}</span>
+          <span class="seed-meta">🌳 lớn ${fmtDuration(t.growMs)} · ${t.yield} quả/${fmtDuration(t.cycleMs)} · sống ${fmtDuration(t.lifeMs)} · ${t.sell.toLocaleString('vi')} ${COIN}</span>
           ${lockLevel ? `<span class="seed-lock">Lv ${t.level}</span>` : `<span class="seed-cost">${t.price.toLocaleString('vi')} ${COIN}</span>`}
         </button>`;
       }).join('');
@@ -689,7 +689,7 @@
       const icon = p.tree ? `<img class="seed-sprite" src="${treeArt(p.crop)}" alt="" />` : `<img class="seed-sprite" src="${cropSprite(p.crop, 3)}" alt="" />`;
       return sheetShell(
         `${icon} ${info.name}`,
-        `<p class="sheet-note">Còn <b>${fmtTime(left)}</b> nữa là ${p.tree ? 'ra quả' : 'chín'}.${p.watered ? ' Đã tưới 💧 (Tươi tốt).' : ''}</p>
+        `<p class="sheet-note">Còn <b>${fmtTime(left)}</b> nữa là ${p.tree ? 'ra quả' : 'chín'}.${p.watered ? ' Đã tưới 💧 (Tươi tốt).' : ''}${p.tree && p.treeEndsAt ? ` 🍂 Cây còn sống <b>${fmtDuration(Math.max(0, p.treeEndsAt - Date.now()))}</b>.` : ''}</p>
          <div class="sheet-actions">
            ${p.watered ? '' : `<button class="btn gbtn gbtn--green" id="btn-water-own">💧 Tưới (+EXP khi thu)</button>`}
            <button class="btn gbtn gbtn--gold" id="btn-speedup-plot">${GEM} ${cost} · ${p.tree ? 'Ra quả ngay' : 'Chín ngay'}</button>

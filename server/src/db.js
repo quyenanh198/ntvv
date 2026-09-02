@@ -182,10 +182,6 @@ export function openDb(dataDir) {
   if (!cols.includes('critter_next_at')) db.exec('ALTER TABLE farmers ADD COLUMN critter_next_at INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('skills_json')) db.exec("ALTER TABLE farmers ADD COLUMN skills_json TEXT NOT NULL DEFAULT '[]'");
   if (!cols.includes('last_respec_at')) db.exec('ALTER TABLE farmers ADD COLUMN last_respec_at INTEGER NOT NULL DEFAULT 0');
-  const pcols = db.prepare('PRAGMA table_info(plots)').all().map((c) => c.name);
-  if (!pcols.includes('tree_at')) db.exec('ALTER TABLE plots ADD COLUMN tree_at INTEGER');
-  // Cây trồng trước khi có tuổi thọ: tính tuổi từ lúc nâng cấp.
-  db.prepare('UPDATE plots SET tree_at = ? WHERE tree = 1 AND tree_at IS NULL').run(Date.now());
   const mcols = db.prepare('PRAGMA table_info(machines)').all().map((c) => c.name);
   // Mỗi máy chạy nhiều món song song: chuyển mẻ đang chạy từ machines (1 món/máy)
   // sang machine_jobs (1 dòng/món). Idempotent — machines được dọn sau khi chuyển.
@@ -199,6 +195,9 @@ export function openDb(dataDir) {
   const pcols = db.prepare('PRAGMA table_info(plots)').all().map((c) => c.name);
   if (!pcols.includes('poached')) db.exec('ALTER TABLE plots ADD COLUMN poached INTEGER NOT NULL DEFAULT 0');
   if (!pcols.includes('tree')) db.exec('ALTER TABLE plots ADD COLUMN tree INTEGER NOT NULL DEFAULT 0');
+  if (!pcols.includes('tree_at')) db.exec('ALTER TABLE plots ADD COLUMN tree_at INTEGER');
+  // Cây trồng trước khi có tuổi thọ: tính tuổi từ lúc nâng cấp.
+  db.prepare('UPDATE plots SET tree_at = ? WHERE tree = 1 AND tree_at IS NULL').run(Date.now());
   return db;
 }
 
