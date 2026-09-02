@@ -394,6 +394,7 @@ export function buildApp({ config, db, logger = true }) {
         poached: !!r.poached,
         poachedN: r.poached || 0,
         tree: !!r.tree,
+        treeEndsAt: r.tree ? (r.tree_at || r.planted_at) + scaleMs(TREES[r.crop]?.lifeMs || 0, config.fast) : null,
       });
     }
     return out;
@@ -620,7 +621,7 @@ export function buildApp({ config, db, logger = true }) {
             machineQueueMax: MACHINE_QUEUE_MAX,
             dog: DOG,
             skillTree: SKILLS,
-            trees: Object.fromEntries(Object.entries(TREES).map(([k, t]) => [k, { ...t, sell: t.sell * GOLD_MULT, growMs: scaleMs(t.growMs, config.fast) }])),
+            trees: Object.fromEntries(Object.entries(TREES).map(([k, t]) => [k, { ...t, sell: t.sell * GOLD_MULT, growMs: scaleMs(t.growMs, config.fast), cycleMs: scaleMs(t.cycleMs, config.fast), lifeMs: scaleMs(t.lifeMs, config.fast) }])),
             starMilestones: STAR_MILESTONES.map((m2) => ({ ...m2, gold: (m2.gold || 0) * GOLD_MULT })),
             poachDailyLimit: POACH_DAILY_LIMIT,
             fast: config.fast,
@@ -697,8 +698,8 @@ export function buildApp({ config, db, logger = true }) {
           const readyAt = now + cropTime(me, scaleMs(tree.growMs, config.fast));
           db.transaction(() => {
             grant(me.user_id, { gold: -tree.price * n });
-            const ins = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, tree) VALUES (?, ?, ?, ?, ?, 1)');
-            for (const i of empty.slice(0, n)) ins.run(me.user_id, i, tree.id, now, readyAt);
+            const ins = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, tree, tree_at) VALUES (?, ?, ?, ?, ?, 1, ?)');
+            for (const i of empty.slice(0, n)) ins.run(me.user_id, i, tree.id, now, readyAt, now);
           })();
           logEvent(`${tree.emoji} ${me.name} trồng ${n} cây ${tree.name}`);
           return { me: fresh(me.user_id), planted: n };
@@ -723,8 +724,15 @@ export function buildApp({ config, db, logger = true }) {
           grant(me.user_id, { xp: tree.exp + (plot.watered ? WATER_FRESH_EXP : 0) });
           invAdd(me.user_id, tree.id, Math.max(1, tree.yield + Math.ceil(skillRank(me, 'muaboithu') / 2) - (plot.poached || 0)));
           const now = Date.now();
-          db.prepare('UPDATE plots SET planted_at = ?, ready_at = ?, watered = 0, poached = 0 WHERE owner_id = ? AND idx = ?')
-            .run(now, now + cropTime(me, scaleMs(tree.growMs, config.fast)), me.user_id, plot.idx);
+          const endsAt = (plot.tree_at || plot.planted_at) + scaleMs(tree.lifeMs, config.fast);
+          if (now >= endsAt) {
+            // Hết tuổi thọ: vụ cuối xong là cây tàn, trả lại ô trống.
+            db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, plot.idx);
+            logEvent(`🍂 Cây ${tree.name} nhà ${me.name} đã tàn sau vụ cuối`);
+          } else {
+            db.prepare('UPDATE plots SET planted_at = ?, ready_at = ?, watered = 0, poached = 0 WHERE owner_id = ? AND idx = ?')
+              .run(now, Math.min(endsAt + 1, now + cropTime(me, scaleMs(tree.cycleMs, config.fast))), me.user_id, plot.idx);
+          }
           bumpQuest(me.user_id, 'harvest');
           bumpFest(me.user_id, 'harvest');
           return tree;
@@ -1497,8 +1505,8 @@ export function buildApp({ config, db, logger = true }) {
         const now = Date.now();
         db.transaction(() => {
           grant(me.user_id, { gold: -tree.price });
-          db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, tree) VALUES (?, ?, ?, ?, ?, 1)')
-            .run(me.user_id, idx, tree.id, now, now + cropTime(me, scaleMs(tree.growMs, config.fast)));
+          db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, tree, tree_at) VALUES (?, ?, ?, ?, ?, 1, ?)')
+            .run(me.user_id, idx, tree.id, now, now + cropTime(me, scaleMs(tree.growMs, config.fast)), now);
         })();
         logEvent(`${tree.emoji} ${me.name} trồng một cây ${tree.name}`);
         return { me: fresh(me.user_id) };
