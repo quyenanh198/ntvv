@@ -1593,6 +1593,9 @@ export function buildApp({ config, db, logger = true }) {
 
   app.addHook('onSend', async (request, reply, payload) => {
     const url = request.raw.url || '';
+    // Mọi phản hồi API mang phiên bản boot — client lệch bản là tự tải lại
+    // ngay ở thao tác kế tiếp, kể cả khi tab đang ẩn không chạy vòng refresh.
+    if (url.startsWith('/farm/api/')) reply.header('x-farm-boot', BOOT_VERSION);
     const isAsset =
       url.startsWith('/farm/') && !url.startsWith('/farm/api/') && url !== '/farm/' && !url.startsWith('/farm/index.html');
     if (isAsset) {

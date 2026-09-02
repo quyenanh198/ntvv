@@ -50,6 +50,19 @@
   // tới server, nên cứ thử lại tại chỗ mỗi 2s thay vì reload cả trang — người
   // chơi giữ nguyên màn hình đang mở. Chỉ reload khi chờ quá lâu.
   const WAKE_RETRIES = 20;
+  // ?v= của app.js đang chạy = phiên bản server lúc tải trang.
+  const MY_BOOT = (() => {
+    try { return new URL(document.querySelector('script[src*="app.js"]').src).searchParams.get('v'); } catch { return null; }
+  })();
+  let reloading = false;
+  function checkServerBoot(state) {
+    if (reloading || !MY_BOOT || !state?.boot || state.boot === MY_BOOT) return false;
+    reloading = true;
+    toast('🔄 Có bản mới — đang tải lại…');
+    setTimeout(() => location.reload(), 800);
+    return true;
+  }
+
   async function api(path, body, attempt = 0) {
     const res = await fetch(`/farm/api${path}`, {
       method: body ? 'POST' : 'GET',
@@ -60,6 +73,7 @@
       renderGate();
       throw new Error('not_logged_in');
     }
+    if (checkServerBoot({ boot: res.headers.get('x-farm-boot') })) throw new Error('reloading');
     const type = res.headers.get('content-type') || '';
     if (!type.includes('application/json') || res.status === 502 || res.status === 503 || res.status === 504) {
       if (attempt >= WAKE_RETRIES) {
@@ -1342,19 +1356,6 @@
   }
 
   // ---------- vòng lặp ----------
-  // ?v= của app.js đang chạy = phiên bản server lúc tải trang.
-  const MY_BOOT = (() => {
-    try { return new URL(document.querySelector('script[src*="app.js"]').src).searchParams.get('v'); } catch { return null; }
-  })();
-  let reloading = false;
-  function checkServerBoot(state) {
-    if (reloading || !MY_BOOT || !state?.boot || state.boot === MY_BOOT) return false;
-    reloading = true;
-    toast('🔄 Có bản mới — đang tải lại…');
-    setTimeout(() => location.reload(), 800);
-    return true;
-  }
-
   async function refresh() {
     try {
       DATA = await api('/state');
