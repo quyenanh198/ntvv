@@ -371,6 +371,8 @@
             ? `<button class="gbtn btn-mini" disabled>⏳ Máy (${Math.max(1, Math.ceil((visiting.farm.loot.machinePoachAt - Date.now()) / 60000))}p)</button>`
             : `<button class="gbtn gbtn--green btn-mini" id="btn-poach-machine">😋 Cuỗm máy (${visiting.farm.loot.machinesReady})</button>`) : ''}
           ${visiting.farm.loot?.emptyPlots ? `<button class="gbtn gbtn--gold btn-mini" id="btn-plant-help">🌱 Trồng giúp (${visiting.farm.loot.emptyPlots})</button>` : ''}
+          ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canWater).length; return n >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-water-help-all">💧 Tưới hết (${n})</button>` : ''; })()}
+          ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canPoach).length; return n >= 2 ? `<button class="gbtn gbtn--gold btn-mini" id="btn-poach-all">😋 Trộm hết (${n})</button>` : ''; })()}
               <button id="btn-home" class="gbtn gbtn--gold">🏡 Về nhà</button>
             </div>` : renderToolbar()}
 
@@ -1195,6 +1197,20 @@
     document.getElementById('btn-poach-machine')?.addEventListener('click', async (e) => {
       const r = await run(() => api('/poach-machine', { ownerId: VISIT.ownerId }));
       if (r) { updateMe(r); floatGain(e.clientX, e.clientY, `😋 +${r.got || 1}`); render(); }
+    });
+    document.getElementById('btn-water-help-all')?.addEventListener('click', async () => {
+      const r = await run(() => api('/water-help-all', { ownerId: VISIT.ownerId }));
+      if (r) { updateMe(r); toast(`💧 Đã tưới giúp ${r.watered} ô (+${r.gained} vàng) — cây chín sớm 10 phút!`); render(); }
+    });
+    document.getElementById('btn-poach-all')?.addEventListener('click', async () => {
+      const r = await run(() => api('/poach-all', { ownerId: VISIT.ownerId }));
+      if (r) {
+        updateMe(r);
+        const desc = Object.entries(r.items || {}).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(', ');
+        if (r.poached) toast(`😋 Hái ké ${desc}!`);
+        if (r.caught) setTimeout(() => toast(r.caught.message), r.poached ? 900 : 0);
+        render();
+      }
     });
     document.getElementById('btn-plant-help')?.addEventListener('click', async () => {
       const r = await run(() => api('/plant-help', { ownerId: VISIT.ownerId }));
