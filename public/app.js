@@ -98,6 +98,7 @@
     already_learned: 'Học rồi mà!',
     respec_cooldown: 'Mới hoàn trả gần đây — 7 ngày mới được làm lại.',
     nothing_to_poach: 'Không có gì để cuỗm cả 😅',
+    poach_cooldown: 'Nhà này vừa bị cuỗm rồi — mỗi giờ chỉ mất 1 thôi 😅',
     max_level: 'Đã nâng tối đa rồi!',
   };
 
@@ -309,8 +310,12 @@
           ${visiting ? `
             <div class="visit-bar">
               <span>👀 Ruộng của <b>${esc(visiting.farm.name)}</b> · Lv ${visiting.farm.level}</span>
-          ${visiting.farm.loot?.animalsReady ? `<button class="gbtn gbtn--green btn-mini" id="btn-poach-animal">😋 Cuỗm chuồng (${visiting.farm.loot.animalsReady})</button>` : ''}
-          ${visiting.farm.loot?.machinesReady ? `<button class="gbtn gbtn--green btn-mini" id="btn-poach-machine">😋 Cuỗm máy (${visiting.farm.loot.machinesReady})</button>` : ''}
+          ${visiting.farm.loot?.animalsReady ? (Date.now() < (visiting.farm.loot.animalPoachAt || 0)
+            ? `<button class="gbtn btn-mini" disabled>⏳ Chuồng (${Math.max(1, Math.ceil((visiting.farm.loot.animalPoachAt - Date.now()) / 60000))}p)</button>`
+            : `<button class="gbtn gbtn--green btn-mini" id="btn-poach-animal">😋 Cuỗm chuồng (${visiting.farm.loot.animalsReady})</button>`) : ''}
+          ${visiting.farm.loot?.machinesReady ? (Date.now() < (visiting.farm.loot.machinePoachAt || 0)
+            ? `<button class="gbtn btn-mini" disabled>⏳ Máy (${Math.max(1, Math.ceil((visiting.farm.loot.machinePoachAt - Date.now()) / 60000))}p)</button>`
+            : `<button class="gbtn gbtn--green btn-mini" id="btn-poach-machine">😋 Cuỗm máy (${visiting.farm.loot.machinesReady})</button>`) : ''}
           ${visiting.farm.loot?.emptyPlots ? `<button class="gbtn gbtn--gold btn-mini" id="btn-plant-help">🌱 Trồng giúp (${visiting.farm.loot.emptyPlots})</button>` : ''}
               <button id="btn-home" class="gbtn gbtn--gold">🏡 Về nhà</button>
             </div>` : renderToolbar()}
@@ -975,11 +980,11 @@
       }));
     document.getElementById('btn-poach-animal')?.addEventListener('click', async (e) => {
       const r = await run(() => api('/poach-animal', { ownerId: VISIT.ownerId }));
-      if (r) { updateMe(r); floatGain(e.clientX, e.clientY, '😋 +1'); render(); }
+      if (r) { updateMe(r); floatGain(e.clientX, e.clientY, `😋 +${r.got || 1}`); render(); }
     });
     document.getElementById('btn-poach-machine')?.addEventListener('click', async (e) => {
       const r = await run(() => api('/poach-machine', { ownerId: VISIT.ownerId }));
-      if (r) { updateMe(r); floatGain(e.clientX, e.clientY, '😋 +1'); render(); }
+      if (r) { updateMe(r); floatGain(e.clientX, e.clientY, `😋 +${r.got || 1}`); render(); }
     });
     document.getElementById('btn-plant-help')?.addEventListener('click', async () => {
       const r = await run(() => api('/plant-help', { ownerId: VISIT.ownerId }));

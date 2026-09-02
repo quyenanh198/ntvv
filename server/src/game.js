@@ -204,6 +204,7 @@ export const POACH_EXP = 1;   // mỗi vật phẩm
 export const POACH_YIELD = 2; // số vật phẩm mỗi lần hái ké
 export const HARVEST_YIELD = 4; // mỗi ô thu 4 sản phẩm (+3 bù trộm); ô bị hái ké trừ 1
 export const POACH_AGAIN_MS = 60 * MIN; // chủ chậm thu 1 giờ = thêm 1 lượt hái ké/ô
+export const POACH_LOOT_COOLDOWN_MS = 60 * MIN; // mỗi nhà mỗi giờ chỉ mất tối đa 1 sản phẩm chuồng + 1 mẻ máy
 export const PLANT_HELP_EXP = 1; // EXP mỗi ô trồng giúp
 
 // ---- Tưới: không đổi thời gian (mục 6.1) — đánh dấu "Tươi tốt", chủ +1 EXP

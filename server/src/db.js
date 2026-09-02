@@ -97,6 +97,12 @@ CREATE TABLE IF NOT EXISTS festival (
 );
 
 -- Level chuyển từ thế giới v1 (farm.sqlite3): xp v2 tối thiểu theo level cũ.
+CREATE TABLE IF NOT EXISTS poach_guard (
+  owner_id INTEGER NOT NULL,
+  kind TEXT NOT NULL,
+  at INTEGER NOT NULL,
+  PRIMARY KEY (owner_id, kind)
+);
 CREATE TABLE IF NOT EXISTS legacy_levels (
   user_id INTEGER PRIMARY KEY,
   xp INTEGER NOT NULL
