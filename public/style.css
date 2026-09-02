@@ -1767,3 +1767,5 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+.mc-plus[data-off] { opacity: .3; filter: grayscale(1); box-shadow: none; cursor: pointer; }

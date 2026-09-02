@@ -887,8 +887,8 @@
               <div class="seed-meta">${ins} → ${Object.values(r.out)[0]} ${outInfo?.name || ''} · ⏱ ${fmtDuration(r.ms)} · bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp}EXP</div></span>
             <span class="mc-add">
               ${state}
-              <button class="mc-plus" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="1" ${canAdd ? '' : 'disabled'} title="Thêm 1 mẻ">＋</button>
-              <button class="mc-plus mc-plus--max" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="${maxBatches}" ${canAdd && maxBatches > 1 ? '' : 'disabled'} title="Xếp hết nguyên liệu">＋${maxBatches > 1 ? maxBatches : ''}</button>
+              <button class="mc-plus" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="1" ${canAdd ? '' : 'data-off="1" aria-disabled="true"'} title="${canAdd ? 'Thêm 1 mẻ' : 'Thiếu nguyên liệu — bấm để đăng tin thu mua'}">＋</button>
+              <button class="mc-plus mc-plus--max" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="${maxBatches}" ${canAdd && maxBatches > 1 ? '' : 'data-off="1" aria-disabled="true"'} title="${canAdd && maxBatches > 1 ? 'Xếp hết nguyên liệu' : 'Thiếu nguyên liệu — bấm để đăng tin thu mua'}">＋${maxBatches > 1 ? maxBatches : ''}</button>
             </span>
           </div>`;
         }).join('');
@@ -1166,13 +1166,16 @@
     document.querySelectorAll('[data-machine-run]').forEach((el) =>
       el.addEventListener('click', async () => {
         if (!el.dataset.recipe) return;
+        if (el.dataset.off) {
+          const row = el.closest('[data-missing]');
+          if (row) offerWants(row); else toast('Hàng đợi máy đầy hoặc không thêm được nữa.');
+          return;
+        }
         const r = await run(() => api('/machine-run', { machine: el.dataset.machineRun, recipe: el.dataset.recipe, count: Number(el.dataset.count) || 1 }));
         if (r) { updateMe(r); toast(r.total > r.queued ? `🏭 +${r.queued} mẻ (hàng đợi ${r.total})` : `🏭 Đã xếp ${r.queued} mẻ!`); render(); }
       }));
     // Thiếu nguyên liệu → hỏi đăng tin thu mua phần thiếu (giá 130% chợ, ký quỹ).
-    document.querySelectorAll('[data-missing]').forEach((el) =>
-      el.addEventListener('click', async (e) => {
-        if (e.target.closest('button')) return;
+    async function offerWants(el) {
         const need = el.dataset.missing.split(',').map((x) => { const [id, q] = x.split(':'); return { id, q: Number(q) }; });
         const lines = need.map((x) => `• ${x.q} ${itemInfo(x.id)?.name || x.id} — ${(Math.round((itemInfo(x.id)?.sell || 0) * 1.3) * x.q).toLocaleString('vi')} vàng`).join('\n');
         const total = need.reduce((a, x) => a + Math.round((itemInfo(x.id)?.sell || 0) * 1.3) * x.q, 0);
@@ -1184,6 +1187,11 @@
         }
         if (ok) toast(`📣 Đã đăng ${ok} tin cần mua — cả làng được báo!`);
         render();
+    }
+    document.querySelectorAll('[data-missing]').forEach((el) =>
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
+        offerWants(el);
       }));
     document.getElementById('btn-collect-all')?.addEventListener('click', async (e) => {
       const r = await run(() => api('/machine-collect-all', {}));
