@@ -137,6 +137,7 @@
     own_want: 'Tin của bạn mà 😅',
     water_cooldown: 'Ô này bạn vừa tưới giúp — 15 phút nữa tưới tiếp nhé 💧',
     pond_full: 'Ao đã đầy — thu hoạch hoặc nâng cấp ao.',
+    nothing_ready: 'Chưa có gì chín để thu.',
     max_rank: 'Kỹ năng này đã tối đa rồi!',
     respec_cooldown: 'Mới hoàn trả gần đây — 7 ngày mới được làm lại.',
     nothing_to_poach: 'Không có gì để cuỗm cả 😅',
@@ -388,6 +389,7 @@
           ${visiting.farm.loot?.emptyPlots ? `<button class="gbtn gbtn--gold btn-mini" id="btn-plant-help">🌱 Trồng giúp (${visiting.farm.loot.emptyPlots})</button>` : ''}
           ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canWater).length; return n >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-water-help-all">💧 Tưới hết (${n})</button>` : ''; })()}
           ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canPoach).length; return n >= 2 ? `<button class="gbtn gbtn--gold btn-mini" id="btn-poach-all">😋 Trộm hết (${n})</button>` : ''; })()}
+          ${(() => { const n = visiting.farm.plots.filter((p) => p.crop && p.ready).length; return n ? `<button class="gbtn gbtn--green btn-mini" id="btn-harvest-help">🧺 Thu hoạch giúp (${n})</button>` : ''; })()}
               <button id="btn-home" class="gbtn gbtn--gold">🏡 Về nhà</button>
             </div>` : renderToolbar()}
 
@@ -1347,6 +1349,15 @@
       const r = await run(() => api('/poach-machine', { ownerId: VISIT.ownerId }));
       if (r) { updateMe(r); floatGain(e.clientX, e.clientY, `😋 +${r.got || 1}`); render(); }
     });
+    document.getElementById('btn-harvest-help')?.addEventListener('click', async () => {
+      const r = await run(() => api('/harvest-help', { ownerId: VISIT.ownerId, all: true }));
+      if (r) {
+        updateMe(r);
+        const desc = Object.entries(r.items || {}).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(', ');
+        toast(`🧺 Đã thu hoạch giúp ${r.harvested} ô (${desc}) — vào kho bạn ấy, bạn +${r.gained} vàng`);
+        render();
+      }
+    });
     document.getElementById('btn-water-help-all')?.addEventListener('click', async () => {
       const r = await run(() => api('/water-help-all', { ownerId: VISIT.ownerId }));
       if (r) { updateMe(r); toast(`💧 Đã tưới giúp ${r.watered} ô (+${r.gained} vàng) — cây chín sớm 10 phút!`); render(); }
@@ -1471,6 +1482,10 @@
       } else if (kind === 'poach') {
         const r = await run(() => api('/poach', { ownerId: VISIT.ownerId, idx }));
         if (r) { updateMe(r); floatGain(x, y, '😋 +2'); render(); }
+      } else if (kind === 'ripe' && VISIT) {
+        if (!window.confirm('Thu hoạch giúp ô này? Nông sản vào kho của bạn ấy, bạn nhận 8 vàng công.')) return;
+        const r = await run(() => api('/harvest-help', { ownerId: VISIT.ownerId, idx }));
+        if (r) { updateMe(r); floatGain(x, y, '🧺', `+${r.gained} ${COIN}`); render(); }
       } else if (kind === 'growing' || kind === 'ripe') {
         const farm = VISIT ? VISIT.farm : me();
         const p = farm.plots[idx];

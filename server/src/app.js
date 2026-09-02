@@ -899,6 +899,36 @@ export function buildApp({ config, db, logger = true }) {
         };
       });
 
+      // Thu hoạch giúp: nông sản vào kho CHỦ vườn (như chủ tự thu), khách nhận công.
+      function ripePlotsOf(owner, now) {
+        for (const p of db.prepare('SELECT * FROM plots WHERE owner_id = ? AND tree = 1').all(owner.user_id)) treeSettle(owner, p, now);
+        return db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0)) ORDER BY idx').all(owner.user_id, now);
+      }
+      api.post('/harvest-help', async (request, reply) => {
+        const { ownerId, idx, all } = request.body ?? {};
+        const me = request.farmer;
+        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
+        const owner = getFarmer.get(ownerId);
+        if (!owner) return reply.code(400).send({ error: 'no_farm' });
+        const now = Date.now();
+        let plots = ripePlotsOf(owner, now);
+        if (!all) plots = plots.filter((p) => p.idx === Number(idx));
+        if (!plots.length) return reply.code(400).send({ error: 'nothing_ready' });
+        const got = {};
+        db.transaction(() => {
+          for (const p of plots) {
+            const before = invQty(owner.user_id, p.crop);
+            harvestPlot(owner, p);
+            got[p.crop] = (got[p.crop] || 0) + (invQty(owner.user_id, p.crop) - before);
+          }
+          grant(me.user_id, { gold: WATER_HELPER_GOLD * GOLD_MULT * plots.length, xp: WATER_HELPER_EXP * plots.length });
+        })();
+        const desc = Object.entries(got).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(', ');
+        logEvent(`🧺 ${me.name} thu hoạch giúp ${plots.length} ô nhà ${owner.name}: ${desc}`);
+        pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🧺 ${me.name} vừa thu hoạch giúp ${plots.length} ô — ${desc} đã vào kho bạn!`);
+        return { ...visitPayload(request, ownerId), harvested: plots.length, items: got, gained: WATER_HELPER_GOLD * GOLD_MULT * plots.length };
+      });
+
       // Tưới giúp hết: mọi ô đang lớn mà lượt 15 phút đã mở.
       api.post('/water-help-all', async (request, reply) => {
         const { ownerId } = request.body ?? {};
