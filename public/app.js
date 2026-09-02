@@ -574,6 +574,32 @@
       </div>`;
   }
 
+  // Thẻ một chuồng/ao: trạng thái + nút Mua / Mua đầy / Nâng cấp / Mở.
+  function barnCard(a) {
+    const m = me();
+    const herd = m.animals.filter((x) => x.kind === a.id);
+    const readyN = herd.filter((x) => x.ready).length;
+    const locked = m.level < a.level;
+    const info = itemInfo(a.product);
+    const barn = m.barns[a.id];
+    const full = herd.length >= barn.capacity;
+    const house = AQUA.has(a.id) ? 'ao' : 'chuồng';
+    return `<div class="barn-card${locked ? ' barn-card--locked' : ''}">
+      <div class="barn-head">${barnArtImg(a.id)}
+        <span class="seed-info"><span class="seed-name">${a.name}${locked ? '' : ` · ${house} cấp ${barn.level}`}</span>
+          <div class="seed-meta">${locked ? `🔒 Mở ở cấp ${a.level}` : `${herd.length}/${barn.capacity} con · ${info.name} ${info.emoji} mỗi ${fmtDuration(a.produceMs)}${readyN ? ` · <b>${readyN} sẵn sàng</b>` : ''}`}</div></span>
+      </div>
+      ${locked ? '' : `<div class="barn-actions">
+        <button class="gbtn gbtn--green btn-mini" data-buy-animal="${a.id}" ${full || m.gold < a.price ? 'disabled' : ''}>＋ Mua ${a.name.toLowerCase()} · ${a.price.toLocaleString('vi')} ${COIN}</button>
+        <button class="gbtn gbtn--green btn-mini" data-buy-animal="${a.id}" data-count="max" ${full || m.gold < a.price ? 'disabled' : ''}>Mua đầy (${barn.capacity - herd.length})</button>
+        ${barn.next
+          ? `<button class="gbtn gbtn--gold btn-mini" data-upgrade-barn="${a.id}" ${m.gold >= barn.next.gold ? '' : 'disabled'}>⬆️ Cấp ${barn.next.level} (${barn.next.capacity} con) · ${barn.next.gold.toLocaleString('vi')} ${COIN}</button>`
+          : `<span class="seed-meta">${house === 'ao' ? 'Ao' : 'Chuồng'} đã tối đa</span>`}
+        <button class="gbtn btn-mini" data-barn="${a.id}">Mở ${house}</button>
+      </div>`}
+    </div>`;
+  }
+
   function renderSheet() {
     const m = me();
     const t = sheet.type;
@@ -800,29 +826,13 @@
     }
 
     if (t === 'barns') {
-      const rows = Object.values(DATA.config.animals).sort((x, y) => x.level - y.level).map((a) => {
-        const herd = m.animals.filter((x) => x.kind === a.id);
-        const readyN = herd.filter((x) => x.ready).length;
-        const locked = m.level < a.level;
-        const info = itemInfo(a.product);
-        const barn = m.barns[a.id];
-        const full = herd.length >= barn.capacity;
-        return `<div class="barn-card${locked ? ' barn-card--locked' : ''}">
-          <div class="barn-head">${barnArtImg(a.id)}
-            <span class="seed-info"><span class="seed-name">${a.name}${locked ? '' : ` · ${AQUA.has(a.id) ? 'ao' : 'chuồng'} cấp ${barn.level}`}</span>
-              <div class="seed-meta">${locked ? `🔒 Mở ở cấp ${a.level}` : `${herd.length}/${barn.capacity} con · ${info.name} ${info.emoji} mỗi ${fmtDuration(a.produceMs)}${readyN ? ` · <b>${readyN} sẵn sàng</b>` : ''}`}</div></span>
-          </div>
-          ${locked ? '' : `<div class="barn-actions">
-            <button class="gbtn gbtn--green btn-mini" data-buy-animal="${a.id}" ${full || m.gold < a.price ? 'disabled' : ''}>＋ Mua ${a.name.toLowerCase()} · ${a.price.toLocaleString('vi')} ${COIN}</button>
-            <button class="gbtn gbtn--green btn-mini" data-buy-animal="${a.id}" data-count="max" ${full || m.gold < a.price ? 'disabled' : ''}>Mua đầy (${barn.capacity - herd.length})</button>
-            ${barn.next
-              ? `<button class="gbtn gbtn--gold btn-mini" data-upgrade-barn="${a.id}" ${m.gold >= barn.next.gold ? '' : 'disabled'}>⬆️ Cấp ${barn.next.level} (${barn.next.capacity} con) · ${barn.next.gold.toLocaleString('vi')} ${COIN}</button>`
-              : '<span class="seed-meta">Chuồng đã tối đa</span>'}
-            <button class="gbtn btn-mini" data-barn="${a.id}">Mở chuồng</button>
-          </div>`}
-        </div>`;
-      }).join('');
-      return sheetShell(`🐾 Chuồng trại <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, rows);
+      const all = Object.values(DATA.config.animals).sort((x, y) => x.level - y.level);
+      const land = all.filter((a) => !AQUA.has(a.id)).map(barnCard).join('');
+      const aqua = all.filter((a) => AQUA.has(a.id)).map(barnCard).join('');
+      return sheetShell(
+        `🐾 Chuồng trại <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
+        `${land}<p class="sheet-note" style="margin-top:.5rem">🐟 Ao nuôi thuỷ sản — mua giống, tự ăn thức ăn gia súc, tự thu như chuồng:</p>${aqua}`,
+      );
     }
 
     if (t === 'coop' || t === 'barn') {
@@ -955,7 +965,9 @@
           <button class="btn gbtn gbtn--green" id="btn-fish" ${canFish ? '' : 'disabled'} style="width:100%;margin-bottom:0.55rem">🎣 Quăng cần (${cfg.energyCost}⚡${m.pond.fishPerCast > 1 ? ` · ${m.pond.fishPerCast} cá` : ''})</button>`}
         ${lootRows}
         <button class="btn btn-ghost" id="btn-buy-energy" style="width:100%;margin-top:0.3rem">⚡ Mua ${DATA.config.energy.buyAmount} năng lượng — ${DATA.config.energy.buyGems} ${GEM}</button>
-        ${!locked && m.pond.next ? `<button class="btn gbtn gbtn--gold" id="btn-upgrade-pond" ${m.gold >= m.pond.next.gold ? '' : 'disabled'} style="width:100%;margin-top:0.3rem">⬆️ Nâng ao cấp ${m.pond.next.level} (${m.pond.next.fishPerCast} cá/lượt) — ${m.pond.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}`,
+        ${!locked && m.pond.next ? `<button class="btn gbtn gbtn--gold" id="btn-upgrade-pond" ${m.gold >= m.pond.next.gold ? '' : 'disabled'} style="width:100%;margin-top:0.3rem">⬆️ Nâng ao cấp ${m.pond.next.level} (${m.pond.next.fishPerCast} cá/lượt) — ${m.pond.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}
+        <p class="sheet-note" style="margin-top:.7rem">🐟 <b>Ao nuôi thuỷ sản</b> — mua giống thả ao, tự ăn thức ăn gia súc và tự thu:</p>
+        ${Object.values(DATA.config.animals).filter((a) => AQUA.has(a.id)).sort((x, y) => x.level - y.level).map(barnCard).join('')}`,
       );
     }
 
