@@ -116,6 +116,7 @@
     critter_gone: 'Nó chạy mất rồi 😅 — canh lần sau nhé!',
     no_skill_points: 'Chưa đủ điểm kỹ năng — lên cấp để nhận thêm!',
     already_learned: 'Học rồi mà!',
+    max_rank: 'Kỹ năng này đã tối đa rồi!',
     respec_cooldown: 'Mới hoàn trả gần đây — 7 ngày mới được làm lại.',
     nothing_to_poach: 'Không có gì để cuỗm cả 😅',
     poach_cooldown: 'Nhà này vừa bị cuỗm rồi — mỗi giờ chỉ mất 1 thôi 😅',
@@ -850,14 +851,17 @@
       const tree = DATA.config.skillTree;
       const branches = tree.branches.map((b) => {
         const nodes = b.nodes.map((n) => {
-          const learned = sk.learned.includes(n.id);
-          const can = !learned && sk.points >= n.cost;
-          return `<div class="quest-row${learned ? ' quest-row--done' : ''}">
-            <span class="q-emoji">${learned ? '✅' : '🎓'}</span>
-            <span class="seed-info"><span class="seed-name">${n.name}</span><div class="seed-meta">${n.desc}</div></span>
-            <span class="q-right">${learned ? 'Đã học' : can
-              ? `<button class="gbtn gbtn--gold btn-mini" data-skill-learn="${n.id}">Học (${n.cost}đ)</button>`
-              : `${n.cost} điểm`}</span>
+          const rank = sk.learned[n.id] || 0;
+          const maxed = rank >= tree.maxRank;
+          const cost = n.cost * (rank + 1);
+          const can = !maxed && sk.points >= cost;
+          const pips = Array.from({ length: tree.maxRank }, (_, i) => `<i class="pip${i < rank ? ' pip--on' : ''}"></i>`).join('');
+          return `<div class="quest-row${maxed ? ' quest-row--done' : ''}">
+            <span class="q-emoji">${maxed ? '🏅' : rank ? '📗' : '🎓'}</span>
+            <span class="seed-info"><span class="seed-name">${n.name} <span class="pips">${pips}</span></span><div class="seed-meta">${n.desc}</div></span>
+            <span class="q-right">${maxed ? 'Tối đa' : can
+              ? `<button class="gbtn gbtn--gold btn-mini" data-skill-learn="${n.id}">${rank ? `Bậc ${rank + 1}` : 'Học'} (${cost}đ)</button>`
+              : `Bậc ${rank + 1}: ${cost} điểm`}</span>
           </div>`;
         }).join('');
         return `<div class="machine-block"><h4>${b.emoji} ${b.name}</h4>${nodes}</div>`;
@@ -865,8 +869,8 @@
       const canRespec = Date.now() >= sk.nextRespecAt;
       return sheetShell(
         `🎓 Kỹ năng <span class="sheet-coins">✨ ${sk.points} điểm</span>`,
-        `<p class="sheet-note">Mỗi cấp sau cấp ${tree.unlockLevel} tặng 1 điểm kỹ năng.</p>${branches}
-         ${sk.learned.length ? `<button class="btn btn-ghost" id="btn-skill-respec" ${canRespec && m.gems >= tree.respecGems ? '' : 'disabled'} style="width:100%">♻️ Hoàn trả toàn bộ điểm — ${tree.respecGems} ${GEM}${canRespec ? '' : ' (chờ đủ 7 ngày)'}</button>` : ''}`,
+        `<p class="sheet-note">Mỗi cấp sau cấp ${tree.unlockLevel} tặng 1 điểm kỹ năng. Mỗi kỹ năng nâng được ${tree.maxRank} bậc, bậc sau tốn nhiều điểm hơn.</p>${branches}
+         ${Object.keys(sk.learned).length ? `<button class="btn btn-ghost" id="btn-skill-respec" ${canRespec && m.gems >= tree.respecGems ? '' : 'disabled'} style="width:100%">♻️ Hoàn trả toàn bộ điểm — ${tree.respecGems} ${GEM}${canRespec ? '' : ' (chờ đủ 7 ngày)'}</button>` : ''}`,
       );
     }
 
@@ -1069,7 +1073,7 @@
     document.querySelectorAll('[data-skill-learn]').forEach((el) =>
       el.addEventListener('click', async () => {
         const r = await run(() => api('/skill-learn', { id: el.dataset.skillLearn }));
-        if (r) { updateMe(r); toast('🎓 Đã học kỹ năng mới!'); render(); }
+        if (r) { updateMe(r); toast(r.rank > 1 ? `🎓 Kỹ năng lên bậc ${r.rank}!` : '🎓 Đã học kỹ năng mới!'); render(); }
       }));
     document.getElementById('btn-poach-animal')?.addEventListener('click', async (e) => {
       const r = await run(() => api('/poach-animal', { ownerId: VISIT.ownerId }));

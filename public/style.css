@@ -1686,3 +1686,8 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .barn-actions { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .45rem; align-items: center; }
 .barn-actions .btn-mini { flex: 1 1 auto; white-space: nowrap; }
 .barn-actions .seed-meta { flex: 1 1 auto; text-align: center; }
+
+/* ---- Bậc kỹ năng ---- */
+.pips { display: inline-flex; gap: 2px; margin-left: .3rem; vertical-align: middle; }
+.pip { width: 8px; height: 8px; border-radius: 50%; background: rgba(120, 90, 40, .18); border: 1px solid rgba(120, 90, 40, .35); }
+.pip--on { background: #f0b429; border-color: #b47a12; }

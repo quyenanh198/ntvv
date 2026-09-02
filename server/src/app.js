@@ -14,6 +14,8 @@ import {
   TREES,
   SKILLS,
   SKILL_NODES,
+  SKILL_MAX_RANK,
+  skillCost,
   ANIMAL_PRODUCTS,
   MACHINE_PRODUCTS,
   CRITTER,
@@ -210,8 +212,19 @@ export function buildApp({ config, db, logger = true }) {
 
   // ---- Chuồng trại: cột cấp theo loại ------------------------------------
   const BARN_COL = { ga: 'coop_level', bo: 'cow_level', cuu: 'sheep_level', vit: 'duck_level', ong: 'bee_level', de: 'goat_level', heo: 'pig_level' };
+  // 7 loại đầu có cột riêng; loại thêm sau nằm trong barn_levels_json.
   function barnLevel(f, kind) {
-    return f[BARN_COL[kind]] || 1;
+    if (BARN_COL[kind]) return f[BARN_COL[kind]] || 1;
+    return JSON.parse(f.barn_levels_json || '{}')[kind] || 1;
+  }
+  function bumpBarnLevel(f, kind) {
+    if (BARN_COL[kind]) {
+      db.prepare(`UPDATE farmers SET ${BARN_COL[kind]} = ${BARN_COL[kind]} + 1 WHERE user_id = ?`).run(f.user_id);
+      return;
+    }
+    const levels = JSON.parse(f.barn_levels_json || '{}');
+    levels[kind] = (levels[kind] || 1) + 1;
+    db.prepare('UPDATE farmers SET barn_levels_json = ? WHERE user_id = ?').run(JSON.stringify(levels), f.user_id);
   }
   function barnView(f, kind) {
     const a = ANIMALS[kind];
@@ -229,15 +242,26 @@ export function buildApp({ config, db, logger = true }) {
   }
 
   // ---- Kỹ năng (mục 9.5) --------------------------------------------------
-  const skillsOf = (f) => new Set(JSON.parse(f.skills_json || '[]'));
-  const hasSkill = (f, id) => skillsOf(f).has(id);
+  // skills_json: { id: bậc }. Bản cũ lưu mảng id (= bậc 1), đọc được cả hai.
+  const skillsOf = (f) => {
+    const raw = JSON.parse(f.skills_json || '{}');
+    return Array.isArray(raw) ? Object.fromEntries(raw.map((id) => [id, 1])) : raw;
+  };
+  const skillRank = (f, id) => skillsOf(f)[id] || 0;
+  const hasSkill = (f, id) => skillRank(f, id) > 0;
   function skillPointsLeft(f) {
-    const spent = [...skillsOf(f)].reduce((a, id) => a + (SKILL_NODES[id]?.cost || 0), 0);
+    const spent = Object.entries(skillsOf(f)).reduce((acc, [id, r]) => {
+      const node = SKILL_NODES[id];
+      if (!node) return acc;
+      let sum = 0;
+      for (let k = 1; k <= r; k += 1) sum += skillCost(node, k);
+      return acc + sum;
+    }, 0);
     return Math.max(0, levelFor(f.xp) - SKILLS.unlockLevel) - spent;
   }
-  const cropTime = (f, ms) => Math.round(ms * (hasSkill(f, 'bantayxanh') ? 0.95 : 1));
-  const animalTime = (f, ms) => Math.round(ms * (hasSkill(f, 'nguoibannho') ? 0.95 : 1));
-  const machineTime = (f, ms) => Math.round(ms * (hasSkill(f, 'lamnhanh') ? 0.95 : 1));
+  const cropTime = (f, ms) => Math.round(ms * (1 - 0.05 * skillRank(f, 'bantayxanh')));
+  const animalTime = (f, ms) => Math.round(ms * (1 - 0.05 * skillRank(f, 'nguoibannho')));
+  const machineTime = (f, ms) => Math.round(ms * (1 - 0.05 * skillRank(f, 'lamnhanh')));
 
   // ---- Năng lượng (hồi lười: tính khi đọc/tiêu) ---------------------------
   function energyStep() {
@@ -287,7 +311,7 @@ export function buildApp({ config, db, logger = true }) {
   function ensureOrders(farmer) {
     if (levelFor(farmer.xp) < ORDER_UNLOCK_LEVEL) return;
     const now = Date.now();
-    const slots = ORDER_SLOTS + (hasSkill(farmer, 'khachquen') ? 1 : 0);
+    const slots = ORDER_SLOTS + Math.ceil(skillRank(farmer, 'khachquen') / 2);
     const have = db.prepare('SELECT slot FROM orders WHERE owner_id = ?').all(farmer.user_id).map((r) => r.slot);
     if (have.length >= slots) return;
     if (now < farmer.next_order_at && have.length > 0) return;
@@ -367,7 +391,8 @@ export function buildApp({ config, db, logger = true }) {
       skills: {
         unlocked: li.level >= SKILLS.unlockLevel,
         points: skillPointsLeft(f0),
-        learned: [...skillsOf(f0)],
+        learned: skillsOf(f0),
+        maxRank: SKILL_MAX_RANK,
         nextRespecAt: (f0.last_respec_at || 0) + SKILLS.respecCooldownMs,
       },
       critter: (() => {
@@ -438,12 +463,12 @@ export function buildApp({ config, db, logger = true }) {
     const f = getFarmer.get(userId);
     const now = Date.now();
     const eatFeed = (a) => {
-      if (hasSkill(f, 'mangantot') && Math.random() < 0.05) return true; // không tốn
+      if (Math.random() < 0.05 * skillRank(f, 'mangantot')) return true; // không tốn
       if (invQty(userId, FEED_ITEM) < a.feedQty) return false;
       invTake(userId, FEED_ITEM, a.feedQty);
       return true;
     };
-    const expMult = hasSkill(f, 'chamsoc') ? 1.1 : 1;
+    const expMult = 1 + 0.1 * skillRank(f, 'chamsoc');
     db.transaction(() => {
       for (const row of rows) {
         const a = ANIMALS[row.kind];
@@ -567,7 +592,7 @@ export function buildApp({ config, db, logger = true }) {
         const now = Date.now();
         db.transaction(() => {
           grant(me.user_id, { gold: -crop.seed, xp: crop.expSow });
-          const fresh0 = hasSkill(me, 'datmaumo') && Math.random() < 0.05 ? 1 : 0;
+          const fresh0 = Math.random() < 0.05 * skillRank(me, 'datmaumo') ? 1 : 0;
           db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (?, ?, ?, ?, ?, ?)')
             .run(me.user_id, idx, crop.id, now, now + cropTime(me, scaleMs(crop.growMs, config.fast)), fresh0);
           bumpQuest(me.user_id, 'sow');
@@ -591,7 +616,7 @@ export function buildApp({ config, db, logger = true }) {
         db.transaction(() => {
           grant(me.user_id, { gold: -crop.seed * count, xp: crop.expSow * count });
           const ins = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (?, ?, ?, ?, ?, ?)');
-          for (const i of empty.slice(0, count)) ins.run(me.user_id, i, crop.id, now, readyAt, hasSkill(me, 'datmaumo') && Math.random() < 0.05 ? 1 : 0);
+          for (const i of empty.slice(0, count)) ins.run(me.user_id, i, crop.id, now, readyAt, Math.random() < 0.05 * skillRank(me, 'datmaumo') ? 1 : 0);
           bumpQuest(me.user_id, 'sow', count);
         })();
         logEvent(`${crop.emoji} ${me.name} gieo ${crop.name} kín ${count} ô`);
@@ -602,7 +627,7 @@ export function buildApp({ config, db, logger = true }) {
         if (plot.tree) {
           const tree = TREES[plot.crop];
           grant(me.user_id, { xp: tree.exp + (plot.watered ? WATER_FRESH_EXP : 0) });
-          invAdd(me.user_id, tree.id, Math.max(1, tree.yield + (hasSkill(me, 'muaboithu') ? 1 : 0) - (plot.poached || 0)));
+          invAdd(me.user_id, tree.id, Math.max(1, tree.yield + Math.ceil(skillRank(me, 'muaboithu') / 2) - (plot.poached || 0)));
           const now = Date.now();
           db.prepare('UPDATE plots SET planted_at = ?, ready_at = ?, watered = 0, poached = 0 WHERE owner_id = ? AND idx = ?')
             .run(now, now + cropTime(me, scaleMs(tree.growMs, config.fast)), me.user_id, plot.idx);
@@ -612,7 +637,7 @@ export function buildApp({ config, db, logger = true }) {
         }
         const crop = CROPS[plot.crop];
         const xp = crop.expHarvest + (plot.watered ? WATER_FRESH_EXP : 0);
-        const refund = hasSkill(me, 'hatgiongtk') && Math.random() < 0.05 ? crop.seed : 0;
+        const refund = Math.random() < 0.05 * skillRank(me, 'hatgiongtk') ? crop.seed : 0;
         grant(me.user_id, { xp, gold: refund });
         invAdd(me.user_id, crop.id, Math.max(1, HARVEST_YIELD - (plot.poached || 0)));
         db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, plot.idx);
@@ -704,8 +729,8 @@ export function buildApp({ config, db, logger = true }) {
         if (!info || !info.sell) return reply.code(400).send({ error: 'bad_request' });
         if (!invTake(me.user_id, item, n)) return reply.code(400).send({ error: 'not_enough_items' });
         let mult = 1;
-        if (ANIMAL_PRODUCTS.has(item) && hasSkill(me, 'spcaocap')) mult = 1.08;
-        if (MACHINE_PRODUCTS.has(item) && hasSkill(me, 'donggoidep')) mult = 1.05;
+        if (ANIMAL_PRODUCTS.has(item)) mult = 1 + 0.08 * skillRank(me, 'spcaocap');
+        if (MACHINE_PRODUCTS.has(item)) mult = 1 + 0.05 * skillRank(me, 'donggoidep');
         const gained = Math.round(info.sell * n * GOLD_MULT * mult);
         grant(me.user_id, { gold: gained });
         bumpQuest(me.user_id, 'sell', n);
@@ -872,7 +897,7 @@ export function buildApp({ config, db, logger = true }) {
         }
         db.transaction(() => {
           for (const [item, qty] of Object.entries(items)) invTake(me.user_id, item, qty);
-          grant(me.user_id, { gold: Math.round(order.gold * (hasSkill(me, 'nguoibankheo') ? 1.05 : 1)), xp: order.exp, stars: order.stars });
+          grant(me.user_id, { gold: Math.round(order.gold * (1 + 0.05 * skillRank(me, 'nguoibankheo'))), xp: order.exp, stars: order.stars });
           db.prepare('DELETE FROM orders WHERE id = ?').run(order.id);
           db.prepare('UPDATE farmers SET next_order_at = ? WHERE user_id = ?')
             .run(Date.now() + scaleMs(ORDER_REFRESH_MS, config.fast), me.user_id);
@@ -986,12 +1011,14 @@ export function buildApp({ config, db, logger = true }) {
         if (!node) return reply.code(400).send({ error: 'bad_request' });
         if (levelFor(me.xp) < SKILLS.unlockLevel) return reply.code(400).send({ error: 'level_too_low' });
         const learned = skillsOf(me);
-        if (learned.has(id)) return reply.code(400).send({ error: 'already_learned' });
-        if (skillPointsLeft(me) < node.cost) return reply.code(400).send({ error: 'no_skill_points' });
-        learned.add(id);
-        db.prepare('UPDATE farmers SET skills_json = ? WHERE user_id = ?').run(JSON.stringify([...learned]), me.user_id);
-        logEvent(`🎓 ${me.name} học kỹ năng ${node.name}`);
-        return { me: fresh(me.user_id) };
+        const rank = learned[id] || 0;
+        if (rank >= SKILL_MAX_RANK) return reply.code(400).send({ error: 'max_rank' });
+        const cost = skillCost(node, rank + 1);
+        if (skillPointsLeft(me) < cost) return reply.code(400).send({ error: 'no_skill_points' });
+        learned[id] = rank + 1;
+        db.prepare('UPDATE farmers SET skills_json = ? WHERE user_id = ?').run(JSON.stringify(learned), me.user_id);
+        logEvent(`🎓 ${me.name} nâng kỹ năng ${node.name} lên bậc ${rank + 1}`);
+        return { me: fresh(me.user_id), rank: rank + 1 };
       });
 
       api.post('/skill-respec', async (request, reply) => {
@@ -1001,7 +1028,7 @@ export function buildApp({ config, db, logger = true }) {
         if (me.gems < SKILLS.respecGems) return reply.code(400).send({ error: 'not_enough_gems' });
         db.transaction(() => {
           grant(me.user_id, { gems: -SKILLS.respecGems });
-          db.prepare("UPDATE farmers SET skills_json = '[]', last_respec_at = ? WHERE user_id = ?").run(now, me.user_id);
+          db.prepare("UPDATE farmers SET skills_json = '{}', last_respec_at = ? WHERE user_id = ?").run(now, me.user_id);
         })();
         return { me: fresh(me.user_id) };
       });
@@ -1184,7 +1211,7 @@ export function buildApp({ config, db, logger = true }) {
         if (me.gold < gold) return reply.code(400).send({ error: 'not_enough_gold' });
         db.transaction(() => {
           grant(me.user_id, { gold: -gold });
-          db.prepare(`UPDATE farmers SET ${BARN_COL[kind]} = ${BARN_COL[kind]} + 1 WHERE user_id = ?`).run(me.user_id);
+          bumpBarnLevel(me, kind);
         })();
         logEvent(`${a.emoji} ${me.name} nâng chuồng ${a.name} lên cấp ${lv + 1}`);
         return { me: fresh(me.user_id) };
