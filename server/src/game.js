@@ -167,6 +167,17 @@ export const GOODS = {
   catra:      { id: 'catra',      name: 'Cá tra',          emoji: '🐟', sell: 150,  source: 'catra' },
   ech:        { id: 'ech',        name: 'Ếch',             emoji: '🐸', sell: 220,  source: 'ech' },
   caloc:      { id: 'caloc',      name: 'Cá lóc',          emoji: '🐡', sell: 320,  source: 'caloc' },
+  oc:         { id: 'oc',         name: 'Ốc bươu',         emoji: '🐌', sell: 50,   source: 'oc' },
+  dieuhong:   { id: 'dieuhong',   name: 'Cá điêu hồng',    emoji: '🐠', sell: 200,  source: 'dieuhong' },
+  luon:       { id: 'luon',       name: 'Lươn',            emoji: '🪱', sell: 360,  source: 'luon' },
+  cua:        { id: 'cua',        name: 'Cua',             emoji: '🦀', sell: 420,  source: 'cua' },
+  cachim:     { id: 'cachim',     name: 'Cá chim trắng',   emoji: '🐟', sell: 470,  source: 'cachim' },
+  muc:        { id: 'muc',        name: 'Mực',             emoji: '🦑', sell: 650,  source: 'muc' },
+  ocluoc:     { id: 'ocluoc',     name: 'Ốc luộc sả',      emoji: '🐌', sell: 420,  source: 'quanvat' },
+  cadieuhongchien: { id: 'cadieuhongchien', name: 'Cá điêu hồng chiên', emoji: '🐠', sell: 420, source: 'lonuong' },
+  luonxao:    { id: 'luonxao',    name: 'Lươn xào sả ớt',  emoji: '🍛', sell: 720,  source: 'lonuong' },
+  cuahap:     { id: 'cuahap',     name: 'Cua hấp sả',      emoji: '🦀', sell: 800,  source: 'lonuong' },
+  mucnuong:   { id: 'mucnuong',   name: 'Mực nướng sa tế', emoji: '🦑', sell: 1150, source: 'lonuong' },
   tomnuong:   { id: 'tomnuong',   name: 'Tôm nướng',       emoji: '🍤', sell: 300,  source: 'lonuong' },
   catrakho:   { id: 'catrakho',   name: 'Cá tra kho tộ',   emoji: '🍲', sell: 900,  source: 'lonuong' },
   lauech:     { id: 'lauech',     name: 'Lẩu ếch',         emoji: '🍲', sell: 880,  source: 'lonuong' },
@@ -217,11 +228,7 @@ export const ANIMALS = {
   trau:   { id: 'trau',   name: 'Trâu',     emoji: '🐃', level: 22, price: 3000, produceMs: 80 * MIN,  feedQty: 3, product: 'suatrau',    expCollect: 40, capacities: [2, 3, 4, 6, 8, 10, 12, 14, 16, 18] },
   alpaca: { id: 'alpaca', name: 'Alpaca',   emoji: '🦙', level: 25, price: 3800, produceMs: 90 * MIN,  feedQty: 3, product: 'longalpaca', expCollect: 46, capacities: [2, 3, 4, 6, 8, 10, 12, 14, 16, 18] },
   huou:   { id: 'huou',   name: 'Hươu',     emoji: '🦌', level: 28, price: 5000, produceMs: 120 * MIN, feedQty: 3, product: 'nhunghuou',  expCollect: 60, capacities: [2, 3, 4, 6, 8, 10, 12, 14, 16, 18] },
-  // Ao nuôi thuỷ sản (chuồng riêng, ăn thức ăn gia súc như mọi vật nuôi)
-  tom:    { id: 'tom',    name: 'Tôm',      emoji: '🦐', level: 9,  price: 600,  produceMs: 30 * MIN,  feedQty: 1, product: 'tom',        expCollect: 14, capacities: [4, 6, 8, 10, 12, 14, 16, 18, 20, 24] },
-  catra:  { id: 'catra',  name: 'Cá tra',   emoji: '🐟', level: 12, price: 1000, produceMs: 45 * MIN,  feedQty: 2, product: 'catra',      expCollect: 20, capacities: [3, 4, 6, 8, 10, 12, 14, 16, 18, 20] },
-  ech:    { id: 'ech',    name: 'Ếch',      emoji: '🐸', level: 15, price: 1300, produceMs: 40 * MIN,  feedQty: 1, product: 'ech',        expCollect: 22, capacities: [3, 4, 6, 8, 10, 12, 14, 16, 18, 20] },
-  caloc:  { id: 'caloc',  name: 'Cá lóc',   emoji: '🐡', level: 18, price: 2000, produceMs: 60 * MIN,  feedQty: 2, product: 'caloc',      expCollect: 30, capacities: [3, 4, 6, 8, 10, 12, 14, 16, 18, 20] },
+
 };
 export const FEED_ITEM = 'thucan';
 export const BARN_UPGRADE_GOLD = [1000, 3000, 8000, 20000, 40000, 70000, 110000, 160000, 220000]; // lên cấp 2..10, mọi chuồng
@@ -254,6 +261,10 @@ export const MACHINES = {
     catrakho:   { id: 'catrakho',   name: 'Cá tra kho tộ',   emoji: '🍲', in: { catra: 1, duongmia: 1, toi: 1 }, out: { catrakho: 1 }, ms: 45 * MIN, exp: 80 },
     lauech:     { id: 'lauech',     name: 'Lẩu ếch',         emoji: '🍲', in: { ech: 2, sa: 2, cachua: 1 }, out: { lauech: 1 }, ms: 50 * MIN, exp: 90 },
     calocnuong: { id: 'calocnuong', name: 'Cá lóc nướng trui', emoji: '🔥', in: { caloc: 1, sa: 1 }, out: { calocnuong: 1 }, ms: 35 * MIN, exp: 60 },
+    cadieuhongchien: { id: 'cadieuhongchien', name: 'Cá điêu hồng chiên', emoji: '🐠', in: { dieuhong: 1, botmi: 1 }, out: { cadieuhongchien: 1 }, ms: 30 * MIN, exp: 50 },
+    luonxao:    { id: 'luonxao',    name: 'Lươn xào sả ớt',  emoji: '🍛', in: { luon: 1, sa: 1, ot: 1 }, out: { luonxao: 1 }, ms: 40 * MIN, exp: 80 },
+    cuahap:     { id: 'cuahap',     name: 'Cua hấp sả',      emoji: '🦀', in: { cua: 1, sa: 2 }, out: { cuahap: 1 }, ms: 40 * MIN, exp: 85 },
+    mucnuong:   { id: 'mucnuong',   name: 'Mực nướng sa tế', emoji: '🦑', in: { muc: 1, ot: 2 }, out: { mucnuong: 1 }, ms: 45 * MIN, exp: 120 },
   } },
   xuongcaocap: { id: 'xuongcaocap', name: 'Xưởng cao cấp', emoji: '🏭', level: 26, recipes: {
     ruouvang:     { id: 'ruouvang',     name: 'Rượu nho ủ',         emoji: '🍷', in: { nho: 4, mia: 2 }, out: { ruouvang: 1 }, ms: 180 * MIN, exp: 400 },
@@ -279,6 +290,7 @@ export const MACHINES = {
     bapxao:        { id: 'bapxao',        name: 'Bắp xào bơ',      emoji: '🌽', in: { ngo: 2, bo: 1, rauthom: 1 }, out: { bapxao: 1 }, ms: 20 * MIN, exp: 60 },
     trasa:         { id: 'trasa',         name: 'Trà sả mật ong',  emoji: '🍵', in: { tra: 1, sa: 2, matong: 1 }, out: { trasa: 1 }, ms: 20 * MIN, exp: 45 },
     banhtom:       { id: 'banhtom',       name: 'Bánh tôm',        emoji: '🍤', in: { tom: 2, botgao: 1, khoailang: 1 }, out: { banhtom: 1 }, ms: 30 * MIN, exp: 70 },
+    ocluoc:        { id: 'ocluoc',        name: 'Ốc luộc sả',      emoji: '🐌', in: { oc: 4, sa: 2 }, out: { ocluoc: 1 }, ms: 20 * MIN, exp: 45 },
   } },
   coixay: { id: 'coixay', name: 'Cối xay bột', emoji: '⚙️', level: 10, recipes: {
     botmi:  { id: 'botmi',  name: 'Bột mì', emoji: '🥡', in: { luami: 2 }, out: { botmi: 1 },  ms: 10 * MIN, exp: 10 },
@@ -545,6 +557,22 @@ export const COOP_UPGRADE_GOLD = [1000, 3000, 8000, 20000, 40000, 70000, 110000,
 // Nâng cấp ao cá: số cá mỗi lượt quăng theo cấp, giá lên cấp 2..5.
 export const POND_LEVELS = [1, 1, 2, 2, 3, 3, 4, 4, 5, 6];
 export const POND_UPGRADE_GOLD = [1500, 4000, 10000, 25000, 45000, 70000, 100000, 140000, 190000];
+
+// ---- Ao nuôi thuỷ sản: mua giống thả ao, đủ thời gian thì thu cả mẻ (tiêu hao).
+// Sức chứa ao (số con đang nuôi cùng lúc) theo cấp ao câu cá.
+export const FISH_STOCK_BY_LEVEL = [20, 30, 40, 60, 80, 100, 120, 150, 180, 220];
+export const FISH_FARM = {
+  oc:       { id: 'oc',       name: 'Ốc bươu',       emoji: '🐌', level: 7,  fry: 20,  growMs: 30 * MIN,  product: 'oc',       exp: 3 },
+  tom:      { id: 'tom',      name: 'Tôm',           emoji: '🦐', level: 9,  fry: 35,  growMs: 40 * MIN,  product: 'tom',      exp: 5 },
+  catra:    { id: 'catra',    name: 'Cá tra',        emoji: '🐟', level: 12, fry: 60,  growMs: 60 * MIN,  product: 'catra',    exp: 8 },
+  dieuhong: { id: 'dieuhong', name: 'Cá điêu hồng', emoji: '🐠', level: 14, fry: 80,  growMs: 75 * MIN,  product: 'dieuhong', exp: 10 },
+  ech:      { id: 'ech',      name: 'Ếch',           emoji: '🐸', level: 15, fry: 90,  growMs: 60 * MIN,  product: 'ech',      exp: 11 },
+  caloc:    { id: 'caloc',    name: 'Cá lóc',        emoji: '🐡', level: 18, fry: 130, growMs: 90 * MIN,  product: 'caloc',    exp: 15 },
+  luon:     { id: 'luon',     name: 'Lươn',          emoji: '🪱', level: 20, fry: 150, growMs: 100 * MIN, product: 'luon',     exp: 17 },
+  cua:      { id: 'cua',      name: 'Cua',           emoji: '🦀', level: 22, fry: 170, growMs: 120 * MIN, product: 'cua',      exp: 20 },
+  cachim:   { id: 'cachim',   name: 'Cá chim trắng', emoji: '🐟', level: 25, fry: 190, growMs: 130 * MIN, product: 'cachim',   exp: 22 },
+  muc:      { id: 'muc',      name: 'Mực',           emoji: '🦑', level: 28, fry: 260, growMs: 150 * MIN, product: 'muc',      exp: 30 },
+};
 
 export const FISHING = {
   level: 7,

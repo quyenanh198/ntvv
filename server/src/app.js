@@ -62,6 +62,8 @@ import {
   GOLD_MULT,
   ENERGY,
   FISHING,
+  FISH_FARM,
+  FISH_STOCK_BY_LEVEL,
   rollFish,
   COOP_LEVELS,
   COOP_UPGRADE_GOLD,
@@ -181,6 +183,17 @@ export function buildApp({ config, db, logger = true }) {
   function grant(userId, { gold = 0, gems = 0, xp = 0, stars = 0 }) {
     db.prepare('UPDATE farmers SET gold = gold + ?, gems = gems + ?, xp = xp + ?, stars = stars + ? WHERE user_id = ?')
       .run(gold, gems, xp, stars, userId);
+  }
+
+  // Thuỷ sản từng là vật nuôi (bản trước): chuyển sang hệ ao nuôi tiêu hao —
+  // hoàn tiền giống cho ai đã mua rồi xoá. Idempotent (không còn dòng thì thôi).
+  for (const [kind, price] of Object.entries({ tom: 600, catra: 1000, ech: 1300, caloc: 2000 })) {
+    const rows = db.prepare('SELECT owner_id, COUNT(*) c FROM animals WHERE kind = ? GROUP BY owner_id').all(kind);
+    if (!rows.length) continue;
+    db.transaction(() => {
+      for (const r of rows) grant(r.owner_id, { gold: price * r.c });
+      db.prepare('DELETE FROM animals WHERE kind = ?').run(kind);
+    })();
   }
 
   // ---- Nhiệm vụ ngày ------------------------------------------------------
@@ -454,6 +467,13 @@ export function buildApp({ config, db, logger = true }) {
       coop: barnView(f0, 'ga'),
       barns: Object.fromEntries(Object.keys(ANIMALS).map((k) => [k, barnView(f0, k)])),
       dog: { until: f.dog_until || 0, active: (f.dog_until || 0) > Date.now() },
+      fishFarm: (() => {
+        const now = Date.now();
+        const batches = db.prepare('SELECT * FROM fish_batches WHERE owner_id = ? ORDER BY ready_at').all(f.user_id)
+          .map((b) => ({ id: b.id, species: b.species, qty: b.qty, plantedAt: b.planted_at, readyAt: b.ready_at, ready: now >= b.ready_at }));
+        const capacity = FISH_STOCK_BY_LEVEL[Math.min(f.pond_level, FISH_STOCK_BY_LEVEL.length) - 1];
+        return { capacity, used: batches.reduce((x, b) => x + b.qty, 0), batches };
+      })(),
       pond: {
         level: f.pond_level,
         fishPerCast: POND_LEVELS[f.pond_level - 1],
@@ -590,6 +610,8 @@ export function buildApp({ config, db, logger = true }) {
               recipes: Object.fromEntries(Object.entries(m2.recipes).map(([rk, r]) => [rk, { ...r, ms: scaleMs(r.ms, config.fast) }])),
             }])),
             orderUnlockLevel: ORDER_UNLOCK_LEVEL,
+            fishFarm: Object.fromEntries(Object.entries(FISH_FARM).map(([k, sp]) => [k, { ...sp, growMs: scaleMs(sp.growMs, config.fast) }])),
+            fishStockByLevel: FISH_STOCK_BY_LEVEL,
             fishing: {
               ...FISHING,
               loot: FISHING.loot.map((l) => ({ ...l, pct: Math.round((l.weight / FISHING.loot.reduce((a, x) => a + x.weight, 0)) * 100) })),
@@ -1549,6 +1571,53 @@ export function buildApp({ config, db, logger = true }) {
       }
       api.post('/upgrade-barn', async (request, reply) => upgradeBarn(request, reply, request.body?.kind));
       api.post('/upgrade-coop', async (request, reply) => upgradeBarn(request, reply, 'ga'));
+
+      // ---- Ao nuôi: thả giống (tiêu hao) → thu hoạch cả mẻ ----
+      api.post('/fish-stock', async (request, reply) => {
+        const { species, qty } = request.body ?? {};
+        const me = request.farmer;
+        const sp = FISH_FARM[species];
+        if (!sp) return reply.code(400).send({ error: 'bad_request' });
+        if (levelFor(me.xp) < sp.level) return reply.code(400).send({ error: 'level_too_low' });
+        const capacity = FISH_STOCK_BY_LEVEL[Math.min(me.pond_level, FISH_STOCK_BY_LEVEL.length) - 1];
+        const used = db.prepare('SELECT COALESCE(SUM(qty), 0) s FROM fish_batches WHERE owner_id = ?').get(me.user_id).s;
+        const room = capacity - used;
+        if (room <= 0) return reply.code(400).send({ error: 'pond_full' });
+        const asked = qty === 'max' ? room : Math.max(1, Math.floor(Number(qty) || 1));
+        const n = Math.min(asked, room, Math.floor(me.gold / sp.fry));
+        if (n < 1) return reply.code(400).send({ error: 'not_enough_gold' });
+        const now = Date.now();
+        db.transaction(() => {
+          grant(me.user_id, { gold: -sp.fry * n });
+          db.prepare('INSERT INTO fish_batches (owner_id, species, qty, planted_at, ready_at) VALUES (?, ?, ?, ?, ?)')
+            .run(me.user_id, sp.id, n, now, now + animalTime(me, scaleMs(sp.growMs, config.fast)));
+        })();
+        logEvent(`${sp.emoji} ${me.name} thả ${n} con ${sp.name} xuống ao`);
+        return { me: fresh(me.user_id), stocked: n, cost: sp.fry * n };
+      });
+
+      api.post('/fish-harvest', async (request, reply) => {
+        const me = request.farmer;
+        const now = Date.now();
+        const id = Number(request.body?.id);
+        const batches = id
+          ? db.prepare('SELECT * FROM fish_batches WHERE owner_id = ? AND id = ?').all(me.user_id, id)
+          : db.prepare('SELECT * FROM fish_batches WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
+        if (!batches.length) return reply.code(400).send({ error: 'not_ready' });
+        if (id && now < batches[0].ready_at) return reply.code(400).send({ error: 'not_ready' });
+        const got = {};
+        let xp = 0;
+        db.transaction(() => {
+          for (const b of batches) {
+            const sp = FISH_FARM[b.species];
+            if (sp) { invAdd(me.user_id, sp.product, b.qty); got[sp.product] = (got[sp.product] || 0) + b.qty; xp += sp.exp * b.qty; }
+            db.prepare('DELETE FROM fish_batches WHERE id = ?').run(b.id);
+          }
+          grant(me.user_id, { xp });
+          bumpQuest(me.user_id, 'harvest', batches.length);
+        })();
+        return { me: fresh(me.user_id), items: got, xp };
+      });
 
       api.post('/upgrade-pond', async (request, reply) => {
         const me = request.farmer;

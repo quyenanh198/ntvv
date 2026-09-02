@@ -23,7 +23,6 @@
   const treeArt = (id) => (TREE_PNG.has(id) ? `assets/art/trees/${id}.png` : 'assets/art/tree.png');
   // Vật nuôi có tranh: gà/bò/cừu/lợn; loại khác hiện emoji.
   const BARN_ART = { ga: 'assets/art/chicken.png', bo: 'assets/art/cow.png', cuu: 'assets/art/sheep.png', heo: 'assets/art/pig.png' };
-  const AQUA = new Set(['tom', 'catra', 'ech', 'caloc']);
   const barnArtImg = (kind) => (BARN_ART[kind]
     ? `<img src="${BARN_ART[kind]}" alt="" />`
     : `<span class="emoji-ic emoji-ic--barn">${DATA?.config.animals[kind]?.emoji || '🐾'}</span>`);
@@ -137,6 +136,7 @@
     no_want: 'Tin này đã đóng rồi.',
     own_want: 'Tin của bạn mà 😅',
     water_cooldown: 'Ô này bạn vừa tưới giúp — 15 phút nữa tưới tiếp nhé 💧',
+    pond_full: 'Ao đã đầy — thu hoạch hoặc nâng cấp ao.',
     max_rank: 'Kỹ năng này đã tối đa rồi!',
     respec_cooldown: 'Mới hoàn trả gần đây — 7 ngày mới được làm lại.',
     nothing_to_poach: 'Không có gì để cuỗm cả 😅',
@@ -333,7 +333,7 @@
           ${m.skills.unlocked ? `<button class="side-btn" data-sheet="skills">🎓${m.skills.points > 0 ? '<i class="dot"></i>' : ''}<span>Kỹ năng</span></button>` : ''}
           ${m.level >= DATA.config.animals.vit.level ? `<button class="side-btn" data-sheet="barns">🐾${m.animals.some((x) => x.ready) ? '<i class="dot"></i>' : ''}<span>Chuồng</span></button>` : ''}
           ${m.level >= Math.min(...Object.values(DATA.config.machines).map((x) => x.level)) ? `<button class="side-btn" data-sheet="mill">🏭${Object.values(m.machines).some((jobs) => Object.values(jobs || {}).some((j) => j.ready)) ? '<i class="dot"></i>' : ''}<span>Nhà máy</span></button>` : ''}
-          ${m.level >= DATA.config.fishing.level ? `<button class="side-btn" data-sheet="fishing">🎣${m.energy.current >= DATA.config.fishing.energyCost ? '<i class="dot"></i>' : ''}<span>Ao cá</span></button>` : ''}
+          ${m.level >= DATA.config.fishing.level ? `<button class="side-btn" data-sheet="fishing">🎣${(m.fishFarm?.batches || []).some((b) => b.ready) ? '<i class="dot"></i>' : ''}<span>Ao cá</span></button>` : ''}
           <button class="side-btn" data-sheet="market">🤝${DATA.wants?.canFill ? '<i class="dot"></i>' : ''}<span>Thu mua</span></button>
         </div>
 
@@ -583,7 +583,7 @@
     const info = itemInfo(a.product);
     const barn = m.barns[a.id];
     const full = herd.length >= barn.capacity;
-    const house = AQUA.has(a.id) ? 'ao' : 'chuồng';
+    const house = 'chuồng';
     return `<div class="barn-card${locked ? ' barn-card--locked' : ''}">
       <div class="barn-head">${barnArtImg(a.id)}
         <span class="seed-info"><span class="seed-name">${a.name}${locked ? '' : ` · ${house} cấp ${barn.level}`}</span>
@@ -598,6 +598,38 @@
         <button class="gbtn btn-mini" data-barn="${a.id}">Mở ${house}</button>
       </div>`}
     </div>`;
+  }
+
+  // Ao nuôi tiêu hao: thả giống theo mẻ, đủ giờ thu cả mẻ.
+  function renderFishFarm(m) {
+    const ff = m.fishFarm;
+    const cfg = DATA.config.fishFarm;
+    const readyN = ff.batches.filter((b) => b.ready).length;
+    const room = ff.capacity - ff.used;
+    const batchRows = ff.batches.map((b) => {
+      const sp = cfg[b.species];
+      const left = b.readyAt - Date.now();
+      return `<div class="inv-row">
+        <span class="emoji-ic emoji-ic--barn">${sp?.emoji || '🐟'}</span>
+        <span class="seed-info"><span class="seed-name">${b.qty} con ${sp?.name || b.species}</span>
+          <div class="seed-meta">${b.ready ? '<b>✅ Sẵn sàng thu</b>' : `⏱ còn ${fmtTime(left)}`}</div></span>
+        ${b.ready ? `<button class="gbtn gbtn--gold btn-mini" data-fish-harvest="${b.id}">Thu</button>` : ''}
+      </div>`;
+    }).join('');
+    const species = Object.values(cfg).sort((x, y) => x.level - y.level);
+    const options = species.map((sp) => {
+      const info = itemInfo(sp.product);
+      return `<option value="${sp.id}" ${m.level < sp.level ? 'disabled' : ''}>${sp.emoji} ${sp.name}${m.level < sp.level ? ` (Lv ${sp.level})` : ''} — giống ${sp.fry} vàng, ${fmtDuration(sp.growMs)}, bán ${(info?.sell || 0).toLocaleString('vi')}</option>`;
+    }).join('');
+    return `<p class="sheet-note" style="margin-top:.7rem">🐟 <b>Ao nuôi</b> — thả giống theo mẻ, đủ giờ thu cả mẻ (cá là tiêu hao). Sức chứa <b>${ff.used}/${ff.capacity}</b> con (nâng ao câu cá để nuôi nhiều hơn).</p>
+      ${readyN > 1 ? `<button class="btn gbtn gbtn--gold" id="btn-fish-harvest-all" style="width:100%;margin-bottom:.4rem">✅ Thu hết ${readyN} mẻ</button>` : ''}
+      ${batchRows || '<p class="sheet-note">Ao đang trống — thả giống đi!</p>'}
+      ${room > 0 ? `<div class="want-form">
+        <select id="fish-species">${options}</select>
+        <input id="fish-qty" type="number" inputmode="numeric" min="1" max="${room}" value="${room}" />
+        <button class="gbtn gbtn--green btn-mini" id="btn-fish-stock">🐟 Thả giống</button>
+        <button class="gbtn gbtn--gold btn-mini" id="btn-fish-stock-max" title="Thả đầy chỗ trống (${room} con)">Thả đầy</button>
+      </div><p class="sheet-note" id="fish-preview"></p>` : '<p class="sheet-note">Ao đã đầy — thu hoạch hoặc nâng cấp ao để thả thêm.</p>'}`;
   }
 
   function renderSheet() {
@@ -827,11 +859,9 @@
 
     if (t === 'barns') {
       const all = Object.values(DATA.config.animals).sort((x, y) => x.level - y.level);
-      const land = all.filter((a) => !AQUA.has(a.id)).map(barnCard).join('');
-      const aqua = all.filter((a) => AQUA.has(a.id)).map(barnCard).join('');
       return sheetShell(
         `🐾 Chuồng trại <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
-        `${land}<p class="sheet-note" style="margin-top:.5rem">🐟 Ao nuôi thuỷ sản — mua giống, tự ăn thức ăn gia súc, tự thu như chuồng:</p>${aqua}`,
+        `${all.map(barnCard).join('')}<p class="sheet-note" style="margin-top:.5rem">🐟 Nuôi tôm cá: vào <b>Ao cá</b> để thả giống.</p>`,
       );
     }
 
@@ -966,8 +996,7 @@
         ${lootRows}
         <button class="btn btn-ghost" id="btn-buy-energy" style="width:100%;margin-top:0.3rem">⚡ Mua ${DATA.config.energy.buyAmount} năng lượng — ${DATA.config.energy.buyGems} ${GEM}</button>
         ${!locked && m.pond.next ? `<button class="btn gbtn gbtn--gold" id="btn-upgrade-pond" ${m.gold >= m.pond.next.gold ? '' : 'disabled'} style="width:100%;margin-top:0.3rem">⬆️ Nâng ao cấp ${m.pond.next.level} (${m.pond.next.fishPerCast} cá/lượt) — ${m.pond.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}
-        <p class="sheet-note" style="margin-top:.7rem">🐟 <b>Ao nuôi thuỷ sản</b> — mua giống thả ao, tự ăn thức ăn gia súc và tự thu:</p>
-        ${Object.values(DATA.config.animals).filter((a) => AQUA.has(a.id)).sort((x, y) => x.level - y.level).map(barnCard).join('')}`,
+        ${renderFishFarm(m)}`,
       );
     }
 
@@ -1221,6 +1250,29 @@
         if (e.target.closest('button')) return;
         offerWants(el);
       }));
+    const fishPreview = () => {
+      const sel = document.getElementById('fish-species'); const q = document.getElementById('fish-qty'); const p = document.getElementById('fish-preview');
+      if (!sel || !p) return;
+      const sp = DATA.config.fishFarm[sel.value]; const n = Math.max(1, Number(q?.value) || 1);
+      const info = itemInfo(sp?.product);
+      p.innerHTML = sp ? `${n} con ${sp.name}: giống <b>${(sp.fry * n).toLocaleString('vi')}</b> vàng · sau ${fmtDuration(sp.growMs)} thu ${n} ${info?.name || ''} (bán ${((info?.sell || 0) * n).toLocaleString('vi')} vàng)` : '';
+    };
+    document.getElementById('fish-species')?.addEventListener('change', fishPreview);
+    document.getElementById('fish-qty')?.addEventListener('input', fishPreview);
+    fishPreview();
+    const stockFish = async (qty) => {
+      const species = document.getElementById('fish-species')?.value;
+      const r = await run(() => api('/fish-stock', { species, qty }));
+      if (r) { updateMe(r); toast(`🐟 Đã thả ${r.stocked} con (−${r.cost.toLocaleString('vi')} vàng)`); render(); }
+    };
+    document.getElementById('btn-fish-stock')?.addEventListener('click', () => stockFish(Number(document.getElementById('fish-qty')?.value) || 1));
+    document.getElementById('btn-fish-stock-max')?.addEventListener('click', () => stockFish('max'));
+    const harvestFish = async (id, e) => {
+      const r = await run(() => api('/fish-harvest', id ? { id } : {}));
+      if (r) { updateMe(r); const desc = Object.entries(r.items).map(([k, q]) => `${q} ${itemInfo(k)?.name || k}`).join(', '); floatGain(e?.clientX || 200, e?.clientY || 300, `🐟 +${Object.values(r.items).reduce((x, y) => x + y, 0)}`); toast(`🐟 Thu hoạch: ${desc} (+${r.xp} EXP)`); render(); }
+    };
+    document.querySelectorAll('[data-fish-harvest]').forEach((el) => el.addEventListener('click', (e) => harvestFish(Number(el.dataset.fishHarvest), e)));
+    document.getElementById('btn-fish-harvest-all')?.addEventListener('click', (e) => harvestFish(null, e));
     document.getElementById('btn-collect-all')?.addEventListener('click', async (e) => {
       const r = await run(() => api('/machine-collect-all', {}));
       if (r) {
