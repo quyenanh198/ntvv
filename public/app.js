@@ -45,7 +45,11 @@
   const esc = (s) =>
     String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-  async function api(path, body) {
+  // Trại ngủ (trang chờ sablier) hoặc đang khởi động (502/503): request chưa
+  // tới server, nên cứ thử lại tại chỗ mỗi 2s thay vì reload cả trang — người
+  // chơi giữ nguyên màn hình đang mở. Chỉ reload khi chờ quá lâu.
+  const WAKE_RETRIES = 20;
+  async function api(path, body, attempt = 0) {
     const res = await fetch(`/farm/api${path}`, {
       method: body ? 'POST' : 'GET',
       headers: body ? { 'content-type': 'application/json' } : undefined,
@@ -56,10 +60,18 @@
       throw new Error('not_logged_in');
     }
     const type = res.headers.get('content-type') || '';
-    if (!type.includes('application/json')) {
-      renderWaking();
-      setTimeout(() => location.reload(), 2500);
-      throw new Error('waking');
+    if (!type.includes('application/json') || res.status === 502 || res.status === 503 || res.status === 504) {
+      if (attempt >= WAKE_RETRIES) {
+        renderWaking();
+        setTimeout(() => location.reload(), 2500);
+        throw new Error('waking');
+      }
+      if (attempt === 0) {
+        if (DATA) toast('🌅 Trại đang thức dậy… đợi vài giây nha');
+        else renderWaking();
+      }
+      await new Promise((r) => setTimeout(r, 2000));
+      return api(path, body, attempt + 1);
     }
     const data = await res.json();
     if (!res.ok) {
@@ -507,7 +519,7 @@
       <div class="sheet-backdrop" data-close="1"></div>
       <div class="sheet ${extraClass}">
         <h3>${title}</h3>
-        ${body}
+        <div class="sheet-scroll">${body}</div>
       </div>`;
   }
 
@@ -678,13 +690,23 @@
         const readyN = herd.filter((x) => x.ready).length;
         const locked = m.level < a.level;
         const info = itemInfo(a.product);
-        return `<div class="inv-row">${barnArtImg(a.id)}
-          <span class="seed-info"><span class="seed-name">${a.name}</span>
-            <div class="seed-meta">${locked ? `🔒 Mở ở cấp ${a.level}` : `${herd.length}/${m.barns[a.id].capacity} con · ${info.name} ${info.emoji}${readyN ? ` · <b>${readyN} sẵn sàng</b>` : ''}`}</div></span>
-          ${locked ? '' : `<button class="gbtn gbtn--green btn-mini" data-barn="${a.id}">Mở</button>`}
+        const barn = m.barns[a.id];
+        const full = herd.length >= barn.capacity;
+        return `<div class="barn-card${locked ? ' barn-card--locked' : ''}">
+          <div class="barn-head">${barnArtImg(a.id)}
+            <span class="seed-info"><span class="seed-name">${a.name}${locked ? '' : ` · chuồng cấp ${barn.level}`}</span>
+              <div class="seed-meta">${locked ? `🔒 Mở ở cấp ${a.level}` : `${herd.length}/${barn.capacity} con · ${info.name} ${info.emoji} mỗi ${fmtDuration(a.produceMs)}${readyN ? ` · <b>${readyN} sẵn sàng</b>` : ''}`}</div></span>
+          </div>
+          ${locked ? '' : `<div class="barn-actions">
+            <button class="gbtn gbtn--green btn-mini" data-buy-animal="${a.id}" ${full || m.gold < a.price ? 'disabled' : ''}>＋ Mua ${a.name.toLowerCase()} · ${a.price.toLocaleString('vi')} ${COIN}</button>
+            ${barn.next
+              ? `<button class="gbtn gbtn--gold btn-mini" data-upgrade-barn="${a.id}" ${m.gold >= barn.next.gold ? '' : 'disabled'}>⬆️ Cấp ${barn.next.level} (${barn.next.capacity} con) · ${barn.next.gold.toLocaleString('vi')} ${COIN}</button>`
+              : '<span class="seed-meta">Chuồng đã tối đa</span>'}
+            <button class="gbtn btn-mini" data-barn="${a.id}">Mở chuồng</button>
+          </div>`}
         </div>`;
       }).join('');
-      return sheetShell('🐾 Chuồng trại', rows);
+      return sheetShell(`🐾 Chuồng trại <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, rows);
     }
 
     if (t === 'coop' || t === 'barn') {
@@ -753,7 +775,7 @@
         }
         return `<div class="machine-block"><h4>${mc.emoji} ${mc.name}</h4>${body}</div>`;
       }).join('');
-      return sheetShell('🏭 Khu chế biến', `<div class="sheet-scroll"><div class="machine-grid">${blocks}</div></div>`, 'sheet--feed sheet--factory');
+      return sheetShell('🏭 Khu chế biến', `<div class="machine-grid">${blocks}</div>`, 'sheet--factory');
     }
 
     if (t === 'expand') {
@@ -770,9 +792,9 @@
 
     if (t === 'events') {
       const rows = DATA.events.length
-        ? `<div class="sheet-scroll"><ul class="event-list">${DATA.events.map((e) => `<li><time>${timeAgo(e.at)}</time><span>${esc(e.text)}</span></li>`).join('')}</ul></div>`
+        ? `<ul class="event-list">${DATA.events.map((e) => `<li><time>${timeAgo(e.at)}</time><span>${esc(e.text)}</span></li>`).join('')}</ul>`
         : '<p class="sheet-note">Chưa có gì — gieo hạt đầu tiên đi!</p>';
-      return sheetShell('📰 Bản tin làng', rows, 'sheet--feed');
+      return sheetShell('📰 Bản tin làng', rows);
     }
 
     if (t === 'fishing') {

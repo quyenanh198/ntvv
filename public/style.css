@@ -1474,7 +1474,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .qb-item b { min-width: 18px; height: 18px; border-width: 1.5px; font-size: .52rem; }
   .qb-more { width: 34px; height: 34px; font-size: 1rem; }
 
-  .sheet { width: 100%; max-height: 84dvh; padding-inline: .75rem; border-left: 0; border-right: 0; }
+  .sheet { width: 100%; max-height: 84dvh; padding-inline: .75rem; padding-bottom: calc(1.6rem + var(--bottom-safe)); border-left: 0; border-right: 0; }
   .sheet h3 { margin-inline: -.75rem; padding-inline: .75rem; font-size: .95rem; }
   .seed-row { grid-template-columns: 44px minmax(0, 1fr) auto; gap: .4rem; padding: .38rem .42rem; }
   .seed-sprite { width: 41px; height: 41px; }
@@ -1632,8 +1632,8 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .lb-sec { margin: .7rem 0 .3rem; font-size: .82rem; font-weight: 900; color: #6b4a1f; }
 .lb-row--win { background: rgba(255, 214, 102, .28); border-radius: 10px; }
 
-/* ---- Bản tin: khung cuộn riêng, cao cố định để vuốt được trên điện thoại ---- */
-.sheet--feed { display: flex; flex-direction: column; }
+/* ---- Mọi sheet: thân cuộn riêng (.sheet-scroll), cao cố định để vuốt được trên điện thoại ---- */
+.sheet { display: flex; flex-direction: column; }
 .sheet-scroll {
   flex: 1 1 auto;
   min-height: 0;
@@ -1671,3 +1671,18 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .hen .emoji-ic--barn { font-size: 1.8rem; }
 .plot--tree { position: relative; }
 .tree-emoji { position: absolute; right: 8%; top: 10%; font-size: 1.1rem; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); pointer-events: none; }
+
+/* ---- Sheet Chuồng trại: thẻ có nút mua / nâng cấp ngay tại chỗ ---- */
+.barn-card {
+  padding: .5rem .55rem;
+  margin-bottom: .45rem;
+  border-radius: 14px;
+  background: rgba(255,255,255,.5);
+  border: 2px solid rgba(180,129,74,.35);
+}
+.barn-card--locked { opacity: .75; }
+.barn-head { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: .4rem; align-items: center; }
+.barn-head > img { width: 44px; height: 44px; object-fit: contain; }
+.barn-actions { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .45rem; align-items: center; }
+.barn-actions .btn-mini { flex: 1 1 auto; white-space: nowrap; }
+.barn-actions .seed-meta { flex: 1 1 auto; text-align: center; }
