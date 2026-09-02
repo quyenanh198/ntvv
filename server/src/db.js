@@ -134,6 +134,9 @@ export function openDb(dataDir) {
   if (!cols.includes('pond_level')) db.exec('ALTER TABLE farmers ADD COLUMN pond_level INTEGER NOT NULL DEFAULT 1');
   if (!cols.includes('cow_level')) db.exec('ALTER TABLE farmers ADD COLUMN cow_level INTEGER NOT NULL DEFAULT 1');
   if (!cols.includes('sheep_level')) db.exec('ALTER TABLE farmers ADD COLUMN sheep_level INTEGER NOT NULL DEFAULT 1');
+  for (const c of ['duck_level', 'bee_level', 'goat_level', 'pig_level']) {
+    if (!cols.includes(c)) db.exec(`ALTER TABLE farmers ADD COLUMN ${c} INTEGER NOT NULL DEFAULT 1`);
+  }
   if (!cols.includes('critter_next_at')) db.exec('ALTER TABLE farmers ADD COLUMN critter_next_at INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('skills_json')) db.exec("ALTER TABLE farmers ADD COLUMN skills_json TEXT NOT NULL DEFAULT '[]'");
   if (!cols.includes('last_respec_at')) db.exec('ALTER TABLE farmers ADD COLUMN last_respec_at INTEGER NOT NULL DEFAULT 0');

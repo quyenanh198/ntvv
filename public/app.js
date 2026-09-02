@@ -17,6 +17,14 @@
   const SPRITE_ALIAS = { luami: 'lua', dautay: 'dau' };
   const spriteBase = (id) => SPRITE_ALIAS[id] || id;
   const cropSprite = (id, stage) => `assets/crops/${stage === 1 ? 'seed-1' : `${spriteBase(id)}-${stage}`}.svg`;
+  // Cây ăn quả có tranh riêng; loại mới dùng tranh cây chung + emoji quả.
+  const TREE_PNG = new Set(['cam', 'tao', 'xoai', 'thanhlong']);
+  const treeArt = (id) => (TREE_PNG.has(id) ? `assets/art/trees/${id}.png` : 'assets/art/tree.png');
+  // Vật nuôi có tranh: gà/bò/cừu/lợn; loại khác hiện emoji.
+  const BARN_ART = { ga: 'assets/art/chicken.png', bo: 'assets/art/cow.png', cuu: 'assets/art/sheep.png', heo: 'assets/art/pig.png' };
+  const barnArtImg = (kind) => (BARN_ART[kind]
+    ? `<img src="${BARN_ART[kind]}" alt="" />`
+    : `<span class="emoji-ic emoji-ic--barn">${DATA?.config.animals[kind]?.emoji || '🐾'}</span>`);
   const ITEM_ICON = {
     trung: 'assets/ui/egg.svg', botmi: 'assets/ui/flour.svg', thucan: 'assets/art/feed.png',
     sua: 'assets/ui/milk.svg', len: 'assets/ui/wool.svg',
@@ -266,6 +274,7 @@
           ${m.level >= DATA.config.orderUnlockLevel ? `<button class="side-btn" data-sheet="orders">🚚${ordersReady ? '<i class="dot"></i>' : ''}<span>Đơn hàng</span></button>` : ''}
           <button class="side-btn" data-sheet="festival">🎪${festReady ? '<i class="dot"></i>' : ''}<span>Sự kiện</span></button>
           ${m.skills.unlocked ? `<button class="side-btn" data-sheet="skills">🎓${m.skills.points > 0 ? '<i class="dot"></i>' : ''}<span>Kỹ năng</span></button>` : ''}
+          ${m.level >= DATA.config.animals.vit.level ? `<button class="side-btn" data-sheet="barns">🐾${m.animals.some((x) => x.ready) ? '<i class="dot"></i>' : ''}<span>Chuồng</span></button>` : ''}
         </div>
 
         <div class="stage-center">
@@ -402,7 +411,7 @@
         const canPoach = visiting && p.ready && acts?.canPoach;
         const left = p.readyAt - now;
         return `<button class="plot plot--tree${p.ready ? ' plot--ready' : ' plot--growing'}" data-idx="${p.idx}" data-kind="${p.ready ? (mine ? 'harvest' : canPoach ? 'poach' : 'ripe') : (mine ? (p.watered ? 'plotmenu' : 'waterplot') : (!p.watered && visiting && !acts?.watered ? 'water' : 'growing'))}" data-ready="${p.readyAt}" data-total="${t.growMs}" data-cropid="${p.crop}">
-          <img class="tree-sprite${p.ready ? '' : ' tree-sprite--wait'}" src="assets/art/trees/${p.crop}.png" alt="${t.name}" />
+          <img class="tree-sprite${p.ready ? '' : ' tree-sprite--wait'}" src="${treeArt(p.crop)}" alt="${t.name}" />${TREE_PNG.has(p.crop) ? '' : `<span class="tree-emoji">${t.emoji}</span>`}
           ${p.ready
             ? `<span class="plot-note">${mine ? (p.poached ? 'Bị hái ké 😭' : 'Hái quả!') : canPoach ? 'Hái ké!' : 'Chín rồi'}</span><span class="plot-badge">×${Math.max(1, t.yield - (p.poachedN || 0))}</span>`
             : `<span class="plot-timer">${fmtTime(left)}</span>`}
@@ -526,7 +535,7 @@
         const lockLevel = m.level < t.level;
         const locked = lockLevel || m.gold < t.price;
         return `<button class="seed-row${locked ? ' seed-row--locked' : ''}" data-tree="${locked ? '' : t.id}">
-          <img class="seed-sprite" src="assets/art/trees/${t.id}.png" alt="" />
+          <img class="seed-sprite" src="${treeArt(t.id)}" alt="" />
           <span class="seed-info">
             <span class="seed-name">${t.name} ${t.emoji}</span>
             <div class="seed-meta">🌳 trồng 1 lần · ${t.yield} quả mỗi ${fmtDuration(t.growMs)} · bán ${t.sell.toLocaleString('vi')} ${COIN}/quả · +${t.exp} EXP</div>
@@ -547,7 +556,7 @@
       const info = p.tree ? trees()[p.crop] : crops()[p.crop];
       const left = p.readyAt - Date.now();
       const cost = Math.max(1, Math.ceil(left / (5 * 60_000)));
-      const icon = p.tree ? `<img class="seed-sprite" src="assets/art/trees/${p.crop}.png" alt="" />` : `<img class="seed-sprite" src="${cropSprite(p.crop, 3)}" alt="" />`;
+      const icon = p.tree ? `<img class="seed-sprite" src="${treeArt(p.crop)}" alt="" />` : `<img class="seed-sprite" src="${cropSprite(p.crop, 3)}" alt="" />`;
       return sheetShell(
         `${icon} ${info.name}`,
         `<p class="sheet-note">Còn <b>${fmtTime(left)}</b> nữa là ${p.tree ? 'ra quả' : 'chín'}.${p.watered ? ' Đã tưới 💧 (Tươi tốt).' : ''}</p>
@@ -602,13 +611,13 @@
              <div class="seed-meta">${DATA.config.chicken.price} ${COIN} · đẻ trứng ${fmtDuration(DATA.config.chicken.produceMs)}/quả · chuồng ${m.animals.length}/${m.coop.capacity}</div></span>
            <button class="gbtn gbtn--green btn-mini" data-buy-animal="ga" ${m.animals.filter((x) => x.kind === 'ga').length >= m.barns.ga.capacity ? 'disabled' : ''}>Mua gà</button>
          </div>` : ''}
-         ${['bo', 'cuu'].map((k) => {
+         ${Object.keys(DATA.config.animals).filter((k) => k !== 'ga').sort((x, y) => DATA.config.animals[x].level - DATA.config.animals[y].level).map((k) => {
            const a = DATA.config.animals[k];
-           if (m.level < a.level) return `<div class="inv-row"><img src="${k === 'bo' ? 'assets/art/cow.png' : 'assets/art/sheep.png'}" alt="" /><span class="seed-info"><span class="seed-name">${a.name}</span><div class="seed-meta">🔒 Mở ở cấp ${a.level}</div></span></div>`;
+           if (m.level < a.level) return `<div class="inv-row">${barnArtImg(k)}<span class="seed-info"><span class="seed-name">${a.name}</span><div class="seed-meta">🔒 Mở ở cấp ${a.level}</div></span></div>`;
            const herd = m.animals.filter((x) => x.kind === k).length;
            const info = itemInfo(a.product);
            return `<div class="inv-row">
-             <img src="${k === 'bo' ? 'assets/art/cow.png' : 'assets/art/sheep.png'}" alt="" />
+             ${barnArtImg(k)}
              <span class="seed-info"><span class="seed-name">${a.name}</span>
                <div class="seed-meta">${a.price.toLocaleString('vi')} ${COIN} · ${info.name} ${info.emoji} mỗi ${fmtDuration(a.produceMs)} · chuồng ${herd}/${m.barns[k].capacity}</div></span>
              <button class="gbtn gbtn--green btn-mini" data-buy-animal="${k}" ${herd >= m.barns[k].capacity ? 'disabled' : ''}>Mua</button>
@@ -663,11 +672,25 @@
       return sheetShell(`🚚 Đơn hàng <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, rows);
     }
 
+    if (t === 'barns') {
+      const rows = Object.values(DATA.config.animals).sort((x, y) => x.level - y.level).map((a) => {
+        const herd = m.animals.filter((x) => x.kind === a.id);
+        const readyN = herd.filter((x) => x.ready).length;
+        const locked = m.level < a.level;
+        const info = itemInfo(a.product);
+        return `<div class="inv-row">${barnArtImg(a.id)}
+          <span class="seed-info"><span class="seed-name">${a.name}</span>
+            <div class="seed-meta">${locked ? `🔒 Mở ở cấp ${a.level}` : `${herd.length}/${m.barns[a.id].capacity} con · ${info.name} ${info.emoji}${readyN ? ` · <b>${readyN} sẵn sàng</b>` : ''}`}</div></span>
+          ${locked ? '' : `<button class="gbtn gbtn--green btn-mini" data-barn="${a.id}">Mở</button>`}
+        </div>`;
+      }).join('');
+      return sheetShell('🐾 Chuồng trại', rows);
+    }
+
     if (t === 'coop' || t === 'barn') {
       const kind = t === 'coop' ? 'ga' : sheet.kind;
       const a = DATA.config.animals[kind];
       const barn = m.barns[kind];
-      const BARN_ART = { ga: 'assets/art/chicken.png', bo: 'assets/art/cow.png', cuu: 'assets/art/sheep.png' };
       const feedQty = m.inventory.thucan || 0;
       const herd = m.animals.filter((x) => x.kind === kind);
       const readyN = herd.filter((x) => x.ready).length;
@@ -678,7 +701,7 @@
       }
       const pens = herd.map((x) => `
         <span class="hen${x.ready ? ' hen--ready' : ''}">
-          <img src="${BARN_ART[kind]}" alt="" />
+          ${barnArtImg(kind)}
           <small>${x.ready ? `${productInfo.emoji}!` : x.ready_at == null ? 'đói' : fmtTime(x.ready_at - Date.now())}</small>
         </span>`).join('');
       return sheetShell(
@@ -730,7 +753,7 @@
         }
         return `<div class="machine-block"><h4>${mc.emoji} ${mc.name}</h4>${body}</div>`;
       }).join('');
-      return sheetShell('🏭 Khu chế biến', blocks);
+      return sheetShell('🏭 Khu chế biến', `<div class="sheet-scroll"><div class="machine-grid">${blocks}</div></div>`, 'sheet--feed sheet--factory');
     }
 
     if (t === 'expand') {

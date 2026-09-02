@@ -1645,3 +1645,29 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   padding-right: .15rem;
   scrollbar-width: thin;
 }
+
+/* ---- Nhà máy: lưới 3 cột, cuộn trong khung ---- */
+.sheet--factory { width: min(1100px, 100%); }
+.machine-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .6rem;
+  align-items: start;
+}
+.machine-grid .machine-block {
+  margin-bottom: 0;
+  padding: .55rem .6rem;
+  border-radius: 14px;
+  background: rgba(255,255,255,.45);
+  border: 2px solid rgba(180,129,74,.35);
+  min-width: 0;
+}
+.machine-grid .seed-row { padding: .35rem .4rem; }
+@media (max-width: 900px) { .machine-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .machine-grid { grid-template-columns: 1fr; } }
+
+/* ---- Vật nuôi/cây mới không có tranh riêng ---- */
+.emoji-ic--barn { font-size: 2rem; width: 44px; height: 44px; display: inline-grid; place-items: center; }
+.hen .emoji-ic--barn { font-size: 1.8rem; }
+.plot--tree { position: relative; }
+.tree-emoji { position: absolute; right: 8%; top: 10%; font-size: 1.1rem; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); pointer-events: none; }

@@ -209,7 +209,7 @@ export function buildApp({ config, db, logger = true }) {
   }
 
   // ---- Chuồng trại: cột cấp theo loại ------------------------------------
-  const BARN_COL = { ga: 'coop_level', bo: 'cow_level', cuu: 'sheep_level' };
+  const BARN_COL = { ga: 'coop_level', bo: 'cow_level', cuu: 'sheep_level', vit: 'duck_level', ong: 'bee_level', de: 'goat_level', heo: 'pig_level' };
   function barnLevel(f, kind) {
     return f[BARN_COL[kind]] || 1;
   }
@@ -391,7 +391,7 @@ export function buildApp({ config, db, logger = true }) {
       },
       energy: energyView(f0),
       coop: barnView(f0, 'ga'),
-      barns: { ga: barnView(f0, 'ga'), bo: barnView(f0, 'bo'), cuu: barnView(f0, 'cuu') },
+      barns: Object.fromEntries(Object.keys(ANIMALS).map((k) => [k, barnView(f0, k)])),
       pond: {
         level: f.pond_level,
         fishPerCast: POND_LEVELS[f.pond_level - 1],
