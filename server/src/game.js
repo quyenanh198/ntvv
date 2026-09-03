@@ -527,6 +527,26 @@ export const EXPANSIONS = [
   { level: 50, gold: 5800000 },
   { level: 50, gold: 5950000 },
   { level: 50, gold: 6100000 },
+  { level: 50, gold: 6300000 },
+  { level: 50, gold: 6500000 },
+  { level: 50, gold: 6700000 },
+  { level: 50, gold: 6900000 },
+  { level: 50, gold: 7100000 },
+  { level: 50, gold: 7300000 },
+  { level: 50, gold: 7500000 },
+  { level: 50, gold: 7700000 },
+  { level: 50, gold: 7900000 },
+  { level: 50, gold: 8100000 },
+  { level: 50, gold: 8300000 },
+  { level: 50, gold: 8500000 },
+  { level: 50, gold: 8700000 },
+  { level: 50, gold: 8900000 },
+  { level: 50, gold: 9100000 },
+  { level: 50, gold: 9300000 },
+  { level: 50, gold: 9500000 },
+  { level: 50, gold: 9700000 },
+  { level: 50, gold: 9900000 },
+  { level: 50, gold: 10100000 },
 ];
 export const MAX_PLOTS = START_PLOTS + EXPANSIONS.length * 4;
 
@@ -662,12 +682,12 @@ export const COOP_LEVELS = [3, 4, 6, 8, 10, 12, 14, 16, 18, 20];
 export const COOP_UPGRADE_GOLD = [1000, 3000, 8000, 20000, 40000, 70000, 110000, 160000, 220000];
 
 // Nâng cấp ao cá: số cá mỗi lượt quăng theo cấp, giá lên cấp 2..5.
-export const POND_LEVELS = [1, 1, 2, 2, 3, 3, 4, 4, 5, 6];
-export const POND_UPGRADE_GOLD = [1500, 4000, 10000, 25000, 45000, 70000, 100000, 140000, 190000];
+export const POND_LEVELS = [1, 1, 2, 2, 3, 3, 4, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 12];
+export const POND_UPGRADE_GOLD = [1500, 4000, 10000, 25000, 45000, 70000, 100000, 140000, 190000, 260000, 350000, 470000, 630000, 850000, 1150000, 1550000, 2090000, 2820000, 3810000];
 
 // ---- Ao nuôi thuỷ sản: mua giống thả ao, đủ thời gian thì thu cả mẻ (tiêu hao).
 // Sức chứa ao (số con đang nuôi cùng lúc) theo cấp ao câu cá.
-export const FISH_STOCK_BY_LEVEL = [20, 30, 40, 60, 80, 100, 120, 150, 180, 220];
+export const FISH_STOCK_BY_LEVEL = [20, 30, 40, 60, 80, 100, 120, 150, 180, 220, 260, 300, 350, 400, 460, 520, 600, 700, 800, 1000];
 export const FISH_FARM = {
   oc:       { id: 'oc',       name: 'Ốc bươu',       emoji: '🐌', level: 7,  fry: 20,  growMs: 30 * MIN,  product: 'oc',       exp: 3 },
   tom:      { id: 'tom',      name: 'Tôm',           emoji: '🦐', level: 9,  fry: 35,  growMs: 40 * MIN,  product: 'tom',      exp: 5 },
