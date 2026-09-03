@@ -91,6 +91,9 @@
     const data = await res.json();
     if (!res.ok) {
       toast(data.message || ERRORS[data.error] || 'Có lỗi rồi, thử lại nhé!');
+      // Đang thăm ruộng mà server bảo hết/chưa tới lượt: ruộng đã đổi (chủ vừa thu,
+      // người khác vừa hái ké…) → tải lại ruộng ngay cho nút bấm khớp thực tế.
+      if (VISIT && ['nothing_to_poach', 'already_poached', 'not_ready', 'nothing_ready', 'no_plot'].includes(data.error)) setTimeout(refresh, 300);
       throw new Error(data.error || 'error');
     }
     return data;
@@ -145,7 +148,7 @@
     nothing_ready: 'Chưa có gì chín để thu.',
     max_rank: 'Kỹ năng này đã tối đa rồi!',
     respec_cooldown: 'Mới hoàn trả gần đây — 7 ngày mới được làm lại.',
-    nothing_to_poach: 'Không có gì để cuỗm cả 😅',
+    nothing_to_poach: 'Không còn gì để cuỗm — chủ vừa thu hoạch hoặc có người hái trước rồi 😅',
     poach_cooldown: 'Nhà này vừa bị cuỗm rồi — mỗi giờ chỉ mất 1 thôi 😅',
     max_level: 'Đã nâng tối đa rồi!',
   };
