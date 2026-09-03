@@ -6,6 +6,11 @@ import staticPlugin from '@fastify/static';
 
 import {
   CROPS,
+  LUXURY,
+  MACHINE_UPGRADE_GOLD,
+  LOTTERY,
+  TAX_PER_PLOT,
+  MARKET_SAT,
   GOODS,
   itemInfo,
   CHICKEN,
@@ -113,6 +118,21 @@ export function buildApp({ config, db, logger = true }) {
     ON CONFLICT(user_id) DO UPDATE SET name = excluded.name
   `);
   const getFarmer = db.prepare('SELECT * FROM farmers WHERE user_id = ?');
+  // ---- Thuế đất: mỗi ngày (mốc 9h sáng LA) nợ TAX_PER_PLOT × số ô. Có vàng là
+  // tự trả; còn nợ thì chưa gieo trồng được. Vàng thuế bị đốt (sunk_gold).
+  function collectTax(userId) {
+    const f = getFarmer.get(userId);
+    if (!f) return;
+    const day = thiefDayKey();
+    let owed = f.tax_owed || 0;
+    if (f.tax_day !== day) {
+      owed += (f.plots_count || 0) * TAX_PER_PLOT;
+      db.prepare('UPDATE farmers SET tax_day = ?, tax_owed = ? WHERE user_id = ?').run(day, owed, userId);
+    }
+    if (owed > 0 && f.gold >= owed) {
+      db.prepare('UPDATE farmers SET gold = gold - ?, sunk_gold = sunk_gold + ?, tax_owed = 0 WHERE user_id = ?').run(owed, owed, userId);
+    }
+  }
 
   async function requireFarmer(request, reply) {
     const user = await chatUserFor(request);
@@ -130,6 +150,7 @@ export function buildApp({ config, db, logger = true }) {
         logEvent(`🎁 ${f0.name} gia nhập làng, nhận ${gift.toLocaleString('vi')} vàng hỗ trợ tân binh`);
       }
     }
+    collectTax(user.id);
     request.farmer = getFarmer.get(user.id);
     request.chatUser = user;
   }
@@ -223,8 +244,28 @@ export function buildApp({ config, db, logger = true }) {
       JOIN farmers f ON f.user_id = t.owner_id WHERE t.day = ? AND t.count > 0
       ORDER BY t.count DESC, f.xp DESC LIMIT ?`).all(day, limit).map((r, i) => ({ ...r, rank: i + 1 }));
   }
+  // Xổ số làng: quay cùng lúc chốt bảng trộm. 30% tiền vé vào hũ cho 1 người
+  // trúng (tỉ lệ theo số vé), 70% đốt khỏi kinh tế.
+  function settleLottery(day) {
+    if (db.prepare('SELECT 1 FROM lottery_draws WHERE day = ?').get(day)) return;
+    const rows = db.prepare('SELECT t.owner_id, t.qty, f.name FROM lottery_tickets t JOIN farmers f ON f.user_id = t.owner_id WHERE t.day = ?').all(day);
+    const total = rows.reduce((a, r) => a + r.qty, 0);
+    if (!total) return;
+    const pot = Math.round(total * LOTTERY.ticket * LOTTERY.potShare);
+    let pick = Math.floor(Math.random() * total);
+    let winner = rows[0];
+    for (const r of rows) { if (pick < r.qty) { winner = r; break; } pick -= r.qty; }
+    db.transaction(() => {
+      grant(winner.owner_id, { gold: pot });
+      db.prepare('INSERT INTO lottery_draws (day, pot, winner_id, winner_name, tickets, at) VALUES (?, ?, ?, ?, ?, ?)').run(day, pot, winner.owner_id, winner.name, total, Date.now());
+    })();
+    logEvent(`🎟️ Xổ số làng ${day.replace(/^la-/, '')}: ${winner.name} trúng ${pot.toLocaleString('vi')} vàng (${winner.qty}/${total} vé)`);
+    pushTo([winner.owner_id], 'Ăn trộm dzui dzẻ 😋', `🎟️ Bạn trúng xổ số làng: +${pot.toLocaleString('vi')} vàng (${winner.qty}/${total} vé)!`);
+  }
+
   function settleThiefBoard() {
     const day = thiefDayKey(Date.now() - 24 * 60 * 60 * 1000);
+    settleLottery(day);
     if (thiefSettledDay === day) return;
     if (db.prepare('SELECT 1 FROM thief_awards WHERE day = ?').get(day)) { thiefSettledDay = day; return; }
     const econ = thiefEconomyMult(villageGold());
@@ -299,7 +340,7 @@ export function buildApp({ config, db, logger = true }) {
   }
   const cropTime = (f, ms) => Math.round(ms * (1 - 0.05 * skillRank(f, 'bantayxanh')));
   const animalTime = (f, ms) => Math.round(ms * (1 - 0.05 * skillRank(f, 'nguoibannho')));
-  const machineTime = (f, ms) => Math.round(ms * (1 - 0.05 * skillRank(f, 'lamnhanh')));
+  const machineTime = (f, ms, machineId) => Math.round(ms * (1 - 0.05 * skillRank(f, 'lamnhanh')) * (1 - 0.1 * (machineId ? machineLevel(f, machineId) : 0)));
 
   // ---- Năng lượng (hồi lười: tính khi đọc/tiêu) ---------------------------
   function energyStep() {
@@ -542,6 +583,43 @@ export function buildApp({ config, db, logger = true }) {
   const villageGold = () => db.prepare('SELECT COALESCE(SUM(sold_gold), 0) g FROM farmers').get().g;
   const addSold = db.prepare('UPDATE farmers SET sold_gold = sold_gold + ? WHERE user_id = ?');
 
+  // ---- Bể hút vàng: thuế, xa xỉ phẩm, nâng cấp nhà máy, giá bão hoà -------
+  const taxView = (f) => ({ perPlot: TAX_PER_PLOT, today: (f.plots_count || 0) * TAX_PER_PLOT, owed: f.tax_owed || 0 });
+  function luxuryView(f) {
+    if (!f) return { owned: [], title: null, frame: null, decor: [] };
+    const owned = db.prepare('SELECT item FROM luxury WHERE owner_id = ?').all(f.user_id).map((r) => r.item).filter((id) => LUXURY[id]);
+    return {
+      owned,
+      title: f.title_id && LUXURY[f.title_id] ? f.title_id : null,
+      frame: f.frame_id && LUXURY[f.frame_id] ? f.frame_id : null,
+      decor: owned.filter((id) => LUXURY[id].kind === 'decor'),
+    };
+  }
+  const machineLevels = (f) => { try { return JSON.parse(f.machine_levels_json || '{}'); } catch { return {}; } };
+  const machineLevel = (f, id) => machineLevels(f)[id] || 0;
+  // Giá bão hoà: mỗi mặt hàng có "độ ngấy" = giá trị đã bán gần đây (giảm nửa mỗi
+  // MARKET_SAT.halfMs). Giá hệ thống = giá gốc × max(floor, 1 − ngấy / cap).
+  // Đơn hàng và thu mua bạn bè không bị ảnh hưởng.
+  function saturation(item, now = Date.now()) {
+    const r = db.prepare('SELECT sat, at FROM market_sat WHERE item = ?').get(item);
+    if (!r) return 0;
+    return r.sat * Math.pow(0.5, (now - r.at) / MARKET_SAT.halfMs);
+  }
+  const priceMult = (item, now = Date.now()) => Math.max(MARKET_SAT.floor, 1 - saturation(item, now) / MARKET_SAT.cap);
+  function bumpSaturation(item, value, now = Date.now()) {
+    db.prepare('INSERT INTO market_sat (item, sat, at) VALUES (?, ?, ?) ON CONFLICT(item) DO UPDATE SET sat = excluded.sat, at = excluded.at')
+      .run(item, saturation(item, now) + value, now);
+  }
+  function saturationView() {
+    const now = Date.now();
+    const out = {};
+    for (const r of db.prepare('SELECT item FROM market_sat').all()) {
+      const m = priceMult(r.item, now);
+      if (m < 0.995) out[r.item] = Math.round(m * 100) / 100;
+    }
+    return out;
+  }
+
   // Chuồng tự vận hành (yêu cầu nhà mình): tới giờ là sản phẩm TỰ vào kho,
   // con vật tự ăn tiếp (chu kỳ nối từ mốc cũ nên offline lâu vẫn tích đủ);
   // chỉ dừng khi hết thức ăn. Chạy mỗi lần chính chủ hành động/đọc state.
@@ -588,7 +666,8 @@ export function buildApp({ config, db, logger = true }) {
 
   function fresh(userId) {
     autoTend(userId);
-    return farmerView(getFarmer.get(userId));
+    const f = getFarmer.get(userId);
+    return { ...farmerView(f), tax: taxView(f), luxury: luxuryView(f), machineLevels: machineLevels(f), market: saturationView() };
   }
 
   // ---- API ----------------------------------------------------------------
@@ -611,7 +690,7 @@ export function buildApp({ config, db, logger = true }) {
           ...others.map((u) => ({ id: u.id, name: u.display_name || u.username, avatar_at: u.avatar_at, me: false })),
         ].map((u) => {
           const f = getFarmer.get(u.id);
-          return { ...u, level: f ? levelFor(f.xp) : null };
+          return { ...u, level: f ? levelFor(f.xp) : null, title: (f && LUXURY[f.title_id]?.name) || null, frame: (f && LUXURY[f.frame_id] && f.frame_id) || null };
         });
         return {
           me: fresh(request.farmer.user_id),
@@ -646,6 +725,11 @@ export function buildApp({ config, db, logger = true }) {
             trees: Object.fromEntries(Object.entries(TREES).map(([k, t]) => [k, { ...t, sell: t.sell * GOLD_MULT, growMs: scaleMs(t.growMs, config.fast), cycleMs: scaleMs(t.cycleMs, config.fast), lifeMs: scaleMs(t.lifeMs, config.fast) }])),
             starMilestones: STAR_MILESTONES.map((m2) => ({ ...m2, gold: (m2.gold || 0) * GOLD_MULT })),
             poachDailyLimit: POACH_DAILY_LIMIT,
+            luxury: LUXURY,
+            machineUpgradeGold: MACHINE_UPGRADE_GOLD,
+            lottery: LOTTERY,
+            taxPerPlot: TAX_PER_PLOT,
+            marketSat: MARKET_SAT,
             fast: config.fast,
           },
           events: db.prepare('SELECT at, text FROM events ORDER BY id DESC LIMIT 80').all(),
@@ -675,13 +759,14 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       api.get('/leaderboard', async () => {
-        return db.prepare('SELECT user_id AS id, name, gold, xp, stars FROM farmers ORDER BY xp DESC, stars DESC LIMIT 20')
+        return db.prepare('SELECT user_id AS id, name, gold, xp, stars, title_id, frame_id FROM farmers ORDER BY xp DESC, stars DESC LIMIT 20')
           .all()
-          .map((f, i) => ({ ...f, level: levelFor(f.xp), rank: i + 1 }));
+          .map((f, i) => ({ ...f, level: levelFor(f.xp), rank: i + 1, title: LUXURY[f.title_id]?.name || null, frame: (LUXURY[f.frame_id] && f.frame_id) || null }));
       });
 
       // ---- Trồng trọt ----
       api.post('/plant', async (request, reply) => {
+        if (request.farmer.tax_owed > 0) return reply.code(400).send({ error: 'tax_due' });
         const { idx, crop: cropId } = request.body ?? {};
         const crop = CROPS[cropId];
         const me = request.farmer;
@@ -703,6 +788,7 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       api.post('/plant-all', async (request, reply) => {
+        if (request.farmer.tax_owed > 0) return reply.code(400).send({ error: 'tax_due' });
         const { crop: cropId } = request.body ?? {};
         const crop = CROPS[cropId];
         const tree = TREES[cropId];
@@ -965,11 +1051,13 @@ export function buildApp({ config, db, logger = true }) {
         let mult = 1;
         if (ANIMAL_PRODUCTS.has(item)) mult = 1 + 0.08 * skillRank(me, 'spcaocap');
         if (MACHINE_PRODUCTS.has(item)) mult = 1 + 0.05 * skillRank(me, 'donggoidep');
-        const gained = Math.round(info.sell * n * GOLD_MULT * mult);
+        const pm = priceMult(item);
+        const gained = Math.round(info.sell * n * GOLD_MULT * mult * pm);
         grant(me.user_id, { gold: gained });
         addSold.run(gained, me.user_id);
+        bumpSaturation(item, info.sell * n * GOLD_MULT);
         bumpQuest(me.user_id, 'sell', n);
-        return { me: fresh(me.user_id), gained };
+        return { me: fresh(me.user_id), gained, priceMult: Math.round(pm * 100) / 100 };
       });
 
       // ---- Thu mua từ bạn bè: đăng tin cần hàng, vàng ký quỹ lúc đăng ----
@@ -1134,7 +1222,7 @@ export function buildApp({ config, db, logger = true }) {
             db.prepare('UPDATE machine_jobs SET queue_count = queue_count + ? WHERE owner_id = ? AND kind = ? AND recipe = ?').run(n, me.user_id, machineId, recipeId);
           } else {
             db.prepare('INSERT INTO machine_jobs (owner_id, kind, recipe, ready_at, queue_count, poached) VALUES (?, ?, ?, ?, ?, 0)')
-              .run(me.user_id, machineId, recipeId, Date.now() + machineTime(me, scaleMs(recipe.ms, config.fast)), n);
+              .run(me.user_id, machineId, recipeId, Date.now() + machineTime(me, scaleMs(recipe.ms, config.fast), machineId), n);
           }
         })();
         return { n, total: queued + n };
@@ -1315,6 +1403,78 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       // ---- Mở rộng đất ----
+      // ---- Bể hút vàng: nâng cấp nhà máy, xa xỉ phẩm, xổ số làng ----
+      api.post('/machine-upgrade', async (request, reply) => {
+        const { machine } = request.body ?? {};
+        const me = request.farmer;
+        if (!MACHINES[machine]) return reply.code(400).send({ error: 'bad_request' });
+        const lv = machineLevel(me, machine);
+        if (lv >= MACHINE_UPGRADE_GOLD.length) return reply.code(400).send({ error: 'max_level' });
+        const cost = MACHINE_UPGRADE_GOLD[lv];
+        if (me.gold < cost) return reply.code(400).send({ error: 'not_enough_gold' });
+        const levels = { ...machineLevels(me), [machine]: lv + 1 };
+        db.transaction(() => {
+          grant(me.user_id, { gold: -cost });
+          db.prepare('UPDATE farmers SET machine_levels_json = ?, sunk_gold = sunk_gold + ? WHERE user_id = ?').run(JSON.stringify(levels), cost, me.user_id);
+        })();
+        logEvent(`⚙️ ${me.name} nâng cấp ${MACHINES[machine].name} lên cấp ${lv + 1} (−${(lv + 1) * 10}% thời gian)`);
+        return { me: fresh(me.user_id) };
+      });
+
+      api.post('/luxury-buy', async (request, reply) => {
+        const { item } = request.body ?? {};
+        const me = request.farmer;
+        const lux = LUXURY[item];
+        if (!lux) return reply.code(400).send({ error: 'bad_request' });
+        if (db.prepare('SELECT 1 FROM luxury WHERE owner_id = ? AND item = ?').get(me.user_id, item)) return reply.code(400).send({ error: 'already_owned' });
+        if (me.gold < lux.price) return reply.code(400).send({ error: 'not_enough_gold' });
+        db.transaction(() => {
+          grant(me.user_id, { gold: -lux.price });
+          db.prepare('INSERT INTO luxury (owner_id, item, at) VALUES (?, ?, ?)').run(me.user_id, item, Date.now());
+          db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(lux.price, me.user_id);
+          if (lux.kind === 'title') db.prepare('UPDATE farmers SET title_id = ? WHERE user_id = ?').run(item, me.user_id);
+          if (lux.kind === 'frame') db.prepare('UPDATE farmers SET frame_id = ? WHERE user_id = ?').run(item, me.user_id);
+        })();
+        logEvent(`💎 ${me.name} vung ${lux.price.toLocaleString('vi')} vàng tậu ${lux.emoji} ${lux.name}!`);
+        const others = db.prepare('SELECT user_id FROM farmers WHERE user_id != ?').all(me.user_id).map((r) => r.user_id);
+        pushTo(others, 'Ăn trộm dzui dzẻ 😋', `💎 ${me.name} vừa vung ${lux.price.toLocaleString('vi')} vàng tậu ${lux.emoji} ${lux.name}!`);
+        return { me: fresh(me.user_id) };
+      });
+
+      api.post('/luxury-equip', async (request, reply) => {
+        const { item, kind } = request.body ?? {};
+        const me = request.farmer;
+        const k = item ? LUXURY[item]?.kind : kind;
+        if (!['title', 'frame'].includes(k)) return reply.code(400).send({ error: 'bad_request' });
+        if (item && !db.prepare('SELECT 1 FROM luxury WHERE owner_id = ? AND item = ?').get(me.user_id, item)) return reply.code(400).send({ error: 'not_owned' });
+        db.prepare(`UPDATE farmers SET ${k === 'title' ? 'title_id' : 'frame_id'} = ? WHERE user_id = ?`).run(item || '', me.user_id);
+        return { me: fresh(me.user_id) };
+      });
+
+      function lotteryView(me) {
+        const day = thiefDayKey();
+        const tot = db.prepare('SELECT COALESCE(SUM(qty), 0) q, COUNT(*) n FROM lottery_tickets WHERE day = ?').get(day);
+        const mine = db.prepare('SELECT qty FROM lottery_tickets WHERE day = ? AND owner_id = ?').get(day, me.user_id)?.qty || 0;
+        const last = db.prepare('SELECT * FROM lottery_draws ORDER BY at DESC LIMIT 1').get() || null;
+        return { ticket: LOTTERY.ticket, maxPerDay: LOTTERY.maxPerDay, potShare: LOTTERY.potShare, tickets: tot.q, players: tot.n, pot: Math.round(tot.q * LOTTERY.ticket * LOTTERY.potShare), mine, last };
+      }
+      api.get('/lottery', async (request) => { settleThiefBoard(); return lotteryView(request.farmer); });
+      api.post('/lottery-buy', async (request, reply) => {
+        const me = request.farmer;
+        const n = Math.max(1, Math.min(LOTTERY.maxPerDay, Math.floor(Number(request.body?.qty) || 1)));
+        const day = thiefDayKey();
+        const mine = db.prepare('SELECT qty FROM lottery_tickets WHERE day = ? AND owner_id = ?').get(day, me.user_id)?.qty || 0;
+        if (mine + n > LOTTERY.maxPerDay) return reply.code(400).send({ error: 'lottery_max' });
+        const cost = n * LOTTERY.ticket;
+        if (me.gold < cost) return reply.code(400).send({ error: 'not_enough_gold' });
+        db.transaction(() => {
+          grant(me.user_id, { gold: -cost });
+          db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(cost, me.user_id);
+          db.prepare('INSERT INTO lottery_tickets (day, owner_id, qty) VALUES (?, ?, ?) ON CONFLICT(day, owner_id) DO UPDATE SET qty = qty + excluded.qty').run(day, me.user_id, n);
+        })();
+        return { me: fresh(me.user_id), lottery: lotteryView(me) };
+      });
+
       api.post('/expand', async (request, reply) => {
         const me = request.farmer;
         if (me.plots_count >= MAX_PLOTS) return reply.code(400).send({ error: 'max_plots' });
@@ -1558,6 +1718,7 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       api.post('/plant-tree', async (request, reply) => {
+        if (request.farmer.tax_owed > 0) return reply.code(400).send({ error: 'tax_due' });
         const { idx, tree: treeId } = request.body ?? {};
         const tree = TREES[treeId];
         const me = request.farmer;
@@ -1744,6 +1905,11 @@ export function buildApp({ config, db, logger = true }) {
 
       // ---- Thăm ruộng ----
       function visitPayload(request, ownerId) {
+        const v = visitPayloadBase(request, ownerId);
+        if (v && v.farm) v.farm.luxury = luxuryView(getFarmer.get(ownerId));
+        return v;
+      }
+      function visitPayloadBase(request, ownerId) {
         const owner = getFarmer.get(ownerId);
         const li = levelInfo(owner.xp);
         const plots = plotViews(ownerId, owner.plots_count);

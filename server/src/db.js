@@ -140,6 +140,31 @@ CREATE TABLE IF NOT EXISTS poach_guard (
   at INTEGER NOT NULL,
   PRIMARY KEY (owner_id, kind)
 );
+CREATE TABLE IF NOT EXISTS luxury (
+  owner_id INTEGER NOT NULL,
+  item TEXT NOT NULL,
+  at INTEGER NOT NULL,
+  PRIMARY KEY (owner_id, item)
+);
+CREATE TABLE IF NOT EXISTS lottery_tickets (
+  day TEXT NOT NULL,
+  owner_id INTEGER NOT NULL,
+  qty INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, owner_id)
+);
+CREATE TABLE IF NOT EXISTS lottery_draws (
+  day TEXT PRIMARY KEY,
+  pot INTEGER NOT NULL,
+  winner_id INTEGER NOT NULL,
+  winner_name TEXT NOT NULL,
+  tickets INTEGER NOT NULL,
+  at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS market_sat (
+  item TEXT PRIMARY KEY,
+  sat REAL NOT NULL DEFAULT 0,
+  at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS legacy_levels (
   user_id INTEGER PRIMARY KEY,
   xp INTEGER NOT NULL
@@ -182,6 +207,12 @@ export function openDb(dataDir) {
   if (!cols.includes('critter_next_at')) db.exec('ALTER TABLE farmers ADD COLUMN critter_next_at INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('skills_json')) db.exec("ALTER TABLE farmers ADD COLUMN skills_json TEXT NOT NULL DEFAULT '[]'");
   if (!cols.includes('last_respec_at')) db.exec('ALTER TABLE farmers ADD COLUMN last_respec_at INTEGER NOT NULL DEFAULT 0');
+  if (!cols.includes('tax_day')) db.exec("ALTER TABLE farmers ADD COLUMN tax_day TEXT NOT NULL DEFAULT ''");
+  if (!cols.includes('tax_owed')) db.exec('ALTER TABLE farmers ADD COLUMN tax_owed INTEGER NOT NULL DEFAULT 0');
+  if (!cols.includes('sunk_gold')) db.exec('ALTER TABLE farmers ADD COLUMN sunk_gold INTEGER NOT NULL DEFAULT 0');
+  if (!cols.includes('title_id')) db.exec("ALTER TABLE farmers ADD COLUMN title_id TEXT NOT NULL DEFAULT ''");
+  if (!cols.includes('frame_id')) db.exec("ALTER TABLE farmers ADD COLUMN frame_id TEXT NOT NULL DEFAULT ''");
+  if (!cols.includes('machine_levels_json')) db.exec("ALTER TABLE farmers ADD COLUMN machine_levels_json TEXT NOT NULL DEFAULT '{}'");
   const mcols = db.prepare('PRAGMA table_info(machines)').all().map((c) => c.name);
   // Mỗi máy chạy nhiều món song song: chuyển mẻ đang chạy từ machines (1 món/máy)
   // sang machine_jobs (1 dòng/món). Idempotent — machines được dọn sau khi chuyển.

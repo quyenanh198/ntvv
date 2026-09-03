@@ -1788,3 +1788,21 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 @media (max-width: 480px) { .seed-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 .seed-sort { display: flex; gap: .3rem; flex-wrap: wrap; margin: .2rem 0 .5rem; }
+
+/* ---- Xa xỉ phẩm / thuế / xổ số ---- */
+.hud-title { display: block; font-size: .58rem; color: #ffe9a8; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hud-decor { letter-spacing: -.1em; }
+.vis-title { font-style: normal; font-size: .8em; color: #ffe9a8; }
+.nf-khungdong { color: #e8a56d !important; text-shadow: 0 0 6px rgba(232, 165, 109, .8) !important; }
+.nf-khungbac { color: #eef3f9 !important; text-shadow: 0 0 6px rgba(205, 220, 240, .95) !important; }
+.nf-khungvang { color: #ffd54a !important; text-shadow: 0 0 8px rgba(255, 200, 40, .95) !important; }
+.nf-khungkimcuong { color: #a6f4ff !important; text-shadow: 0 0 6px #fff, 0 0 12px rgba(120, 230, 255, .95) !important; }
+.tax-banner { position: fixed; top: 66px; left: 50%; transform: translateX(-50%); z-index: 30; max-width: min(92vw, 640px); background: rgba(120, 40, 20, .92); color: #ffe0c0; border: 2px solid #ff9a5c; border-radius: 12px; padding: .35rem .7rem; font-size: .8rem; text-align: center; }
+.lux-card { text-align: center; }
+.lux-emoji { font-size: 2rem; line-height: 1; }
+.lux-card--owned { outline: 2px solid #7bd66b; }
+.lux-owned { font-size: .75rem; color: #3c8f2e; font-weight: 700; }
+.lux-lottery { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, .5); border-radius: 10px; padding: .45rem .6rem; font-size: .85rem; }
+.mc-upgrade { width: 100%; margin-top: .35rem; font-size: .8rem; }
+.lb-title { font-style: normal; font-size: .75em; color: #8a5a1a; }
+.sat { font-style: normal; color: #b3462b; font-weight: 700; }

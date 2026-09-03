@@ -826,3 +826,32 @@ export const THIEF_REWARDS = [
 // làng (giá hiển thị) cộng thêm ×1, tối đa ×10.
 export const THIEF_ECON_STEP_GOLD = 5_000_000;
 export const thiefEconomyMult = (villageGold) => Math.min(10, 1 + Math.floor(villageGold / THIEF_ECON_STEP_GOLD));
+
+// ---- Bể hút vàng (chống lạm phát) -----------------------------------------
+export const TAX_PER_PLOT = 2000; // thuế đất: vàng/ô/ngày (mốc 9h sáng LA), vàng bị đốt
+export const MACHINE_UPGRADE_GOLD = [1_000_000, 2_500_000, 5_000_000, 10_000_000, 20_000_000]; // nhà máy cấp 1..5, mỗi cấp −10% thời gian
+export const LOTTERY = { ticket: 100_000, potShare: 0.3, maxPerDay: 100 }; // 30% tiền vé vào hũ, 70% đốt
+export const MARKET_SAT = { cap: 2_000_000, floor: 0.4, halfMs: 4 * 60 * MIN }; // giá bão hoà: bán dồn 1 món thì giá tụt, hồi theo nửa đời 4h
+// Xa xỉ phẩm: chỉ để khoe, không tăng sức mạnh. Danh hiệu/khung tên chọn 1, trang trí hiện hết.
+export const LUXURY = {
+  nongdanchamchi: { id: 'nongdanchamchi', kind: 'title', name: 'Nông dân chăm chỉ', emoji: '🌾', price: 5000000, desc: 'Sáng tưới chiều gặt.' },
+  daigiaruong: { id: 'daigiaruong', kind: 'title', name: 'Đại gia ruộng', emoji: '🏞️', price: 10000000, desc: 'Đất nhiều hơn người.' },
+  trumtrom: { id: 'trumtrom', kind: 'title', name: 'Trùm trộm', emoji: '🥷', price: 15000000, desc: 'Ghé nhà ai nhà đó mất mùa.' },
+  phunong: { id: 'phunong', kind: 'title', name: 'Phú nông', emoji: '💰', price: 20000000, desc: 'Tiền đè chết người.' },
+  vuanongtrai: { id: 'vuanongtrai', kind: 'title', name: 'Vua nông trại', emoji: '👑', price: 35000000, desc: 'Ngai vàng giữa ruộng.' },
+  huyenthoailang: { id: 'huyenthoailang', kind: 'title', name: 'Huyền thoại làng', emoji: '🌟', price: 50000000, desc: 'Tên được khắc lên cổng làng.' },
+  khungdong: { id: 'khungdong', kind: 'frame', name: 'Khung đồng', emoji: '🥉', price: 5000000, desc: 'Tên ánh đồng.' },
+  khungbac: { id: 'khungbac', kind: 'frame', name: 'Khung bạc', emoji: '🥈', price: 10000000, desc: 'Tên ánh bạc.' },
+  khungvang: { id: 'khungvang', kind: 'frame', name: 'Khung vàng', emoji: '🥇', price: 20000000, desc: 'Tên vàng chói.' },
+  khungkimcuong: { id: 'khungkimcuong', kind: 'frame', name: 'Khung kim cương', emoji: '💠', price: 40000000, desc: 'Tên lấp lánh kim cương.' },
+  vuonhoa: { id: 'vuonhoa', kind: 'decor', name: 'Vườn hoa', emoji: '🌷', price: 5000000, desc: 'Trang trí đầu ruộng.' },
+  bunhin: { id: 'bunhin', kind: 'decor', name: 'Bù nhìn cao cấp', emoji: '🎩', price: 5000000, desc: 'Trang trí đầu ruộng.' },
+  coixaygio: { id: 'coixaygio', kind: 'decor', name: 'Cối xay gió', emoji: '🎡', price: 6000000, desc: 'Trang trí đầu ruộng.' },
+  denlong: { id: 'denlong', kind: 'decor', name: 'Đèn lồng', emoji: '🏮', price: 7000000, desc: 'Trang trí đầu ruộng.' },
+  daiphunnuoc: { id: 'daiphunnuoc', kind: 'decor', name: 'Đài phun nước', emoji: '⛲', price: 8000000, desc: 'Trang trí đầu ruộng.' },
+  caugo: { id: 'caugo', kind: 'decor', name: 'Cầu gỗ', emoji: '🌉', price: 9000000, desc: 'Trang trí đầu ruộng.' },
+  xekeo: { id: 'xekeo', kind: 'decor', name: 'Xe kéo', emoji: '🛒', price: 10000000, desc: 'Trang trí đầu ruộng.' },
+  tuongga: { id: 'tuongga', kind: 'decor', name: 'Tượng gà vàng', emoji: '🐓', price: 12000000, desc: 'Trang trí đầu ruộng.' },
+  hosen: { id: 'hosen', kind: 'decor', name: 'Hồ sen', emoji: '🪷', price: 15000000, desc: 'Trang trí đầu ruộng.' },
+  conglang: { id: 'conglang', kind: 'decor', name: 'Cổng làng', emoji: '⛩️', price: 25000000, desc: 'Trang trí đầu ruộng.' },
+};
