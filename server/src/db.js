@@ -213,6 +213,9 @@ export function openDb(dataDir) {
   if (!cols.includes('title_id')) db.exec("ALTER TABLE farmers ADD COLUMN title_id TEXT NOT NULL DEFAULT ''");
   if (!cols.includes('frame_id')) db.exec("ALTER TABLE farmers ADD COLUMN frame_id TEXT NOT NULL DEFAULT ''");
   if (!cols.includes('machine_levels_json')) db.exec("ALTER TABLE farmers ADD COLUMN machine_levels_json TEXT NOT NULL DEFAULT '{}'");
+  if (!cols.includes('support_paid')) db.exec('ALTER TABLE farmers ADD COLUMN support_paid INTEGER NOT NULL DEFAULT 0');
+  // Hỗ trợ theo trần làng: coi vàng tặng trước đây là đã hỗ trợ (tránh trả trùng).
+  db.exec('UPDATE farmers SET support_paid = gift_gold WHERE support_paid = 0 AND gift_gold > 0');
   const mcols = db.prepare('PRAGMA table_info(machines)').all().map((c) => c.name);
   // Mỗi máy chạy nhiều món song song: chuyển mẻ đang chạy từ machines (1 món/máy)
   // sang machine_jobs (1 dòng/món). Idempotent — machines được dọn sau khi chuyển.

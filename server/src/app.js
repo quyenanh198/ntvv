@@ -141,14 +141,18 @@ export function buildApp({ config, db, logger = true }) {
     upsertFarmer.run(user.id, user.display_name || user.username, START_GOLD, START_GEMS, START_PLOTS, Date.now());
     const legacy = db.prepare('SELECT xp FROM legacy_levels WHERE user_id = ?').get(user.id);
     if (legacy) db.prepare('UPDATE farmers SET xp = ? WHERE user_id = ? AND xp < ?').run(legacy.xp, user.id, legacy.xp);
-    if (!existed) {
-      // Nông dân mới: quà hỗ trợ theo cấp (cấp có thể đã được nâng từ bản v1).
+    {
+      // Hỗ trợ theo trần làng (cấp cao nhất − 20): mức được hưởng tính lại mỗi lần
+      // vào, trần lên thì trả thêm phần chênh; đã nhận rồi không thu lại.
       const f0 = getFarmer.get(user.id);
       const maxLevel = levelFor(db.prepare('SELECT COALESCE(MAX(xp), 0) x FROM farmers').get().x);
-      const gift = welcomeGift(levelFor(f0.xp), maxLevel);
-      if (gift > 0) {
-        db.prepare('UPDATE farmers SET gold = gold + ?, gift_gold = gift_gold + ? WHERE user_id = ?').run(gift, gift, user.id);
-        logEvent(`🎁 ${f0.name} gia nhập làng, nhận ${gift.toLocaleString('vi')} vàng hỗ trợ tân binh`);
+      const entitled = welcomeGift(levelFor(f0.xp), maxLevel);
+      const diff = entitled - (f0.support_paid || 0);
+      if (diff > 0) {
+        db.prepare('UPDATE farmers SET gold = gold + ?, gift_gold = gift_gold + ?, support_paid = ? WHERE user_id = ?').run(diff, diff, entitled, user.id);
+        logEvent(existed
+          ? `🎁 ${f0.name} nhận thêm ${diff.toLocaleString('vi')} vàng hỗ trợ (trần làng lên Lv ${Math.max(0, maxLevel - 20)})`
+          : `🎁 ${f0.name} gia nhập làng, nhận ${diff.toLocaleString('vi')} vàng hỗ trợ tân binh`);
       }
     }
     collectTax(user.id);
