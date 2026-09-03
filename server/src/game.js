@@ -254,19 +254,19 @@ export const GOODS = {
 
 // ---- Cây ăn quả: lớn growMs → ra quả mỗi cycleMs (yield quả/vụ) → tàn sau lifeMs ---
 export const TREES = {
-  cam:       { id: 'cam',       name: 'Cam',        emoji: '🍊', level: 12, price: 250, growMs: 120 * MIN, cycleMs: 30 * MIN, lifeMs: 600 * MIN, yield: 4, sell: 55,  exp: 48 },
-  tao:       { id: 'tao',       name: 'Táo',        emoji: '🍎', level: 14, price: 360, growMs: 150 * MIN, cycleMs: 35 * MIN, lifeMs: 720 * MIN, yield: 4, sell: 80,  exp: 75 },
-  xoai:      { id: 'xoai',      name: 'Xoài',       emoji: '🥭', level: 16, price: 500, growMs: 180 * MIN, cycleMs: 40 * MIN, lifeMs: 720 * MIN, yield: 5, sell: 95,  exp: 110 },
-  thanhlong: { id: 'thanhlong', name: 'Thanh long', emoji: '🌵', level: 18, price: 700, growMs: 210 * MIN, cycleMs: 45 * MIN, lifeMs: 840 * MIN, yield: 5, sell: 150, exp: 180 },
-  chanh:     { id: 'chanh',     name: 'Chanh',      emoji: '🍋', level: 20, price: 900,  growMs: 180 * MIN, cycleMs: 40 * MIN, lifeMs: 720 * MIN, yield: 5, sell: 90,  exp: 200 },
-  dua:       { id: 'dua',       name: 'Dừa',        emoji: '🥥', level: 24, price: 1200, growMs: 240 * MIN, cycleMs: 50 * MIN, lifeMs: 960 * MIN, yield: 4, sell: 210, exp: 280 },
-  saurieng:  { id: 'saurieng',  name: 'Sầu riêng',  emoji: '🍈', level: 30, price: 2000, growMs: 300 * MIN, cycleMs: 60 * MIN, lifeMs: 1200 * MIN, yield: 3, sell: 650, exp: 420 },
-  quabo:     { id: 'quabo',     name: 'Bơ trái',    emoji: '🥑', level: 22, price: 1000, growMs: 180 * MIN, cycleMs: 45 * MIN, lifeMs: 720 * MIN, yield: 4, sell: 160, exp: 240 },
-  dao:       { id: 'dao',       name: 'Đào',        emoji: '🍑', level: 26, price: 1500, growMs: 210 * MIN, cycleMs: 45 * MIN, lifeMs: 840 * MIN, yield: 4, sell: 260, exp: 320 },
-  anhdao:    { id: 'anhdao',    name: 'Anh đào',    emoji: '🍒', level: 32, price: 2400, growMs: 240 * MIN, cycleMs: 40 * MIN, lifeMs: 840 * MIN, yield: 6, sell: 380, exp: 460 },
-  coc:       { id: 'coc',       name: 'Cóc',        emoji: '🍏', level: 21, price: 800,  growMs: 150 * MIN, cycleMs: 30 * MIN, lifeMs: 600 * MIN, yield: 6, sell: 60,  exp: 150 },
-  chuoi:     { id: 'chuoi',     name: 'Chuối',      emoji: '🍌', level: 8,  price: 300,  growMs: 120 * MIN, cycleMs: 30 * MIN, lifeMs: 480 * MIN, yield: 7, sell: 35,  exp: 60 },
-  quame:     { id: 'quame',     name: 'Me',         emoji: '🟤', level: 15, price: 600,  growMs: 150 * MIN, cycleMs: 35 * MIN, lifeMs: 600 * MIN, yield: 5, sell: 70,  exp: 120 },
+  cam:       { id: 'cam',       name: 'Cam',        emoji: '🍊', level: 12, price: 250, growMs: 60 * MIN, cycleMs: 20 * MIN, lifeMs: 600 * MIN, yield: 4, sell: 55,  exp: 48 },
+  tao:       { id: 'tao',       name: 'Táo',        emoji: '🍎', level: 14, price: 360, growMs: 75 * MIN, cycleMs: 25 * MIN, lifeMs: 720 * MIN, yield: 4, sell: 80,  exp: 75 },
+  xoai:      { id: 'xoai',      name: 'Xoài',       emoji: '🥭', level: 16, price: 500, growMs: 90 * MIN, cycleMs: 25 * MIN, lifeMs: 720 * MIN, yield: 5, sell: 95,  exp: 110 },
+  thanhlong: { id: 'thanhlong', name: 'Thanh long', emoji: '🌵', level: 18, price: 700, growMs: 105 * MIN, cycleMs: 30 * MIN, lifeMs: 840 * MIN, yield: 5, sell: 150, exp: 180 },
+  chanh:     { id: 'chanh',     name: 'Chanh',      emoji: '🍋', level: 20, price: 900,  growMs: 90 * MIN, cycleMs: 25 * MIN, lifeMs: 720 * MIN, yield: 5, sell: 90,  exp: 200 },
+  dua:       { id: 'dua',       name: 'Dừa',        emoji: '🥥', level: 24, price: 1200, growMs: 120 * MIN, cycleMs: 35 * MIN, lifeMs: 960 * MIN, yield: 4, sell: 210, exp: 280 },
+  saurieng:  { id: 'saurieng',  name: 'Sầu riêng',  emoji: '🍈', level: 30, price: 2000, growMs: 150 * MIN, cycleMs: 40 * MIN, lifeMs: 1200 * MIN, yield: 3, sell: 650, exp: 420 },
+  quabo:     { id: 'quabo',     name: 'Bơ trái',    emoji: '🥑', level: 22, price: 1000, growMs: 90 * MIN, cycleMs: 30 * MIN, lifeMs: 720 * MIN, yield: 4, sell: 160, exp: 240 },
+  dao:       { id: 'dao',       name: 'Đào',        emoji: '🍑', level: 26, price: 1500, growMs: 105 * MIN, cycleMs: 30 * MIN, lifeMs: 840 * MIN, yield: 4, sell: 260, exp: 320 },
+  anhdao:    { id: 'anhdao',    name: 'Anh đào',    emoji: '🍒', level: 32, price: 2400, growMs: 120 * MIN, cycleMs: 25 * MIN, lifeMs: 840 * MIN, yield: 6, sell: 380, exp: 460 },
+  coc:       { id: 'coc',       name: 'Cóc',        emoji: '🍏', level: 21, price: 800,  growMs: 75 * MIN, cycleMs: 20 * MIN, lifeMs: 600 * MIN, yield: 6, sell: 60,  exp: 150 },
+  chuoi:     { id: 'chuoi',     name: 'Chuối',      emoji: '🍌', level: 8,  price: 300,  growMs: 60 * MIN, cycleMs: 20 * MIN, lifeMs: 480 * MIN, yield: 7, sell: 35,  exp: 60 },
+  quame:     { id: 'quame',     name: 'Me',         emoji: '🟤', level: 15, price: 600,  growMs: 75 * MIN, cycleMs: 25 * MIN, lifeMs: 600 * MIN, yield: 5, sell: 70,  exp: 120 },
 };
 
 export function itemInfo(id) {
