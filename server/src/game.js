@@ -557,8 +557,12 @@ export const GOLD_MULT = 4;
 export const START_GOLD = 500;
 // Hỗ trợ tân binh: nông dân mới dưới Lv40 nhận 2 triệu vàng, mỗi 10 cấp thấp hơn
 // cộng thêm 2 triệu (Lv1 = 8 triệu). Tính là vàng tặng (không vào kinh tế làng).
-// Quà tân binh: dưới Lv20 nhận 2 triệu, mỗi 10 cấp thấp hơn cộng thêm 2 triệu (Lv1–9: 4tr, Lv10–19: 2tr).
-export const welcomeGift = (level) => (level >= 20 ? 0 : 2_000_000 * (1 + Math.floor((19 - level) / 10)));
+// Quà tân binh: trần = cấp cao nhất làng − 20. Dưới trần nhận 2 triệu, mỗi 10 cấp
+// thấp hơn trần cộng thêm 2 triệu. (Cao nhất Lv55 → trần 35: Lv25–34 2tr, Lv15–24 4tr, Lv5–14 6tr…)
+export const welcomeGift = (level, maxLevel = 40) => {
+  const cap = Math.max(0, maxLevel - 20);
+  return level >= cap ? 0 : 2_000_000 * (1 + Math.floor((cap - 1 - level) / 10));
+};
 export const START_GEMS = 50;
 
 // Kim cương tăng tốc: 1 KC / 5 phút còn lại, làm tròn lên, tối thiểu 1.

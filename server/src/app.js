@@ -144,7 +144,8 @@ export function buildApp({ config, db, logger = true }) {
     if (!existed) {
       // Nông dân mới: quà hỗ trợ theo cấp (cấp có thể đã được nâng từ bản v1).
       const f0 = getFarmer.get(user.id);
-      const gift = welcomeGift(levelFor(f0.xp));
+      const maxLevel = levelFor(db.prepare('SELECT COALESCE(MAX(xp), 0) x FROM farmers').get().x);
+      const gift = welcomeGift(levelFor(f0.xp), maxLevel);
       if (gift > 0) {
         db.prepare('UPDATE farmers SET gold = gold + ?, gift_gold = gift_gold + ? WHERE user_id = ?').run(gift, gift, user.id);
         logEvent(`🎁 ${f0.name} gia nhập làng, nhận ${gift.toLocaleString('vi')} vàng hỗ trợ tân binh`);
