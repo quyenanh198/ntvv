@@ -573,7 +573,8 @@ export function xpNeedFor(level) {
 export function levelInfo(xp) {
   let level = 1;
   let rest = xp;
-  while (level < 60 && rest >= xpNeedFor(level)) {
+  // Không có trần cấp: cần EXP tăng theo bình phương nên vòng lặp luôn dừng.
+  while (rest >= xpNeedFor(level)) {
     rest -= xpNeedFor(level);
     level += 1;
   }
@@ -874,4 +875,37 @@ export const LUXURY = {
   tuongga: { id: 'tuongga', kind: 'decor', name: 'Tượng gà vàng', emoji: '🐓', price: 12000000, desc: 'Trang trí đầu ruộng.' },
   hosen: { id: 'hosen', kind: 'decor', name: 'Hồ sen', emoji: '🪷', price: 15000000, desc: 'Trang trí đầu ruộng.' },
   conglang: { id: 'conglang', kind: 'decor', name: 'Cổng làng', emoji: '⛩️', price: 25000000, desc: 'Trang trí đầu ruộng.' },
+  // Đợt 2: thêm danh hiệu, khung, trang trí và thú cưng (đi theo tên)
+  thosanoc: { id: 'thosanoc', kind: 'title', name: 'Thợ săn ốc', emoji: '🐌', price: 8000000, desc: 'Ao nào cũng có dấu tay.' },
+  thanhcay: { id: 'thanhcay', kind: 'title', name: 'Thánh cày', emoji: '🚜', price: 12000000, desc: 'Online 25/8.' },
+  onghoangsaurieng: { id: 'onghoangsaurieng', kind: 'title', name: 'Ông hoàng sầu riêng', emoji: '🍈', price: 15000000, desc: 'Thơm lừng cả làng.' },
+  chuateaoca: { id: 'chuateaoca', kind: 'title', name: 'Chúa tể ao cá', emoji: '🐟', price: 18000000, desc: 'Cá gọi bằng bố.' },
+  typhu: { id: 'typhu', kind: 'title', name: 'Tỷ phú', emoji: '💎', price: 25000000, desc: 'Đếm tiền mỏi tay.' },
+  daigiadat: { id: 'daigiadat', kind: 'title', name: 'Đại gia bất động sản', emoji: '🏘️', price: 30000000, desc: '320 ô chưa đủ.' },
+  nuhoangnongtrai: { id: 'nuhoangnongtrai', kind: 'title', name: 'Nữ hoàng nông trại', emoji: '👸', price: 35000000, desc: 'Ruộng là vương quốc.' },
+  bogialang: { id: 'bogialang', kind: 'title', name: 'Bố già làng', emoji: '🎩', price: 45000000, desc: 'Nói một câu cả làng nghe.' },
+  thantai: { id: 'thantai', kind: 'title', name: 'Thần tài', emoji: '🧧', price: 60000000, desc: 'Đi tới đâu vàng tới đó.' },
+  khungngoc: { id: 'khungngoc', kind: 'frame', name: 'Khung ngọc lục bảo', emoji: '💚', price: 25000000, desc: 'Tên xanh ngọc.' },
+  khunghongngoc: { id: 'khunghongngoc', kind: 'frame', name: 'Khung hồng ngọc', emoji: '❤️', price: 30000000, desc: 'Tên đỏ rực.' },
+  khungcauvong: { id: 'khungcauvong', kind: 'frame', name: 'Khung cầu vồng', emoji: '🌈', price: 60000000, desc: 'Tên bảy sắc.' },
+  khunghackim: { id: 'khunghackim', kind: 'frame', name: 'Khung hắc kim', emoji: '🖤', price: 80000000, desc: 'Tên đen viền vàng.' },
+  gheda: { id: 'gheda', kind: 'decor', name: 'Ghế đá', emoji: '🪑', price: 6000000, desc: 'Trang trí đầu ruộng.' },
+  bangten: { id: 'bangten', kind: 'decor', name: 'Bảng tên nông trại', emoji: '🪧', price: 7000000, desc: 'Trang trí đầu ruộng.' },
+  chuongbocau: { id: 'chuongbocau', kind: 'decor', name: 'Chuồng bồ câu', emoji: '🕊️', price: 8000000, desc: 'Trang trí đầu ruộng.' },
+  caythong: { id: 'caythong', kind: 'decor', name: 'Cây thông', emoji: '🎄', price: 9000000, desc: 'Trang trí đầu ruộng.' },
+  thuyen: { id: 'thuyen', kind: 'decor', name: 'Thuyền gỗ', emoji: '🛶', price: 11000000, desc: 'Trang trí đầu ruộng.' },
+  laudaicat: { id: 'laudaicat', kind: 'decor', name: 'Lâu đài cát', emoji: '🏰', price: 14000000, desc: 'Trang trí đầu ruộng.' },
+  tuongbovang: { id: 'tuongbovang', kind: 'decor', name: 'Tượng bò vàng', emoji: '🐄', price: 18000000, desc: 'Trang trí đầu ruộng.' },
+  vuonbonsai: { id: 'vuonbonsai', kind: 'decor', name: 'Vườn bonsai', emoji: '🎋', price: 20000000, desc: 'Trang trí đầu ruộng.' },
+  phaohoa: { id: 'phaohoa', kind: 'decor', name: 'Pháo hoa', emoji: '🎆', price: 30000000, desc: 'Trang trí đầu ruộng.' },
+  thapdongho: { id: 'thapdongho', kind: 'decor', name: 'Tháp đồng hồ', emoji: '🕰️', price: 35000000, desc: 'Trang trí đầu ruộng.' },
+  tuongda: { id: 'tuongda', kind: 'decor', name: 'Tượng đá cổ', emoji: '🗿', price: 40000000, desc: 'Trang trí đầu ruộng.' },
+  biethu: { id: 'biethu', kind: 'decor', name: 'Biệt thự', emoji: '🏡', price: 50000000, desc: 'Trang trí đầu ruộng.' },
+  petcho: { id: 'petcho', kind: 'pet', name: 'Chó cưng', emoji: '🐕', price: 10000000, desc: 'Đi theo bạn khắp làng.' },
+  petmeo: { id: 'petmeo', kind: 'pet', name: 'Mèo cưng', emoji: '🐈', price: 10000000, desc: 'Lười nhưng đáng yêu.' },
+  pettho: { id: 'pettho', kind: 'pet', name: 'Thỏ', emoji: '🐇', price: 12000000, desc: 'Nhảy quanh ruộng.' },
+  petvet: { id: 'petvet', kind: 'pet', name: 'Vẹt', emoji: '🦜', price: 15000000, desc: 'Học nói tên bạn.' },
+  petrua: { id: 'petrua', kind: 'pet', name: 'Rùa vàng', emoji: '🐢', price: 20000000, desc: 'Chậm mà chắc.' },
+  petkylan: { id: 'petkylan', kind: 'pet', name: 'Kỳ lân', emoji: '🦄', price: 70000000, desc: 'Hiếm có khó tìm.' },
+  petrong: { id: 'petrong', kind: 'pet', name: 'Rồng con', emoji: '🐉', price: 100000000, desc: 'Cả làng chỉ ai giàu nhất mới có.' },
 };

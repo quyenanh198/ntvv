@@ -386,7 +386,7 @@
 
           ${visiting ? `
             <div class="visit-bar">
-              <span>👀 Ruộng của <b class="${frameCls(visiting.farm.luxury?.frame)}">${esc(visiting.farm.name)}</b>${visiting.farm.luxury?.title && DATA.config.luxury?.[visiting.farm.luxury.title] ? ` <i class="vis-title">${DATA.config.luxury[visiting.farm.luxury.title].emoji} ${DATA.config.luxury[visiting.farm.luxury.title].name}</i>` : ''}${(visiting.farm.luxury?.decor || []).length ? ` <span class="hud-decor">${visiting.farm.luxury.decor.map((id) => DATA.config.luxury?.[id]?.emoji || '').join('')}</span>` : ''} · Lv ${visiting.farm.level}${visiting.farm.dogUntil > Date.now() ? ' <span class="dog-warn">🐕 Có chó canh — 20% bị tóm!</span>' : ''}</span>
+              <span>👀 Ruộng của <b class="${frameCls(visiting.farm.luxury?.frame)}">${esc(visiting.farm.name)}</b>${visiting.farm.luxury?.title && DATA.config.luxury?.[visiting.farm.luxury.title] ? ` <i class="vis-title">${DATA.config.luxury[visiting.farm.luxury.title].emoji} ${DATA.config.luxury[visiting.farm.luxury.title].name}</i>` : ''}${[...(visiting.farm.luxury?.pets || []), ...(visiting.farm.luxury?.decor || [])].length ? ` <span class="hud-decor">${[...(visiting.farm.luxury.pets || []), ...(visiting.farm.luxury.decor || [])].map((id) => DATA.config.luxury?.[id]?.emoji || '').join('')}</span>` : ''} · Lv ${visiting.farm.level}${visiting.farm.dogUntil > Date.now() ? ' <span class="dog-warn">🐕 Có chó canh — 20% bị tóm!</span>' : ''}</span>
           ${visiting.farm.loot?.animalsReady ? (Date.now() < (visiting.farm.loot.animalPoachAt || 0)
             ? `<button class="gbtn btn-mini" disabled>⏳ Chuồng (${Math.max(1, Math.ceil((visiting.farm.loot.animalPoachAt - Date.now()) / 60000))}p)</button>`
             : `<button class="gbtn gbtn--green btn-mini" id="btn-poach-animal">😋 Cuỗm chuồng (${visiting.farm.loot.animalsReady})</button>`) : ''}
@@ -579,7 +579,7 @@
   function luxLine(l) {
     if (!l || !DATA.config.luxury) return '';
     const t = l.title ? DATA.config.luxury[l.title] : null;
-    const d = (l.decor || []).map((id) => DATA.config.luxury[id]?.emoji || '').join('');
+    const d = [...(l.pets || []), ...(l.decor || [])].map((id) => DATA.config.luxury[id]?.emoji || '').join('');
     if (!t && !d) return '';
     return `<span class="hud-title">${t ? `${t.emoji} ${t.name}` : ''}${d ? ` <span class="hud-decor">${d}</span>` : ''}</span>`;
   }
@@ -986,7 +986,7 @@
         const owned = lux.owned.includes(x.id);
         const active = lux.title === x.id || lux.frame === x.id;
         const btn = owned
-          ? (kind === 'decor' ? '<span class="lux-owned">✅ Đã có</span>' : active ? `<button class="gbtn btn-mini" data-lux-equip="" data-lux-kind="${kind}">Đang dùng · Bỏ</button>` : `<button class="gbtn gbtn--green btn-mini" data-lux-equip="${x.id}">Dùng</button>`)
+          ? (kind === 'decor' || kind === 'pet' ? '<span class="lux-owned">✅ Đã có</span>' : active ? `<button class="gbtn btn-mini" data-lux-equip="" data-lux-kind="${kind}">Đang dùng · Bỏ</button>` : `<button class="gbtn gbtn--green btn-mini" data-lux-equip="${x.id}">Dùng</button>`)
           : `<button class="gbtn gbtn--gold btn-mini" data-lux-buy="${x.id}" ${m.gold >= x.price ? '' : 'data-off="1" aria-disabled="true"'}>${x.price.toLocaleString('vi')} ${COIN}</button>`;
         return `<div class="seed-card lux-card${owned ? ' lux-card--owned' : ''}"><span class="lux-emoji">${x.emoji}</span><span class="seed-name${kind === 'frame' ? frameCls(x.id) : ''}">${x.name}</span><span class="seed-meta">${x.desc || ''}</span>${btn}</div>`;
       }).join('')}</div>`;
@@ -997,7 +997,7 @@
           <span class="btn-group">${[1, 10, 50].map((n) => `<button class="gbtn gbtn--gold btn-mini" data-lottery-buy="${n}">Mua ${n}</button>`).join('')}</span></div>
         ${lot.last ? `<p class="sheet-note">Kỳ trước (${lot.last.day.replace(/^la-/, '')}): <b>${esc(lot.last.winner_name)}</b> trúng ${lot.last.pot.toLocaleString('vi')} ${COIN} (${lot.last.tickets} vé)</p>` : ''}` : '';
       return sheetShell(`💎 Xa xỉ <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
-        `<p class="sheet-note">Đồ khoe của — không tăng sức mạnh, chỉ để cả làng trầm trồ. Vàng mua bị đốt khỏi kinh tế làng. Thuế đất: ${(DATA.config.taxPerPlot || 0).toLocaleString('vi')} ${COIN}/ô/ngày (hôm nay ${(m.tax?.today || 0).toLocaleString('vi')} ${COIN}).</p>${section('title', '🏷️ Danh hiệu', 'Hiện cạnh tên (chọn 1 để dùng).')}${section('frame', '🖼️ Khung tên', 'Tô màu tên bạn khắp làng (chọn 1).')}${section('decor', '🏡 Trang trí ruộng', 'Hiện trên đầu ruộng, ai ghé cũng thấy.')}${lottery}`,
+        `<p class="sheet-note">Đồ khoe của — không tăng sức mạnh, chỉ để cả làng trầm trồ. Vàng mua bị đốt khỏi kinh tế làng. Thuế đất: ${(DATA.config.taxPerPlot || 0).toLocaleString('vi')} ${COIN}/ô/ngày (hôm nay ${(m.tax?.today || 0).toLocaleString('vi')} ${COIN}).</p>${section('title', '🏷️ Danh hiệu', 'Hiện cạnh tên (chọn 1 để dùng).')}${section('frame', '🖼️ Khung tên', 'Tô màu tên bạn khắp làng (chọn 1).')}${section('pet', '🐾 Thú cưng', 'Đi theo tên bạn khắp làng.')}${section('decor', '🏡 Trang trí ruộng', 'Hiện trên đầu ruộng, ai ghé cũng thấy.')}${lottery}`,
         'sheet--factory');
     }
 

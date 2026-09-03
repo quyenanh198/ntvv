@@ -593,6 +593,7 @@ export function buildApp({ config, db, logger = true }) {
       title: f.title_id && LUXURY[f.title_id] ? f.title_id : null,
       frame: f.frame_id && LUXURY[f.frame_id] ? f.frame_id : null,
       decor: owned.filter((id) => LUXURY[id].kind === 'decor'),
+      pets: owned.filter((id) => LUXURY[id].kind === 'pet'),
     };
   }
   const machineLevels = (f) => { try { return JSON.parse(f.machine_levels_json || '{}'); } catch { return {}; } };

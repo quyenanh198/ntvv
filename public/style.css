@@ -1808,3 +1808,8 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .sat { font-style: normal; color: #b3462b; font-weight: 700; }
 .lux-card .seed-name.nf { background: #3b2a1a; border-radius: 6px; padding: .05rem .35rem; }
 @media (max-width: 900px) { .top-hud .hud-title { display: none; } }
+
+.nf-khungngoc { color: #6ff2a8 !important; text-shadow: 0 0 8px rgba(60, 230, 140, .95) !important; }
+.nf-khunghongngoc { color: #ff6b7a !important; text-shadow: 0 0 8px rgba(255, 80, 100, .95) !important; }
+.nf-khungcauvong { background: linear-gradient(90deg, #ff5f6d, #ffc371, #f9f871, #7cf29a, #6fd3ff, #c58bff); -webkit-background-clip: text; background-clip: text; color: transparent !important; text-shadow: none !important; }
+.nf-khunghackim { color: #1a1a1a !important; text-shadow: 0 0 2px #ffd54a, 0 0 8px rgba(255, 200, 40, .9) !important; }
