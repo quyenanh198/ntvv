@@ -401,6 +401,7 @@
             </div>` : renderToolbar()}
 
           <div class="field-wrap">
+            ${luxStrip((visiting ? visiting.farm : m).luxury)}
             <span class="field-decor decor-1">🌻</span>
             <span class="field-decor decor-2">🍄</span>
             <img class="scarecrow-img" src="assets/ui/scarecrow.svg" alt="" />
@@ -582,6 +583,16 @@
     const d = [...(l.pets || []), ...(l.decor || [])].map((id) => DATA.config.luxury[id]?.emoji || '').join('');
     if (!t && !d) return '';
     return `<span class="hud-title">${t ? `${t.emoji} ${t.name}` : ''}${d ? ` <span class="hud-decor">${d}</span>` : ''}</span>`;
+  }
+
+  // Dải xa xỉ trên đầu ruộng (mình và khi thăm): danh hiệu + thú cưng + trang trí.
+  function luxStrip(l) {
+    if (!l || !DATA.config.luxury) return '';
+    const L = DATA.config.luxury;
+    const t = l.title ? L[l.title] : null;
+    const items = [...(l.pets || []), ...(l.decor || [])].filter((id) => L[id]);
+    if (!t && !items.length) return '';
+    return `<div class="lux-strip">${t ? `<span class="lux-title-badge">${t.emoji} ${t.name}</span>` : ''}${items.map((id) => `<span class="lux-item" title="${L[id].name}">${L[id].emoji}</span>`).join('')}</div>`;
   }
 
   function sheetShell(title, body, extraClass = '') {
