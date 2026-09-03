@@ -430,7 +430,14 @@ export function buildApp({ config, db, logger = true }) {
       plot.fruit_stock = stock;
       plot.ready_at = readyAt;
     }
-    return { stock, readyAt, endsAt, dead: now >= endsAt };
+    const dead = now >= endsAt;
+    if (dead && stock <= 0) {
+      // Cây tàn mà không còn quả: dọn luôn, khỏi treo "Hái quả ×0" mãi.
+      db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(owner.user_id, plot.idx);
+      logEvent(`🍂 Cây ${tree.name} nhà ${owner.name} đã tàn`);
+      return { stock: 0, readyAt, endsAt, dead, gone: true };
+    }
+    return { stock, readyAt, endsAt, dead };
   }
 
   function plotViews(ownerId, plotsCount) {
@@ -446,11 +453,16 @@ export function buildApp({ config, db, logger = true }) {
         continue;
       }
       const st = r.tree ? treeSettle(owner, r, now) : null;
+      if (st && st.gone) {
+        out.push({ idx: i, crop: null });
+        continue;
+      }
       out.push({
         idx: i,
         crop: r.crop,
         plantedAt: r.planted_at,
-        readyAt: r.ready_at,
+        // Cây tàn còn quả: không có vụ kế, chỉ còn hái nốt.
+        readyAt: st && st.dead ? null : r.ready_at,
         ready: st ? st.stock > 0 : now >= r.ready_at,
         watered: !!r.watered,
         poached: !!r.poached,

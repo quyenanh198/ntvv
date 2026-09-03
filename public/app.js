@@ -1610,7 +1610,11 @@
     const now = Date.now();
     let flip = false;
     for (const p of farm.plots) {
-      if (p.crop && !p.ready && now >= p.readyAt) { p.ready = true; flip = true; }
+      if (p.crop && !p.ready && p.readyAt != null && now >= p.readyAt) {
+        p.ready = true; flip = true;
+        // Cây ăn quả: vụ mới vừa chín → cộng tạm số quả (server chốt lại khi hái/refresh).
+        if (p.tree) { p.fruits = (p.fruits || 0) + (DATA.config.trees[p.crop]?.yield || 0); p.readyAt += DATA.config.trees[p.crop]?.cycleMs || 0; }
+      }
     }
     for (const a of me().animals || []) {
       if (a.ready_at != null && !a.ready && now >= a.ready_at) { a.ready = true; flip = true; }
