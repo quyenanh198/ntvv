@@ -887,7 +887,7 @@ export const thiefEconomyMult = (villageGold) => 1 + Math.floor(villageGold / TH
 // ---- Bể hút vàng (chống lạm phát) -----------------------------------------
 export const TAX_PER_PLOT = 2000; // thuế đất: vàng/ô/ngày (mốc 9h sáng LA), vàng bị đốt
 export const MACHINE_UPGRADE_GOLD = [1_000_000, 2_500_000, 5_000_000, 10_000_000, 20_000_000]; // nhà máy cấp 1..5, mỗi cấp −10% thời gian
-export const LOTTERY = { ticket: 100_000, base: 1_000_000, perTicket: 500_000, maxPerDay: 100, shares: [0.5, 0.3, 0.2] }; // hũ = 1 triệu + 500k mỗi vé; 3 người may mắn chia 50/30/20 (thiếu người thì phần dư dồn về giải 1)
+export const LOTTERY = { ticket: 100_000, base: 1_000_000, perTicket: 500_000, maxPerDay: 100, shares: [0.7, 0.2, 0.1] }; // hũ = 1 triệu + 500k mỗi vé; 3 người may mắn chia 70/20/10 (thiếu người thì phần dư dồn về giải 1)
 export const MARKET_SAT = { cap: 2_000_000, floor: 0.4, halfMs: 4 * 60 * MIN }; // giá bão hoà: bán dồn 1 món thì giá tụt, hồi theo nửa đời 4h
 // Xa xỉ phẩm: chỉ để khoe, không tăng sức mạnh. Danh hiệu/khung tên chọn 1, trang trí hiện hết.
 export const LUXURY = {
@@ -947,4 +947,4 @@ export const LUXURY = {
 };
 
 // Cần sa: thưởng khi thu, tiền thưởng cho người khám xét trúng, phí khám xét (đốt), số lần khám/nhà/ngày.
-export const CANSA = { reward: 1_000_000, bounty: 500_000, inspectFee: 100_000, inspectPerDay: 5, disguise: 'rauthom' };
+export const CANSA = { reward: 1_000_000, bounty: 500_000, inspectFee: 0, inspectPerDay: 5 }; // khám xét miễn phí; người ngoài thấy cần sa như một cây ngẫu nhiên (cố định theo ô)

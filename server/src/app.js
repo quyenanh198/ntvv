@@ -1081,7 +1081,16 @@ export function buildApp({ config, db, logger = true }) {
           .filter((p) => !CROPS[p.crop]?.risky); // cần sa: chủ tự thu
       }
 
-      // Khám xét ruộng người khác: tốn phí (đốt); trúng cần sa thì nhổ sạch ô đó, người khám lĩnh thưởng.
+      // Cần sa nguỵ trang thành một cây khác, chọn ngẫu nhiên nhưng cố định theo ô + lứa
+      // (không đổi mỗi lần xem) trong số cây chủ vườn đã mở khoá.
+      function disguiseFor(owner, idx, plantedAt) {
+        const lv = levelFor(owner.xp);
+        const pool = Object.values(CROPS).filter((c) => !c.risky && c.level <= lv).map((c) => c.id);
+        let h = (owner.user_id * 2654435761 + idx * 40503 + Math.floor((plantedAt || 0) / 1000)) >>> 0;
+        h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995) >>> 0; h ^= h >>> 15;
+        return pool[h % pool.length] || 'rauthom';
+      }
+      // Khám xét ruộng người khác: miễn phí, 5 lượt/nhà/ngày; trúng cần sa thì nhổ sạch ô đó, người khám lĩnh thưởng.
       api.post('/inspect', async (request, reply) => {
         const { ownerId, idx } = request.body ?? {};
         const me = request.farmer;
@@ -1094,11 +1103,13 @@ export function buildApp({ config, db, logger = true }) {
         if (lastAction.get(ownerId, plot.idx, plot.planted_at, me.user_id, 'inspect')) return reply.code(400).send({ error: 'already_inspected' });
         const used = db.prepare("SELECT COUNT(*) n FROM plot_actions WHERE owner_id = ? AND helper_id = ? AND action = 'inspect' AND at > ?").get(ownerId, me.user_id, now - 24 * 60 * 60 * 1000).n;
         if (used >= CANSA.inspectPerDay) return reply.code(400).send({ error: 'inspect_limit' });
-        if (me.gold < CANSA.inspectFee) return reply.code(400).send({ error: 'not_enough_gold' });
+        if (CANSA.inspectFee > 0 && me.gold < CANSA.inspectFee) return reply.code(400).send({ error: 'not_enough_gold' });
         const found = !!CROPS[plot.crop]?.risky;
         db.transaction(() => {
-          grant(me.user_id, { gold: -CANSA.inspectFee });
-          db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(CANSA.inspectFee, me.user_id);
+          if (CANSA.inspectFee > 0) {
+            grant(me.user_id, { gold: -CANSA.inspectFee });
+            db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(CANSA.inspectFee, me.user_id);
+          }
           markAction.run(ownerId, plot.idx, plot.planted_at, me.user_id, 'inspect', now);
           if (found) {
             db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(ownerId, plot.idx);
@@ -1794,7 +1805,7 @@ export function buildApp({ config, db, logger = true }) {
       // Hái ké một ô (đã kiểm tra chín/lượt/chó): khách +POACH_YIELD, ô +1 lượt bị hái.
       function poachPlot(me, owner, plot) {
         const crop0 = plot.tree ? TREES[plot.crop] : CROPS[plot.crop];
-        const crop = crop0?.risky ? CROPS[CANSA.disguise] : crop0; // cần sa nguỵ trang: kẻ trộm chỉ lấy được rau thơm
+        const crop = crop0?.risky ? CROPS[disguiseFor(owner, plot.idx, plot.planted_at)] : crop0; // cần sa nguỵ trang: kẻ trộm chỉ lấy được cây giả
         db.transaction(() => {
           markAction.run(owner.user_id, plot.idx, plot.planted_at, me.user_id, 'poach', Date.now());
           db.prepare('UPDATE plots SET poached = poached + 1 WHERE owner_id = ? AND idx = ?').run(owner.user_id, plot.idx);
@@ -2123,7 +2134,7 @@ export function buildApp({ config, db, logger = true }) {
         const owner = getFarmer.get(ownerId);
         const li = levelInfo(owner.xp);
         const plots = plotViews(ownerId, owner.plots_count);
-        for (const p of plots) if (p.crop && CROPS[p.crop]?.risky) p.crop = CANSA.disguise; // người ngoài thấy như rau thơm
+        for (const p of plots) if (p.crop && CROPS[p.crop]?.risky) p.crop = disguiseFor(owner, p.idx, p.plantedAt); // người ngoài thấy như cây khác
         const myActs = {};
         const now2 = Date.now();
         const again = scaleMs(POACH_AGAIN_MS, config.fast);

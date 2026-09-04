@@ -420,7 +420,7 @@
           ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canWater).length; return n >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-water-help-all">💧 Tưới hết (${n})</button>` : ''; })()}
           ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canPoach).length; return n >= 2 ? `<button class="gbtn gbtn--gold btn-mini" id="btn-poach-all">😋 Trộm hết (${n})</button>` : ''; })()}
           ${(() => { const n = visiting.farm.plots.filter((p) => p.crop && p.ready).length; return n ? `<button class="gbtn gbtn--green btn-mini" id="btn-harvest-help">🧺 Thu hoạch giúp (${n})</button>` : ''; })()}
-              <button class="gbtn btn-mini${INSPECT ? ' gbtn--gold' : ''}" id="btn-inspect-mode" title="Khám xét: bấm vào ô đang trồng, tốn ${(DATA.config.cansa?.inspectFee || 100000).toLocaleString('vi')} vàng; trúng cần sa thì lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')}">🔍 Khám xét${INSPECT ? ' — bấm ô' : ''}</button>
+              <button class="gbtn btn-mini${INSPECT ? ' gbtn--gold' : ''}" id="btn-inspect-mode" title="Khám xét: bấm vào ô đang trồng (${DATA.config.cansa?.inspectFee ? `tốn ${DATA.config.cansa.inspectFee.toLocaleString('vi')} vàng` : 'miễn phí'}, ${DATA.config.cansa?.inspectPerDay || 5} lượt/nhà/ngày); trúng cần sa thì lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')}">🔍 Khám xét${INSPECT ? ' — bấm ô' : ''}</button>
               <button class="gbtn gbtn--green btn-mini" id="btn-gold-give">💝 Cho tiền</button>
               <button class="gbtn gbtn--green btn-mini" id="btn-gold-ask">🙏 Xin tiền</button>
               <button id="btn-home" class="gbtn gbtn--gold">🏡 Về nhà</button>
@@ -1657,12 +1657,12 @@
       if (!btn) return;
       const kind = btn.dataset.kind;
       if (VISIT && INSPECT && kind !== 'empty') {
-        const fee = DATA.config.cansa?.inspectFee || 100000;
-        if (!window.confirm(`Khám xét ô này? Tốn ${fee.toLocaleString('vi')} vàng. Trúng cần sa: ô bị nhổ sạch, bạn lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')} vàng.`)) return;
+        const fee = DATA.config.cansa?.inspectFee || 0;
+        if (!window.confirm(`Khám xét ô này? ${fee ? `Tốn ${fee.toLocaleString('vi')} vàng.` : 'Miễn phí, mỗi nhà 5 lượt/ngày.'} Trúng cần sa: ô bị nhổ sạch, bạn lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')} vàng.`)) return;
         const r = await run(() => api('/inspect', { ownerId: VISIT.ownerId, idx }));
         if (r) {
           updateMe(r);
-          toast(r.found ? `🚨 Trúng rồi! Cần sa bị nhổ sạch — bạn lĩnh ${r.bounty.toLocaleString('vi')} vàng` : `🔍 Không có gì — mất ${r.fee.toLocaleString('vi')} vàng phí khám (còn ${r.left} lượt hôm nay)`);
+          toast(r.found ? `🚨 Trúng rồi! Cần sa bị nhổ sạch — bạn lĩnh ${r.bounty.toLocaleString('vi')} vàng` : `🔍 Không có gì${r.fee ? ` — mất ${r.fee.toLocaleString('vi')} vàng phí khám` : ''} (còn ${r.left} lượt hôm nay)`);
           render();
         }
         return;
