@@ -356,7 +356,7 @@
           <button class="side-btn" data-sheet="inventory">🎒<span>Kho đồ</span></button>
         </div>
         <div class="side side-right">
-          <button class="side-btn side-btn--gold" id="btn-harvestall"><img src="' + A('assets/art/basket.png') + '" alt="" />${m.plots.some((p) => p.crop && p.ready) ? '<i class="dot"></i>' : ''}<span>Thu hoạch</span></button>
+          <button class="side-btn side-btn--gold" id="btn-harvestall"><img src="${A('assets/art/basket.png')}" alt="" />${m.plots.some((p) => p.crop && p.ready) ? '<i class="dot"></i>' : ''}<span>Thu hoạch</span></button>
           ${m.level >= DATA.config.orderUnlockLevel ? `<button class="side-btn" data-sheet="orders">🚚${ordersReady ? '<i class="dot"></i>' : ''}<span>Đơn hàng</span></button>` : ''}
           <button class="side-btn" data-sheet="festival">🎪${festReady ? '<i class="dot"></i>' : ''}<span>Sự kiện</span></button>
           ${m.skills.unlocked ? `<button class="side-btn" data-sheet="skills">🎓${canLearnAnySkill(m) ? '<i class="dot"></i>' : ''}<span>Kỹ năng</span></button>` : ''}
