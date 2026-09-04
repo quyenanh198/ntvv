@@ -40,6 +40,9 @@ export const CROPS = {
   vani:       { id: 'vani',       name: 'Vani',       emoji: '🌿', level: 29, growMs: 300 * MIN, seed: 170, sell: 520, expSow: 14, expHarvest: 320 },
   // Gia vị & nguyên liệu ăn vặt Việt Nam
   rauthom:    { id: 'rauthom',    name: 'Rau thơm',   emoji: '🌿', level: 4,  growMs: 10 * MIN,  seed: 5,   sell: 14,  expSow: 1, expHarvest: 5 },
+  // Cây rủi ro: thu 1 triệu vàng/cây (trả thẳng vàng, không ra hàng); người khác
+  // khám xét trúng thì mất trắng, họ lĩnh 500k. Người ngoài nhìn vào thấy như rau thơm.
+  cansa:      { id: 'cansa',      name: 'Cần sa',     emoji: '🌿', level: 25, growMs: 180 * MIN, seed: 50000, sell: 0, expSow: 5, expHarvest: 150, risky: true },
   toi:        { id: 'toi',        name: 'Tỏi',        emoji: '🧄', level: 5,  growMs: 25 * MIN,  seed: 10,  sell: 28,  expSow: 2, expHarvest: 10 },
   sa:         { id: 'sa',         name: 'Sả',         emoji: '🎍', level: 6,  growMs: 20 * MIN,  seed: 9,   sell: 26,  expSow: 2, expHarvest: 9 },
   dauphong:   { id: 'dauphong',   name: 'Đậu phộng',  emoji: '🥜', level: 7,  growMs: 35 * MIN,  seed: 14,  sell: 40,  expSow: 2, expHarvest: 15 },
@@ -640,7 +643,7 @@ export const DOG = {
 
 // Sinh một đơn từ các sản phẩm đã mở khóa. rng: () => [0,1).
 export function generateOrder(level, rng) {
-  const pool = Object.values(CROPS).filter((c) => c.level <= level).map((c) => c.id);
+  const pool = Object.values(CROPS).filter((c) => c.level <= level && !c.risky).map((c) => c.id);
   for (const a of Object.values(ANIMALS)) if (level >= a.level) pool.push(a.product);
   for (const t of Object.values(TREES)) if (level >= t.level) pool.push(t.id);
   if (level >= FISHING.level) pool.push('canho', 'caro');
@@ -942,3 +945,6 @@ export const LUXURY = {
   petkylan: { id: 'petkylan', kind: 'pet', name: 'Kỳ lân', emoji: '🦄', price: 70000000, desc: 'Hiếm có khó tìm.' },
   petrong: { id: 'petrong', kind: 'pet', name: 'Rồng con', emoji: '🐉', price: 100000000, desc: 'Cả làng chỉ ai giàu nhất mới có.' },
 };
+
+// Cần sa: thưởng khi thu, tiền thưởng cho người khám xét trúng, phí khám xét (đốt), số lần khám/nhà/ngày.
+export const CANSA = { reward: 1_000_000, bounty: 500_000, inspectFee: 100_000, inspectPerDay: 5, disguise: 'rauthom' };

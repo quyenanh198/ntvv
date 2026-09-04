@@ -6,6 +6,7 @@
 
   let DATA = null;   // /state
   let VISIT = null;  // { ownerId, farm, myActs }
+  let INSPECT = false; // chế độ khám xét khi thăm ruộng: bấm ô = khám
   let MARKET = null; // { mine, others } — tin thu mua, nạp khi mở sheet
   let sheet = null;  // { type: 'seed'|'plotmenu'|'shop'|'inventory'|'quests'|'orders'|'coop'|'mill'|'expand'|'stars', ... }
   let showLb = null;
@@ -126,6 +127,8 @@
     own_farm: 'Ruộng nhà mình mà!',
     no_empty_plot: 'Không còn ô trống.',
     nothing_ready: 'Chưa có gì sẵn sàng cả.',
+    inspect_limit: 'Hôm nay bạn khám nhà này đủ 5 lần rồi.',
+    already_inspected: 'Ô này bạn khám rồi.',
     bad_amount: 'Số vàng không hợp lệ.',
     too_many_requests: 'Bạn đang có 5 lời xin chưa được trả lời — chờ đã nhé.',
     request_closed: 'Lời xin này đã đóng rồi.',
@@ -416,6 +419,7 @@
           ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canWater).length; return n >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-water-help-all">💧 Tưới hết (${n})</button>` : ''; })()}
           ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canPoach).length; return n >= 2 ? `<button class="gbtn gbtn--gold btn-mini" id="btn-poach-all">😋 Trộm hết (${n})</button>` : ''; })()}
           ${(() => { const n = visiting.farm.plots.filter((p) => p.crop && p.ready).length; return n ? `<button class="gbtn gbtn--green btn-mini" id="btn-harvest-help">🧺 Thu hoạch giúp (${n})</button>` : ''; })()}
+              <button class="gbtn btn-mini${INSPECT ? ' gbtn--gold' : ''}" id="btn-inspect-mode" title="Khám xét: bấm vào ô đang trồng, tốn ${(DATA.config.cansa?.inspectFee || 100000).toLocaleString('vi')} vàng; trúng cần sa thì lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')}">🔍 Khám xét${INSPECT ? ' — bấm ô' : ''}</button>
               <button class="gbtn gbtn--green btn-mini" id="btn-gold-give">💝 Cho tiền</button>
               <button class="gbtn gbtn--green btn-mini" id="btn-gold-ask">🙏 Xin tiền</button>
               <button id="btn-home" class="gbtn gbtn--gold">🏡 Về nhà</button>
@@ -736,7 +740,7 @@
         return `<button class="seed-card${locked ? ' seed-card--locked' : ''}" data-crop="${locked ? '' : c.id}" title="${c.name}">
           <img class="seed-sprite" src="${cropSprite(c.id, 3)}" alt="" />
           <span class="seed-name">${c.name}</span>
-          <span class="seed-meta">⏱ ${fmtDuration(c.growMs)} · ${c.sell} ${COIN}</span>
+          <span class="seed-meta">⏱ ${fmtDuration(c.growMs)} · ${c.risky ? `${(DATA.config.cansa?.reward || 1000000).toLocaleString('vi')} ${COIN}/cây · bị khám xét = mất trắng` : `${c.sell} ${COIN}`}</span>
           ${lockLevel ? `<span class="seed-lock">Lv ${c.level}</span>` : `<span class="seed-cost">${c.seed} ${COIN}</span>`}
         </button>`;
       }).join('');
@@ -1278,6 +1282,7 @@
         if (el.dataset.sheet === 'money') { openMoney(); return; }
         sheet = { type: el.dataset.sheet }; render();
       }));
+    document.getElementById('btn-inspect-mode')?.addEventListener('click', () => { INSPECT = !INSPECT; toast(INSPECT ? '🔍 Bấm vào một ô đang trồng để khám xét' : 'Tắt khám xét'); render(); });
     document.getElementById('btn-gold-give')?.addEventListener('click', async () => {
       const v = window.prompt(`Tặng ${VISIT.farm.name} bao nhiêu vàng? (bạn có ${me().gold.toLocaleString('vi')})`, '');
       const n = Math.floor(Number(String(v || '').replace(/[^0-9]/g, '')));
@@ -1365,7 +1370,7 @@
     document.querySelectorAll('[data-lb-tab]').forEach((el) =>
       el.addEventListener('click', () => { showLb.tab = el.dataset.lbTab; render(); }));
 
-    document.getElementById('btn-home')?.addEventListener('click', () => { VISIT = null; refresh(); });
+    document.getElementById('btn-home')?.addEventListener('click', () => { VISIT = null; INSPECT = false; refresh(); });
 
     document.querySelector('.family-strip')?.addEventListener('click', async (ev) => {
       const el = ev.target.closest('[data-visit]');
@@ -1650,6 +1655,17 @@
       const btn = ev.target.closest('.plot');
       if (!btn) return;
       const kind = btn.dataset.kind;
+      if (VISIT && INSPECT && kind !== 'empty') {
+        const fee = DATA.config.cansa?.inspectFee || 100000;
+        if (!window.confirm(`Khám xét ô này? Tốn ${fee.toLocaleString('vi')} vàng. Trúng cần sa: ô bị nhổ sạch, bạn lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')} vàng.`)) return;
+        const r = await run(() => api('/inspect', { ownerId: VISIT.ownerId, idx }));
+        if (r) {
+          updateMe(r);
+          toast(r.found ? `🚨 Trúng rồi! Cần sa bị nhổ sạch — bạn lĩnh ${r.bounty.toLocaleString('vi')} vàng` : `🔍 Không có gì — mất ${r.fee.toLocaleString('vi')} vàng phí khám (còn ${r.left} lượt hôm nay)`);
+          render();
+        }
+        return;
+      }
       const idx = Number(btn.dataset.idx);
       const { clientX: x, clientY: y } = ev;
 

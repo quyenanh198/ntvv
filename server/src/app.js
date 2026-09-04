@@ -6,6 +6,7 @@ import staticPlugin from '@fastify/static';
 
 import {
   CROPS,
+  CANSA,
   LUXURY,
   MACHINE_UPGRADE_GOLD,
   LOTTERY,
@@ -803,6 +804,7 @@ export function buildApp({ config, db, logger = true }) {
             machineUpgradeGold: MACHINE_UPGRADE_GOLD,
             lottery: LOTTERY,
             taxPerPlot: TAX_PER_PLOT,
+            cansa: CANSA,
             marketSat: MARKET_SAT,
             fast: config.fast,
           },
@@ -925,7 +927,8 @@ export function buildApp({ config, db, logger = true }) {
         const xp = crop.expHarvest + (plot.watered ? WATER_FRESH_EXP : 0);
         const refund = Math.random() < 0.05 * skillRank(me, 'hatgiongtk') ? crop.seed : 0;
         grant(me.user_id, { xp, gold: refund });
-        invAdd(me.user_id, crop.id, Math.max(1, HARVEST_YIELD - (plot.poached || 0)));
+        if (crop.risky) grant(me.user_id, { gold: CANSA.reward }); // cần sa: thu vàng thẳng, không ra hàng
+        else invAdd(me.user_id, crop.id, Math.max(1, HARVEST_YIELD - (plot.poached || 0)));
         db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, plot.idx);
         bumpQuest(me.user_id, 'harvest');
         bumpFest(me.user_id, 'harvest');
@@ -1062,8 +1065,40 @@ export function buildApp({ config, db, logger = true }) {
       // Thu hoạch giúp: nông sản vào kho CHỦ vườn (như chủ tự thu), khách nhận công.
       function ripePlotsOf(owner, now) {
         for (const p of db.prepare('SELECT * FROM plots WHERE owner_id = ? AND tree = 1').all(owner.user_id)) treeSettle(owner, p, now);
-        return db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0)) ORDER BY idx').all(owner.user_id, now);
+        return db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0)) ORDER BY idx').all(owner.user_id, now)
+          .filter((p) => !CROPS[p.crop]?.risky); // cần sa: chủ tự thu
       }
+
+      // Khám xét ruộng người khác: tốn phí (đốt); trúng cần sa thì nhổ sạch ô đó, người khám lĩnh thưởng.
+      api.post('/inspect', async (request, reply) => {
+        const { ownerId, idx } = request.body ?? {};
+        const me = request.farmer;
+        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
+        const owner = getFarmer.get(ownerId);
+        if (!owner) return reply.code(400).send({ error: 'no_farm' });
+        const plot = getPlot.get(ownerId, Number(idx));
+        if (!plot || !plot.crop || plot.tree) return reply.code(400).send({ error: 'no_plot' });
+        const now = Date.now();
+        if (lastAction.get(ownerId, plot.idx, plot.planted_at, me.user_id, 'inspect')) return reply.code(400).send({ error: 'already_inspected' });
+        const used = db.prepare("SELECT COUNT(*) n FROM plot_actions WHERE owner_id = ? AND helper_id = ? AND action = 'inspect' AND at > ?").get(ownerId, me.user_id, now - 24 * 60 * 60 * 1000).n;
+        if (used >= CANSA.inspectPerDay) return reply.code(400).send({ error: 'inspect_limit' });
+        if (me.gold < CANSA.inspectFee) return reply.code(400).send({ error: 'not_enough_gold' });
+        const found = !!CROPS[plot.crop]?.risky;
+        db.transaction(() => {
+          grant(me.user_id, { gold: -CANSA.inspectFee });
+          db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(CANSA.inspectFee, me.user_id);
+          markAction.run(ownerId, plot.idx, plot.planted_at, me.user_id, 'inspect', now);
+          if (found) {
+            db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(ownerId, plot.idx);
+            grant(me.user_id, { gold: CANSA.bounty });
+          }
+        })();
+        if (found) {
+          logEvent(`🚨 ${me.name} phát hiện cần sa ở ruộng nhà ${owner.name} — nhổ sạch, lĩnh thưởng ${CANSA.bounty.toLocaleString('vi')} vàng`);
+          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🚨 ${me.name} phát hiện cần sa ô ${plot.idx + 1} nhà bạn — mất trắng!`);
+        }
+        return { ...visitPayload(request, ownerId), found, bounty: found ? CANSA.bounty : 0, fee: CANSA.inspectFee, left: CANSA.inspectPerDay - used - 1 };
+      });
       api.post('/harvest-help', async (request, reply) => {
         const { ownerId, idx, all } = request.body ?? {};
         const me = request.farmer;
@@ -1739,7 +1774,8 @@ export function buildApp({ config, db, logger = true }) {
       const thiefEscaped = db.prepare('UPDATE farmers SET caught_streak = 0 WHERE user_id = ? AND caught_streak > 0');
       // Hái ké một ô (đã kiểm tra chín/lượt/chó): khách +POACH_YIELD, ô +1 lượt bị hái.
       function poachPlot(me, owner, plot) {
-        const crop = plot.tree ? TREES[plot.crop] : CROPS[plot.crop];
+        const crop0 = plot.tree ? TREES[plot.crop] : CROPS[plot.crop];
+        const crop = crop0?.risky ? CROPS[CANSA.disguise] : crop0; // cần sa nguỵ trang: kẻ trộm chỉ lấy được rau thơm
         db.transaction(() => {
           markAction.run(owner.user_id, plot.idx, plot.planted_at, me.user_id, 'poach', Date.now());
           db.prepare('UPDATE plots SET poached = poached + 1 WHERE owner_id = ? AND idx = ?').run(owner.user_id, plot.idx);
@@ -2068,6 +2104,7 @@ export function buildApp({ config, db, logger = true }) {
         const owner = getFarmer.get(ownerId);
         const li = levelInfo(owner.xp);
         const plots = plotViews(ownerId, owner.plots_count);
+        for (const p of plots) if (p.crop && CROPS[p.crop]?.risky) p.crop = CANSA.disguise; // người ngoài thấy như rau thơm
         const myActs = {};
         const now2 = Date.now();
         const again = scaleMs(POACH_AGAIN_MS, config.fast);
