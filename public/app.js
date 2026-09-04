@@ -804,7 +804,7 @@
          <div class="inv-row">
            <span class="emoji-ic emoji-ic--barn">🐕</span>
            <span class="seed-info"><span class="seed-name">Chó canh vườn</span>
-             <div class="seed-meta">${DATA.config.dog.pricePerHour.toLocaleString('vi')} ${COIN}/giờ · ${Math.round(DATA.config.dog.catchChance * 100)}% tóm được trộm → kẻ trộm nộp phạt cho bạn ${DATA.config.dog.fine} ${COIN}, bị tóm liên tiếp +${DATA.config.dog.fineStep} mỗi lần (trộm trót lọt thì về ${DATA.config.dog.fine})${m.dog?.active ? ` · <b>đang trực, còn ${fmtTime(m.dog.until - Date.now())}</b>` : ''}</div></span>
+             <div class="seed-meta">${DATA.config.dog.pricePerHour.toLocaleString('vi')} ${COIN}/giờ · ${Math.round(DATA.config.dog.catchChance * 100)}% tóm được trộm (+${Math.round((DATA.config.dog.onlineBonus || 0) * 100)}% khi bạn đang online) → kẻ trộm nộp phạt cho bạn ${DATA.config.dog.fine} ${COIN}, bị tóm liên tiếp +${DATA.config.dog.fineStep} mỗi lần (trộm trót lọt thì về ${DATA.config.dog.fine})${m.dog?.active ? ` · <b>đang trực, còn ${fmtTime(m.dog.until - Date.now())}</b>` : ''}</div></span>
            <span class="btn-group">
              ${DATA.config.dog.hoursOptions.map((h) => `<button class="gbtn ${h === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-dog-hire="${h}" ${m.gold >= DATA.config.dog.pricePerHour * h ? '' : 'disabled'} title="${(DATA.config.dog.pricePerHour * h).toLocaleString('vi')} vàng">${h}h</button>`).join('')}
            </span>
