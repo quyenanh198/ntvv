@@ -340,7 +340,7 @@
           <button class="side-btn side-btn--gold" id="btn-harvestall"><img src="assets/art/basket.png" alt="" />${m.plots.some((p) => p.crop && p.ready) ? '<i class="dot"></i>' : ''}<span>Thu hoạch</span></button>
           ${m.level >= DATA.config.orderUnlockLevel ? `<button class="side-btn" data-sheet="orders">🚚${ordersReady ? '<i class="dot"></i>' : ''}<span>Đơn hàng</span></button>` : ''}
           <button class="side-btn" data-sheet="festival">🎪${festReady ? '<i class="dot"></i>' : ''}<span>Sự kiện</span></button>
-          ${m.skills.unlocked ? `<button class="side-btn" data-sheet="skills">🎓${m.skills.points > 0 ? '<i class="dot"></i>' : ''}<span>Kỹ năng</span></button>` : ''}
+          ${m.skills.unlocked ? `<button class="side-btn" data-sheet="skills">🎓${canLearnAnySkill(m) ? '<i class="dot"></i>' : ''}<span>Kỹ năng</span></button>` : ''}
           ${m.level >= DATA.config.animals.vit.level ? `<button class="side-btn" data-sheet="barns">🐾${m.animals.some((x) => x.ready) ? '<i class="dot"></i>' : ''}<span>Chuồng</span></button>` : ''}
           ${m.level >= Math.min(...Object.values(DATA.config.machines).map((x) => x.level)) ? `<button class="side-btn" data-sheet="mill">🏭${Object.values(m.machines).some((jobs) => Object.values(jobs || {}).some((j) => j.ready)) ? '<i class="dot"></i>' : ''}<span>Nhà máy</span></button>` : ''}
           ${m.level >= DATA.config.fishing.level ? `<button class="side-btn" data-sheet="fishing">🎣${(m.fishFarm?.batches || []).some((b) => b.ready) ? '<i class="dot"></i>' : ''}<span>Ao cá</span></button>` : ''}
@@ -596,6 +596,17 @@
     const items = [...(l.pets || []), ...(l.decor || [])].filter((id) => L[id]);
     if (!t && !items.length) return '';
     return `<div class="lux-strip">${t ? `<span class="lux-title-badge">${t.emoji} ${t.name}</span>` : ''}${items.map((id) => `<span class="lux-item" title="${L[id].name}">${L[id].emoji}</span>`).join('')}</div>`;
+  }
+
+  // Chấm đỏ Kỹ năng chỉ khi điểm hiện có đủ nâng ít nhất một kỹ năng.
+  function canLearnAnySkill(m) {
+    const tree = DATA.config.skillTree;
+    const sk = m.skills;
+    if (!tree || !sk || sk.points <= 0) return false;
+    return tree.branches.some((b) => b.nodes.some((n) => {
+      const rank = sk.learned[n.id] || 0;
+      return rank < tree.maxRank && sk.points >= n.cost * (rank + 1);
+    }));
   }
 
   function sheetShell(title, body, extraClass = '') {
