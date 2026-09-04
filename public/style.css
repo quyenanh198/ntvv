@@ -1821,3 +1821,8 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .away-thief { display: inline-block; margin: .1rem .25rem .1rem 0; background: rgba(255,255,255,.55); border-radius: 999px; padding: .1rem .5rem; font-size: .8rem; }
 
 .online-dot { font-size: .75em; color: #b9ffc4; font-weight: 700; }
+
+/* Sổ mất trộm: khung cố định, chỉ danh sách cuộn, nút Đã biết luôn hiện */
+.modal--away { display: flex; flex-direction: column; max-height: min(85dvh, 640px); overflow: hidden; }
+.modal--away > h3, .modal--away > .sheet-note { flex: 0 0 auto; }
+.away-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-right: .2rem; }

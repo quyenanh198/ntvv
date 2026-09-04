@@ -617,12 +617,14 @@
     const thieves = r.thieves.map((t) => `<span class="away-thief">🥷 ${esc(t.name)}: ${t.qty} món (${t.times} lần)</span>`).join(' ');
     return `
       <div class="modal-backdrop" data-away-close="1">
-        <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal modal--away" onclick="event.stopPropagation()">
           <h3>😱 Trong lúc bạn vắng mặt</h3>
           <p class="sheet-note">Từ ${fmt(r.since)} đến ${fmt(r.until)}, nhà bạn bị chôm tổng cộng <b>${r.total}</b> món:</p>
-          ${items}
-          <p class="sheet-note">${thieves}</p>
-          <button class="btn gbtn gbtn--gold" id="btn-away-ack" style="width:100%;margin-top:.4rem">Đã biết, đi trả thù thôi 😤</button>
+          <div class="away-scroll">
+            ${items}
+            <p class="sheet-note">${thieves}</p>
+          </div>
+          <button class="btn gbtn gbtn--gold" id="btn-away-ack" style="width:100%;margin-top:.4rem;flex:0 0 auto">Đã biết, đi trả thù thôi 😤</button>
         </div>
       </div>`;
   }
