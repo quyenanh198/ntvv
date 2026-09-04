@@ -1605,10 +1605,12 @@ export function buildApp({ config, db, logger = true }) {
       // ---- Chó canh vườn ----
       // Gọi trước mỗi lần trộm nhà người khác. Trả về null nếu thoát; nếu bị tóm
       // thì đã trừ tiền phạt, chuyển cho chủ, ghi log — trả về reply 400.
+      const ownerOnline = (owner, now = Date.now()) => now - (owner.last_seen_at || 0) < scaleMs(DOG.onlineMs, config.fast);
+      const dogChance = (owner, now = Date.now()) => DOG.catchChance + (ownerOnline(owner, now) ? DOG.onlineBonus : 0);
       function dogCatch(owner, thief, { quiet = false } = {}) {
         const now = Date.now();
         if (!owner || (owner.dog_until || 0) <= now) return null;
-        if (Math.random() >= DOG.catchChance) return null;
+        if (Math.random() >= dogChance(owner, now)) return null;
         const streak = thief.caught_streak || 0; // số lần bị tóm liên tiếp trước đó
         const fine = DOG.fine + DOG.fineStep * streak;
         const paid = Math.min(fine, Math.max(0, thief.gold));
@@ -1983,7 +1985,7 @@ export function buildApp({ config, db, logger = true }) {
           machinesReady: db.prepare('SELECT COUNT(*) c FROM machine_jobs WHERE owner_id = ? AND ready_at <= ? AND poached = 0').get(ownerId, now2).c,
         };
         return {
-          farm: { id: owner.user_id, name: owner.name, level: li.level, stars: owner.stars, plotsCount: owner.plots_count, plots, loot, dogUntil: owner.dog_until || 0 },
+          farm: { id: owner.user_id, name: owner.name, level: li.level, stars: owner.stars, plotsCount: owner.plots_count, plots, loot, dogUntil: owner.dog_until || 0, online: ownerOnline(owner), dogChance: Math.round(dogChance(owner) * 100) },
           myActs,
           me: fresh(request.farmer.user_id),
         };

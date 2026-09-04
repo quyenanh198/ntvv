@@ -629,7 +629,9 @@ export const DOG = {
   pricePerHour: 5000,
   hoursOptions: [1, 4, 12],
   catchChance: 0.2,
-  fine: 200,
+  onlineBonus: 0.1, // chủ vườn đang online (mới thấy trong onlineMs) thì tỉ lệ tóm cộng thêm
+  onlineMs: 2 * MIN,
+  fine: 300,
   fineStep: 100,
 };
 

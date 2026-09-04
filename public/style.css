@@ -1819,3 +1819,5 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .lux-title-badge { background: rgba(60, 35, 15, .78); color: #ffe9a8; border-radius: 999px; padding: .12rem .55rem; font-size: .78rem; font-weight: 800; white-space: nowrap; }
 
 .away-thief { display: inline-block; margin: .1rem .25rem .1rem 0; background: rgba(255,255,255,.55); border-radius: 999px; padding: .1rem .5rem; font-size: .8rem; }
+
+.online-dot { font-size: .75em; color: #b9ffc4; font-weight: 700; }
