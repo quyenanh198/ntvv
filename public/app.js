@@ -818,6 +818,14 @@
       return sheetShell(
         `🏪 Cửa hàng <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
         `<div class="inv-row">
+           ${GEM}
+           <span class="seed-info"><span class="seed-name">Mua kim cương bằng vàng</span>
+             <div class="seed-meta">Dùng để tăng tốc, mua năng lượng, hoàn điểm kỹ năng · vàng mua bị đốt khỏi kinh tế làng</div></span>
+           <span class="btn-group">
+             ${(DATA.config.gemPacks || []).map((p) => `<button class="gbtn ${p.gems >= 100 ? 'gbtn--gold' : 'gbtn--green'} btn-mini" data-buy-gems="${p.id}" ${m.gold >= p.gold ? '' : 'disabled'} title="${p.gold.toLocaleString('vi')} vàng">${p.gems} ${GEM}<br><small>${(p.gold / 1000000).toLocaleString('vi', { maximumFractionDigits: 1 })}tr</small></button>`).join('')}
+           </span>
+         </div>
+         <div class="inv-row">
            <img src="${A('assets/ui/feed.svg')}" alt="" />
            <span class="seed-info"><span class="seed-name">Thức ăn gia súc</span>
              <div class="seed-meta">${feed.buy} ${COIN}/túi · gà ăn 1 túi cho 1 trứng</div></span>
@@ -1311,6 +1319,12 @@
       if (r) { updateMe(r); render(); }
     });
     document.querySelectorAll('[data-away-close]').forEach((el) => el.addEventListener('click', () => { if (DATA.me) DATA.me.awayReport = null; render(); }));
+    document.querySelectorAll('[data-buy-gems]').forEach((el) => el.addEventListener('click', async () => {
+      const pack = (DATA.config.gemPacks || []).find((p) => p.id === el.dataset.buyGems);
+      if (!pack || !window.confirm(`Mua ${pack.gems} kim cương với ${pack.gold.toLocaleString('vi')} vàng?`)) return;
+      const r = await run(() => api('/buy-gems', { pack: pack.id }));
+      if (r) { updateMe(r); toast(`💎 +${r.gems} kim cương!`); render(); }
+    }));
     document.querySelectorAll('[data-lux-buy]').forEach((el) => el.addEventListener('click', async () => {
       if (el.dataset.off) { toast('Chưa đủ vàng 😅'); return; }
       const x = DATA.config.luxury[el.dataset.luxBuy];

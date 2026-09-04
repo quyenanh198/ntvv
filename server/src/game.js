@@ -950,3 +950,10 @@ export const LUXURY = {
 
 // Cần sa: thưởng khi thu, tiền thưởng cho người khám xét trúng, phí khám xét (đốt), số lần khám/nhà/ngày.
 export const CANSA = { reward: 1_000_000, bounty: 500_000, inspectFee: 0, inspectPerDay: 5 }; // khám xét miễn phí; người ngoài thấy cần sa như một cây ngẫu nhiên (cố định theo ô)
+
+// Mua kim cương bằng vàng (vàng bị đốt — bể hút vàng). Gói to rẻ hơn chút.
+export const GEM_PACKS = [
+  { id: 'g5', gems: 5, gold: 500_000 },
+  { id: 'g20', gems: 20, gold: 1_900_000 },
+  { id: 'g100', gems: 100, gold: 9_000_000 },
+];

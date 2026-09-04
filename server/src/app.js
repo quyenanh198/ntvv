@@ -7,6 +7,7 @@ import staticPlugin from '@fastify/static';
 import {
   CROPS,
   CANSA,
+  GEM_PACKS,
   LUXURY,
   MACHINE_UPGRADE_GOLD,
   LOTTERY,
@@ -830,6 +831,7 @@ export function buildApp({ config, db, logger = true }) {
             lottery: LOTTERY,
             taxPerPlot: TAX_PER_PLOT,
             cansa: CANSA,
+            gemPacks: GEM_PACKS,
             marketSat: MARKET_SAT,
             fast: config.fast,
           },
@@ -2006,6 +2008,19 @@ export function buildApp({ config, db, logger = true }) {
           if (id === 'cakoi' || id === 'cachep') logEvent(`🎣 ${me.name} câu được ${GOODS[id].name} ${GOODS[id].emoji}!`);
         }
         return { me: fresh(me.user_id), caught, exp };
+      });
+
+      // Mua kim cương bằng vàng (vàng đốt khỏi kinh tế).
+      api.post('/buy-gems', async (request, reply) => {
+        const me = request.farmer;
+        const pack = GEM_PACKS.find((p) => p.id === request.body?.pack);
+        if (!pack) return reply.code(400).send({ error: 'bad_request' });
+        if (me.gold < pack.gold) return reply.code(400).send({ error: 'not_enough_gold' });
+        db.transaction(() => {
+          grant(me.user_id, { gold: -pack.gold, gems: pack.gems });
+          db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(pack.gold, me.user_id);
+        })();
+        return { me: fresh(me.user_id), gems: pack.gems };
       });
 
       api.post('/buy-energy', async (request, reply) => {
