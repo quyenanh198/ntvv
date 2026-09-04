@@ -16,15 +16,18 @@
 
   // ---------- sprite ----------
   const SPRITE_ALIAS = { luami: 'lua', dautay: 'dau' };
+  // Mọi URL tài nguyên tĩnh kèm ?v=<boot>: mỗi lần deploy đổi URL nên không dính
+  // bản Cloudflare/trình duyệt cache nhầm (đã có vụ trang chờ HTML nằm ở URL ảnh).
+  const A = (path) => `${path}?v=${(typeof MY_BOOT !== 'undefined' && MY_BOOT) || '1'}`;
   const spriteBase = (id) => SPRITE_ALIAS[id] || id;
-  const cropSprite = (id, stage) => `assets/crops/${stage === 1 ? 'seed-1' : `${spriteBase(id)}-${stage}`}.svg`;
+  const cropSprite = (id, stage) => A(`assets/crops/${stage === 1 ? 'seed-1' : `${spriteBase(id)}-${stage}`}.svg`);
   // Cây ăn quả có tranh riêng; loại mới dùng tranh cây chung + emoji quả.
   const TREE_PNG = new Set(['cam', 'tao', 'xoai', 'thanhlong']);
-  const treeArt = (id) => (TREE_PNG.has(id) ? `assets/art/trees/${id}.png` : 'assets/art/tree.png');
+  const treeArt = (id) => A(TREE_PNG.has(id) ? `assets/art/trees/${id}.png` : 'assets/art/tree.png');
   // Vật nuôi có tranh: gà/bò/cừu/lợn; loại khác hiện emoji.
   const BARN_ART = { ga: 'assets/art/chicken.png', bo: 'assets/art/cow.png', cuu: 'assets/art/sheep.png', heo: 'assets/art/pig.png' };
   const barnArtImg = (kind) => (BARN_ART[kind]
-    ? `<img src="${BARN_ART[kind]}" alt="" />`
+    ? `<img src="${A(BARN_ART[kind])}" alt="" />`
     : `<span class="emoji-ic emoji-ic--barn">${DATA?.config.animals[kind]?.emoji || '🐾'}</span>`);
   const ITEM_ICON = {
     trung: 'assets/ui/egg.svg', botmi: 'assets/ui/flour.svg', thucan: 'assets/art/feed.png',
@@ -38,9 +41,9 @@
     if (path) return `<img class="${cls}" src="${path}" alt="" />`;
     return `<span class="emoji-ic ${cls}">${itemInfo(id)?.emoji || '❔'}</span>`;
   };
-  const COIN = '<img class="coin-img" src="assets/ui/coin.svg" alt="vàng" />';
-  const GEM = '<img class="coin-img" src="assets/ui/gem.svg" alt="kim cương" />';
-  const STAR = '<img class="coin-img" src="assets/ui/star.svg" alt="sao" />';
+  const COIN = '<img class="coin-img" src="' + A('assets/ui/coin.svg') + '" alt="vàng" />';
+  const GEM = '<img class="coin-img" src="' + A('assets/ui/gem.svg') + '" alt="kim cương" />';
+  const STAR = '<img class="coin-img" src="' + A('assets/ui/star.svg') + '" alt="sao" />';
 
   // ---------- helpers ----------
   const esc = (s) =>
@@ -349,7 +352,7 @@
           <button class="side-btn" data-sheet="inventory">🎒<span>Kho đồ</span></button>
         </div>
         <div class="side side-right">
-          <button class="side-btn side-btn--gold" id="btn-harvestall"><img src="assets/art/basket.png" alt="" />${m.plots.some((p) => p.crop && p.ready) ? '<i class="dot"></i>' : ''}<span>Thu hoạch</span></button>
+          <button class="side-btn side-btn--gold" id="btn-harvestall"><img src="' + A('assets/art/basket.png') + '" alt="" />${m.plots.some((p) => p.crop && p.ready) ? '<i class="dot"></i>' : ''}<span>Thu hoạch</span></button>
           ${m.level >= DATA.config.orderUnlockLevel ? `<button class="side-btn" data-sheet="orders">🚚${ordersReady ? '<i class="dot"></i>' : ''}<span>Đơn hàng</span></button>` : ''}
           <button class="side-btn" data-sheet="festival">🎪${festReady ? '<i class="dot"></i>' : ''}<span>Sự kiện</span></button>
           ${m.skills.unlocked ? `<button class="side-btn" data-sheet="skills">🎓${canLearnAnySkill(m) ? '<i class="dot"></i>' : ''}<span>Kỹ năng</span></button>` : ''}
@@ -376,14 +379,14 @@
                 ${m.animals.some((x) => x.kind === 'cuu' && x.ready) ? '<i class="dot"></i>' : ''}
                 <span class="sb-tag">Chuồng cừu</span>
               </button>`
-            : `<img class="sb sb-sheep sb--locked" src="assets/pack/sheep_adult.png" alt="" title="Chuồng cừu — cần Lv ${DATA.config.animals.cuu.level}" />`}
+            : `<img class="sb sb-sheep sb--locked" src="${A('assets/pack/sheep_adult.png')}" alt="" title="Chuồng cừu — cần Lv ${DATA.config.animals.cuu.level}" />`}
             ${m.level >= DATA.config.animals.bo.level ? `
               <button class="sb sb-btn sb-cowbarn" data-barn="bo" title="Chuồng bò">
                 <img src="assets/art/cow.png" alt="Chuồng bò" />
                 ${m.animals.some((x) => x.kind === 'bo' && x.ready) ? '<i class="dot"></i>' : ''}
                 <span class="sb-tag">Chuồng bò</span>
               </button>`
-            : `<img class="sb sb-cowbarn sb--locked" src="assets/art/cow.png" alt="" title="Chuồng bò — cần Lv ${DATA.config.animals.bo.level}" />`}
+            : `<img class="sb sb-cowbarn sb--locked" src="${A('assets/art/cow.png')}" alt="" title="Chuồng bò — cần Lv ${DATA.config.animals.bo.level}" />`}
             <img class="sb sb-pig" src="assets/pack/pig_adult.png" alt="" />
             <img class="sb sb-well" src="assets/pack/well.png" alt="" />
             <img class="sb sb-farmer" src="assets/pack/farmer_female_full.png" alt="" />
@@ -559,7 +562,7 @@
         <img class="sb sb-coop" src="assets/pack/tiny_house.png" alt="" />
         <img class="sb sb-hen2" src="assets/pack/chicken_brown.png" alt="" />
         <img class="sb sb-mill" src="assets/pack/windmill.png" alt="" />
-        <img class="sb sb-shop" src="assets/pack/market_shop.png" alt="" />`;
+        <img class="sb sb-shop" src="${A('assets/pack/market_shop.png')}" alt="" />`;
     }
     return `
       ${coopUnlocked ? `
@@ -568,15 +571,15 @@
           ${eggReady ? '<i class="dot"></i>' : ''}
           <span class="sb-tag">${eggReady ? '🥚 Trứng!' : hungry ? 'Gà đói' : 'Chuồng gà'}</span>
         </button>
-        <img class="sb sb-hen2" src="assets/pack/chicken_brown.png" alt="" />`
-      : `<img class="sb sb-coop sb--locked" src="assets/pack/tiny_house.png" alt="" title="Chuồng gà — cần Lv ${DATA.config.chicken.level}" />`}
+        <img class="sb sb-hen2" src="${A('assets/pack/chicken_brown.png')}" alt="" />`
+      : `<img class="sb sb-coop sb--locked" src="${A('assets/pack/tiny_house.png')}" alt="" title="Chuồng gà — cần Lv ${DATA.config.chicken.level}" />`}
       ${millUnlocked ? `
         <button class="sb sb-btn sb-mill" data-sheet="mill" title="Cối xay">
           <img src="assets/pack/windmill.png" alt="Cối xay" />
           ${millDone ? '<i class="dot"></i>' : ''}
           <span class="sb-tag">${millDone ? '✅ Xong!' : m.mill ? 'Đang xay…' : 'Cối xay'}</span>
         </button>`
-      : `<img class="sb sb-mill sb--locked" src="assets/pack/windmill.png" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
+      : `<img class="sb sb-mill sb--locked" src="${A('assets/pack/windmill.png')}" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
       <button class="sb sb-btn sb-shop" data-sheet="shop" title="Cửa hàng">
         <img src="assets/pack/market_shop.png" alt="Cửa hàng" />
         <span class="sb-tag">Cửa hàng</span>
@@ -962,7 +965,7 @@
           <small>${x.ready ? `${productInfo.emoji}!` : x.ready_at == null ? 'đói' : fmtTime(x.ready_at - Date.now())}</small>
         </span>`).join('');
       return sheetShell(
-        `${a.emoji} Chuồng ${a.name} cấp ${barn.level} · ${herd.length}/${barn.capacity} <span class="sheet-coins"><img class="coin-img" src="assets/art/feed.png" alt=""/> ${feedQty}</span>`,
+        `${a.emoji} Chuồng ${a.name} cấp ${barn.level} · ${herd.length}/${barn.capacity} <span class="sheet-coins"><img class="coin-img" src="${A('assets/art/feed.png')}" alt=""/> ${feedQty}</span>`,
         `<p class="sheet-note">🤖 Chuồng tự vận hành: tới giờ là sản phẩm TỰ vào kho và tự ăn tiếp — chỉ cần trữ đủ thức ăn. Mỗi ${a.name.toLowerCase()} ăn ${a.feedQty} 🌰 → ${productInfo.name} ${productInfo.emoji} sau ${fmtDuration(a.produceMs)} (bán ${productInfo.sell} ${COIN}, +${a.expCollect} EXP).</p>
          ${herd.length === 0 ? `<p class="sheet-note">Chuồng trống — mua ${a.name.toLowerCase()} đầu tiên đi!</p>` : `<div class="hen-row">${pens}</div>`}
          <div class="sheet-actions">
