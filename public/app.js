@@ -5,6 +5,11 @@
   const app = document.getElementById('app');
 
   let DATA = null;   // /state
+  // ?v= của app.js đang chạy = phiên bản server lúc tải trang. Phải khai báo TRƯỚC
+  // helper A() vì COIN/GEM gọi A() ngay lúc nạp script (TDZ → app không chạy).
+  const MY_BOOT = (() => {
+    try { return new URL(document.querySelector('script[src*="app.js"]').src).searchParams.get('v'); } catch { return null; }
+  })();
   let VISIT = null;  // { ownerId, farm, myActs }
   let INSPECT = false; // chế độ khám xét khi thăm ruộng: bấm ô = khám
   let MARKET = null; // { mine, others } — tin thu mua, nạp khi mở sheet
@@ -19,7 +24,7 @@
   const SPRITE_ALIAS = { luami: 'lua', dautay: 'dau' };
   // Mọi URL tài nguyên tĩnh kèm ?v=<boot>: mỗi lần deploy đổi URL nên không dính
   // bản Cloudflare/trình duyệt cache nhầm (đã có vụ trang chờ HTML nằm ở URL ảnh).
-  const A = (path) => `${path}?v=${(typeof MY_BOOT !== 'undefined' && MY_BOOT) || '1'}`;
+  const A = (path) => `${path}?v=${MY_BOOT || '1'}`;
   const spriteBase = (id) => SPRITE_ALIAS[id] || id;
   const cropSprite = (id, stage) => A(`assets/crops/${stage === 1 ? 'seed-1' : `${spriteBase(id)}-${stage}`}.svg`);
   // Cây ăn quả có tranh riêng; loại mới dùng tranh cây chung + emoji quả.
@@ -54,10 +59,6 @@
   // tới server, nên cứ thử lại tại chỗ mỗi 2s thay vì reload cả trang — người
   // chơi giữ nguyên màn hình đang mở. Chỉ reload khi chờ quá lâu.
   const WAKE_RETRIES = 20;
-  // ?v= của app.js đang chạy = phiên bản server lúc tải trang.
-  const MY_BOOT = (() => {
-    try { return new URL(document.querySelector('script[src*="app.js"]').src).searchParams.get('v'); } catch { return null; }
-  })();
   let reloading = false;
   function checkServerBoot(state) {
     if (reloading || !MY_BOOT || !state?.boot || state.boot === MY_BOOT) return false;
