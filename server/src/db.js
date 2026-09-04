@@ -140,6 +140,15 @@ CREATE TABLE IF NOT EXISTS poach_guard (
   at INTEGER NOT NULL,
   PRIMARY KEY (owner_id, kind)
 );
+CREATE TABLE IF NOT EXISTS thefts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_id INTEGER NOT NULL,
+  thief_id INTEGER NOT NULL,
+  item TEXT NOT NULL,
+  qty INTEGER NOT NULL,
+  at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS thefts_owner_at ON thefts (owner_id, at);
 CREATE TABLE IF NOT EXISTS luxury (
   owner_id INTEGER NOT NULL,
   item TEXT NOT NULL,
@@ -214,6 +223,8 @@ export function openDb(dataDir) {
   if (!cols.includes('frame_id')) db.exec("ALTER TABLE farmers ADD COLUMN frame_id TEXT NOT NULL DEFAULT ''");
   if (!cols.includes('machine_levels_json')) db.exec("ALTER TABLE farmers ADD COLUMN machine_levels_json TEXT NOT NULL DEFAULT '{}'");
   if (!cols.includes('support_paid')) db.exec('ALTER TABLE farmers ADD COLUMN support_paid INTEGER NOT NULL DEFAULT 0');
+  if (!cols.includes('last_seen_at')) db.exec('ALTER TABLE farmers ADD COLUMN last_seen_at INTEGER NOT NULL DEFAULT 0');
+  if (!cols.includes('away_report_json')) db.exec('ALTER TABLE farmers ADD COLUMN away_report_json TEXT');
   // Hỗ trợ theo trần làng: coi vàng tặng trước đây là đã hỗ trợ (tránh trả trùng).
   db.exec('UPDATE farmers SET support_paid = gift_gold WHERE support_paid = 0 AND gift_gold > 0');
   const mcols = db.prepare('PRAGMA table_info(machines)').all().map((c) => c.name);

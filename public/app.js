@@ -424,6 +424,7 @@
       ${showLb ? renderLb() : ''}
     `;
     restoreScroll(savedScroll);
+    if (DATA.me?.awayReport && !VISIT && !sheet && !showLb) app.insertAdjacentHTML('beforeend', renderAway(DATA.me.awayReport));
     bind();
     if (searchWasFocused) {
       const input = document.querySelector('.family-search');
@@ -607,6 +608,23 @@
       const rank = sk.learned[n.id] || 0;
       return rank < tree.maxRank && sk.points >= n.cost * (rank + 1);
     }));
+  }
+
+  // Sổ mất trộm trong lúc vắng mặt: hiện một lần khi quay lại, bấm Đã biết để xoá.
+  function renderAway(r) {
+    const fmt = (t) => new Date(t).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+    const items = r.items.map((x) => `<div class="lb-row"><span class="lb-rank">${itemImg(x.id, 'seed-sprite')}</span><span class="lb-name">${itemInfo(x.id)?.name || x.id}</span><span class="lb-stat">−${x.qty}</span></div>`).join('');
+    const thieves = r.thieves.map((t) => `<span class="away-thief">🥷 ${esc(t.name)}: ${t.qty} món (${t.times} lần)</span>`).join(' ');
+    return `
+      <div class="modal-backdrop" data-away-close="1">
+        <div class="modal" onclick="event.stopPropagation()">
+          <h3>😱 Trong lúc bạn vắng mặt</h3>
+          <p class="sheet-note">Từ ${fmt(r.since)} đến ${fmt(r.until)}, nhà bạn bị chôm tổng cộng <b>${r.total}</b> món:</p>
+          ${items}
+          <p class="sheet-note">${thieves}</p>
+          <button class="btn gbtn gbtn--gold" id="btn-away-ack" style="width:100%;margin-top:.4rem">Đã biết, đi trả thù thôi 😤</button>
+        </div>
+      </div>`;
   }
 
   function sheetShell(title, body, extraClass = '') {
@@ -1209,6 +1227,11 @@
         if (el.dataset.sheet === 'luxury') { openLuxury(); return; }
         sheet = { type: el.dataset.sheet }; render();
       }));
+    document.getElementById('btn-away-ack')?.addEventListener('click', async () => {
+      const r = await run(() => api('/away-ack'));
+      if (r) { updateMe(r); render(); }
+    });
+    document.querySelectorAll('[data-away-close]').forEach((el) => el.addEventListener('click', () => { if (DATA.me) DATA.me.awayReport = null; render(); }));
     document.querySelectorAll('[data-lux-buy]').forEach((el) => el.addEventListener('click', async () => {
       if (el.dataset.off) { toast('Chưa đủ vàng 😅'); return; }
       const x = DATA.config.luxury[el.dataset.luxBuy];

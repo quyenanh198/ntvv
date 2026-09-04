@@ -1817,3 +1817,5 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .lux-strip { display: flex; flex-wrap: wrap; gap: .3rem .35rem; align-items: center; justify-content: center; padding: .25rem .5rem .1rem; position: relative; z-index: 2; }
 .lux-item { font-size: 1.6rem; line-height: 1; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .25)); }
 .lux-title-badge { background: rgba(60, 35, 15, .78); color: #ffe9a8; border-radius: 999px; padding: .12rem .55rem; font-size: .78rem; font-weight: 800; white-space: nowrap; }
+
+.away-thief { display: inline-block; margin: .1rem .25rem .1rem 0; background: rgba(255,255,255,.55); border-radius: 999px; padding: .1rem .5rem; font-size: .8rem; }

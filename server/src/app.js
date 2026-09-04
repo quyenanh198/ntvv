@@ -156,6 +156,7 @@ export function buildApp({ config, db, logger = true }) {
       }
     }
     collectTax(user.id);
+    touchSeen(user.id);
     request.farmer = getFarmer.get(user.id);
     request.chatUser = user;
   }
@@ -233,6 +234,26 @@ export function buildApp({ config, db, logger = true }) {
     }
     return { ...row, counters: JSON.parse(row.counters_json || '{}') };
   }
+  // Sổ mất trộm: ghi từng lần bị chôm (ruộng/chuồng/máy) để tổng kết lúc chủ quay lại.
+  const recordTheft = (ownerId, thiefId, item, qty) => db.prepare('INSERT INTO thefts (owner_id, thief_id, item, qty, at) VALUES (?, ?, ?, ?, ?)').run(ownerId, thiefId, item, qty, Date.now());
+  const AWAY_GAP_MS = 10 * 60 * 1000; // vắng quá 10 phút = phiên mới
+  function buildAwayReport(userId, since, until) {
+    const items = db.prepare('SELECT item, SUM(qty) q FROM thefts WHERE owner_id = ? AND at > ? AND at <= ? GROUP BY item ORDER BY q DESC').all(userId, since, until);
+    if (!items.length) return null;
+    const thieves = db.prepare('SELECT t.thief_id id, f.name, SUM(t.qty) q, COUNT(*) n FROM thefts t JOIN farmers f ON f.user_id = t.thief_id WHERE t.owner_id = ? AND t.at > ? AND t.at <= ? GROUP BY t.thief_id ORDER BY q DESC').all(userId, since, until);
+    return { since, until, total: items.reduce((a, r) => a + r.q, 0), items: items.map((r) => ({ id: r.item, qty: r.q })), thieves: thieves.map((r) => ({ id: r.id, name: r.name, qty: r.q, times: r.n })) };
+  }
+  // Mỗi request cập nhật last_seen_at; nếu vắng lâu thì chốt "sổ mất trộm" của
+  // khoảng vắng để client hiện một lần (xoá khi bấm Đã biết).
+  function touchSeen(userId, now = Date.now()) {
+    const f = db.prepare('SELECT last_seen_at FROM farmers WHERE user_id = ?').get(userId);
+    if (f && f.last_seen_at && now - f.last_seen_at > AWAY_GAP_MS) {
+      const report = buildAwayReport(userId, f.last_seen_at, now);
+      if (report) db.prepare('UPDATE farmers SET away_report_json = ? WHERE user_id = ?').run(JSON.stringify(report), userId);
+    }
+    db.prepare('UPDATE farmers SET last_seen_at = ? WHERE user_id = ?').run(now, userId);
+  }
+
   function bumpPoached(userId, by) {
     const d = getDaily(userId);
     db.prepare('UPDATE daily SET poached = poached + ? WHERE owner_id = ? AND day = ?').run(by, userId, d.day);
@@ -685,7 +706,9 @@ export function buildApp({ config, db, logger = true }) {
   function fresh(userId) {
     autoTend(userId);
     const f = getFarmer.get(userId);
-    return { ...farmerView(f), tax: taxView(f), luxury: luxuryView(f), machineLevels: machineLevels(f), market: saturationView() };
+    let awayReport = null;
+    try { awayReport = f.away_report_json ? JSON.parse(f.away_report_json) : null; } catch { awayReport = null; }
+    return { ...farmerView(f), tax: taxView(f), luxury: luxuryView(f), machineLevels: machineLevels(f), market: saturationView(), awayReport };
   }
 
   // ---- API ----------------------------------------------------------------
@@ -1422,6 +1445,11 @@ export function buildApp({ config, db, logger = true }) {
 
       // ---- Mở rộng đất ----
       // ---- Bể hút vàng: nâng cấp nhà máy, xa xỉ phẩm, xổ số làng ----
+      api.post('/away-ack', async (request) => {
+        db.prepare('UPDATE farmers SET away_report_json = NULL WHERE user_id = ?').run(request.farmer.user_id);
+        return { me: fresh(request.farmer.user_id) };
+      });
+
       api.post('/machine-upgrade', async (request, reply) => {
         const { machine } = request.body ?? {};
         const me = request.farmer;
@@ -1610,6 +1638,7 @@ export function buildApp({ config, db, logger = true }) {
           markAction.run(owner.user_id, plot.idx, plot.planted_at, me.user_id, 'poach', Date.now());
           db.prepare('UPDATE plots SET poached = poached + 1 WHERE owner_id = ? AND idx = ?').run(owner.user_id, plot.idx);
           invAdd(me.user_id, crop.id, POACH_YIELD);
+          recordTheft(owner.user_id, me.user_id, crop.id, POACH_YIELD);
           grant(me.user_id, { xp: POACH_EXP * POACH_YIELD });
           bumpPoached(me.user_id, POACH_YIELD);
           thiefEscaped.run(me.user_id);
@@ -1659,6 +1688,7 @@ export function buildApp({ config, db, logger = true }) {
         const got = 2 + Math.round(Math.random()); // khách nhận 2-3, chủ chỉ mất 1
         db.transaction(() => {
           invAdd(me.user_id, a.product, got);
+          recordTheft(owner.user_id, me.user_id, a.product, got);
           grant(me.user_id, { xp: POACH_EXP * got });
           db.prepare('UPDATE animals SET ready_at = NULL WHERE id = ?').run(row.id);
           markLootGuard.run(ownerId, 'animal', now);
@@ -1688,6 +1718,7 @@ export function buildApp({ config, db, logger = true }) {
         const got = 2 + Math.round(Math.random()); // khách nhận 2-3, chủ chỉ mất 1 mẻ
         db.transaction(() => {
           invAdd(me.user_id, product, got);
+          recordTheft(owner.user_id, me.user_id, product, got);
           grant(me.user_id, { xp: POACH_EXP * got });
           db.prepare('UPDATE machine_jobs SET poached = 1 WHERE owner_id = ? AND kind = ? AND recipe = ?').run(ownerId, row.kind, row.recipe);
           markLootGuard.run(ownerId, 'machine', now);
