@@ -873,7 +873,8 @@ export const THIEF_REWARDS = [
 // Kinh tế làng phình to thì thưởng phình theo: mỗi 5 triệu vàng tổng của cả
 // làng (giá hiển thị) cộng thêm ×1, tối đa ×10.
 export const THIEF_ECON_STEP_GOLD = 5_000_000;
-export const thiefEconomyMult = (villageGold) => Math.min(10, 1 + Math.floor(villageGold / THIEF_ECON_STEP_GOLD));
+// Không giới hạn trần: kinh tế làng cứ mỗi bậc THIEF_ECON_STEP_GOLD là thưởng thêm ×1.
+export const thiefEconomyMult = (villageGold) => 1 + Math.floor(villageGold / THIEF_ECON_STEP_GOLD);
 
 // ---- Bể hút vàng (chống lạm phát) -----------------------------------------
 export const TAX_PER_PLOT = 2000; // thuế đất: vàng/ô/ngày (mốc 9h sáng LA), vàng bị đốt
