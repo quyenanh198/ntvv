@@ -249,14 +249,14 @@ export function buildApp({ config, db, logger = true }) {
       JOIN farmers f ON f.user_id = t.owner_id WHERE t.day = ? AND t.count > 0
       ORDER BY t.count DESC, f.xp DESC LIMIT ?`).all(day, limit).map((r, i) => ({ ...r, rank: i + 1 }));
   }
-  // Xổ số làng: quay cùng lúc chốt bảng trộm. 30% tiền vé vào hũ cho 1 người
-  // trúng (tỉ lệ theo số vé), 70% đốt khỏi kinh tế.
+  // Xổ số làng: quay cùng lúc chốt bảng trộm. Hũ = 1 triệu + 500k mỗi vé bán ra,
+  // 1 người trúng (tỉ lệ theo số vé); không ai mua thì không quay.
   function settleLottery(day) {
     if (db.prepare('SELECT 1 FROM lottery_draws WHERE day = ?').get(day)) return;
     const rows = db.prepare('SELECT t.owner_id, t.qty, f.name FROM lottery_tickets t JOIN farmers f ON f.user_id = t.owner_id WHERE t.day = ?').all(day);
     const total = rows.reduce((a, r) => a + r.qty, 0);
     if (!total) return;
-    const pot = Math.round(total * LOTTERY.ticket * LOTTERY.potShare);
+    const pot = LOTTERY.base + LOTTERY.perTicket * total;
     let pick = Math.floor(Math.random() * total);
     let winner = rows[0];
     for (const r of rows) { if (pick < r.qty) { winner = r; break; } pick -= r.qty; }
@@ -1474,7 +1474,7 @@ export function buildApp({ config, db, logger = true }) {
         const tot = db.prepare('SELECT COALESCE(SUM(qty), 0) q, COUNT(*) n FROM lottery_tickets WHERE day = ?').get(day);
         const mine = db.prepare('SELECT qty FROM lottery_tickets WHERE day = ? AND owner_id = ?').get(day, me.user_id)?.qty || 0;
         const last = db.prepare('SELECT * FROM lottery_draws ORDER BY at DESC LIMIT 1').get() || null;
-        return { ticket: LOTTERY.ticket, maxPerDay: LOTTERY.maxPerDay, potShare: LOTTERY.potShare, tickets: tot.q, players: tot.n, pot: Math.round(tot.q * LOTTERY.ticket * LOTTERY.potShare), mine, last };
+        return { ticket: LOTTERY.ticket, maxPerDay: LOTTERY.maxPerDay, base: LOTTERY.base, perTicket: LOTTERY.perTicket, tickets: tot.q, players: tot.n, pot: tot.q > 0 ? LOTTERY.base + LOTTERY.perTicket * tot.q : LOTTERY.base, mine, last };
       }
       api.get('/lottery', async (request) => { settleThiefBoard(); return lotteryView(request.farmer); });
       api.post('/lottery-buy', async (request, reply) => {

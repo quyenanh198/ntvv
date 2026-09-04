@@ -1006,7 +1006,7 @@
       }).join('')}</div>`;
       const lot = LOTTERY_DATA;
       const lottery = lot ? `<h4 class="lb-sec">🎟️ Xổ số làng</h4>
-        <p class="sheet-note">Vé ${lot.ticket.toLocaleString('vi')} ${COIN}. Quay lúc <b>9h sáng giờ Los Angeles</b>: ${Math.round(lot.potShare * 100)}% tiền vé vào hũ cho 1 người trúng (tỉ lệ theo số vé), phần còn lại đốt. Tối đa ${lot.maxPerDay} vé/ngày.</p>
+        <p class="sheet-note">Vé ${lot.ticket.toLocaleString('vi')} ${COIN}. Hũ tối thiểu <b>${(lot.base || 0).toLocaleString('vi')}</b> ${COIN}, mỗi vé bán ra cộng thêm <b>${(lot.perTicket || 0).toLocaleString('vi')}</b>. Quay lúc <b>9h sáng giờ Los Angeles</b>, 1 người trúng (mua nhiều vé, tỉ lệ cao hơn). Tối đa ${lot.maxPerDay} vé/ngày.</p>
         <div class="lux-lottery"><span>Hũ hôm nay: <b>${lot.pot.toLocaleString('vi')}</b> ${COIN} · ${lot.tickets} vé / ${lot.players} người · bạn có <b>${lot.mine}</b> vé</span>
           <span class="btn-group">${[1, 10, 50].map((n) => `<button class="gbtn gbtn--gold btn-mini" data-lottery-buy="${n}">Mua ${n}</button>`).join('')}</span></div>
         ${lot.last ? `<p class="sheet-note">Kỳ trước (${lot.last.day.replace(/^la-/, '')}): <b>${esc(lot.last.winner_name)}</b> trúng ${lot.last.pot.toLocaleString('vi')} ${COIN} (${lot.last.tickets} vé)</p>` : ''}` : '';

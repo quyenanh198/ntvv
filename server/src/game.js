@@ -878,7 +878,7 @@ export const thiefEconomyMult = (villageGold) => Math.min(10, 1 + Math.floor(vil
 // ---- Bể hút vàng (chống lạm phát) -----------------------------------------
 export const TAX_PER_PLOT = 2000; // thuế đất: vàng/ô/ngày (mốc 9h sáng LA), vàng bị đốt
 export const MACHINE_UPGRADE_GOLD = [1_000_000, 2_500_000, 5_000_000, 10_000_000, 20_000_000]; // nhà máy cấp 1..5, mỗi cấp −10% thời gian
-export const LOTTERY = { ticket: 100_000, potShare: 0.3, maxPerDay: 100 }; // 30% tiền vé vào hũ, 70% đốt
+export const LOTTERY = { ticket: 100_000, base: 1_000_000, perTicket: 500_000, maxPerDay: 100 }; // hũ = 1 triệu + 500k mỗi vé bán ra (có vé mới quay)
 export const MARKET_SAT = { cap: 2_000_000, floor: 0.4, halfMs: 4 * 60 * MIN }; // giá bão hoà: bán dồn 1 món thì giá tụt, hồi theo nửa đời 4h
 // Xa xỉ phẩm: chỉ để khoe, không tăng sức mạnh. Danh hiệu/khung tên chọn 1, trang trí hiện hết.
 export const LUXURY = {
