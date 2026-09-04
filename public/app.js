@@ -333,7 +333,7 @@
             </span>
           </div>
           <div class="hud-right">
-            <button class="coin-pill" data-sheet="inventory" title="Vàng — mở kho để bán đồ">${COIN}<b>${m.gold.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
+            <button class="coin-pill" data-sheet="inventory" title="Vàng ${m.gold.toLocaleString('vi')} · Tài sản ước tính (vàng + kho) ${(m.netWorth ?? m.gold).toLocaleString('vi')} — mở kho để bán đồ">${COIN}<b>${m.gold.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
             <button class="coin-pill coin-pill--gem" data-sheet="stars" title="Kim cương — nhận từ mốc sao và rương">${GEM}<b>${m.gems.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
             <button class="coin-pill coin-pill--energy" data-sheet="fishing" title="Năng lượng — mở Hồ câu cá">⚡<b>${m.energy.current}</b><span class="pill-plus">＋</span></button>
             ${m.dog?.active ? `<button class="coin-pill coin-pill--dog" data-sheet="shop" title="Chó canh vườn đang trực">🐕<b>${fmtTime(m.dog.until - Date.now())}</b></button>` : ''}
@@ -807,7 +807,8 @@
                 </span>` : ''}
             </div>`;
           }).join('');
-      return sheetShell(`🎒 Kho đồ <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, rows);
+      const worth = `<p class="sheet-note worth-line">📦 Giá trị kho (giá bán hiện tại): <b>${(m.inventoryValue || 0).toLocaleString('vi')}</b> ${COIN} · 💰 Tài sản ước tính (vàng + kho): <b>${(m.netWorth ?? m.gold).toLocaleString('vi')}</b> ${COIN}</p>`;
+      return sheetShell(`🎒 Kho đồ <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, worth + rows);
     }
 
     if (t === 'shop') {
@@ -1216,7 +1217,7 @@
     const village = lb.map((f) => `<div class="lb-row">
         <span class="lb-rank">${medal(f.rank)}</span>
         <span class="lb-name${frameCls(f.frame)}">${esc(f.name)}${f.title ? ` <i class="lb-title">${esc(f.title)}</i>` : ''}</span>
-        <span class="lb-stat">Lv ${f.level} · ${f.stars}${STAR} · ${f.gold.toLocaleString('vi')} ${COIN}</span>
+        <span class="lb-stat">Lv ${f.level} · ${f.stars}${STAR} · ${f.gold.toLocaleString('vi')} ${COIN} · 💰 ${(f.netWorth ?? f.gold).toLocaleString('vi')}</span>
       </div>`).join('');
     const thief = `
       <h4 class="lb-sec">👑 Vinh danh hôm qua (${tb.yesterday.day})</h4>

@@ -668,6 +668,12 @@ export function buildApp({ config, db, logger = true }) {
 
   // ---- Bể hút vàng: thuế, xa xỉ phẩm, nâng cấp nhà máy, giá bão hoà -------
   const taxView = (f) => ({ perPlot: TAX_PER_PLOT, today: (f.plots_count || 0) * TAX_PER_PLOT, owed: f.tax_owed || 0 });
+  // Giá trị kho theo giá bán hệ thống hiện tại (chưa tính bão hoà) → tài sản ước tính = vàng + kho.
+  function inventoryValue(userId) {
+    let total = 0;
+    for (const [id, qty] of Object.entries(invAll(userId))) total += (itemInfo(id)?.sell || 0) * GOLD_MULT * qty;
+    return Math.round(total);
+  }
   function luxuryView(f) {
     if (!f) return { owned: [], title: null, frame: null, decor: [] };
     const owned = db.prepare('SELECT item FROM luxury WHERE owner_id = ?').all(f.user_id).map((r) => r.item).filter((id) => LUXURY[id]);
@@ -760,7 +766,8 @@ export function buildApp({ config, db, logger = true }) {
     let awayReport = null;
     try { awayReport = f.away_report_json ? JSON.parse(f.away_report_json) : null; } catch { awayReport = null; }
     const goldRequests = { incoming: db.prepare("SELECT COUNT(*) n FROM gold_requests WHERE to_id = ? AND status = 'open'").get(userId).n };
-    return { ...farmerView(f), tax: taxView(f), luxury: luxuryView(f), machineLevels: machineLevels(f), market: saturationView(), awayReport, debts: debtView(userId), goldRequests };
+    const inventoryValueNow = inventoryValue(userId);
+    return { ...farmerView(f), tax: taxView(f), luxury: luxuryView(f), machineLevels: machineLevels(f), market: saturationView(), awayReport, debts: debtView(userId), goldRequests, inventoryValue: inventoryValueNow, netWorth: (f.gold || 0) + inventoryValueNow };
   }
 
   // ---- API ----------------------------------------------------------------
@@ -855,7 +862,7 @@ export function buildApp({ config, db, logger = true }) {
       api.get('/leaderboard', async () => {
         return db.prepare('SELECT user_id AS id, name, gold, xp, stars, title_id, frame_id FROM farmers ORDER BY xp DESC, stars DESC LIMIT 20')
           .all()
-          .map((f, i) => ({ ...f, level: levelFor(f.xp), rank: i + 1, title: LUXURY[f.title_id]?.name || null, frame: (LUXURY[f.frame_id] && f.frame_id) || null }));
+          .map((f, i) => ({ ...f, level: levelFor(f.xp), rank: i + 1, title: LUXURY[f.title_id]?.name || null, frame: (LUXURY[f.frame_id] && f.frame_id) || null, netWorth: (f.gold || 0) + inventoryValue(f.id) }));
       });
 
       // ---- Trồng trọt ----

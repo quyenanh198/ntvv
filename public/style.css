@@ -1832,3 +1832,5 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 .tax-banner--debt { background: rgba(90, 30, 60, .92); border-color: #ff7ab3; }
 .tax-banner--credit { background: rgba(20, 70, 40, .92); border-color: #7bd66b; color: #d8ffd0; }
+
+.worth-line { background: rgba(255,255,255,.55); border-radius: 10px; padding: .4rem .6rem; }
