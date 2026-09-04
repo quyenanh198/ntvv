@@ -740,7 +740,8 @@ export function buildApp({ config, db, logger = true }) {
     const f = getFarmer.get(userId);
     let awayReport = null;
     try { awayReport = f.away_report_json ? JSON.parse(f.away_report_json) : null; } catch { awayReport = null; }
-    return { ...farmerView(f), tax: taxView(f), luxury: luxuryView(f), machineLevels: machineLevels(f), market: saturationView(), awayReport, debts: debtView(userId) };
+    const goldRequests = { incoming: db.prepare("SELECT COUNT(*) n FROM gold_requests WHERE to_id = ? AND status = 'open'").get(userId).n };
+    return { ...farmerView(f), tax: taxView(f), luxury: luxuryView(f), machineLevels: machineLevels(f), market: saturationView(), awayReport, debts: debtView(userId), goldRequests };
   }
 
   // ---- API ----------------------------------------------------------------
@@ -1477,6 +1478,73 @@ export function buildApp({ config, db, logger = true }) {
 
       // ---- Mở rộng đất ----
       // ---- Bể hút vàng: nâng cấp nhà máy, xa xỉ phẩm, xổ số làng ----
+      // ---- Cho tiền / xin tiền giữa người chơi (chuyển vàng, không tạo vàng mới) ----
+      const GOLD_ASK_MAX_OPEN = 5;
+      const parseAmount = (v) => { const n = Math.floor(Number(v)); return Number.isFinite(n) && n >= 1 && n <= 1_000_000_000 ? n : 0; };
+      api.post('/gold-give', async (request, reply) => {
+        const { toId, amount } = request.body ?? {};
+        const me = request.farmer;
+        const n = parseAmount(amount);
+        const to = getFarmer.get(Number(toId));
+        if (!to || to.user_id === me.user_id) return reply.code(400).send({ error: 'no_farm' });
+        if (!n) return reply.code(400).send({ error: 'bad_amount' });
+        if (me.gold < n) return reply.code(400).send({ error: 'not_enough_gold' });
+        db.transaction(() => { grant(me.user_id, { gold: -n }); grant(to.user_id, { gold: n }); })();
+        logEvent(`💝 ${me.name} tặng ${to.name} ${n.toLocaleString('vi')} vàng`);
+        pushTo([to.user_id], 'Ăn trộm dzui dzẻ 😋', `💝 ${me.name} vừa tặng bạn ${n.toLocaleString('vi')} vàng!`);
+        return { me: fresh(me.user_id), given: n };
+      });
+      api.post('/gold-ask', async (request, reply) => {
+        const { toId, amount, note } = request.body ?? {};
+        const me = request.farmer;
+        const n = parseAmount(amount);
+        const to = getFarmer.get(Number(toId));
+        if (!to || to.user_id === me.user_id) return reply.code(400).send({ error: 'no_farm' });
+        if (!n) return reply.code(400).send({ error: 'bad_amount' });
+        const open = db.prepare("SELECT COUNT(*) n FROM gold_requests WHERE from_id = ? AND status = 'open'").get(me.user_id).n;
+        if (open >= GOLD_ASK_MAX_OPEN) return reply.code(400).send({ error: 'too_many_requests' });
+        const text = String(note || '').slice(0, 80);
+        db.prepare('INSERT INTO gold_requests (from_id, to_id, amount, note, status, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(me.user_id, to.user_id, n, text, 'open', Date.now());
+        pushTo([to.user_id], 'Ăn trộm dzui dzẻ 😋', `🙏 ${me.name} xin bạn ${n.toLocaleString('vi')} vàng${text ? `: “${text}”` : ''} — vào Xin/Cho để trả lời.`);
+        return { me: fresh(me.user_id), asked: n };
+      });
+      function goldRequestsView(meId) {
+        const q = (sql, ...a) => db.prepare(sql).all(...a).map((r) => ({ id: r.id, fromId: r.from_id, fromName: r.from_name, toId: r.to_id, toName: r.to_name, amount: r.amount, note: r.note, status: r.status, createdAt: r.created_at, resolvedAt: r.resolved_at }));
+        const base = 'SELECT g.*, f.name AS from_name, t.name AS to_name FROM gold_requests g JOIN farmers f ON f.user_id = g.from_id JOIN farmers t ON t.user_id = g.to_id';
+        return {
+          incoming: q(`${base} WHERE g.to_id = ? AND g.status = 'open' ORDER BY g.created_at DESC`, meId),
+          outgoing: q(`${base} WHERE g.from_id = ? ORDER BY g.created_at DESC LIMIT 20`, meId),
+        };
+      }
+      api.get('/gold-requests', async (request) => goldRequestsView(request.farmer.user_id));
+      api.post('/gold-request-act', async (request, reply) => {
+        const { id, action } = request.body ?? {};
+        const me = request.farmer;
+        const row = db.prepare('SELECT * FROM gold_requests WHERE id = ?').get(Number(id));
+        if (!row || row.status !== 'open') return reply.code(400).send({ error: 'request_closed' });
+        const now = Date.now();
+        if (action === 'cancel') {
+          if (row.from_id !== me.user_id) return reply.code(403).send({ error: 'forbidden' });
+          db.prepare("UPDATE gold_requests SET status = 'cancelled', resolved_at = ? WHERE id = ?").run(now, row.id);
+        } else if (action === 'decline') {
+          if (row.to_id !== me.user_id) return reply.code(403).send({ error: 'forbidden' });
+          db.prepare("UPDATE gold_requests SET status = 'declined', resolved_at = ? WHERE id = ?").run(now, row.id);
+          pushTo([row.from_id], 'Ăn trộm dzui dzẻ 😋', `🙅 ${me.name} chưa cho được ${row.amount.toLocaleString('vi')} vàng bạn xin.`);
+        } else if (action === 'pay') {
+          if (row.to_id !== me.user_id) return reply.code(403).send({ error: 'forbidden' });
+          if (me.gold < row.amount) return reply.code(400).send({ error: 'not_enough_gold' });
+          db.transaction(() => {
+            grant(me.user_id, { gold: -row.amount });
+            grant(row.from_id, { gold: row.amount });
+            db.prepare("UPDATE gold_requests SET status = 'paid', resolved_at = ? WHERE id = ?").run(now, row.id);
+          })();
+          const asker = getFarmer.get(row.from_id);
+          logEvent(`💝 ${me.name} cho ${asker?.name || '?'} ${row.amount.toLocaleString('vi')} vàng theo lời xin`);
+          pushTo([row.from_id], 'Ăn trộm dzui dzẻ 😋', `💝 ${me.name} đã cho bạn ${row.amount.toLocaleString('vi')} vàng như bạn xin!`);
+        } else return reply.code(400).send({ error: 'bad_request' });
+        return { me: fresh(me.user_id), requests: goldRequestsView(me.user_id) };
+      });
+
       api.post('/away-ack', async (request) => {
         db.prepare('UPDATE farmers SET away_report_json = NULL WHERE user_id = ?').run(request.farmer.user_id);
         return { me: fresh(request.farmer.user_id) };

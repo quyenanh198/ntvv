@@ -123,6 +123,9 @@
     own_farm: 'Ruộng nhà mình mà!',
     no_empty_plot: 'Không còn ô trống.',
     nothing_ready: 'Chưa có gì sẵn sàng cả.',
+    bad_amount: 'Số vàng không hợp lệ.',
+    too_many_requests: 'Bạn đang có 5 lời xin chưa được trả lời — chờ đã nhé.',
+    request_closed: 'Lời xin này đã đóng rồi.',
     tax_due: 'Còn nợ thuế đất — bán hàng lấy vàng, trả thuế xong mới gieo được.',
     already_owned: 'Bạn đã có món này rồi.',
     not_owned: 'Chưa mua món này.',
@@ -355,6 +358,7 @@
           ${m.level >= DATA.config.fishing.level ? `<button class="side-btn" data-sheet="fishing">🎣${(m.fishFarm?.batches || []).some((b) => b.ready) ? '<i class="dot"></i>' : ''}<span>Ao cá</span></button>` : ''}
           <button class="side-btn" data-sheet="market">🤝${DATA.wants?.canFill ? '<i class="dot"></i>' : ''}<span>Thu mua</span></button>
           <button class="side-btn" data-sheet="luxury">💎<span>Xa xỉ</span></button>
+          <button class="side-btn" data-sheet="money">💌${m.goldRequests?.incoming ? '<i class="dot"></i>' : ''}<span>Xin/Cho</span></button>
         </div>
 
         <div class="stage-center">
@@ -409,6 +413,8 @@
           ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canWater).length; return n >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-water-help-all">💧 Tưới hết (${n})</button>` : ''; })()}
           ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canPoach).length; return n >= 2 ? `<button class="gbtn gbtn--gold btn-mini" id="btn-poach-all">😋 Trộm hết (${n})</button>` : ''; })()}
           ${(() => { const n = visiting.farm.plots.filter((p) => p.crop && p.ready).length; return n ? `<button class="gbtn gbtn--green btn-mini" id="btn-harvest-help">🧺 Thu hoạch giúp (${n})</button>` : ''; })()}
+              <button class="gbtn gbtn--green btn-mini" id="btn-gold-give">💝 Cho tiền</button>
+              <button class="gbtn gbtn--green btn-mini" id="btn-gold-ask">🙏 Xin tiền</button>
               <button id="btn-home" class="gbtn gbtn--gold">🏡 Về nhà</button>
             </div>` : renderToolbar()}
 
@@ -1033,6 +1039,27 @@
       return sheetShell('🏭 Khu chế biến', `${toolbar}<div class="machine-grid">${blocks}</div>`, 'sheet--factory');
     }
 
+    if (t === 'money') {
+      const g = MONEY || { incoming: [], outgoing: [] };
+      const fmtT = (t2) => new Date(t2).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+      const statusText = { open: '⏳ Đang chờ', paid: '✅ Đã cho', declined: '🙅 Từ chối', cancelled: '↩️ Đã huỷ' };
+      const incoming = g.incoming.length ? g.incoming.map((r) => `<div class="quest-row">
+          <span class="q-emoji">🙏</span>
+          <span class="seed-info"><span class="seed-name">${esc(r.fromName)} xin <b>${r.amount.toLocaleString('vi')}</b> ${COIN}</span><div class="seed-meta">${r.note ? `“${esc(r.note)}” · ` : ''}${fmtT(r.createdAt)}</div></span>
+          <span class="btn-group">
+            <button class="gbtn gbtn--gold btn-mini" data-gr-act="pay" data-gr-id="${r.id}" ${m.gold >= r.amount ? '' : 'disabled'}>Cho luôn</button>
+            <button class="gbtn btn-mini" data-gr-act="decline" data-gr-id="${r.id}">Từ chối</button>
+          </span>
+        </div>`).join('') : '<p class="sheet-note">Chưa ai xin tiền bạn 😌</p>';
+      const outgoing = g.outgoing.length ? g.outgoing.map((r) => `<div class="quest-row${r.status === 'open' ? '' : ' quest-row--done'}">
+          <span class="q-emoji">${r.status === 'paid' ? '💝' : '🙏'}</span>
+          <span class="seed-info"><span class="seed-name">Xin ${esc(r.toName)} <b>${r.amount.toLocaleString('vi')}</b> ${COIN}</span><div class="seed-meta">${statusText[r.status] || r.status} · ${fmtT(r.createdAt)}${r.note ? ` · “${esc(r.note)}”` : ''}</div></span>
+          ${r.status === 'open' ? `<button class="gbtn btn-mini" data-gr-act="cancel" data-gr-id="${r.id}">Huỷ</button>` : ''}
+        </div>`).join('') : '<p class="sheet-note">Bạn chưa xin ai. Vào ruộng người nhà, bấm 🙏 Xin tiền hoặc 💝 Cho tiền.</p>';
+      return sheetShell(`💌 Xin / Cho tiền <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
+        `<h4 class="lb-sec">🙏 Người nhà xin bạn</h4>${incoming}<h4 class="lb-sec">📨 Bạn đã xin</h4>${outgoing}<p class="sheet-note">Cho tiền là chuyển vàng thẳng từ kho bạn sang người kia, không tính kinh tế làng.</p>`);
+    }
+
     if (t === 'luxury') {
       const L = DATA.config.luxury || {};
       const lux = m.luxury || { owned: [], decor: [] };
@@ -1210,6 +1237,15 @@
       </div>`;
   }
 
+  let MONEY = null;
+  async function openMoney() {
+    const r = await run(() => api('/gold-requests'));
+    if (!r) return;
+    MONEY = r;
+    sheet = { type: 'money' };
+    render();
+  }
+
   let LOTTERY_DATA = null;
   async function openLuxury() {
     const r = await run(() => api('/lottery'));
@@ -1236,8 +1272,30 @@
       el.addEventListener('click', () => {
         if (el.dataset.sheet === 'market') { openMarket(); return; }
         if (el.dataset.sheet === 'luxury') { openLuxury(); return; }
+        if (el.dataset.sheet === 'money') { openMoney(); return; }
         sheet = { type: el.dataset.sheet }; render();
       }));
+    document.getElementById('btn-gold-give')?.addEventListener('click', async () => {
+      const v = window.prompt(`Tặng ${VISIT.farm.name} bao nhiêu vàng? (bạn có ${me().gold.toLocaleString('vi')})`, '');
+      const n = Math.floor(Number(String(v || '').replace(/[^0-9]/g, '')));
+      if (!n) return;
+      const r = await run(() => api('/gold-give', { toId: VISIT.ownerId, amount: n }));
+      if (r) { updateMe(r); toast(`💝 Đã tặng ${VISIT.farm.name} ${n.toLocaleString('vi')} vàng!`); render(); }
+    });
+    document.getElementById('btn-gold-ask')?.addEventListener('click', async () => {
+      const v = window.prompt(`Xin ${VISIT.farm.name} bao nhiêu vàng?`, '');
+      const n = Math.floor(Number(String(v || '').replace(/[^0-9]/g, '')));
+      if (!n) return;
+      const note = window.prompt('Nhắn gì với người ta không? (có thể bỏ trống)', '') || '';
+      const r = await run(() => api('/gold-ask', { toId: VISIT.ownerId, amount: n, note }));
+      if (r) { updateMe(r); toast(`🙏 Đã gửi lời xin ${n.toLocaleString('vi')} vàng tới ${VISIT.farm.name}`); render(); }
+    });
+    document.querySelectorAll('[data-gr-act]').forEach((el) => el.addEventListener('click', async () => {
+      const act = el.dataset.grAct;
+      if (act === 'pay' && !window.confirm('Cho số vàng này luôn?')) return;
+      const r = await run(() => api('/gold-request-act', { id: Number(el.dataset.grId), action: act }));
+      if (r) { updateMe(r); MONEY = r.requests; toast(act === 'pay' ? '💝 Đã cho!' : act === 'decline' ? '🙅 Đã từ chối' : '↩️ Đã huỷ'); render(); }
+    }));
     document.getElementById('btn-away-ack')?.addEventListener('click', async () => {
       const r = await run(() => api('/away-ack', {}));
       if (r) { updateMe(r); render(); }

@@ -140,6 +140,17 @@ CREATE TABLE IF NOT EXISTS poach_guard (
   at INTEGER NOT NULL,
   PRIMARY KEY (owner_id, kind)
 );
+CREATE TABLE IF NOT EXISTS gold_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_id INTEGER NOT NULL,
+  to_id INTEGER NOT NULL,
+  amount INTEGER NOT NULL,
+  note TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'open',
+  created_at INTEGER NOT NULL,
+  resolved_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS gold_requests_to ON gold_requests (to_id, status);
 CREATE TABLE IF NOT EXISTS debts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   debtor_id INTEGER NOT NULL,
