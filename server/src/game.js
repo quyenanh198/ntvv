@@ -633,6 +633,9 @@ export const DOG = {
   onlineMs: 2 * MIN,
   fine: 300,
   fineStep: 100,
+  debtPenalty: 100, // không đủ vàng nộp phạt: phần thiếu thành nợ + 100 phạt thêm
+  debtInterest: 0.05, // mỗi 10 phút nợ cộng thêm 5% của gốc (lãi đơn)
+  debtStepMs: 10 * MIN,
 };
 
 // Sinh một đơn từ các sản phẩm đã mở khóa. rng: () => [0,1).

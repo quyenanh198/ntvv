@@ -1797,7 +1797,8 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .nf-khungbac { color: #eef3f9 !important; text-shadow: 0 0 6px rgba(205, 220, 240, .95) !important; }
 .nf-khungvang { color: #ffd54a !important; text-shadow: 0 0 8px rgba(255, 200, 40, .95) !important; }
 .nf-khungkimcuong { color: #a6f4ff !important; text-shadow: 0 0 6px #fff, 0 0 12px rgba(120, 230, 255, .95) !important; }
-.tax-banner { position: fixed; top: 66px; left: 50%; transform: translateX(-50%); z-index: 30; max-width: min(92vw, 640px); background: rgba(120, 40, 20, .92); color: #ffe0c0; border: 2px solid #ff9a5c; border-radius: 12px; padding: .35rem .7rem; font-size: .8rem; text-align: center; }
+.top-banners { position: fixed; top: 66px; left: 50%; transform: translateX(-50%); z-index: 30; display: flex; flex-direction: column; gap: .3rem; align-items: center; pointer-events: none; }
+.tax-banner { max-width: min(92vw, 640px); background: rgba(120, 40, 20, .92); color: #ffe0c0; border: 2px solid #ff9a5c; border-radius: 12px; padding: .35rem .7rem; font-size: .8rem; text-align: center; }
 .lux-card { text-align: center; }
 .lux-emoji { font-size: 2rem; line-height: 1; }
 .lux-card--owned { outline: 2px solid #7bd66b; }
@@ -1828,3 +1829,6 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .away-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-right: .2rem; }
 
 .away-qty { margin-left: auto; font-weight: 800; color: #b3462b; white-space: nowrap; }
+
+.tax-banner--debt { background: rgba(90, 30, 60, .92); border-color: #ff7ab3; }
+.tax-banner--credit { background: rgba(20, 70, 40, .92); border-color: #7bd66b; color: #d8ffd0; }

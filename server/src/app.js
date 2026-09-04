@@ -156,6 +156,7 @@ export function buildApp({ config, db, logger = true }) {
       }
     }
     collectTax(user.id);
+    settleDebts(user.id);
     touchSeen(user.id);
     request.farmer = getFarmer.get(user.id);
     request.chatUser = user;
@@ -234,6 +235,37 @@ export function buildApp({ config, db, logger = true }) {
     }
     return { ...row, counters: JSON.parse(row.counters_json || '{}') };
   }
+  // Nợ tiền phạt: bị chó tóm mà không đủ vàng thì phần thiếu (+100 phạt) thành nợ
+  // chủ vườn, mỗi 10 phút +5% lãi kép; hễ con nợ có vàng là tự trừ trả (theo nợ cũ trước).
+  // Lãi đơn: mỗi 10 phút cộng 5% của gốc (gốc chốt lại sau mỗi lần trả một phần).
+  const debtNow = (row, now = Date.now()) => Math.round(row.amount * (1 + DOG.debtInterest * Math.floor((now - row.at) / scaleMs(DOG.debtStepMs, config.fast))));
+  function settleDebts(userId, now = Date.now()) {
+    const rows = db.prepare('SELECT * FROM debts WHERE debtor_id = ? ORDER BY at, id').all(userId);
+    if (!rows.length) return;
+    const debtor = getFarmer.get(userId);
+    let gold = Math.max(0, debtor?.gold || 0);
+    for (const row of rows) {
+      if (gold <= 0) break;
+      const due = debtNow(row, now);
+      const pay = Math.min(gold, due);
+      if (pay <= 0) continue;
+      db.transaction(() => {
+        grant(userId, { gold: -pay });
+        grant(row.creditor_id, { gold: pay });
+        if (pay >= due) db.prepare('DELETE FROM debts WHERE id = ?').run(row.id);
+        else db.prepare('UPDATE debts SET amount = ?, at = ? WHERE id = ?').run(due - pay, now, row.id);
+      })();
+      gold -= pay;
+      const creditor = getFarmer.get(row.creditor_id);
+      if (pay >= due || pay >= 100) logEvent(`💸 ${debtor.name} trả ${pay.toLocaleString('vi')} vàng nợ tiền phạt cho ${creditor?.name || '?'}${pay >= due ? ' (hết nợ)' : ` (còn nợ ${(due - pay).toLocaleString('vi')})`}`);
+    }
+  }
+  const debtView = (userId, now = Date.now()) => ({
+    owe: db.prepare('SELECT * FROM debts WHERE debtor_id = ?').all(userId).reduce((a, r) => a + debtNow(r, now), 0),
+    owedToMe: db.prepare('SELECT * FROM debts WHERE creditor_id = ?').all(userId).reduce((a, r) => a + debtNow(r, now), 0),
+    interest: DOG.debtInterest,
+  });
+
   // Sổ mất trộm: ghi từng lần bị chôm (ruộng/chuồng/máy) để tổng kết lúc chủ quay lại.
   const recordTheft = (ownerId, thiefId, item, qty) => db.prepare('INSERT INTO thefts (owner_id, thief_id, item, qty, at) VALUES (?, ?, ?, ?, ?)').run(ownerId, thiefId, item, qty, Date.now());
   const AWAY_GAP_MS = 10 * 60 * 1000; // vắng quá 10 phút = phiên mới
@@ -708,7 +740,7 @@ export function buildApp({ config, db, logger = true }) {
     const f = getFarmer.get(userId);
     let awayReport = null;
     try { awayReport = f.away_report_json ? JSON.parse(f.away_report_json) : null; } catch { awayReport = null; }
-    return { ...farmerView(f), tax: taxView(f), luxury: luxuryView(f), machineLevels: machineLevels(f), market: saturationView(), awayReport };
+    return { ...farmerView(f), tax: taxView(f), luxury: luxuryView(f), machineLevels: machineLevels(f), market: saturationView(), awayReport, debts: debtView(userId) };
   }
 
   // ---- API ----------------------------------------------------------------
@@ -1614,17 +1646,21 @@ export function buildApp({ config, db, logger = true }) {
         const streak = thief.caught_streak || 0; // số lần bị tóm liên tiếp trước đó
         const fine = DOG.fine + DOG.fineStep * streak;
         const paid = Math.min(fine, Math.max(0, thief.gold));
+        // Không đủ vàng: phần thiếu + phạt thêm thành nợ chủ vườn (lãi 5%/10 phút).
+        const debt = paid < fine ? fine - paid + DOG.debtPenalty : 0;
         db.transaction(() => {
           grant(thief.user_id, { gold: -paid });
           grant(owner.user_id, { gold: paid });
+          if (debt > 0) db.prepare('INSERT INTO debts (debtor_id, creditor_id, amount, at) VALUES (?, ?, ?, ?)').run(thief.user_id, owner.user_id, debt, now);
           db.prepare('UPDATE farmers SET last_caught_at = ?, caught_streak = ? WHERE user_id = ?').run(now, streak + 1, thief.user_id);
         })();
+        const debtNote = debt > 0 ? ` — thiếu tiền, ghi nợ ${debt.toLocaleString('vi')} vàng (+${DOG.debtPenalty} phạt), mỗi 10 phút +${Math.round(DOG.debtInterest * 100)}% lãi, có vàng là tự trừ` : '';
         const nth = streak + 1;
         if (!quiet) {
-          logEvent(`🐕 Chó nhà ${owner.name} tóm được ${thief.name}${nth > 1 ? ` (lần ${nth} liên tiếp)` : ''} — nộp phạt ${paid.toLocaleString('vi')} vàng cho chủ vườn`);
-          pushTo([owner.user_id], 'Ăn trộm dzui dzẻ 😋', `🐕 Chó nhà bạn vừa tóm được ${thief.name} — thu ${paid.toLocaleString('vi')} vàng tiền phạt!`);
+          logEvent(`🐕 Chó nhà ${owner.name} tóm được ${thief.name}${nth > 1 ? ` (lần ${nth} liên tiếp)` : ''} — nộp phạt ${paid.toLocaleString('vi')} vàng cho chủ vườn${debtNote}`);
+          pushTo([owner.user_id], 'Ăn trộm dzui dzẻ 😋', `🐕 Chó nhà bạn vừa tóm được ${thief.name} — thu ${paid.toLocaleString('vi')} vàng tiền phạt${debt > 0 ? `, còn ghi nợ ${debt.toLocaleString('vi')} (tự thu khi họ có vàng, lãi 5%/10 phút)` : ''}!`);
         }
-        return { paid, nth, message: `🐕 Gâu! Chó nhà ${owner.name} tóm được bạn — nộp phạt ${paid.toLocaleString('vi')} vàng${nth > 1 ? ` (bị tóm ${nth} lần liên tiếp)` : ''}. Trộm trót lọt một lần là phạt về lại ${DOG.fine}.` };
+        return { paid, nth, debt, message: `🐕 Gâu! Chó nhà ${owner.name} tóm được bạn — nộp phạt ${paid.toLocaleString('vi')} vàng${nth > 1 ? ` (bị tóm ${nth} lần liên tiếp)` : ''}${debtNote}. Trộm trót lọt một lần là phạt về lại ${DOG.fine}.` };
       }
       function dogCheck(reply, owner, thief) {
         const c = dogCatch(owner, thief);

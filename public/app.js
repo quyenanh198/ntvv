@@ -334,7 +334,11 @@
             </span>
           </div>
         </header>
-        ${m.tax?.owed > 0 ? `<div class="tax-banner">🏛️ Nợ thuế đất <b>${m.tax.owed.toLocaleString('vi')}</b> ${COIN} — có vàng là tự trả, chưa trả thì chưa gieo trồng được</div>` : ''}
+        <div class="top-banners">
+          ${m.tax?.owed > 0 ? `<div class="tax-banner">🏛️ Nợ thuế đất <b>${m.tax.owed.toLocaleString('vi')}</b> ${COIN} — có vàng là tự trả, chưa trả thì chưa gieo trồng được</div>` : ''}
+          ${m.debts?.owe > 0 ? `<div class="tax-banner tax-banner--debt">💸 Nợ tiền phạt bị chó tóm <b>${m.debts.owe.toLocaleString('vi')}</b> ${COIN} — lãi ${Math.round((m.debts.interest || 0.05) * 100)}% mỗi 10 phút, có vàng là tự trừ</div>` : ''}
+          ${m.debts?.owedToMe > 0 ? `<div class="tax-banner tax-banner--credit">🐕 Kẻ trộm đang nợ bạn <b>${m.debts.owedToMe.toLocaleString('vi')}</b> ${COIN} tiền phạt — tự thu khi họ có vàng</div>` : ''}
+        </div>
 
         <div class="side side-left">
           <button class="side-btn" data-sheet="quests">🧾${questsReady ? '<i class="dot"></i>' : ''}<span>Nhiệm vụ</span></button>
