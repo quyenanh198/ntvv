@@ -90,6 +90,11 @@
     }
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 404 && /^Route /.test(data.message || '')) {
+        toast('🔄 App đang chạy bản cũ — đang tải lại…');
+        setTimeout(() => location.reload(), 900);
+        throw new Error('stale_client');
+      }
       toast(data.message || ERRORS[data.error] || 'Có lỗi rồi, thử lại nhé!');
       // Đang thăm ruộng mà server bảo hết/chưa tới lượt: ruộng đã đổi (chủ vừa thu,
       // người khác vừa hái ké…) → tải lại ruộng ngay cho nút bấm khớp thực tế.
@@ -613,7 +618,7 @@
   // Sổ mất trộm trong lúc vắng mặt: hiện một lần khi quay lại, bấm Đã biết để xoá.
   function renderAway(r) {
     const fmt = (t) => new Date(t).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
-    const items = r.items.map((x) => `<div class="lb-row"><span class="lb-rank">${itemImg(x.id, 'seed-sprite')}</span><span class="lb-name">${itemInfo(x.id)?.name || x.id}</span><span class="lb-stat">−${x.qty}</span></div>`).join('');
+    const items = r.items.map((x) => `<div class="lb-row"><span class="lb-rank">${itemImg(x.id, 'seed-sprite')}</span><span class="lb-name">${itemInfo(x.id)?.name || x.id}</span><span class="away-qty">−${x.qty}</span></div>`).join('');
     const thieves = r.thieves.map((t) => `<span class="away-thief">🥷 ${esc(t.name)}: ${t.qty} món (${t.times} lần)</span>`).join(' ');
     return `
       <div class="modal-backdrop" data-away-close="1">
@@ -1230,7 +1235,7 @@
         sheet = { type: el.dataset.sheet }; render();
       }));
     document.getElementById('btn-away-ack')?.addEventListener('click', async () => {
-      const r = await run(() => api('/away-ack'));
+      const r = await run(() => api('/away-ack', {}));
       if (r) { updateMe(r); render(); }
     });
     document.querySelectorAll('[data-away-close]').forEach((el) => el.addEventListener('click', () => { if (DATA.me) DATA.me.awayReport = null; render(); }));
