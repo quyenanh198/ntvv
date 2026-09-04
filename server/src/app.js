@@ -697,9 +697,15 @@ export function buildApp({ config, db, logger = true }) {
   function saturationView() {
     const now = Date.now();
     const out = {};
+    const half = scaleMs(MARKET_SAT.halfMs, config.fast);
     for (const r of db.prepare('SELECT item FROM market_sat').all()) {
       const m = priceMult(r.item, now);
-      if (m < 0.995) out[r.item] = Math.round(m * 100) / 100;
+      if (m < 0.995) {
+        // Số giờ để giá hồi về ≥ 95% (ngấy giảm nửa mỗi halfMs).
+        const sat = saturation(r.item, now);
+        const hours = Math.max(0.1, (half * Math.log2(Math.max(1, sat / (0.05 * MARKET_SAT.cap)))) / 3600000);
+        out[r.item] = { mult: Math.round(m * 100) / 100, hours: Math.round(hours * 10) / 10 };
+      }
     }
     return out;
   }

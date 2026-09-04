@@ -794,7 +794,7 @@
             return `<div class="inv-row" data-item="${id}">
               ${itemImg(id)}
               <span class="seed-info"><span class="seed-name">${info?.name || id}</span>
-                <div class="seed-meta">x${q}${info?.sell ? ` · ${Math.round(info.sell * (m.market?.[id] || 1)).toLocaleString('vi')} ${COIN}/cái${m.market?.[id] ? ` <i class="sat">📉 −${Math.round((1 - m.market[id]) * 100)}% bão hoà</i>` : ''}` : ' · không bán được'}</div></span>
+                <div class="seed-meta">x${q}${info?.sell ? ` · ${Math.round(info.sell * (m.market?.[id]?.mult || 1)).toLocaleString('vi')} ${COIN}/cái${m.market?.[id] ? ` <i class="sat">📉 −${Math.round((1 - m.market[id].mult) * 100)}% bão hoà · hồi ~${m.market[id].hours}h</i>` : ''}` : ' · không bán được'}</div></span>
               ${info?.sell ? `
                 <span class="btn-group">
                   <span class="qty-ctl">

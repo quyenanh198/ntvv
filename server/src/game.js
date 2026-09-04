@@ -888,7 +888,9 @@ export const thiefEconomyMult = (villageGold) => 1 + Math.floor(villageGold / TH
 export const TAX_PER_PLOT = 2000; // thuế đất: vàng/ô/ngày (mốc 9h sáng LA), vàng bị đốt
 export const MACHINE_UPGRADE_GOLD = [1_000_000, 2_500_000, 5_000_000, 10_000_000, 20_000_000]; // nhà máy cấp 1..5, mỗi cấp −10% thời gian
 export const LOTTERY = { ticket: 100_000, base: 1_000_000, perTicket: 500_000, maxPerDay: 100, shares: [0.7, 0.2, 0.1] }; // hũ = 1 triệu + 500k mỗi vé; 3 người may mắn chia 70/20/10 (thiếu người thì phần dư dồn về giải 1)
-export const MARKET_SAT = { cap: 2_000_000, floor: 0.4, halfMs: 4 * 60 * MIN }; // giá bão hoà: bán dồn 1 món thì giá tụt, hồi theo nửa đời 4h
+// Giá bão hoà: bán dồn 1 món thì giá tụt (mỗi 10 triệu vàng bán ra trong khoảng ngắn = −100%, sàn 40%),
+// độ ngấy giảm nửa mỗi giờ nên vài giờ là hồi. (Cũ: cap 2 triệu, nửa đời 4h → hàng bán nhiều cả ngày không hồi.)
+export const MARKET_SAT = { cap: 10_000_000, floor: 0.4, halfMs: 60 * MIN };
 // Xa xỉ phẩm: chỉ để khoe, không tăng sức mạnh. Danh hiệu/khung tên chọn 1, trang trí hiện hết.
 export const LUXURY = {
   nongdanchamchi: { id: 'nongdanchamchi', kind: 'title', name: 'Nông dân chăm chỉ', emoji: '🌾', price: 5000000, desc: 'Sáng tưới chiều gặt.' },
