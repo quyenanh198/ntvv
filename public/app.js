@@ -367,32 +367,32 @@
         <div class="stage-center">
           <div class="scene-banner">
             <div class="sb-hills"></div>
-            <img class="sb sb-house" src="assets/pack/farm_house.png" alt="" />
-            <img class="sb sb-tree1" src="assets/pack/tree_01.png" alt="" />
-            <img class="sb sb-barn" src="assets/pack/red_barn.png" alt="" />
-            <img class="sb sb-green" src="assets/pack/greenhouse.png" alt="" />
-            <img class="sb sb-tree2" src="assets/pack/tree_02.png" alt="" />
+            <img class="sb sb-house" src="${A('assets/pack/farm_house.png')}" alt="" />
+            <img class="sb sb-tree1" src="${A('assets/pack/tree_01.png')}" alt="" />
+            <img class="sb sb-barn" src="${A('assets/pack/red_barn.png')}" alt="" />
+            <img class="sb sb-green" src="${A('assets/pack/greenhouse.png')}" alt="" />
+            <img class="sb sb-tree2" src="${A('assets/pack/tree_02.png')}" alt="" />
             <span class="sb sb-pen" aria-hidden="true"></span>
             ${m.level >= DATA.config.animals.cuu.level ? `
               <button class="sb sb-btn sb-sheep" data-barn="cuu" title="Chuồng cừu">
-                <img src="assets/pack/sheep_adult.png" alt="Chuồng cừu" />
+                <img src="${A('assets/pack/sheep_adult.png')}" alt="Chuồng cừu" />
                 ${m.animals.some((x) => x.kind === 'cuu' && x.ready) ? '<i class="dot"></i>' : ''}
                 <span class="sb-tag">Chuồng cừu</span>
               </button>`
             : `<img class="sb sb-sheep sb--locked" src="${A('assets/pack/sheep_adult.png')}" alt="" title="Chuồng cừu — cần Lv ${DATA.config.animals.cuu.level}" />`}
             ${m.level >= DATA.config.animals.bo.level ? `
               <button class="sb sb-btn sb-cowbarn" data-barn="bo" title="Chuồng bò">
-                <img src="assets/art/cow.png" alt="Chuồng bò" />
+                <img src="${A('assets/art/cow.png')}" alt="Chuồng bò" />
                 ${m.animals.some((x) => x.kind === 'bo' && x.ready) ? '<i class="dot"></i>' : ''}
                 <span class="sb-tag">Chuồng bò</span>
               </button>`
             : `<img class="sb sb-cowbarn sb--locked" src="${A('assets/art/cow.png')}" alt="" title="Chuồng bò — cần Lv ${DATA.config.animals.bo.level}" />`}
-            <img class="sb sb-pig" src="assets/pack/pig_adult.png" alt="" />
-            <img class="sb sb-well" src="assets/pack/well.png" alt="" />
-            <img class="sb sb-farmer" src="assets/pack/farmer_female_full.png" alt="" />
-            <img class="sb sb-dog" src="assets/pack/pet_dogs.png" alt="" />
+            <img class="sb sb-pig" src="${A('assets/pack/pig_adult.png')}" alt="" />
+            <img class="sb sb-well" src="${A('assets/pack/well.png')}" alt="" />
+            <img class="sb sb-farmer" src="${A('assets/pack/farmer_female_full.png')}" alt="" />
+            <img class="sb sb-dog" src="${A('assets/pack/pet_dogs.png')}" alt="" />
             ${renderSceneButtons(visiting)}
-            <img class="sb sb-logo" src="assets/pack/farm_logo.png" alt="Nông Trại Vui Vẻ" />
+            <img class="sb sb-logo" src="${A('assets/pack/farm_logo.png')}" alt="Nông Trại Vui Vẻ" />
           </div>
 
           <div class="family-block">
@@ -425,7 +425,7 @@
             ${luxStrip((visiting ? visiting.farm : m).luxury)}
             <span class="field-decor decor-1">🌻</span>
             <span class="field-decor decor-2">🍄</span>
-            <img class="scarecrow-img" src="assets/ui/scarecrow.svg" alt="" />
+            <img class="scarecrow-img" src="${A('assets/ui/scarecrow.svg')}" alt="" />
             <span class="butterfly">🦋</span>
             <div class="farm-grid" id="grid">${renderPlots(visiting)}</div>
           </div>
@@ -433,7 +433,7 @@
         </div>
 
         <div class="welcome-sign" aria-hidden="true">Chào mừng đến với<br /><b>Nông Trại Vui Vẻ!</b></div>
-        <button class="pond-img pond-btn" data-sheet="fishing" title="Hồ câu cá"><img src="assets/pack/fish_pond.png" alt="Hồ câu cá" /></button>
+        <button class="pond-img pond-btn" data-sheet="fishing" title="Hồ câu cá"><img src="${A('assets/pack/fish_pond.png')}" alt="Hồ câu cá" /></button>
 
         ${!visiting ? renderQuickbar() : ''}
       </div>
@@ -559,15 +559,15 @@
     const millDone = m.mill && m.mill.ready;
     if (visiting) {
       return `
-        <img class="sb sb-coop" src="assets/pack/tiny_house.png" alt="" />
-        <img class="sb sb-hen2" src="assets/pack/chicken_brown.png" alt="" />
-        <img class="sb sb-mill" src="assets/pack/windmill.png" alt="" />
+        <img class="sb sb-coop" src="${A('assets/pack/tiny_house.png')}" alt="" />
+        <img class="sb sb-hen2" src="${A('assets/pack/chicken_brown.png')}" alt="" />
+        <img class="sb sb-mill" src="${A('assets/pack/windmill.png')}" alt="" />
         <img class="sb sb-shop" src="${A('assets/pack/market_shop.png')}" alt="" />`;
     }
     return `
       ${coopUnlocked ? `
         <button class="sb sb-btn sb-coop" data-sheet="coop" title="Chuồng gà">
-          <img src="assets/pack/tiny_house.png" alt="Chuồng gà" />
+          <img src="${A('assets/pack/tiny_house.png')}" alt="Chuồng gà" />
           ${eggReady ? '<i class="dot"></i>' : ''}
           <span class="sb-tag">${eggReady ? '🥚 Trứng!' : hungry ? 'Gà đói' : 'Chuồng gà'}</span>
         </button>
@@ -575,13 +575,13 @@
       : `<img class="sb sb-coop sb--locked" src="${A('assets/pack/tiny_house.png')}" alt="" title="Chuồng gà — cần Lv ${DATA.config.chicken.level}" />`}
       ${millUnlocked ? `
         <button class="sb sb-btn sb-mill" data-sheet="mill" title="Cối xay">
-          <img src="assets/pack/windmill.png" alt="Cối xay" />
+          <img src="${A('assets/pack/windmill.png')}" alt="Cối xay" />
           ${millDone ? '<i class="dot"></i>' : ''}
           <span class="sb-tag">${millDone ? '✅ Xong!' : m.mill ? 'Đang xay…' : 'Cối xay'}</span>
         </button>`
       : `<img class="sb sb-mill sb--locked" src="${A('assets/pack/windmill.png')}" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
       <button class="sb sb-btn sb-shop" data-sheet="shop" title="Cửa hàng">
-        <img src="assets/pack/market_shop.png" alt="Cửa hàng" />
+        <img src="${A('assets/pack/market_shop.png')}" alt="Cửa hàng" />
         <span class="sb-tag">Cửa hàng</span>
       </button>`;
   }
@@ -812,7 +812,7 @@
       return sheetShell(
         `🏪 Cửa hàng <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
         `<div class="inv-row">
-           <img src="assets/ui/feed.svg" alt="" />
+           <img src="${A('assets/ui/feed.svg')}" alt="" />
            <span class="seed-info"><span class="seed-name">Thức ăn gia súc</span>
              <div class="seed-meta">${feed.buy} ${COIN}/túi · gà ăn 1 túi cho 1 trứng</div></span>
            <span class="btn-group">
@@ -831,7 +831,7 @@
          </div>
          ${m.level >= DATA.config.chicken.level ? `
          <div class="inv-row">
-           <img src="assets/art/chicken.png" alt="" />
+           <img src="${A('assets/art/chicken.png')}" alt="" />
            <span class="seed-info"><span class="seed-name">Gà mái</span>
              <div class="seed-meta">${DATA.config.chicken.price} ${COIN} · đẻ trứng ${fmtDuration(DATA.config.chicken.produceMs)}/quả · chuồng ${m.animals.length}/${m.coop.capacity}</div></span>
            <button class="gbtn gbtn--green btn-mini" data-buy-animal="ga" ${m.animals.filter((x) => x.kind === 'ga').length >= m.barns.ga.capacity ? 'disabled' : ''}>Mua gà</button>
