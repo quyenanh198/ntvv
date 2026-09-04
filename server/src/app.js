@@ -311,15 +311,27 @@ export function buildApp({ config, db, logger = true }) {
     const total = rows.reduce((a, r) => a + r.qty, 0);
     if (!total) return;
     const pot = LOTTERY.base + LOTTERY.perTicket * total;
-    let pick = Math.floor(Math.random() * total);
-    let winner = rows[0];
-    for (const r of rows) { if (pick < r.qty) { winner = r; break; } pick -= r.qty; }
+    // 3 người may mắn (không trùng), tỉ lệ theo số vé; phần giải không có người thì dồn về giải 1.
+    const pool = rows.map((r) => ({ ...r }));
+    const winners = [];
+    for (let rank = 0; rank < LOTTERY.shares.length && pool.length; rank += 1) {
+      const sum = pool.reduce((a, r) => a + r.qty, 0);
+      let pick = Math.floor(Math.random() * sum);
+      let i = 0;
+      for (; i < pool.length; i += 1) { if (pick < pool[i].qty) break; pick -= pool[i].qty; }
+      const w = pool.splice(Math.min(i, pool.length - 1), 1)[0];
+      winners.push({ id: w.owner_id, name: w.name, qty: w.qty, rank: rank + 1, share: LOTTERY.shares[rank] });
+    }
+    const unassigned = LOTTERY.shares.slice(winners.length).reduce((a, x) => a + x, 0);
+    winners[0].share += unassigned;
+    for (const w of winners) w.gold = Math.round(pot * w.share);
     db.transaction(() => {
-      grant(winner.owner_id, { gold: pot });
-      db.prepare('INSERT INTO lottery_draws (day, pot, winner_id, winner_name, tickets, at) VALUES (?, ?, ?, ?, ?, ?)').run(day, pot, winner.owner_id, winner.name, total, Date.now());
+      for (const w of winners) grant(w.id, { gold: w.gold });
+      db.prepare('INSERT INTO lottery_draws (day, pot, winner_id, winner_name, tickets, at, winners_json) VALUES (?, ?, ?, ?, ?, ?, ?)').run(day, pot, winners[0].id, winners[0].name, total, Date.now(), JSON.stringify(winners));
     })();
-    logEvent(`🎟️ Xổ số làng ${day.replace(/^la-/, '')}: ${winner.name} trúng ${pot.toLocaleString('vi')} vàng (${winner.qty}/${total} vé)`);
-    pushTo([winner.owner_id], 'Ăn trộm dzui dzẻ 😋', `🎟️ Bạn trúng xổ số làng: +${pot.toLocaleString('vi')} vàng (${winner.qty}/${total} vé)!`);
+    const medals = ['🥇', '🥈', '🥉'];
+    logEvent(`🎟️ Xổ số làng ${day.replace(/^la-/, '')} (hũ ${pot.toLocaleString('vi')} vàng, ${total} vé): ${winners.map((w) => `${medals[w.rank - 1]} ${w.name} +${w.gold.toLocaleString('vi')}`).join(' · ')}`);
+    for (const w of winners) pushTo([w.id], 'Ăn trộm dzui dzẻ 😋', `🎟️ ${medals[w.rank - 1]} Bạn trúng giải ${w.rank} xổ số làng: +${w.gold.toLocaleString('vi')} vàng (${w.qty}/${total} vé)!`);
   }
 
   function settleThiefBoard() {
@@ -1636,8 +1648,15 @@ export function buildApp({ config, db, logger = true }) {
         const day = thiefDayKey();
         const tot = db.prepare('SELECT COALESCE(SUM(qty), 0) q, COUNT(*) n FROM lottery_tickets WHERE day = ?').get(day);
         const mine = db.prepare('SELECT qty FROM lottery_tickets WHERE day = ? AND owner_id = ?').get(day, me.user_id)?.qty || 0;
-        const last = db.prepare('SELECT * FROM lottery_draws ORDER BY at DESC LIMIT 1').get() || null;
-        return { ticket: LOTTERY.ticket, maxPerDay: LOTTERY.maxPerDay, base: LOTTERY.base, perTicket: LOTTERY.perTicket, tickets: tot.q, players: tot.n, pot: tot.q > 0 ? LOTTERY.base + LOTTERY.perTicket * tot.q : LOTTERY.base, mine, last };
+        const lastRow = db.prepare('SELECT * FROM lottery_draws ORDER BY at DESC LIMIT 1').get() || null;
+        let last = null;
+        if (lastRow) {
+          let winners = [];
+          try { winners = lastRow.winners_json ? JSON.parse(lastRow.winners_json) : []; } catch { winners = []; }
+          if (!winners.length) winners = [{ id: lastRow.winner_id, name: lastRow.winner_name, rank: 1, gold: lastRow.pot }];
+          last = { day: lastRow.day, pot: lastRow.pot, tickets: lastRow.tickets, winners };
+        }
+        return { ticket: LOTTERY.ticket, maxPerDay: LOTTERY.maxPerDay, base: LOTTERY.base, perTicket: LOTTERY.perTicket, shares: LOTTERY.shares, tickets: tot.q, players: tot.n, pot: tot.q > 0 ? LOTTERY.base + LOTTERY.perTicket * tot.q : LOTTERY.base, mine, last };
       }
       api.get('/lottery', async (request) => { settleThiefBoard(); return lotteryView(request.farmer); });
       api.post('/lottery-buy', async (request, reply) => {

@@ -243,6 +243,8 @@ export function openDb(dataDir) {
   if (!cols.includes('machine_levels_json')) db.exec("ALTER TABLE farmers ADD COLUMN machine_levels_json TEXT NOT NULL DEFAULT '{}'");
   if (!cols.includes('support_paid')) db.exec('ALTER TABLE farmers ADD COLUMN support_paid INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('last_seen_at')) db.exec('ALTER TABLE farmers ADD COLUMN last_seen_at INTEGER NOT NULL DEFAULT 0');
+  const lcols = db.prepare('PRAGMA table_info(lottery_draws)').all().map((c) => c.name);
+  if (lcols.length && !lcols.includes('winners_json')) db.exec('ALTER TABLE lottery_draws ADD COLUMN winners_json TEXT');
   if (!cols.includes('away_report_json')) db.exec('ALTER TABLE farmers ADD COLUMN away_report_json TEXT');
   // Hỗ trợ theo trần làng: coi vàng tặng trước đây là đã hỗ trợ (tránh trả trùng).
   db.exec('UPDATE farmers SET support_paid = gift_gold WHERE support_paid = 0 AND gift_gold > 0');
