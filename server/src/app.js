@@ -1039,8 +1039,9 @@ export function buildApp({ config, db, logger = true }) {
           allowed = st.stock;
         } else {
           if (Date.now() < plot.ready_at) return reply.code(400).send({ error: 'not_ready' });
-          // Chủ chậm thu: mỗi POACH_AGAIN_MS quá hạn mở thêm 1 lượt hái ké trên ô.
-          allowed = 1 + Math.floor((Date.now() - plot.ready_at) / scaleMs(POACH_AGAIN_MS, config.fast));
+          // Mỗi kẻ trộm hái ké mỗi ô 1 lần mỗi lứa; không giới hạn tổng số người.
+          if (lastAction.get(ownerId, plot.idx, plot.planted_at, me.user_id, 'poach')) return reply.code(400).send({ error: 'already_poached' });
+          allowed = Infinity;
         }
         if ((plot.poached || 0) >= allowed) return reply.code(400).send({ error: 'already_poached' });
         if (dogCheck(reply, owner, me)) return reply;
@@ -1062,7 +1063,7 @@ export function buildApp({ config, db, logger = true }) {
         const again = scaleMs(POACH_AGAIN_MS, config.fast);
         for (const p of db.prepare('SELECT * FROM plots WHERE owner_id = ? AND tree = 1').all(ownerId)) treeSettle(owner, p, now);
         const targets = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0)) ORDER BY idx').all(ownerId, now)
-          .filter((p) => (p.poached || 0) < (p.tree ? (p.fruit_stock || 0) : 1 + Math.floor((now - p.ready_at) / again)));
+          .filter((p) => (p.tree ? (p.poached || 0) < (p.fruit_stock || 0) : !lastAction.get(ownerId, p.idx, p.planted_at, me.user_id, 'poach')));
         if (!targets.length) return reply.code(400).send({ error: 'nothing_to_poach' });
         const got = {};
         let times = 0;
@@ -1092,8 +1093,7 @@ export function buildApp({ config, db, logger = true }) {
       // Thu hoạch giúp: nông sản vào kho CHỦ vườn (như chủ tự thu), khách nhận công.
       function ripePlotsOf(owner, now) {
         for (const p of db.prepare('SELECT * FROM plots WHERE owner_id = ? AND tree = 1').all(owner.user_id)) treeSettle(owner, p, now);
-        return db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0)) ORDER BY idx').all(owner.user_id, now)
-          .filter((p) => !CROPS[p.crop]?.risky); // cần sa: chủ tự thu
+        return db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0)) ORDER BY idx').all(owner.user_id, now);
       }
 
       // Cần sa nguỵ trang thành một cây khác, chọn ngẫu nhiên nhưng cố định theo ô + lứa
@@ -1148,17 +1148,28 @@ export function buildApp({ config, db, logger = true }) {
         if (!all) plots = plots.filter((p) => p.idx === Number(idx));
         if (!plots.length) return reply.code(400).send({ error: 'nothing_ready' });
         const got = {};
+        let riskyN = 0;
+        let riskyGold = 0;
         db.transaction(() => {
           for (const p of plots) {
+            if (CROPS[p.crop]?.risky) {
+              // Cây đặc biệt: chủ nhận vàng thẳng; người giúp không thấy tên thật.
+              harvestPlot(owner, p);
+              riskyN += 1;
+              riskyGold += CANSA.reward;
+              continue;
+            }
             const before = invQty(owner.user_id, p.crop);
             harvestPlot(owner, p);
             got[p.crop] = (got[p.crop] || 0) + (invQty(owner.user_id, p.crop) - before);
           }
           grant(me.user_id, { gold: WATER_HELPER_GOLD * GOLD_MULT * plots.length, xp: WATER_HELPER_EXP * plots.length });
         })();
-        const desc = Object.entries(got).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(', ');
+        const descParts = Object.entries(got).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`);
+        if (riskyN) descParts.push(`${riskyN} ô cây đặc biệt`);
+        const desc = descParts.join(', ');
         logEvent(`🧺 ${me.name} thu hoạch giúp ${plots.length} ô nhà ${owner.name}: ${desc}`);
-        pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🧺 ${me.name} vừa thu hoạch giúp ${plots.length} ô — ${desc} đã vào kho bạn!`);
+        pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🧺 ${me.name} vừa thu hoạch giúp ${plots.length} ô — ${descParts.length ? desc : ''}${riskyGold ? ` (+${riskyGold.toLocaleString('vi')} vàng cây đặc biệt)` : ''} đã vào kho bạn!`);
         return { ...visitPayload(request, ownerId), harvested: plots.length, items: got, gained: WATER_HELPER_GOLD * GOLD_MULT * plots.length };
       });
 
@@ -2173,7 +2184,7 @@ export function buildApp({ config, db, logger = true }) {
             watered: p.watered || !!lastWater,
             canWater: !p.ready && (!lastWater || now2 - lastWater.at >= scaleMs(WATER_HELP_COOLDOWN_MS, config.fast)),
             poached: p.poached,
-            canPoach: p.ready && (p.poachedN || 0) < (p.tree ? (p.fruits || 0) : 1 + Math.floor(Math.max(0, now2 - p.readyAt) / again)),
+            canPoach: p.ready && (p.tree ? (p.poachedN || 0) < (p.fruits || 0) : !lastAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'poach')),
           };
         }
         const loot = {
