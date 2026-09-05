@@ -410,15 +410,19 @@
           ${visiting ? `
             <div class="visit-bar">
               <span>👀 Ruộng của <b class="${frameCls(visiting.farm.luxury?.frame)}">${esc(visiting.farm.name)}</b>${visiting.farm.luxury?.title && DATA.config.luxury?.[visiting.farm.luxury.title] ? ` <i class="vis-title">${DATA.config.luxury[visiting.farm.luxury.title].emoji} ${DATA.config.luxury[visiting.farm.luxury.title].name}</i>` : ''}${[...(visiting.farm.luxury?.pets || []), ...(visiting.farm.luxury?.decor || [])].length ? ` <span class="hud-decor">${[...(visiting.farm.luxury.pets || []), ...(visiting.farm.luxury.decor || [])].map((id) => DATA.config.luxury?.[id]?.emoji || '').join('')}</span>` : ''} · Lv ${visiting.farm.level}${visiting.farm.online ? ' <span class="online-dot" title="Chủ vườn đang online">🟢 online</span>' : ''}${visiting.farm.dogUntil > Date.now() ? ` <span class="dog-warn">🐕 Có chó canh — ${visiting.farm.dogChance || 20}% bị tóm${visiting.farm.online ? ' (chủ đang online +10%)' : ''}!</span>` : ''}</span>
-          ${visiting.farm.loot?.animalsReady ? (Date.now() < (visiting.farm.loot.animalPoachAt || 0)
-            ? `<button class="gbtn btn-mini" disabled>⏳ Chuồng (${Math.max(1, Math.ceil((visiting.farm.loot.animalPoachAt - Date.now()) / 60000))}p)</button>`
-            : `<button class="gbtn gbtn--green btn-mini" id="btn-poach-animal">😋 Cuỗm chuồng (${visiting.farm.loot.animalsReady})</button>`) : ''}
-          ${visiting.farm.loot?.machinesReady ? (Date.now() < (visiting.farm.loot.machinePoachAt || 0)
-            ? `<button class="gbtn btn-mini" disabled>⏳ Máy (${Math.max(1, Math.ceil((visiting.farm.loot.machinePoachAt - Date.now()) / 60000))}p)</button>`
-            : `<button class="gbtn gbtn--green btn-mini" id="btn-poach-machine">😋 Cuỗm máy (${visiting.farm.loot.machinesReady})</button>`) : ''}
+          ${(() => {
+            // Một nút trộm tất cả: ruộng + chuồng + máy (phần nào đang trong giờ chờ thì hiện đồng hồ).
+            const loot = visiting.farm.loot || {};
+            const now3 = Date.now();
+            const plotsN = Object.values(visiting.myActs).filter((x) => x.canPoach).length;
+            const animalOk = loot.animalsReady && now3 >= (loot.animalPoachAt || 0);
+            const machineOk = loot.machinesReady && now3 >= (loot.machinePoachAt || 0);
+            const parts = [plotsN ? `${plotsN} ô` : '', animalOk ? 'chuồng' : '', machineOk ? 'máy' : ''].filter(Boolean);
+            const waits = [loot.animalsReady && !animalOk ? `⏳ chuồng ${Math.max(1, Math.ceil((loot.animalPoachAt - now3) / 60000))}p` : '', loot.machinesReady && !machineOk ? `⏳ máy ${Math.max(1, Math.ceil((loot.machinePoachAt - now3) / 60000))}p` : ''].filter(Boolean);
+            return `${parts.length ? `<button class="gbtn gbtn--gold btn-mini" id="btn-poach-everything" data-plots="${plotsN}" data-animal="${animalOk ? 1 : 0}" data-machine="${machineOk ? 1 : 0}">😋 Trộm hết (${parts.join(' + ')})</button>` : ''}${waits.length ? `<span class="seed-meta">${waits.join(' · ')}</span>` : ''}`;
+          })()}
           ${visiting.farm.loot?.emptyPlots ? `<button class="gbtn gbtn--gold btn-mini" id="btn-plant-help">🌱 Trồng giúp (${visiting.farm.loot.emptyPlots})</button>` : ''}
           ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canWater).length; return n >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-water-help-all">💧 Tưới hết (${n})</button>` : ''; })()}
-          ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canPoach).length; return n >= 2 ? `<button class="gbtn gbtn--gold btn-mini" id="btn-poach-all">😋 Trộm hết (${n})</button>` : ''; })()}
           ${(() => { const n = visiting.farm.plots.filter((p) => p.crop && p.ready).length; return n ? `<button class="gbtn gbtn--green btn-mini" id="btn-harvest-help">🧺 Thu hoạch giúp (${n})</button>` : ''; })()}
               <button class="gbtn btn-mini${INSPECT ? ' gbtn--gold' : ''}" id="btn-inspect-mode" title="Khám xét: bấm vào ô đang trồng (${DATA.config.cansa?.inspectFee ? `tốn ${DATA.config.cansa.inspectFee.toLocaleString('vi')} vàng` : 'miễn phí'}, ${DATA.config.cansa?.inspectPerDay || 5} lượt/nhà/ngày); trúng cần sa thì lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')}">🔍 Khám xét${INSPECT ? ' — bấm ô' : ''}</button>
               <button class="gbtn gbtn--green btn-mini" id="btn-gold-give">💝 Cho tiền</button>
@@ -1555,13 +1559,36 @@
         const r = await run(() => api('/skill-learn', { id: el.dataset.skillLearn }));
         if (r) { updateMe(r); toast(r.rank > 1 ? `🎓 Kỹ năng lên bậc ${r.rank}!` : '🎓 Đã học kỹ năng mới!'); render(); }
       }));
-    document.getElementById('btn-poach-animal')?.addEventListener('click', async (e) => {
-      const r = await run(() => api('/poach-animal', { ownerId: VISIT.ownerId }));
-      if (r) { updateMe(r); floatGain(e.clientX, e.clientY, `😋 +${r.got || 1}`); render(); }
-    });
-    document.getElementById('btn-poach-machine')?.addEventListener('click', async (e) => {
-      const r = await run(() => api('/poach-machine', { ownerId: VISIT.ownerId }));
-      if (r) { updateMe(r); floatGain(e.clientX, e.clientY, `😋 +${r.got || 1}`); render(); }
+    // Trộm hết một lần: ruộng → chuồng → máy; bước nào lỗi (hết lượt, chó tóm…) thì báo rồi đi tiếp.
+    document.getElementById('btn-poach-everything')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const ownerId = VISIT.ownerId;
+      const steps = [];
+      if (Number(btn.dataset.plots) > 0) steps.push(['/poach-all', 'ruộng']);
+      if (btn.dataset.animal === '1') steps.push(['/poach-animal', 'chuồng']);
+      if (btn.dataset.machine === '1') steps.push(['/poach-machine', 'máy']);
+      const got = {};
+      let total = 0;
+      let caughtMsg = null;
+      await run(async () => {
+        for (const [path] of steps) {
+          try {
+            const r = await api(path, { ownerId });
+            if (!r) continue;
+            updateMe(r);
+            if (r.items) for (const [id, q] of Object.entries(r.items)) got[id] = (got[id] || 0) + q;
+            if (r.poached) total += r.poached;
+            if (typeof r.got === 'number' && r.item) { got[r.item] = (got[r.item] || 0) + r.got; total += r.got; }
+            else if (typeof r.got === 'number' && !r.items) total += r.got;
+            if (r.caught?.message) caughtMsg = r.caught.message;
+          } catch { /* api() đã toast lỗi của bước này */ }
+        }
+        return true;
+      });
+      const desc = Object.entries(got).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(', ');
+      if (total) { floatGain(e.clientX, e.clientY, `😋 +${total}`); toast(`😋 Cuỗm được ${total} món${desc ? ` (${desc})` : ''}!`); }
+      if (caughtMsg) setTimeout(() => toast(caughtMsg), total ? 900 : 0);
+      render();
     });
     document.getElementById('btn-harvest-help')?.addEventListener('click', async () => {
       const r = await run(() => api('/harvest-help', { ownerId: VISIT.ownerId, all: true }));
