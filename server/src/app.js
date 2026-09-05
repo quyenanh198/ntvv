@@ -1209,7 +1209,8 @@ export function buildApp({ config, db, logger = true }) {
         const { item, qty } = request.body ?? {};
         const info = itemInfo(item);
         const me = request.farmer;
-        const n = Math.max(1, Math.min(999, Number(qty) || 1));
+        // Không giới hạn 999: nút "Hết" bán toàn bộ số đang có trong kho.
+        const n = Math.max(1, Math.floor(Number(qty) || 1));
         if (!info || !info.sell) return reply.code(400).send({ error: 'bad_request' });
         if (!invTake(me.user_id, item, n)) return reply.code(400).send({ error: 'not_enough_items' });
         let mult = 1;
