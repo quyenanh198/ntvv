@@ -1828,7 +1828,10 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .modal--away > h3, .modal--away > .sheet-note { flex: 0 0 auto; }
 .away-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-right: .2rem; }
 
-.away-qty { margin-left: auto; font-weight: 800; color: #b3462b; white-space: nowrap; }
+.away-row { display: flex; align-items: center; gap: .55rem; padding: .3rem .1rem; border-bottom: 1px solid rgba(90, 60, 30, .12); }
+.away-img { width: 34px; height: 34px; object-fit: contain; flex: 0 0 34px; }
+.away-name { flex: 1 1 auto; min-width: 0; font-weight: 700; font-size: .9rem; }
+.away-qty { margin-left: auto; flex: 0 0 auto; font-weight: 800; color: #b3462b; white-space: nowrap; }
 
 .tax-banner--debt { background: rgba(90, 30, 60, .92); border-color: #ff7ab3; }
 .tax-banner--credit { background: rgba(20, 70, 40, .92); border-color: #7bd66b; color: #d8ffd0; }

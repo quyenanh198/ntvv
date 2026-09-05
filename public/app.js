@@ -636,7 +636,7 @@
   // Sổ mất trộm trong lúc vắng mặt: hiện một lần khi quay lại, bấm Đã biết để xoá.
   function renderAway(r) {
     const fmt = (t) => new Date(t).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
-    const items = r.items.map((x) => `<div class="lb-row"><span class="lb-rank">${itemImg(x.id, 'seed-sprite')}</span><span class="lb-name">${itemInfo(x.id)?.name || x.id}</span><span class="away-qty">−${x.qty}</span></div>`).join('');
+    const items = r.items.map((x) => `<div class="away-row">${itemImg(x.id, 'away-img')}<span class="away-name">${itemInfo(x.id)?.name || x.id}</span><span class="away-qty">−${x.qty}</span></div>`).join('');
     const thieves = r.thieves.map((t) => `<span class="away-thief">🥷 ${esc(t.name)}: ${t.qty} món (${t.times} lần)</span>`).join(' ');
     return `
       <div class="modal-backdrop" data-away-close="1">
