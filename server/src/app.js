@@ -1068,25 +1068,31 @@ export function buildApp({ config, db, logger = true }) {
         const got = {};
         let times = 0;
         let fines = 0;
+        let attempts = 0;
         for (const plot of targets) {
-          const thief = getFarmer.get(me.user_id); // vàng + chuỗi phạt mới nhất
-          const c = dogCatch(owner, thief, { quiet: true });
-          if (c) { times += 1; fines += c.paid; continue; }
-          const crop = poachPlot(me, owner, plot);
-          got[crop.id] = (got[crop.id] || 0) + POACH_YIELD;
+          // Cây ăn quả: vét hết số lượt còn lại (mỗi quả trên cây = 1 lượt); cây trồng: 1 lượt/người.
+          const left = plot.tree ? Math.max(1, (plot.fruit_stock || 0) - (plot.poached || 0)) : 1;
+          for (let k = 0; k < left && attempts < 2000; k += 1) {
+            attempts += 1;
+            const thief = getFarmer.get(me.user_id); // vàng + chuỗi phạt mới nhất
+            const c = dogCatch(owner, thief, { quiet: true });
+            if (c) { times += 1; fines += c.paid; continue; }
+            const crop = poachPlot(me, owner, plot);
+            got[crop.id] = (got[crop.id] || 0) + POACH_YIELD;
+          }
         }
         const n = Object.values(got).reduce((x, y) => x + y, 0);
         const desc = Object.entries(got).map(([id, q]) => `${q} ${itemInfo(id).name} ${itemInfo(id).emoji}`).join(', ');
         const dogNote = times ? ` — chó tóm ${times} lần, nộp phạt ${fines.toLocaleString('vi')} vàng` : '';
         if (n || times) {
-          logEvent(`😋 ${me.name} hái ké một lượt ${targets.length} ô nhà ${owner.name}: ${desc || 'trắng tay'}${dogNote}`);
+          logEvent(`😋 ${me.name} hái ké một lượt ${targets.length} ô${attempts > targets.length ? ` (${attempts} lượt)` : ''} nhà ${owner.name}: ${desc || 'trắng tay'}${dogNote}`);
           pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa hái ké ${desc || 'hụt'} nhà bạn${times ? ` — chó nhà bạn tóm được ${times} lần, thu ${fines.toLocaleString('vi')} vàng` : ''}!`);
         }
         return {
           ...visitPayload(request, ownerId),
           poached: n,
           items: got,
-          caught: times ? { times, fine: fines, message: `🐕 Chó nhà ${owner.name} tóm được bạn ${times}/${targets.length} lần — nộp phạt ${fines.toLocaleString('vi')} vàng` } : null,
+          caught: times ? { times, fine: fines, message: `🐕 Chó nhà ${owner.name} tóm được bạn ${times}/${attempts} lần — nộp phạt ${fines.toLocaleString('vi')} vàng` } : null,
         };
       });
 
@@ -2185,6 +2191,7 @@ export function buildApp({ config, db, logger = true }) {
             canWater: !p.ready && (!lastWater || now2 - lastWater.at >= scaleMs(WATER_HELP_COOLDOWN_MS, config.fast)),
             poached: p.poached,
             canPoach: p.ready && (p.tree ? (p.poachedN || 0) < (p.fruits || 0) : !lastAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'poach')),
+            poachLeft: p.ready ? (p.tree ? Math.max(0, (p.fruits || 0) - (p.poachedN || 0)) : (lastAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'poach') ? 0 : 1)) : 0,
           };
         }
         const loot = {

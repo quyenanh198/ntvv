@@ -417,7 +417,8 @@
             const plotsN = Object.values(visiting.myActs).filter((x) => x.canPoach).length;
             const animalOk = loot.animalsReady && now3 >= (loot.animalPoachAt || 0);
             const machineOk = loot.machinesReady && now3 >= (loot.machinePoachAt || 0);
-            const parts = [plotsN ? `${plotsN} ô` : '', animalOk ? 'chuồng' : '', machineOk ? 'máy' : ''].filter(Boolean);
+            const left = Object.values(visiting.myActs).reduce((a, x) => a + (x.poachLeft || 0), 0);
+            const parts = [plotsN ? `${plotsN} ô${left > plotsN ? ` · ${left} lượt` : ''}` : '', animalOk ? 'chuồng' : '', machineOk ? 'máy' : ''].filter(Boolean);
             const waits = [loot.animalsReady && !animalOk ? `⏳ chuồng ${Math.max(1, Math.ceil((loot.animalPoachAt - now3) / 60000))}p` : '', loot.machinesReady && !machineOk ? `⏳ máy ${Math.max(1, Math.ceil((loot.machinePoachAt - now3) / 60000))}p` : ''].filter(Boolean);
             return `${parts.length ? `<button class="gbtn gbtn--gold btn-mini" id="btn-poach-everything" data-plots="${plotsN}" data-animal="${animalOk ? 1 : 0}" data-machine="${machineOk ? 1 : 0}">😋 Trộm hết (${parts.join(' + ')})</button>` : ''}${waits.length ? `<span class="seed-meta">${waits.join(' · ')}</span>` : ''}`;
           })()}
