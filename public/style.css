@@ -1837,3 +1837,10 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .tax-banner--credit { background: rgba(20, 70, 40, .92); border-color: #7bd66b; color: #d8ffd0; }
 
 .worth-line { background: rgba(255,255,255,.55); border-radius: 10px; padding: .4rem .6rem; }
+
+/* ---- Mobile: chống double-tap zoom ----
+   Bấm nhanh nhiều lần (thu hoạch, trộm hết…) trên iOS bị hiểu là double-tap →
+   phóng to cả trang. `manipulation` giữ cuộn và pinch nhưng bỏ double-tap zoom;
+   áp cho html để mọi phần tử con thừa hưởng theo phép giao của touch-action. */
+html, body { touch-action: manipulation; }
+button, a, .plot, .side-btn, .gbtn, .hud-round, .coin-pill, .seed-card, .inv-row, .quest-row, .mc-plus, .sb-btn { touch-action: manipulation; }
