@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
@@ -82,6 +83,7 @@ import {
   thiefDayKey,
   THIEF_REWARDS,
   thiefEconomyMult,
+  machineQueueProgress,
 } from './game.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -93,6 +95,28 @@ const ME_CACHE_MAX = 300;
 export function buildApp({ config, db, logger = true }) {
   const app = Fastify({ logger, trustProxy: true });
   const meCache = new Map();
+  const rateBuckets = new Map();
+  const upstreamTimeoutMs = config.upstreamTimeoutMs || 5_000;
+
+  function chatFetch(path, options = {}) {
+    return fetch(`${config.chatApiUrl}${path}`, {
+      ...options,
+      signal: options.signal || AbortSignal.timeout(upstreamTimeoutMs),
+    });
+  }
+
+  function withinRateLimit(userId, method, now = Date.now()) {
+    const key = `${userId}:${method === 'GET' ? 'read' : 'write'}`;
+    const limit = method === 'GET' ? 180 : 90;
+    let bucket = rateBuckets.get(key);
+    if (!bucket || now - bucket.since >= 60_000) bucket = { since: now, count: 0 };
+    bucket.count += 1;
+    rateBuckets.set(key, bucket);
+    if (rateBuckets.size > 1_000) {
+      for (const [k, b] of rateBuckets) if (now - b.since >= 60_000) rateBuckets.delete(k);
+    }
+    return bucket.count <= limit;
+  }
 
   // ---- Xác thực: Chat là auth oracle --------------------------------------
   async function chatUserFor(request) {
@@ -102,7 +126,7 @@ export function buildApp({ config, db, logger = true }) {
     if (hit && hit.until > Date.now()) return hit.user;
     let res;
     try {
-      res = await fetch(`${config.chatApiUrl}/api/me`, { headers: { cookie } });
+      res = await chatFetch('/api/me', { headers: { cookie } });
     } catch (err) {
       request.log.warn({ err }, 'chat /api/me unreachable');
       return null;
@@ -139,6 +163,9 @@ export function buildApp({ config, db, logger = true }) {
   async function requireFarmer(request, reply) {
     const user = await chatUserFor(request);
     if (!user) return reply.code(401).send({ error: 'not_logged_in' });
+    if (!withinRateLimit(user.id, request.method)) {
+      return reply.code(429).header('retry-after', '60').send({ error: 'rate_limited' });
+    }
     const existed = !!getFarmer.get(user.id);
     upsertFarmer.run(user.id, user.display_name || user.username, START_GOLD, START_GEMS, START_PLOTS, Date.now());
     const legacy = db.prepare('SELECT xp FROM legacy_levels WHERE user_id = ?').get(user.id);
@@ -167,7 +194,7 @@ export function buildApp({ config, db, logger = true }) {
   // ---- Push qua Chat ------------------------------------------------------
   function pushTo(userIds, title, body) {
     if (!config.internalSecret) return;
-    fetch(`${config.chatApiUrl}/internal/farm/notify`, {
+    chatFetch('/internal/farm/notify', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-farm-secret': config.internalSecret },
       body: JSON.stringify({ userIds, title, body, url: '/farm/' }),
@@ -578,9 +605,22 @@ export function buildApp({ config, db, logger = true }) {
       // machines: { kind: { recipe: job } } — mỗi món trong máy chạy độc lập.
       machines: (() => {
         const out = {};
+        const now = Date.now();
         for (const row of db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ?').all(f.user_id)) {
           if (!out[row.kind]) out[row.kind] = {};
-          out[row.kind][row.recipe] = { recipe: row.recipe, readyAt: row.ready_at, ready: Date.now() >= row.ready_at, queue: row.queue_count || 1, poached: !!row.poached };
+          const recipe = MACHINES[row.kind]?.recipes[row.recipe];
+          const total = row.queue_count || 1;
+          const cycle = recipe ? machineTime(f, scaleMs(recipe.ms, config.fast), row.kind) : 1;
+          const progress = machineQueueProgress({ readyAt: row.ready_at, total, cycle, now });
+          out[row.kind][row.recipe] = {
+            recipe: row.recipe,
+            readyAt: row.ready_at,
+            currentReadyAt: progress.currentReadyAt,
+            ready: progress.completed > 0,
+            ...progress,
+            queue: total,
+            poached: !!row.poached,
+          };
         }
         return out;
       })(),
@@ -781,7 +821,7 @@ export function buildApp({ config, db, logger = true }) {
         settleThiefBoard();
         let others = [];
         try {
-          const res = await fetch(`${config.chatApiUrl}/api/users`, { headers: { cookie: request.headers.cookie } });
+          const res = await chatFetch('/api/users', { headers: { cookie: request.headers.cookie } });
           if (res.ok) others = await res.json();
         } catch (err) {
           request.log.warn({ err }, 'chat /api/users unreachable');
@@ -1295,7 +1335,8 @@ export function buildApp({ config, db, logger = true }) {
         const { item, qty } = request.body ?? {};
         const info = GOODS[item];
         const me = request.farmer;
-        const n = Math.max(1, Math.min(999, Number(qty) || 1));
+        const rawQty = Number(qty);
+        const n = Math.max(1, Math.min(999, Math.floor(Number.isFinite(rawQty) ? rawQty : 1)));
         if (!info || !info.buy) return reply.code(400).send({ error: 'bad_request' });
         if (me.gold < info.buy * n) return reply.code(400).send({ error: 'not_enough_gold' });
         db.transaction(() => {
@@ -1426,7 +1467,7 @@ export function buildApp({ config, db, logger = true }) {
             const machineId = cur.kind;
             const recipe = machine?.recipes[cur.recipe];
             if (!recipe) { db.prepare('DELETE FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').run(me.user_id, machineId, cur.recipe); continue; }
-            const cycle = machineTime(me, scaleMs(recipe.ms, config.fast));
+            const cycle = machineTime(me, scaleMs(recipe.ms, config.fast), machineId);
             const total = cur.queue_count || 1;
             const done = Math.min(total, 1 + Math.floor((now - cur.ready_at) / cycle));
             for (const [item, qty] of Object.entries(recipe.out)) {
@@ -2219,7 +2260,13 @@ export function buildApp({ config, db, logger = true }) {
       api.get('/avatar/:id', async (request, reply) => {
         const uid = Number(request.params.id);
         if (!Number.isInteger(uid)) return reply.code(400).send({ error: 'invalid_id' });
-        const res = await fetch(`${config.chatApiUrl}/api/users/${uid}/avatar`, { headers: { cookie: request.headers.cookie } });
+        let res;
+        try {
+          res = await chatFetch(`/api/users/${uid}/avatar`, { headers: { cookie: request.headers.cookie } });
+        } catch (err) {
+          request.log.warn({ err, uid }, 'chat avatar unreachable');
+          return reply.code(502).send({ error: 'chat_unavailable' });
+        }
         if (!res.ok) return reply.code(res.status).send();
         reply.header('content-type', res.headers.get('content-type') || 'application/octet-stream');
         reply.header('cache-control', 'private, max-age=86400');
@@ -2230,7 +2277,13 @@ export function buildApp({ config, db, logger = true }) {
   );
 
   // ---- Static + cache-bust (giữ nguyên bài v1) ----------------------------
-  const BOOT_VERSION = Date.now().toString(36);
+  const assetHash = createHash('sha256')
+    .update(readFileSync(join(PUBLIC_DIR, 'index.html')))
+    .update(readFileSync(join(PUBLIC_DIR, 'app.js')))
+    .update(readFileSync(join(PUBLIC_DIR, 'style.css')))
+    .digest('hex')
+    .slice(0, 12);
+  const BOOT_VERSION = config.release || process.env.APP_RELEASE || assetHash;
   // Regex thay vì chuỗi cứng: index có thể đã mang sẵn ?v=... tay (bản
   // redesign từng hardcode v=3 khiến per-boot bust chết lặng — không tái diễn).
   const INDEX_HTML = readFileSync(join(PUBLIC_DIR, 'index.html'), 'utf8')
@@ -2244,6 +2297,10 @@ export function buildApp({ config, db, logger = true }) {
     // Mọi phản hồi API mang phiên bản boot — client lệch bản là tự tải lại
     // ngay ở thao tác kế tiếp, kể cả khi tab đang ẩn không chạy vòng refresh.
     if (url.startsWith('/farm/api/')) reply.header('x-farm-boot', BOOT_VERSION);
+    reply.header('x-content-type-options', 'nosniff');
+    reply.header('referrer-policy', 'same-origin');
+    reply.header('x-frame-options', 'SAMEORIGIN');
+    reply.header('content-security-policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
     const isAsset =
       url.startsWith('/farm/') && !url.startsWith('/farm/api/') && url !== '/farm/' && !url.startsWith('/farm/index.html');
     if (isAsset) {

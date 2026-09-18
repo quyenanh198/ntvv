@@ -19,6 +19,8 @@
   let familyFilter = '';
   let lastLevel = null;
   let critterTimer = null;
+  let mutationEpoch = 0;
+  let machineRefreshPending = false;
 
   // ---------- sprite ----------
   const SPRITE_ALIAS = { luami: 'lua', dautay: 'dau' };
@@ -69,10 +71,11 @@
   }
 
   async function api(path, body, attempt = 0) {
+    const isMutation = body !== undefined;
     const res = await fetch(`/farm/api${path}`, {
-      method: body ? 'POST' : 'GET',
-      headers: body ? { 'content-type': 'application/json' } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
+      method: isMutation ? 'POST' : 'GET',
+      headers: isMutation ? { 'content-type': 'application/json' } : undefined,
+      body: isMutation ? JSON.stringify(body) : undefined,
     });
     if (res.status === 401) {
       renderGate();
@@ -81,6 +84,14 @@
     if (checkServerBoot({ boot: res.headers.get('x-farm-boot') })) throw new Error('reloading');
     const type = res.headers.get('content-type') || '';
     if (!type.includes('application/json') || res.status === 502 || res.status === 503 || res.status === 504) {
+      // Không tự gửi lại mutation: gateway có thể đã mất response sau khi server
+      // commit, retry lúc này sẽ nhân đôi vàng/vật phẩm. Đồng bộ state để người
+      // chơi thấy kết quả thực tế rồi mới cho thao tác tiếp.
+      if (isMutation) {
+        toast('⚠️ Chưa xác nhận được thao tác — đang đồng bộ lại…');
+        setTimeout(refresh, 300);
+        throw new Error('mutation_outcome_unknown');
+      }
       if (attempt >= WAKE_RETRIES) {
         renderWaking();
         setTimeout(() => location.reload(), 2500);
@@ -166,6 +177,7 @@
     nothing_to_poach: 'Không còn gì để cuỗm — chủ vừa thu hoạch hoặc có người hái trước rồi 😅',
     poach_cooldown: 'Nhà này vừa bị cuỗm rồi — mỗi giờ chỉ mất 1 thôi 😅',
     max_level: 'Đã nâng tối đa rồi!',
+    rate_limited: 'Bạn thao tác hơi nhanh — đợi một chút rồi thử lại nhé.',
   };
 
   function fmtTime(ms) {
@@ -233,6 +245,7 @@
   function updateMe(r) {
     if (!r) return;
     if (r.me) {
+      mutationEpoch += 1;
       const prev = DATA.me.level;
       DATA.me = r.me;
       if (r.me.level > prev) toast(`🎉 Lên cấp ${r.me.level}!`);
@@ -279,8 +292,8 @@
   const itemInfo = (id) => crops()[id] || goods()[id] || trees()[id];
 
   // ---------- render ----------
-  // render() thay cả app.innerHTML nên mọi vùng cuộn về 0 — giữ lại vị trí
-  // cuộn của ruộng, sidebar gia đình và thân sheet (chỉ khi vẫn là sheet đó).
+  // Giữ vị trí cuộn của ruộng, sidebar gia đình và thân sheet khi cập nhật DOM
+  // tại chỗ (và làm fallback cho vùng động vừa được thay cấu trúc).
   const SCROLL_KEEP = ['.stage-center', '.family-strip', '.sheet-scroll', '.modal'];
   function captureScroll() {
     const out = { sheetKey: sheet ? `${sheet.type}:${sheet.kind || ''}` : '' };
@@ -298,6 +311,51 @@
       const el = document.querySelector(sel);
       if (el) el.scrollTop = saved[sel];
     }
+  }
+
+  // Cập nhật DOM tại chỗ để ảnh, focus và animation không bị khởi tạo lại sau
+  // mỗi thao tác. Cây hiện có được tái sử dụng khi node type/tag còn khớp.
+  function patchNode(current, next) {
+    if (!current || current.nodeType !== next.nodeType
+      || (current.nodeType === Node.ELEMENT_NODE && current.tagName !== next.tagName)) {
+      current?.replaceWith(next.cloneNode(true));
+      return;
+    }
+    if (current.nodeType === Node.TEXT_NODE) {
+      if (current.nodeValue !== next.nodeValue) current.nodeValue = next.nodeValue;
+      return;
+    }
+    if (current.nodeType !== Node.ELEMENT_NODE) return;
+
+    for (const attr of [...current.attributes]) {
+      if (!next.hasAttribute(attr.name)) current.removeAttribute(attr.name);
+    }
+    for (const attr of [...next.attributes]) {
+      if (current.getAttribute(attr.name) !== attr.value) current.setAttribute(attr.name, attr.value);
+    }
+    if (current !== document.activeElement) {
+      if (current instanceof HTMLInputElement || current instanceof HTMLTextAreaElement) current.value = next.value;
+      if (current instanceof HTMLInputElement) current.checked = next.checked;
+      if (current instanceof HTMLSelectElement) current.value = next.value;
+    }
+
+    const oldChildren = [...current.childNodes];
+    const newChildren = [...next.childNodes];
+    const common = Math.min(oldChildren.length, newChildren.length);
+    for (let i = 0; i < common; i += 1) patchNode(oldChildren[i], newChildren[i]);
+    for (let i = oldChildren.length - 1; i >= newChildren.length; i -= 1) oldChildren[i].remove();
+    for (let i = common; i < newChildren.length; i += 1) current.appendChild(newChildren[i].cloneNode(true));
+  }
+
+  function patchHtml(root, html) {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    const current = [...root.childNodes];
+    const next = [...template.content.childNodes];
+    const common = Math.min(current.length, next.length);
+    for (let i = 0; i < common; i += 1) patchNode(current[i], next[i]);
+    for (let i = current.length - 1; i >= next.length; i -= 1) current[i].remove();
+    for (let i = common; i < next.length; i += 1) root.appendChild(next[i].cloneNode(true));
   }
 
   function render() {
@@ -318,7 +376,7 @@
     const starReady = m.starNext && m.stars >= m.starNext.stars;
     const festReady = m.festival.milestones.some((ms) => !ms.claimed && ms.progress >= ms.target);
 
-    app.innerHTML = `
+    const nextHtml = `
       <div class="stage">
         <header class="top-hud">
           <div class="hud-player">
@@ -451,6 +509,7 @@
       ${sheet ? renderSheet() : ''}
       ${showLb ? renderLb() : ''}
     `;
+    patchHtml(app, nextHtml);
     restoreScroll(savedScroll);
     if (DATA.me?.awayReport && !VISIT && !sheet && !showLb) app.insertAdjacentHTML('beforeend', renderAway(DATA.me.awayReport));
     bind();
@@ -1007,9 +1066,10 @@
         const jobs = m.machines[mc.id] || {};
         const jobList = Object.values(jobs);
         const readyJobs = jobList.filter((j) => j.ready);
+        const readyCount = readyJobs.reduce((n, j) => n + (j.completed || 0), 0);
         let head;
         if (readyJobs.length) {
-          head = `<button class="btn gbtn gbtn--gold mc-collect" data-machine-collect="${mc.id}">✅ Lấy hết ${readyJobs.length} món xong</button>`;
+          head = `<button class="btn gbtn gbtn--gold mc-collect" data-machine-collect="${mc.id}">✅ Lấy hết ${readyCount} mẻ xong</button>`;
         } else if (jobList.length) {
           head = `<div class="mc-status">🔄 Đang nấu <b>${jobList.length}</b> món song song</div>`;
         } else {
@@ -1025,10 +1085,13 @@
           const outInfo = itemInfo(outId);
           let state = '';
           if (job && job.ready) {
-            state = `<button class="mc-plus mc-plus--done" data-machine-collect="${mc.id}" data-recipe="${r.id}" title="Lấy ${r.name}">✅ Lấy${job.queue > 1 ? ` ${job.queue}` : ''}</button>`;
+            const running = job.processing
+              ? `<small class="mc-run" data-machine-ready="${job.currentReadyAt}">🔄 mẻ kế · ${fmtTime(job.currentReadyAt - Date.now())} · chờ ${job.queued}</small>`
+              : '';
+            state = `<button class="mc-plus mc-plus--done" data-machine-collect="${mc.id}" data-recipe="${r.id}" title="Lấy ${r.name}">✅ Lấy ${job.completed}</button>${running}`;
           } else if (job) {
-            const left = job.readyAt - Date.now();
-            state = `<small class="mc-run">🔄 ${job.queue} mẻ · ${fmtTime(left)}</small>
+            const left = (job.currentReadyAt || job.readyAt) - Date.now();
+            state = `<small class="mc-run" data-machine-ready="${job.currentReadyAt || job.readyAt}">🔄 1 đang làm · chờ ${job.queued} · ${fmtTime(left)}</small>
               <button class="mc-plus mc-plus--gem" data-machine-speed="${mc.id}" data-recipe="${r.id}" title="Xong ngay">${GEM}${Math.max(1, Math.ceil(left / 300000))}</button>`;
           }
           const missing = Object.entries(r.in).filter(([iid, q]) => (m.inventory[iid] || 0) < q).map(([iid, q]) => `${iid}:${q - (m.inventory[iid] || 0)}`).join(',');
@@ -1050,7 +1113,7 @@
           : `<button class="btn btn-ghost mc-upgrade" data-machine-upgrade="${mc.id}" ${m.gold >= ug[ml] ? '' : 'disabled'}>⚙️ Nâng cấp ${ml + 1} — ${ug[ml].toLocaleString('vi')} ${COIN} (−${(ml + 1) * 10}% thời gian)</button>`;
         return `<div class="machine-block"><h4>${mc.emoji} ${mc.name}${ml ? ` <small>⚙️${ml}</small>` : ''}</h4>${head}${rows}${up}</div>`;
       }).join('');
-      const readyTotal = Object.values(m.machines).reduce((acc, jobs) => acc + Object.values(jobs || {}).filter((j) => j.ready).length, 0);
+      const readyTotal = Object.values(m.machines).reduce((acc, jobs) => acc + Object.values(jobs || {}).reduce((n, j) => n + (j.completed || 0), 0), 0);
       const canCookAny = Object.values(DATA.config.machines).some((mc) => m.level >= mc.level && Object.values(mc.recipes).some((r) => r.id !== 'thucan'
         && Object.entries(r.in).every(([iid, q]) => (m.inventory[iid] || 0) >= q)
         && ((m.machines[mc.id] || {})[r.id]?.queue || 0) < QMAX));
@@ -1286,7 +1349,17 @@
   }
 
   // ---------- events ----------
+  let bindAbort = null;
   function bind() {
+    bindAbort?.abort();
+    bindAbort = new AbortController();
+    const nativeAdd = EventTarget.prototype.addEventListener;
+    EventTarget.prototype.addEventListener = function addBoundEvent(type, listener, options) {
+      const opts = typeof options === 'boolean'
+        ? { capture: options, signal: bindAbort.signal }
+        : { ...(options || {}), signal: bindAbort.signal };
+      return nativeAdd.call(this, type, listener, opts);
+    };
     document.querySelectorAll('[data-close]').forEach((el) =>
       el.addEventListener('click', () => { sheet = null; showLb = null; render(); }));
 
@@ -1699,6 +1772,7 @@
       const btn = ev.target.closest('.plot');
       if (!btn) return;
       const kind = btn.dataset.kind;
+      const idx = Number(btn.dataset.idx);
       if (VISIT && INSPECT && kind !== 'empty') {
         const fee = DATA.config.cansa?.inspectFee || 0;
         if (!window.confirm(`Khám xét ô này? ${fee ? `Tốn ${fee.toLocaleString('vi')} vàng.` : 'Miễn phí, mỗi nhà 5 lượt/ngày.'} Trúng cần sa: ô bị nhổ sạch, bạn lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')} vàng.`)) return;
@@ -1710,7 +1784,6 @@
         }
         return;
       }
-      const idx = Number(btn.dataset.idx);
       const { clientX: x, clientY: y } = ev;
 
       if (kind === 'empty') { sheet = { type: 'seed', idx }; render(); }
@@ -1748,6 +1821,7 @@
         }
       }
     });
+    EventTarget.prototype.addEventListener = nativeAdd;
   }
 
   // ---------- vòng lặp ----------
@@ -1755,8 +1829,10 @@
   // (vẽ lại toàn trang tốn kém trên điện thoại).
   let lastStateSig = null;
   async function refresh() {
+    const startedAtEpoch = mutationEpoch;
     try {
       const next = await api('/state');
+      if (startedAtEpoch !== mutationEpoch) return;
       if (checkServerBoot(next)) return;
       const sig = JSON.stringify([next.me, next.family, next.events?.[0]?.at, next.wants]);
       const changed = sig !== lastStateSig;
@@ -1789,6 +1865,12 @@
       if (a.ready_at != null && !a.ready && now >= a.ready_at) { a.ready = true; flip = true; }
     }
     if (me().mill && !me().mill.ready && now >= me().mill.readyAt) { me().mill.ready = true; flip = true; }
+    const machineDue = Object.values(me().machines || {}).some((jobs) => Object.values(jobs || {})
+      .some((job) => job.currentReadyAt && now >= job.currentReadyAt));
+    if (machineDue && !machineRefreshPending) {
+      machineRefreshPending = true;
+      refresh().finally(() => { machineRefreshPending = false; });
+    }
     if (flip && !sheet && !showLb) { render(); return; }
 
     document.querySelectorAll('.plot--growing').forEach((el) => {

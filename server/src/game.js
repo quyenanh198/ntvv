@@ -857,6 +857,21 @@ export function scaleMs(ms, fast) {
   return fast ? Math.max(3000, Math.round(ms / 60)) : ms;
 }
 
+// Trạng thái hàng đợi tuần tự của máy. Thành phẩm đã xong không chặn mẻ kế
+// tiếp, nên số hoàn thành được suy ra từ thời gian đã trôi qua.
+export function machineQueueProgress({ readyAt, total, cycle, now = Date.now() }) {
+  const safeTotal = Math.max(0, Math.floor(Number(total) || 0));
+  const safeCycle = Math.max(1, Math.floor(Number(cycle) || 1));
+  const completed = now < readyAt ? 0 : Math.min(safeTotal, 1 + Math.floor((now - readyAt) / safeCycle));
+  const processing = completed < safeTotal;
+  return {
+    completed,
+    processing,
+    currentReadyAt: processing ? readyAt + completed * safeCycle : null,
+    queued: Math.max(0, safeTotal - completed - (processing ? 1 : 0)),
+  };
+}
+
 // Ngày hiện tại theo giờ VN (mốc nhiệm vụ ngày / hái ké).
 export function todayVN(now = Date.now()) {
   return new Date(now).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });

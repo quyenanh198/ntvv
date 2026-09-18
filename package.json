@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "node server/src/server.js",
-    "dev": "node dev/dev-farm.mjs"
+    "dev": "node dev/dev-farm.mjs",
+    "test": "node --test"
   },
   "dependencies": {
     "@fastify/static": "^10.1.3",
