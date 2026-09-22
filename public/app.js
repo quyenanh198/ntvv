@@ -242,13 +242,20 @@
     return String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
   }
 
+  function sfx(name) {
+    try { window.NTVVAudio?.[name]?.(); } catch {}
+  }
+
   function updateMe(r) {
     if (!r) return;
     if (r.me) {
       mutationEpoch += 1;
       const prev = DATA.me.level;
       DATA.me = r.me;
-      if (r.me.level > prev) toast(`🎉 Lên cấp ${r.me.level}!`);
+      if (r.me.level > prev) {
+        toast(`🎉 Lên cấp ${r.me.level}!`);
+        sfx('playLevelUp');
+      }
     }
     if (r.farm && VISIT) VISIT = { ownerId: VISIT.ownerId, farm: r.farm, myActs: r.myActs };
   }
@@ -399,6 +406,7 @@
             <button class="coin-pill coin-pill--star" data-sheet="stars" title="Sao Nông Trại">${STAR}<b>${m.stars.toLocaleString('vi')}</b>${starReady ? '<i class="dot"></i>' : ''}</button>
             ${hasDebts ? `<button class="coin-pill coin-pill--debt" data-sheet="ledger" title="Sổ nợ & thuế đất — bấm để xem">${m.tax?.owed > 0 ? '🏛️' : '💸'}<b>${((m.tax?.owed || 0) + (m.debts?.owe || 0)).toLocaleString('vi')}</b><i class="dot"></i></button>` : ''}
             <span class="hud-rounds">
+              <button class="hud-round" id="btn-audio-toggle" title="Âm thanh">${window.NTVVAudio?.isMuted() ? '🔇' : '🔊'}</button>
               <button class="hud-round" data-sheet="events" title="Bản tin làng">✉️</button>
               <button class="hud-round" id="btn-lb" title="Bảng xếp hạng">🏆</button>
               <button class="hud-round${hasDebts ? ' hud-round--warn' : ''}" data-sheet="ledger" title="Sổ nông thôn">📋${hasDebts ? '<i class="dot"></i>' : ''}</button>
@@ -701,11 +709,15 @@
     }));
   }
 
-  // Sổ mất trộm trong lúc vắng mặt: hiện một lần khi quay lại, bấm Đã biết để xoá.
+  // Sổ mất trộm trong lúc vắng mặt: hiện một lần khi quay lại, bấm Đã biết để xoá hoặc Trả thù ngay.
   function renderAway(r) {
     const fmt = (t) => new Date(t).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
     const items = r.items.map((x) => `<div class="away-row">${itemImg(x.id, 'away-img')}<span class="away-name">${itemInfo(x.id)?.name || x.id}</span><span class="away-qty">−${x.qty}</span></div>`).join('');
-    const thieves = r.thieves.map((t) => `<span class="away-thief">🥷 ${esc(t.name)}: ${t.qty} món (${t.times} lần)</span>`).join(' ');
+    const thieves = r.thieves.map((t) => `
+      <div class="away-thief-card">
+        <span class="away-thief-info">🥷 <b>${esc(t.name)}</b>: cuỗm ${t.qty} món (${t.times} lần)</span>
+        <button class="gbtn btn-mini gbtn--warn btn-revenge" data-revenge-id="${t.id}" title="Ghé trang trại kẻ trộm để trả thù">🎯 Trả thù</button>
+      </div>`).join('');
     return `
       <div class="modal-backdrop" data-away-close="1">
         <div class="modal modal--away" onclick="event.stopPropagation()">
@@ -713,7 +725,10 @@
           <p class="sheet-note">Từ ${fmt(r.since)} đến ${fmt(r.until)}, nhà bạn bị chôm tổng cộng <b>${r.total}</b> món:</p>
           <div class="away-scroll">
             ${items}
-            <p class="sheet-note">${thieves}</p>
+            <div class="away-thieves-list">
+              <div class="sheet-note" style="margin:.3rem 0 .1rem;font-weight:700">Danh sách đạo tặc:</div>
+              ${thieves}
+            </div>
           </div>
           <button class="btn gbtn gbtn--gold" id="btn-away-ack" style="width:100%;margin-top:.4rem;flex:0 0 auto">Đã biết, đi trả thù thôi 😤</button>
         </div>
@@ -1507,6 +1522,7 @@
 
     document.querySelectorAll('[data-sheet]').forEach((el) =>
       el.addEventListener('click', () => {
+        sfx('playTap');
         if (el.dataset.sheet === 'market') { openMarket(); return; }
         if (el.dataset.sheet === 'luxury') { openLuxury(); return; }
         if (el.dataset.sheet === 'money') { openMoney(); return; }
@@ -1514,6 +1530,7 @@
       }));
     document.querySelectorAll('[data-action="leaderboard"]').forEach((el) =>
       el.addEventListener('click', async () => {
+        sfx('playTap');
         sheet = null;
         const r = await run(async () => {
           const [lb, tb] = await Promise.all([api('/leaderboard'), api('/thief-board')]);
@@ -1522,6 +1539,7 @@
         if (r) { showLb = r; render(); }
       }));
     document.getElementById('btn-dock-farm')?.addEventListener('click', () => {
+      sfx('playTap');
       if (VISIT) { VISIT = null; INSPECT = false; refresh(); }
       else { sheet = null; showLb = null; render(); }
     });
@@ -1547,10 +1565,33 @@
       const r = await run(() => api('/gold-request-act', { id: Number(el.dataset.grId), action: act }));
       if (r) { updateMe(r); MONEY = r.requests; toast(act === 'pay' ? '💝 Đã cho!' : act === 'decline' ? '🙅 Đã từ chối' : '↩️ Đã huỷ'); render(); }
     }));
+    document.getElementById('btn-audio-toggle')?.addEventListener('click', () => {
+      const muted = window.NTVVAudio?.toggleMute();
+      sfx('playTap');
+      const btn = document.getElementById('btn-audio-toggle');
+      if (btn) btn.textContent = muted ? '🔇' : '🔊';
+      toast(muted ? '🔇 Đã tắt âm thanh' : '🔊 Đã bật âm thanh');
+    });
     document.getElementById('btn-away-ack')?.addEventListener('click', async () => {
+      sfx('playTap');
       const r = await run(() => api('/away-ack', {}));
       if (r) { updateMe(r); render(); }
     });
+    document.querySelectorAll('[data-revenge-id]').forEach((el) => el.addEventListener('click', async () => {
+      const targetId = Number(el.dataset.revengeId);
+      if (!targetId) return;
+      sfx('playTap');
+      await api('/away-ack', {});
+      if (DATA.me) DATA.me.awayReport = null;
+      try {
+        const r = await api('/visit', { ownerId: targetId });
+        VISIT = { ownerId: targetId, farm: r.farm, myActs: r.myActs };
+        render();
+        toast(`🎯 Đã đột nhập nông trại của ${r.farm.name}! Mau hành động!`);
+      } catch (err) {
+        toast(err?.message || 'Không thể ghé thăm nông trại này');
+      }
+    }));
     document.querySelectorAll('[data-away-close]').forEach((el) => el.addEventListener('click', () => { if (DATA.me) DATA.me.awayReport = null; render(); }));
     document.querySelectorAll('[data-buy-gems]').forEach((el) => el.addEventListener('click', async () => {
       const pack = (DATA.config.gemPacks || []).find((p) => p.id === el.dataset.buyGems);
@@ -1640,8 +1681,9 @@
 
     document.getElementById('btn-plantall')?.addEventListener('click', () => { sheet = { type: 'seed', all: true }; render(); });
     document.getElementById('btn-harvestall')?.addEventListener('click', async (e) => {
+      sfx('playHarvest');
       const r = await run(() => api('/harvest-all', {}));
-      if (r) { updateMe(r); floatGain(e.clientX || 200, e.clientY || 300, `🧺 +${r.harvested}`); render(); }
+      if (r) { sfx('playCoin'); updateMe(r); floatGain(e.clientX || 200, e.clientY || 300, `🧺 +${r.harvested}`); render(); }
     });
 
     document.querySelectorAll('[data-seed-sort]').forEach((el) =>
@@ -1774,15 +1816,15 @@
         const r = await run(() => api('/upgrade-barn', { kind: k }));
         if (r) { updateMe(r); toast(`⬆️ Chuồng lên cấp ${r.me.barns[k].level} — chứa ${r.me.barns[k].capacity} con!`); render(); }
       }));
-    simple('btn-collect', '/collect', (r, e) => floatGain(e.clientX || 200, e.clientY || 300, `🥚 +${r.collected}`, `+${r.collected * DATA.config.chicken.expCollect} EXP`));
-    simple('btn-buy-chicken', '/buy-chicken', () => toast('🐔 Gà mới về chuồng!'));
-    simple('btn-mill-collect', '/mill-collect', () => toast('⚙️ Xong một mẻ!'));
-    simple('btn-expand', '/expand', () => { sheet = null; toast('🎉 Đất rộng thêm 4 ô!'); });
-    simple('btn-chest', '/quest-chest', (r) => toast(r.gem ? '🎁 Rương ngày + 1 kim cương! 💎' : '🎁 Đã mở rương ngày!'));
-    simple('btn-star-claim', '/star-claim', (r) => toast(`🌟 Nhận thưởng mốc ${r.claimed.stars} sao!`));
-    simple('btn-waterall', '/water-all', (r) => toast(`💧 Đã tưới ${r.watered} ô!`));
-    simple('btn-buy-energy', '/buy-energy', () => toast('⚡ +30 năng lượng!'));
-    simple('btn-skill-respec', '/skill-respec', () => toast('♻️ Đã hoàn trả toàn bộ điểm kỹ năng!'));
+    simple('btn-collect', '/collect', (r, e) => { sfx('playHarvest'); floatGain(e.clientX || 200, e.clientY || 300, `🥚 +${r.collected}`, `+${r.collected * DATA.config.chicken.expCollect} EXP`); });
+    simple('btn-buy-chicken', '/buy-chicken', () => { sfx('playCoin'); toast('🐔 Gà mới về chuồng!'); });
+    simple('btn-mill-collect', '/mill-collect', () => { sfx('playHarvest'); toast('⚙️ Xong một mẻ!'); });
+    simple('btn-expand', '/expand', () => { sfx('playLevelUp'); sheet = null; toast('🎉 Đất rộng thêm 4 ô!'); });
+    simple('btn-chest', '/quest-chest', (r) => { sfx('playSuccess'); sfx('playCoin'); toast(r.gem ? '🎁 Rương ngày + 1 kim cương! 💎' : '🎁 Đã mở rương ngày!'); });
+    simple('btn-star-claim', '/star-claim', (r) => { sfx('playLevelUp'); toast(`🌟 Nhận thưởng mốc ${r.claimed.stars} sao!`); });
+    simple('btn-waterall', '/water-all', (r) => { sfx('playWater'); toast(`💧 Đã tưới ${r.watered} ô!`); });
+    simple('btn-buy-energy', '/buy-energy', () => { sfx('playCoin'); toast('⚡ +30 năng lượng!'); });
+    simple('btn-skill-respec', '/skill-respec', () => { sfx('playTap'); toast('♻️ Đã hoàn trả toàn bộ điểm kỹ năng!'); });
     document.querySelectorAll('[data-skill-learn]').forEach((el) =>
       el.addEventListener('click', async () => {
         const r = await run(() => api('/skill-learn', { id: el.dataset.skillLearn }));
@@ -1905,17 +1947,17 @@
       el.addEventListener('click', async (e) => {
         const qty = el.dataset.qty ? Number(el.dataset.qty) : rowQty(el);
         const r = await run(() => api('/sell', { item: el.dataset.sell, qty }));
-        if (r) { updateMe(r); floatGain(e.clientX, e.clientY, `+${r.gained} ${COIN}`); render(); }
+        if (r) { sfx('playCoin'); updateMe(r); floatGain(e.clientX, e.clientY, `+${r.gained} ${COIN}`); render(); }
       }));
     document.querySelectorAll('[data-buy]').forEach((el) =>
       el.addEventListener('click', async () => {
         const r = await run(() => api('/buy', { item: el.dataset.buy, qty: Number(el.dataset.qty) }));
-        if (r) { updateMe(r); render(); }
+        if (r) { sfx('playCoin'); updateMe(r); render(); }
       }));
     document.querySelectorAll('[data-deliver]').forEach((el) =>
       el.addEventListener('click', async (e) => {
         const r = await run(() => api('/order-deliver', { id: Number(el.dataset.deliver) }));
-        if (r) { updateMe(r); floatGain(e.clientX, e.clientY, `🚚 +${r.gained} ${COIN}`); render(); }
+        if (r) { sfx('playSuccess'); sfx('playCoin'); updateMe(r); floatGain(e.clientX, e.clientY, `🚚 +${r.gained} ${COIN}`); render(); }
       }));
     document.querySelectorAll('[data-discard]').forEach((el) =>
       el.addEventListener('click', async () => {
@@ -1941,32 +1983,37 @@
       }
       const { clientX: x, clientY: y } = ev;
 
-      if (kind === 'empty') { sheet = { type: 'seed', idx }; render(); }
+      if (kind === 'empty') { sfx('playTap'); sheet = { type: 'seed', idx }; render(); }
       else if (kind === 'waterplot') {
+        sfx('playWater');
         const r = await run(() => api('/water', { idx }));
         if (r) { updateMe(r); floatGain(x, y, '💧'); render(); }
       }
-      else if (kind === 'expand') { sheet = { type: 'expand' }; render(); }
-      else if (kind === 'plotmenu') { sheet = { type: 'plotmenu', idx }; render(); }
+      else if (kind === 'expand') { sfx('playTap'); sheet = { type: 'expand' }; render(); }
+      else if (kind === 'plotmenu') { sfx('playTap'); sheet = { type: 'plotmenu', idx }; render(); }
       else if (kind === 'harvest') {
         const p = me().plots[idx];
         const c = p?.crop ? crops()[p.crop] : null;
+        sfx('playHarvest');
         const r = await run(() => api('/harvest', { idx }));
         if (r) {
+          sfx('playCoin');
           updateMe(r);
           if (c) floatGain(x, y, `${itemImg(c.id, 'coin-img')} +1`, `+${c.expHarvest} EXP`);
           render();
         }
       } else if (kind === 'water') {
+        sfx('playWater');
         const r = await run(() => api('/water', { ownerId: VISIT.ownerId, idx }));
         if (r) { updateMe(r); floatGain(x, y, '💧 −10p', `+${2 * 4} ${COIN}`); render(); }
       } else if (kind === 'poach') {
+        sfx('playHarvest');
         const r = await run(() => api('/poach', { ownerId: VISIT.ownerId, idx }));
         if (r) { updateMe(r); floatGain(x, y, '😋 +2'); render(); }
       } else if (kind === 'ripe' && VISIT) {
         if (!window.confirm('Thu hoạch giúp ô này? Nông sản vào kho của bạn ấy, bạn nhận 8 vàng công.')) return;
         const r = await run(() => api('/harvest-help', { ownerId: VISIT.ownerId, idx }));
-        if (r) { updateMe(r); floatGain(x, y, '🧺', `+${r.gained} ${COIN}`); render(); }
+        if (r) { sfx('playHarvest'); sfx('playCoin'); updateMe(r); floatGain(x, y, '🧺', `+${r.gained} ${COIN}`); render(); }
       } else if (kind === 'growing' || kind === 'ripe') {
         const farm = VISIT ? VISIT.farm : me();
         const p = farm.plots[idx];
