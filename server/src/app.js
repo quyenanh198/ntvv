@@ -120,6 +120,7 @@ export function buildApp({ config, db, logger = true }) {
 
   // ---- Xác thực: Chat là auth oracle --------------------------------------
   async function chatUserFor(request) {
+    if (config.mockChatUser) return typeof config.mockChatUser === 'function' ? config.mockChatUser(request) : config.mockChatUser;
     const cookie = request.headers.cookie;
     if (!cookie) return null;
     const hit = meCache.get(cookie);
