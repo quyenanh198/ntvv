@@ -1,3 +1,7 @@
+
+/* Hide legacy side rails and emergency debt banners */
+.side, .side-left, .side-right { display: none !important; }
+.top-banners { display: none !important; }
 /*
  * Nông Trại Vui Vẻ — gameplay-first visual redesign
  * Mobile-first farm stage using the existing painted asset pack.
@@ -509,11 +513,13 @@ img { display: block; max-width: 100%; }
 .stage-center {
   position: absolute;
   z-index: 4;
-  top: calc(70px + var(--top-safe));
+  top: calc(64px + var(--top-safe));
   bottom: 0;
-  left: clamp(86px, 10vw, 126px);
-  right: clamp(86px, 10vw, 126px);
-  padding: 0 clamp(.65rem, 2vw, 1.35rem) calc(112px + var(--bottom-safe));
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  max-width: 680px;
+  padding: 0.35rem 0.75rem calc(88px + var(--bottom-safe));
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -1573,7 +1579,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 /* Family sidebar trên màn rộng (như danh sách nhóm chat) */
 @media (min-width: 1180px) {
-  .stage-center { right: 342px; }
+  .stage-center { max-width: 720px; left: 0; right: 0; margin: 0 auto; }
   .family-block {
     position: fixed; z-index: 24;
     top: calc(76px + var(--top-safe));
@@ -1844,3 +1850,182 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
    áp cho html để mọi phần tử con thừa hưởng theo phép giao của touch-action. */
 html, body { touch-action: manipulation; }
 button, a, .plot, .side-btn, .gbtn, .hud-round, .coin-pill, .seed-card, .inv-row, .quest-row, .mc-plus, .sb-btn { touch-action: manipulation; }
+
+/* ---------- NEO-COZY UI OVERHAUL ---------- */
+.bottom-dock {
+  position: fixed;
+  z-index: 60;
+  bottom: calc(10px + var(--bottom-safe));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: clamp(4px, 1.5vw, 12px);
+  width: min(94vw, 460px);
+  padding: 6px 10px;
+  background: rgba(255, 253, 247, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(230, 215, 185, 0.85);
+  border-radius: 28px;
+  box-shadow: 0 14px 36px rgba(45, 30, 15, 0.16), 0 2px 8px rgba(0,0,0,0.04);
+}
+.dock-btn {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: transparent;
+  border: none;
+  border-radius: 18px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.dock-btn:active {
+  transform: scale(0.92);
+}
+.dock-btn--active {
+  background: rgba(140, 195, 80, 0.18);
+  color: #2e6018;
+}
+.dock-icon {
+  font-size: 1.45rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dock-icon img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.dock-label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+.dock-btn--gold {
+  background: linear-gradient(135deg, #ffd952, #f5a623);
+  box-shadow: 0 4px 14px rgba(245, 166, 35, 0.38);
+  border: 1.5px solid #d48b13;
+  color: #573300;
+}
+.dock-btn--gold .dock-label {
+  color: #573300;
+}
+
+/* Feature grid in sheet More */
+.more-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  gap: 0.65rem;
+  padding: 0.35rem 0;
+}
+.more-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0.85rem 0.5rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1.5px solid rgba(220, 205, 180, 0.7);
+  border-radius: 18px;
+  box-shadow: 0 4px 12px rgba(60, 45, 25, 0.06);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.more-card:active {
+  transform: scale(0.95);
+}
+.mc-icon {
+  position: relative;
+  font-size: 2rem;
+  line-height: 1;
+  margin-bottom: 0.35rem;
+}
+.mc-icon .dot {
+  position: absolute;
+  top: -2px;
+  right: -6px;
+}
+.mc-name {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.mc-sub {
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Financial Ledger Sheet */
+.ledger-box {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.5rem;
+  background: linear-gradient(135deg, rgba(255,248,230,0.95), rgba(255,240,210,0.95));
+  border: 1.5px solid rgba(220,195,150,0.7);
+  border-radius: 16px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.ledger-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.lm-label { font-size: 0.68rem; color: var(--muted); font-weight: 700; }
+.lm-val { font-size: 0.95rem; font-weight: 800; color: var(--ink); display: flex; align-items: center; gap: 4px; }
+.ledger-items { display: flex; flex-direction: column; gap: 0.5rem; }
+.ledger-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(220,210,190,0.6);
+  border-radius: 14px;
+}
+.ledger-row--warn {
+  background: rgba(255, 235, 230, 0.95);
+  border-color: rgba(240, 140, 120, 0.7);
+}
+.lr-icon { font-size: 1.5rem; flex: 0 0 auto; }
+.lr-info { flex: 1 1 auto; min-width: 0; }
+.lr-info b { font-size: 0.85rem; color: var(--ink); display: block; }
+.lr-desc { font-size: 0.68rem; color: var(--muted); margin-top: 1px; }
+.tag-debt { color: #d63031; font-weight: 800; font-size: 0.82rem; }
+.tag-credit { color: #00b894; font-weight: 800; font-size: 0.82rem; }
+.tag-ok { color: #636e72; font-weight: 700; font-size: 0.82rem; }
+
+/* Micro-animations and tactile enhancements */
+@keyframes crop-ready-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-4px) scale(1.06); }
+}
+.plot--ready .crop-sprite--ready,
+.plot--tree.plot--ready .tree-sprite {
+  animation: crop-ready-bounce 2s ease-in-out infinite;
+}
+.hud-round--warn {
+  background: linear-gradient(135deg, #ff7675, #d63031) !important;
+  border-color: #ff7675 !important;
+  color: #fff !important;
+}
+.coin-pill--debt {
+  background: linear-gradient(180deg, #7e2a22, #5a1e18) !important;
+  border-color: #e17055 !important;
+}

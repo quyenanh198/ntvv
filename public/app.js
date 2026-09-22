@@ -375,6 +375,7 @@
     const ordersReady = m.orders.some((o) => canDeliver(o));
     const starReady = m.starNext && m.stars >= m.starNext.stars;
     const festReady = m.festival.milestones.some((ms) => !ms.claimed && ms.progress >= ms.target);
+    const hasDebts = (m.tax?.owed > 0) || (m.debts?.owe > 0) || (m.debts?.owedToMe > 0);
 
     const nextHtml = `
       <div class="stage">
@@ -396,35 +397,38 @@
             <button class="coin-pill coin-pill--energy" data-sheet="fishing" title="Năng lượng — mở Hồ câu cá">⚡<b>${m.energy.current}</b><span class="pill-plus">＋</span></button>
             ${m.dog?.active ? `<button class="coin-pill coin-pill--dog" data-sheet="shop" title="Chó canh vườn đang trực">🐕<b>${fmtTime(m.dog.until - Date.now())}</b></button>` : ''}
             <button class="coin-pill coin-pill--star" data-sheet="stars" title="Sao Nông Trại">${STAR}<b>${m.stars.toLocaleString('vi')}</b>${starReady ? '<i class="dot"></i>' : ''}</button>
+            ${hasDebts ? `<button class="coin-pill coin-pill--debt" data-sheet="ledger" title="Sổ nợ & thuế đất — bấm để xem">${m.tax?.owed > 0 ? '🏛️' : '💸'}<b>${((m.tax?.owed || 0) + (m.debts?.owe || 0)).toLocaleString('vi')}</b><i class="dot"></i></button>` : ''}
             <span class="hud-rounds">
               <button class="hud-round" data-sheet="events" title="Bản tin làng">✉️</button>
               <button class="hud-round" id="btn-lb" title="Bảng xếp hạng">🏆</button>
+              <button class="hud-round${hasDebts ? ' hud-round--warn' : ''}" data-sheet="ledger" title="Sổ nông thôn">📋${hasDebts ? '<i class="dot"></i>' : ''}</button>
             </span>
           </div>
         </header>
-        <div class="top-banners">
-          ${m.tax?.owed > 0 ? `<div class="tax-banner">🏛️ Nợ thuế đất <b>${m.tax.owed.toLocaleString('vi')}</b> ${COIN} — có vàng là tự trả, chưa trả thì chưa gieo trồng được</div>` : ''}
-          ${m.debts?.owe > 0 ? `<div class="tax-banner tax-banner--debt">💸 Nợ tiền phạt bị chó tóm <b>${m.debts.owe.toLocaleString('vi')}</b> ${COIN} — lãi ${Math.round((m.debts.interest || 0.05) * 100)}% mỗi 10 phút, có vàng là tự trừ</div>` : ''}
-          ${m.debts?.owedToMe > 0 ? `<div class="tax-banner tax-banner--credit">🐕 Kẻ trộm đang nợ bạn <b>${m.debts.owedToMe.toLocaleString('vi')}</b> ${COIN} tiền phạt — tự thu khi họ có vàng</div>` : ''}
-        </div>
-
-        <div class="side side-left">
-          <button class="side-btn" data-sheet="quests">🧾${questsReady ? '<i class="dot"></i>' : ''}<span>Nhiệm vụ</span></button>
-          <button class="side-btn" data-sheet="shop">🏪<span>Cửa hàng</span></button>
-          <button class="side-btn" data-sheet="inventory">🎒<span>Kho đồ</span></button>
-        </div>
-        <div class="side side-right">
-          <button class="side-btn side-btn--gold" id="btn-harvestall"><img src="${A('assets/art/basket.png')}" alt="" />${m.plots.some((p) => p.crop && p.ready) ? '<i class="dot"></i>' : ''}<span>Thu hoạch</span></button>
-          ${m.level >= DATA.config.orderUnlockLevel ? `<button class="side-btn" data-sheet="orders">🚚${ordersReady ? '<i class="dot"></i>' : ''}<span>Đơn hàng</span></button>` : ''}
-          <button class="side-btn" data-sheet="festival">🎪${festReady ? '<i class="dot"></i>' : ''}<span>Sự kiện</span></button>
-          ${m.skills.unlocked ? `<button class="side-btn" data-sheet="skills">🎓${canLearnAnySkill(m) ? '<i class="dot"></i>' : ''}<span>Kỹ năng</span></button>` : ''}
-          ${m.level >= DATA.config.animals.vit.level ? `<button class="side-btn" data-sheet="barns">🐾${m.animals.some((x) => x.ready) ? '<i class="dot"></i>' : ''}<span>Chuồng</span></button>` : ''}
-          ${m.level >= Math.min(...Object.values(DATA.config.machines).map((x) => x.level)) ? `<button class="side-btn" data-sheet="mill">🏭${Object.values(m.machines).some((jobs) => Object.values(jobs || {}).some((j) => j.ready)) ? '<i class="dot"></i>' : ''}<span>Nhà máy</span></button>` : ''}
-          ${m.level >= DATA.config.fishing.level ? `<button class="side-btn" data-sheet="fishing">🎣${(m.fishFarm?.batches || []).some((b) => b.ready) ? '<i class="dot"></i>' : ''}<span>Ao cá</span></button>` : ''}
-          <button class="side-btn" data-sheet="market">🤝${DATA.wants?.canFill ? '<i class="dot"></i>' : ''}<span>Thu mua</span></button>
-          <button class="side-btn" data-sheet="luxury">💎<span>Xa xỉ</span></button>
-          <button class="side-btn" data-sheet="money">💌${m.goldRequests?.incoming ? '<i class="dot"></i>' : ''}<span>Xin/Cho</span></button>
-        </div>
+        <nav class="bottom-dock">
+          <button class="dock-btn${!visiting && !sheet && !showLb ? ' dock-btn--active' : ''}" id="btn-dock-farm" title="Nông trại">
+            <span class="dock-icon">🏡</span>
+            <span class="dock-label">Trại</span>
+          </button>
+          <button class="dock-btn dock-btn--gold" id="btn-harvestall" title="Thu hoạch tất cả">
+            <span class="dock-icon"><img src="${A('assets/art/basket.png')}" alt="" /></span>
+            ${m.plots.some((p) => p.crop && p.ready) ? '<i class="dot"></i>' : ''}
+            <span class="dock-label">Thu hoạch</span>
+          </button>
+          <button class="dock-btn${sheet?.type === 'shop' ? ' dock-btn--active' : ''}" data-sheet="shop" title="Cửa hàng">
+            <span class="dock-icon">🏪</span>
+            <span class="dock-label">Cửa hàng</span>
+          </button>
+          <button class="dock-btn${sheet?.type === 'inventory' ? ' dock-btn--active' : ''}" data-sheet="inventory" title="Kho đồ">
+            <span class="dock-icon">🎒</span>
+            <span class="dock-label">Kho đồ</span>
+          </button>
+          <button class="dock-btn${sheet?.type === 'more' ? ' dock-btn--active' : ''}" data-sheet="more" title="Thêm tính năng">
+            <span class="dock-icon">☰</span>
+            ${(questsReady || ordersReady || festReady || canLearnAnySkill(m) || m.animals.some((x) => x.ready) || Object.values(m.machines).some((jobs) => Object.values(jobs || {}).some((j) => j.ready)) || hasDebts) ? '<i class="dot"></i>' : ''}
+            <span class="dock-label">Thêm</span>
+          </button>
+        </nav>
 
         <div class="stage-center">
           <div class="scene-banner">
@@ -1283,6 +1287,144 @@
       );
     }
 
+    if (t === 'ledger') {
+      const taxOwed = m.tax?.owed || 0;
+      const debtOwe = m.debts?.owe || 0;
+      const debtOwedToMe = m.debts?.owedToMe || 0;
+      return sheetShell(
+        '📋 Sổ Nông Thôn & Tài Chính',
+        `<div class="ledger-box">
+          <div class="ledger-metric">
+            <span class="lm-label">💰 Tiền mặt</span>
+            <span class="lm-val">${m.gold.toLocaleString('vi')} ${COIN}</span>
+          </div>
+          <div class="ledger-metric">
+            <span class="lm-label">📦 Kho đồ (ước tính)</span>
+            <span class="lm-val">${(m.netWorth ? Math.max(0, m.netWorth - m.gold) : 0).toLocaleString('vi')} ${COIN}</span>
+          </div>
+          <div class="ledger-metric">
+            <span class="lm-label">🏛️ Tổng tài sản</span>
+            <span class="lm-val"><b>${(m.netWorth ?? m.gold).toLocaleString('vi')}</b> ${COIN}</span>
+          </div>
+        </div>
+        <h4 style="margin:0.8rem 0 0.4rem;font-size:0.95rem;color:var(--ink);">Khoản nợ & Nghĩa vụ</h4>
+        <div class="ledger-items">
+          <div class="ledger-row ${taxOwed > 0 ? 'ledger-row--warn' : ''}">
+            <span class="lr-icon">🏛️</span>
+            <div class="lr-info">
+              <b>Thuế đất</b>
+              <div class="lr-desc">${taxOwed > 0 ? `Nợ ${taxOwed.toLocaleString('vi')} vàng (tự cấn trừ khi có vàng, cần trả để gieo hạt)` : 'Đã nộp đủ — đất đai tự do canh tác'}</div>
+            </div>
+            <span class="lr-val">${taxOwed > 0 ? `<span class="tag-debt">−${taxOwed.toLocaleString('vi')}</span>` : '<span class="tag-ok">0</span>'}</span>
+          </div>
+          <div class="ledger-row ${debtOwe > 0 ? 'ledger-row--warn' : ''}">
+            <span class="lr-icon">💸</span>
+            <div class="lr-info">
+              <b>Tiền phạt chó cắn</b>
+              <div class="lr-desc">${debtOwe > 0 ? `Nợ ${debtOwe.toLocaleString('vi')} vàng (lãi ${Math.round((m.debts?.interest || 0.05) * 100)}%/10p, tự cấn trừ khi có vàng)` : 'Không có khoản phạt nào'}</div>
+            </div>
+            <span class="lr-val">${debtOwe > 0 ? `<span class="tag-debt">−${debtOwe.toLocaleString('vi')}</span>` : '<span class="tag-ok">0</span>'}</span>
+          </div>
+          <div class="ledger-row">
+            <span class="lr-icon">🐕</span>
+            <div class="lr-info">
+              <b>Tiền phạt trộm nợ bạn</b>
+              <div class="lr-desc">${debtOwedToMe > 0 ? `Kẻ trộm đang nợ bạn ${debtOwedToMe.toLocaleString('vi')} vàng (tự thu khi họ có vàng)` : 'Không có ai nợ bạn tiền phạt'}</div>
+            </div>
+            <span class="lr-val">${debtOwedToMe > 0 ? `<span class="tag-credit">+${debtOwedToMe.toLocaleString('vi')}</span>` : '0'}</span>
+          </div>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:0.5rem;">
+          <button class="gbtn gbtn--gold" data-sheet="inventory" style="flex:1">🎒 Mở kho bán đồ</button>
+          <button class="btn btn-ghost" data-close="1" style="flex:1">Đóng</button>
+        </div>`
+      );
+    }
+
+    if (t === 'more') {
+      const qReady = m.daily.done >= m.daily.required && !m.daily.chestClaimed;
+      const oReady = m.orders.some((o) => canDeliver(o));
+      const fReady = m.festival.milestones.some((ms) => !ms.claimed && ms.progress >= ms.target);
+      const canSkill = canLearnAnySkill(m);
+      const aReady = m.animals.some((x) => x.ready);
+      const mReady = Object.values(m.machines).some((jobs) => Object.values(jobs || {}).some((j) => j.ready));
+      const fishReady = (m.fishFarm?.batches || []).some((b) => b.ready);
+      const wantsReady = DATA.wants?.canFill;
+      const hasMail = m.goldRequests?.incoming;
+      const deb = (m.tax?.owed > 0) || (m.debts?.owe > 0) || (m.debts?.owedToMe > 0);
+
+      return sheetShell(
+        '✨ Tính Năng Nông Trại',
+        `<div class="more-grid">
+          <button class="more-card" data-sheet="quests">
+            <span class="mc-icon">🧾${qReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-name">Nhiệm vụ</span>
+            <span class="mc-sub">${m.daily.done}/${m.daily.required} hôm nay</span>
+          </button>
+          ${m.level >= DATA.config.orderUnlockLevel ? `
+          <button class="more-card" data-sheet="orders">
+            <span class="mc-icon">🚚${oReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-name">Đơn hàng</span>
+            <span class="mc-sub">${m.orders.filter((o) => canDeliver(o)).length} đơn sẵn sàng</span>
+          </button>` : ''}
+          <button class="more-card" data-sheet="festival">
+            <span class="mc-icon">🎪${fReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-name">Sự kiện</span>
+            <span class="mc-sub">Mùa lễ hội</span>
+          </button>
+          ${m.skills.unlocked ? `
+          <button class="more-card" data-sheet="skills">
+            <span class="mc-icon">🎓${canSkill ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-name">Kỹ năng</span>
+            <span class="mc-sub">${m.skills.points} điểm</span>
+          </button>` : ''}
+          ${m.level >= DATA.config.animals.vit.level ? `
+          <button class="more-card" data-sheet="barns">
+            <span class="mc-icon">🐾${aReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-name">Chuồng trại</span>
+            <span class="mc-sub">Vật nuôi</span>
+          </button>` : ''}
+          ${m.level >= Math.min(...Object.values(DATA.config.machines).map((x) => x.level)) ? `
+          <button class="more-card" data-sheet="mill">
+            <span class="mc-icon">🏭${mReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-name">Nhà máy</span>
+            <span class="mc-sub">Chế biến</span>
+          </button>` : ''}
+          ${m.level >= DATA.config.fishing.level ? `
+          <button class="more-card" data-sheet="fishing">
+            <span class="mc-icon">🎣${fishReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-name">Hồ câu & Ao</span>
+            <span class="mc-sub">Cá tươi</span>
+          </button>` : ''}
+          <button class="more-card" data-sheet="market">
+            <span class="mc-icon">🤝${wantsReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-name">Chợ thu mua</span>
+            <span class="mc-sub">Giao dịch</span>
+          </button>
+          <button class="more-card" data-sheet="luxury">
+            <span class="mc-icon">💎</span>
+            <span class="mc-name">Đồ xa xỉ</span>
+            <span class="mc-sub">Trang trí & Khung</span>
+          </button>
+          <button class="more-card" data-sheet="money">
+            <span class="mc-icon">💌${hasMail ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-name">Xin / Cho vàng</span>
+            <span class="mc-sub">Tương trợ</span>
+          </button>
+          <button class="more-card" data-sheet="ledger">
+            <span class="mc-icon">📋${deb ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-name">Sổ Nông Thôn</span>
+            <span class="mc-sub">Tài chính & Nợ</span>
+          </button>
+          <button class="more-card" data-action="leaderboard">
+            <span class="mc-icon">🏆</span>
+            <span class="mc-name">Bảng xếp hạng</span>
+            <span class="mc-sub">Vinh danh làng</span>
+          </button>
+        </div>`
+      );
+    }
+
     return '';
   }
 
@@ -1370,6 +1512,19 @@
         if (el.dataset.sheet === 'money') { openMoney(); return; }
         sheet = { type: el.dataset.sheet }; render();
       }));
+    document.querySelectorAll('[data-action="leaderboard"]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        sheet = null;
+        const r = await run(async () => {
+          const [lb, tb] = await Promise.all([api('/leaderboard'), api('/thief-board')]);
+          return { lb, tb, tab: 'thief' };
+        });
+        if (r) { showLb = r; render(); }
+      }));
+    document.getElementById('btn-dock-farm')?.addEventListener('click', () => {
+      if (VISIT) { VISIT = null; INSPECT = false; refresh(); }
+      else { sheet = null; showLb = null; render(); }
+    });
     document.getElementById('btn-inspect-mode')?.addEventListener('click', () => { INSPECT = !INSPECT; toast(INSPECT ? '🔍 Bấm vào một ô đang trồng để khám xét' : 'Tắt khám xét'); render(); });
     document.getElementById('btn-gold-give')?.addEventListener('click', async () => {
       const v = window.prompt(`Tặng ${VISIT.farm.name} bao nhiêu vàng? (bạn có ${me().gold.toLocaleString('vi')})`, '');
