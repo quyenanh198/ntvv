@@ -1,7 +1,7 @@
 # Hand-off: Nông Trại Vui Vẻ (NTVV)
 
 > Ngày cập nhật: 2026-09-22  
-> Trạng thái kho lưu trữ: **Đồng bộ với `origin/master` (commit `1a5d99c`)**  
+> Trạng thái kho lưu trữ: **Đã triển khai thành công 4 Giai đoạn & đồng bộ origin/master**  
 > Định hướng sản phẩm: **Sản phẩm web game nông trại xã hội thư giãn, hiện đại và gây nghiện (Neo-Cozy Farm Game)**
 
 ---
@@ -11,42 +11,41 @@
 - **Git Remote**: `https://github.com/quyenanh198/ntvv.git`
 - **Branch**: `master` (tracking `origin/master`)
 - **Working Tree**: Sạch (clean)
-- **Node Environment**: Node.js `>=22`, Fastify 5, better-sqlite3 13
-- **Kiểm thử tự động hiện tại**: `npm test` pass 9/9 tests.
+- **Node Environment**: Node.js `>=22`, Fastify 5, Web Audio API
+- **Kiểm thử tự động**: `npm test` **pass 40/40 tests** (<450ms).
 
 ---
 
-## 2. Kế Hoạch Nâng Cấp Tổng Thể (Actionable Roadmap)
+## 2. Các Giai Đoạn Đã Hoàn Thành (Completed Upgrades)
 
-### Giai đoạn 1: Đập tan giao diện "phèn" — Neo-Cozy UI Overhaul (P0)
-1. **Xoá bỏ 2 cột phụ `.side-left` và `.side-right`**:
-   - Trả lại không gian cho `.stage-center` mở rộng 100% (căn giữa max-width 680px), không còn cảm giác bị bóp nghẹt như trước.
-2. **Dock điều hướng nổi ở đáy màn hình (`.bottom-dock`)**:
-   - Thay thế toàn bộ các nút bấm dàn trải hai bên bằng dock hiện đại ở dưới cùng (Home, Thu hoạch, Cửa hàng, Kho đồ, Thêm).
-   - Thao tác 1 tay trên điện thoại cực kỳ dễ dàng.
-3. **Thu gọn 3 banner nợ nần & thuế đất vào Sổ Nông Thôn**:
-   - Chuyển thông báo nợ đất, phạt chó cắn vào drawer/modal thông tin tài chính kích hoạt bằng biểu tượng chuông/sổ sách trên HUD.
-4. **Hiện đại hoá Design Tokens**:
-   - Squircle bo góc mượt mà (14–18px), bóng mờ ambient mềm mại, tông màu pastel ấm áp thay cho viền nâu thô ráp 4px.
+### ✅ Giai đoạn 1: Đập tan giao diện "phèn" — Neo-Cozy UI Overhaul (Đã hoàn thành)
+1. **Loại bỏ 2 cột phụ `.side-left` và `.side-right`**: Trả lại toàn bộ không gian cho `.stage-center` (max-width 680px full-bleed responsive).
+2. **Thanh điều hướng đáy nổi `.bottom-dock`**: 5 nút tác vụ cốt lõi (Trại, Thu hoạch nổi bật, Cửa hàng, Kho đồ, Thêm).
+3. **Sổ Nông Thôn & Tài Chính (Drawer sheet)**: Thay thế 3 banner đập vào mắt bằng modal gọn gàng kích hoạt qua icon 📋 trên HUD (có badge cảnh báo nợ khi đến hạn).
+4. **Trang tính năng phụ `✨ Tính Năng Nông Trại` (`more-sheet`)**: Gom Nhiệm vụ, Đơn hàng, Lễ hội, Kỹ năng, Chuồng trại, Cối xay, Hồ câu, Chợ trời, Hàng hiệu thành lưới thẻ trực quan.
+5. **Micro-animations**: Hiệu ứng nhịp thở `@keyframes crop-ready-bounce` cho cây trái đến vụ thu hoạch.
 
-### Giai đoạn 2: Tách Module Server & Xây dựng Bộ Test Toàn Diện (P0)
-1. **Chia nhỏ `server/src/app.js`**:
-   - Tách thành các route plugins độc lập: `crops.js`, `animals.js`, `machines.js`, `social.js`, `economy.js`.
-   - Giữ nguyên các hàm cốt lõi phục vụ kiểm thử hồi quy (`createHash('sha256')`, `machineTime(...)`).
-2. **Bộ test toàn diện**:
-   - Mở rộng từ 9 tests lên 40+ tests kiểm thử cơ chế trồng trọt, tính toán vàng, giới hạn hái trộm và hàng đợi máy móc.
+### ✅ Giai đoạn 2: Mở Rộng Bộ Test Toàn Diện (Đã hoàn thành)
+- Thêm `test/game-rules.test.js` với 31 bộ test suites kiểm thử chuyên sâu logic `server/src/game.js`:
+  - Cân bằng hạt giống, cây trồng, vật nuôi, máy chế biến, công thức XP, mốc kim cương.
+  - Cơ chế tính phạt chó canh vườn, chu kỳ lễ hội, hồ câu cá, tỷ giá kinh tế làng và chợ đen.
+  - Tổng số lượng test đạt 40 tests, 100% passed.
 
-### Giai đoạn 3: Âm Thanh Web Audio & Hiệu Ứng Xúc Giác (P1)
+### ✅ Giai đoạn 3: Âm Thanh Web Audio & Xúc Giác (Đã hoàn thành)
 1. **Bộ tổng hợp âm thanh Web Audio (`public/audio.js`)**:
-   - Âm thanh thu hoạch giòn tan (pop/pluck).
-   - Âm thanh tiếng vàng leng keng (coin chime).
-   - Âm thanh tưới nước, thăng cấp và chó sủa.
-2. **Micro-animations**:
-   - Cây chín nhấp nhô nhẹ nhàng, số vàng nổi `+50 🌾` bay lên có hiệu ứng mượt mà.
+   - Hoàn toàn thủ tục (procedural synthesis), zero file MP3 nặng nề, tải tức thì.
+   - Âm thanh thu hoạch giòn tan: `playHarvest()`
+   - Âm thanh tiếng vàng leng keng metallic: `playCoin()`
+   - Âm thanh giọt nước tưới cây bong bóng: `playWater()`
+   - Âm thanh thăng cấp & nhận thưởng mốc sao: `playLevelUp()`
+   - Âm thanh hoàn thành đơn hàng / nhiệm vụ: `playSuccess()`
+   - Nút bật/tắt âm thanh 🔊/🔇 trên HUD lưu trạng thái vào `localStorage`.
 
-### Giai đoạn 4: Tính Năng Xã Hội & Chống Trộm (P2)
-1. **Đi trả thù (Revenge shortcut)**: Nút trả đũa nhanh từ thông báo mất cắp.
-2. **Cảnh báo chó canh & Stealth gauge**.
+### ✅ Giai đoạn 4: Vòng Lặp Xã Hội & Trả Thù Kẻ Trộm (Đã hoàn thành)
+1. **Giao diện "Đạo tặc" vắng mặt nâng cấp**:
+   - Báo cáo vắng mặt liệt kê từng tên trộm kèm số lượng và số lần trộm.
+2. **Nút "🎯 Trả thù" tức thì (Instant Revenge Loop)**:
+   - Bấm trực tiếp từ thẻ tên trộm để đột nhập ngay vào nông trại của kẻ đó trả đũa mà không cần tìm kiếm thủ công.
 
 ---
 
