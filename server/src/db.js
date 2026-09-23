@@ -207,8 +207,10 @@ CREATE INDEX IF NOT EXISTS idx_events_at ON events(at DESC);
 `;
 
 export function openDb(dataDir) {
-  mkdirSync(dataDir, { recursive: true });
-  const db = new Database(join(dataDir, 'farm2.sqlite3'));
+  if (dataDir !== ':memory:') {
+    mkdirSync(dataDir, { recursive: true });
+  }
+  const db = new Database(dataDir === ':memory:' ? ':memory:' : join(dataDir, 'farm2.sqlite3'));
   db.pragma('journal_mode = WAL');
   db.exec(SCHEMA);
   // Cột thêm sau khi farm2 đã chạy thật — ALTER có guard, idempotent.
@@ -249,6 +251,14 @@ export function openDb(dataDir) {
   // Hỗ trợ theo trần làng: coi vàng tặng trước đây là đã hỗ trợ (tránh trả trùng).
   db.exec('UPDATE farmers SET support_paid = gift_gold WHERE support_paid = 0 AND gift_gold > 0');
   const mcols = db.prepare('PRAGMA table_info(machines)').all().map((c) => c.name);
+  if (!mcols.includes('poached')) {
+    db.exec('ALTER TABLE machines ADD COLUMN poached INTEGER NOT NULL DEFAULT 0');
+    mcols.push('poached');
+  }
+  if (!mcols.includes('queue_count')) {
+    db.exec('ALTER TABLE machines ADD COLUMN queue_count INTEGER NOT NULL DEFAULT 1');
+    mcols.push('queue_count');
+  }
   // Mỗi máy chạy nhiều món song song: chuyển mẻ đang chạy từ machines (1 món/máy)
   // sang machine_jobs (1 dòng/món). Idempotent — machines được dọn sau khi chuyển.
   if (mcols.includes('recipe')) {
@@ -256,8 +266,6 @@ export function openDb(dataDir) {
       SELECT owner_id, kind, recipe, ready_at, COALESCE(queue_count, 1), COALESCE(poached, 0) FROM machines WHERE recipe IS NOT NULL AND ready_at IS NOT NULL`);
     db.exec('UPDATE machines SET recipe = NULL, ready_at = NULL WHERE recipe IS NOT NULL');
   }
-  if (!mcols.includes('poached')) db.exec('ALTER TABLE machines ADD COLUMN poached INTEGER NOT NULL DEFAULT 0');
-  if (!mcols.includes('queue_count')) db.exec('ALTER TABLE machines ADD COLUMN queue_count INTEGER NOT NULL DEFAULT 1');
   const pcols = db.prepare('PRAGMA table_info(plots)').all().map((c) => c.name);
   if (!pcols.includes('poached')) db.exec('ALTER TABLE plots ADD COLUMN poached INTEGER NOT NULL DEFAULT 0');
   if (!pcols.includes('tree')) db.exec('ALTER TABLE plots ADD COLUMN tree INTEGER NOT NULL DEFAULT 0');

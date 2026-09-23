@@ -1584,7 +1584,7 @@
       await api('/away-ack', {});
       if (DATA.me) DATA.me.awayReport = null;
       try {
-        const r = await api('/visit', { ownerId: targetId });
+        const r = await api(`/farm/${targetId}`);
         VISIT = { ownerId: targetId, farm: r.farm, myActs: r.myActs };
         render();
         toast(`🎯 Đã đột nhập nông trại của ${r.farm.name}! Mau hành động!`);

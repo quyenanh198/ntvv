@@ -2281,6 +2281,7 @@ export function buildApp({ config, db, logger = true }) {
   const assetHash = createHash('sha256')
     .update(readFileSync(join(PUBLIC_DIR, 'index.html')))
     .update(readFileSync(join(PUBLIC_DIR, 'app.js')))
+    .update(readFileSync(join(PUBLIC_DIR, 'audio.js')))
     .update(readFileSync(join(PUBLIC_DIR, 'style.css')))
     .digest('hex')
     .slice(0, 12);
@@ -2289,6 +2290,7 @@ export function buildApp({ config, db, logger = true }) {
   // redesign từng hardcode v=3 khiến per-boot bust chết lặng — không tái diễn).
   const INDEX_HTML = readFileSync(join(PUBLIC_DIR, 'index.html'), 'utf8')
     .replace(/href="style\.css[^"]*"/, `href="style.css?v=${BOOT_VERSION}"`)
+    .replace(/src="audio\.js[^"]*"/, `src="audio.js?v=${BOOT_VERSION}"`)
     .replace(/src="app\.js[^"]*"/, `src="app.js?v=${BOOT_VERSION}"`);
 
   app.register(staticPlugin, { root: PUBLIC_DIR, prefix: '/farm/', index: false });

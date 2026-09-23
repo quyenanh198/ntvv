@@ -4,7 +4,10 @@
 
 (function () {
   let ctx = null;
-  let muted = localStorage.getItem('ntvv_muted') === '1';
+  let muted = false;
+  try {
+    muted = localStorage.getItem('ntvv_muted') === '1';
+  } catch (e) {}
 
   function getAudioContext() {
     if (!ctx) {
@@ -34,12 +37,16 @@
     },
     toggleMute() {
       muted = !muted;
-      localStorage.setItem('ntvv_muted', muted ? '1' : '0');
+      try {
+        localStorage.setItem('ntvv_muted', muted ? '1' : '0');
+      } catch (e) {}
       return muted;
     },
     setMute(val) {
       muted = !!val;
-      localStorage.setItem('ntvv_muted', muted ? '1' : '0');
+      try {
+        localStorage.setItem('ntvv_muted', muted ? '1' : '0');
+      } catch (e) {}
     },
 
     // Gentle tactile click for buttons & menus

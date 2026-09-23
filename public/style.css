@@ -1,6 +1,6 @@
 
 /* Hide legacy side rails and emergency debt banners */
-.side, .side-left, .side-right { display: none !important; }
+.side, .side-left, .side-right, .quickbar { display: none !important; }
 .top-banners { display: none !important; }
 /*
  * Nông Trại Vui Vẻ — gameplay-first visual redesign
@@ -1312,7 +1312,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 /* ---------- tablet ---------- */
 @media (max-width: 980px) {
-  .stage-center { left: 82px; right: 82px; padding-inline: .55rem; }
+  .stage-center { left: 0; right: 0; margin: 0 auto; max-width: 680px; padding-inline: .55rem; }
   .farm-grid { grid-template-columns: repeat(5, minmax(68px, 1fr)); }
   .scene-banner { height: clamp(150px, 24vw, 205px); }
   .side { width: 66px; }
@@ -1354,7 +1354,9 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
     top: calc(67px + var(--top-safe));
     left: 0;
     right: 0;
-    padding: 56px .55rem calc(148px + var(--bottom-safe));
+    margin: 0 auto;
+    max-width: 680px;
+    padding: 0.35rem .55rem calc(88px + var(--bottom-safe));
   }
 
   /* management rail becomes compact horizontal tray under HUD */
@@ -1503,7 +1505,6 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .pill-plus { display: none; }
   .side-left .side-btn { min-width: 0; flex: 1 1 0; grid-template-columns: 18px auto; padding-inline: .3rem; }
   .side-left .side-btn > span:last-child { font-size: .52rem; }
-  .stage-center { padding-top: 54px; }
   .farm-grid { grid-template-columns: repeat(3, minmax(64px, 1fr)); }
   .field-wrap { padding: .68rem; }
   .scene-banner { height: 132px; }
@@ -1520,7 +1521,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .top-hud { padding-top: calc(.25rem + var(--top-safe)); min-height: calc(58px + var(--top-safe)); }
   .hud-avatar { width: 34px; }
   .coin-pill { min-height: 32px; }
-  .stage-center { top: calc(55px + var(--top-safe)); padding-top: 45px; padding-bottom: calc(70px + var(--bottom-safe)); }
+  .stage-center { top: calc(55px + var(--top-safe)); padding-top: 0.25rem; padding-bottom: calc(76px + var(--bottom-safe)); }
   .side-left { top: calc(57px + var(--top-safe)); }
   .side-left .side-btn { min-height: 36px; }
   .scene-banner { height: 110px; }
