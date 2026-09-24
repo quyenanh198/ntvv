@@ -1580,7 +1580,23 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 /* Family sidebar trên màn rộng (như danh sách nhóm chat) */
 @media (min-width: 1180px) {
-  .stage-center { max-width: 720px; left: 0; right: 0; margin: 0 auto; }
+  /* Hai mốc lề của khoảng trống giữa màn: rail nút bên trái, bảng người nhà bên
+     phải. Ruộng và thanh nút dưới đều bám theo hai mốc này. */
+  :root {
+    --corridor-left: calc(74px + clamp(.5rem, 1.4vw, 1rem) + 12px);
+    --corridor-right: calc(226px + clamp(96px, 10.5vw, 140px) + 12px);
+  }
+  /* Ruộng nở hết khoảng trống đó. Trước đây khoá cứng 720px và canh giữa màn
+     hình: trên màn 1920 hai bên trống hơn 600px mỗi bên mà ruộng vẫn 6 cột. */
+  .stage-center {
+    left: var(--corridor-left);
+    right: var(--corridor-right);
+    margin: 0 auto;
+    max-width: min(1240px, 100%);
+  }
+  /* Tranh nông trại vẽ theo tỉ lệ cố định — kéo rộng bằng cả khung thì nhà cửa
+     dạt ra xa nhau, giữ nguyên khổ cũ và canh giữa. */
+  .scene-banner { max-width: 760px; margin-inline: auto; }
   .family-block {
     position: fixed; z-index: 24;
     top: calc(76px + var(--top-safe));
@@ -1871,6 +1887,13 @@ button, a, .plot, .side-btn, .gbtn, .hud-round, .coin-pill, .seed-card, .inv-row
   border: 1.5px solid rgba(230, 215, 185, 0.85);
   border-radius: 28px;
   box-shadow: 0 14px 36px rgba(45, 30, 15, 0.16), 0 2px 8px rgba(0,0,0,0.04);
+}
+
+/* Trên màn rộng, thanh nút dưới canh giữa theo ruộng chứ không theo màn hình —
+   ruộng đã lệch trái để nhường chỗ bảng người nhà. Khối này phải nằm sau rule
+   gốc ở trên: cùng độ ưu tiên thì cái viết sau mới thắng `left: 50%`. */
+@media (min-width: 1180px) {
+  .bottom-dock { left: calc((var(--corridor-left) + 100vw - var(--corridor-right)) / 2); }
 }
 .dock-btn {
   position: relative;
