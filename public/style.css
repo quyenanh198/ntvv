@@ -1581,18 +1581,21 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 /* Family sidebar trên màn rộng (như danh sách nhóm chat) */
 @media (min-width: 1180px) {
   /* Hai mốc lề của khoảng trống giữa màn: rail nút bên trái, bảng người nhà bên
-     phải. Ruộng và thanh nút dưới đều bám theo hai mốc này. */
+     phải. Ruộng và thanh nút dưới đều bám theo hai mốc này. Bảng người nhà nép
+     sát mép phải trên màn rộng — mỗi 100px lề ở đó là 100px ruộng mất đi. */
   :root {
+    --family-right: clamp(16px, 2vw, 56px);
     --corridor-left: calc(74px + clamp(.5rem, 1.4vw, 1rem) + 12px);
-    --corridor-right: calc(226px + clamp(96px, 10.5vw, 140px) + 12px);
+    --corridor-right: calc(226px + var(--family-right) + 12px);
   }
-  /* Ruộng nở hết khoảng trống đó. Trước đây khoá cứng 720px và canh giữa màn
-     hình: trên màn 1920 hai bên trống hơn 600px mỗi bên mà ruộng vẫn 6 cột. */
+  /* Ruộng chiếm trọn khoảng trống đó, không có trần: màn càng rộng càng nhiều
+     cột. Trước đây khoá cứng 720px và canh giữa màn hình nên trên màn 1920 hai
+     bên trống hơn 600px mỗi bên mà ruộng vẫn chỉ 6 cột. */
   .stage-center {
     left: var(--corridor-left);
     right: var(--corridor-right);
-    margin: 0 auto;
-    max-width: min(1240px, 100%);
+    margin: 0;
+    max-width: none;
   }
   /* Tranh nông trại vẽ theo tỉ lệ cố định — kéo rộng bằng cả khung thì nhà cửa
      dạt ra xa nhau, giữ nguyên khổ cũ và canh giữa. */
@@ -1601,7 +1604,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
     position: fixed; z-index: 24;
     top: calc(76px + var(--top-safe));
     bottom: calc(14px + var(--bottom-safe));
-    right: clamp(96px, 10.5vw, 140px);
+    right: var(--family-right);
     width: 226px;
     display: flex; flex-direction: column;
     background: rgba(255, 252, 240, 0.92);
