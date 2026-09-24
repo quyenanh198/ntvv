@@ -375,7 +375,7 @@
 
     const meFam = DATA.family.find((u) => u.me) || {};
     const hudAvatar = meFam.avatar_at
-      ? `<img src="/farm/api/avatar/${m.id}?v=${meFam.avatar_at}" alt="" onerror="this.remove()" />`
+      ? `<img src="/farm/api/avatar/${m.id}?v=${meFam.avatar_at}" alt="" data-drop-on-error="1" />`
       : esc((m.name || '?').charAt(0).toUpperCase());
 
     const questsReady = m.daily.done >= m.daily.required && !m.daily.chestClaimed;
@@ -545,7 +545,7 @@
     return list.map((u) => {
       const active = VISIT ? VISIT.ownerId === u.id : u.me;
       const av = u.avatar_at
-        ? `<img src="/farm/api/avatar/${u.id}?v=${u.avatar_at}" alt="" onerror="this.remove()" />`
+        ? `<img src="/farm/api/avatar/${u.id}?v=${u.avatar_at}" alt="" data-drop-on-error="1" />`
         : esc((u.name || '?').charAt(0).toUpperCase());
       return `
         <button class="family-member${active ? ' family-member--active' : ''}" data-visit="${u.id}" data-me="${u.me ? 1 : 0}">
@@ -720,7 +720,7 @@
       </div>`).join('');
     return `
       <div class="modal-backdrop" data-away-close="1">
-        <div class="modal modal--away" onclick="event.stopPropagation()">
+        <div class="modal modal--away">
           <h3>😱 Trong lúc bạn vắng mặt</h3>
           <p class="sheet-note">Từ ${fmt(r.since)} đến ${fmt(r.until)}, nhà bạn bị chôm tổng cộng <b>${r.total}</b> món:</p>
           <div class="away-scroll">
@@ -1469,7 +1469,7 @@
       <p class="sheet-note">💹 Kinh tế làng = tổng vàng cả làng đã <b>bán hàng</b> (hệ thống + đơn hàng + bạn bè; không tính vàng tặng/trộm/thưởng): ${(tb.economy?.villageGold || 0).toLocaleString('vi')} ${COIN} → thưởng ×${tb.economy?.mult || 1} (mỗi 5 triệu cộng thêm ×1).</p>`;
     return `
       <div class="modal-backdrop" data-close="1">
-        <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal">
           <div class="lb-tabs">
             <button class="gbtn btn-mini${thiefTab ? '' : ' gbtn--gold'}" data-lb-tab="village">🏆 Làng</button>
             <button class="gbtn btn-mini${thiefTab ? ' gbtn--gold' : ''}" data-lb-tab="thief">🥷 Trộm</button>
@@ -1517,8 +1517,24 @@
         : { ...(options || {}), signal: bindAbort.signal };
       return nativeAdd.call(this, type, listener, opts);
     };
+    // Ảnh avatar hỏng thì gỡ khỏi DOM. Trước dùng onerror="this.remove()" trong thẻ,
+    // cũng bị CSP chặn nốt, nên ảnh lỗi nằm lại thành icon vỡ. Ảnh có thể lỗi xong
+    // trước khi gắn listener, nên kiểm tra luôn trạng thái hiện tại.
+    document.querySelectorAll('img[data-drop-on-error]').forEach((img) => {
+      const drop = () => img.remove();
+      img.addEventListener('error', drop, { once: true });
+      if (img.complete && img.naturalWidth === 0) drop();
+    });
+
+    // Nền mờ chỉ đóng khi bấm trúng chính nó. Trước đây hộp .modal chặn nổi bọt bằng
+    // onclick="event.stopPropagation()" viết thẳng trong thẻ, nhưng CSP của server
+    // (default-src 'self', không có 'unsafe-inline') chặn handler inline — nên mọi cú
+    // bấm trong hộp đều nổi lên nền và đóng hộp, nhìn y như nút chết.
     document.querySelectorAll('[data-close]').forEach((el) =>
-      el.addEventListener('click', () => { sheet = null; showLb = null; render(); }));
+      el.addEventListener('click', (e) => {
+        if (el.classList.contains('modal-backdrop') && e.target !== el) return;
+        sheet = null; showLb = null; render();
+      }));
 
     document.querySelectorAll('[data-sheet]').forEach((el) =>
       el.addEventListener('click', () => {
@@ -1592,7 +1608,11 @@
         toast(err?.message || 'Không thể ghé thăm nông trại này');
       }
     }));
-    document.querySelectorAll('[data-away-close]').forEach((el) => el.addEventListener('click', () => { if (DATA.me) DATA.me.awayReport = null; render(); }));
+    document.querySelectorAll('[data-away-close]').forEach((el) => el.addEventListener('click', (e) => {
+      if (el.classList.contains('modal-backdrop') && e.target !== el) return;
+      if (DATA.me) DATA.me.awayReport = null;
+      render();
+    }));
     document.querySelectorAll('[data-buy-gems]').forEach((el) => el.addEventListener('click', async () => {
       const pack = (DATA.config.gemPacks || []).find((p) => p.id === el.dataset.buyGems);
       if (!pack || !window.confirm(`Mua ${pack.gems} kim cương với ${pack.gold.toLocaleString('vi')} vàng?`)) return;

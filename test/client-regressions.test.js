@@ -30,3 +30,20 @@ test('normal renders patch the existing DOM instead of replacing the whole app',
 test('machine collection uses the same upgraded cycle as queue creation', () => {
   assert.match(server, /machineTime\(me, scaleMs\(recipe\.ms, config\.fast\), machineId\)/);
 });
+
+// CSP của server (default-src 'self', không có 'unsafe-inline') chặn mọi handler viết
+// thẳng vào thẻ. Chúng không báo lỗi gì cho người chơi: nút trong hộp thoại chỉ đơn
+// giản là không ăn, còn ảnh hỏng thì nằm lại thành icon vỡ.
+test('không gắn handler thẳng vào thẻ HTML — CSP chặn, nút sẽ chết câm', () => {
+  // Bỏ dòng chú thích trước khi soi: chú thích có quyền nhắc tới chính cái mẫu bị cấm.
+  const code = client.split('\n').filter((line) => !line.trim().startsWith('//')).join('\n');
+  const inline = code.match(/\son(?:click|error|change|input|submit|keyup|keydown|focus|blur|load)\s*=\s*"/g) || [];
+  assert.deepEqual(inline, [], 'dùng addEventListener trong phần bind thay vì thuộc tính on... trong thẻ');
+});
+
+test('nền mờ chỉ đóng khi bấm trúng chính nó, không đóng khi bấm trong hộp', () => {
+  const closeHandler = client.slice(client.indexOf("querySelectorAll('[data-close]')"), client.indexOf("querySelectorAll('[data-sheet]')"));
+  assert.match(closeHandler, /e\.target !== el/);
+  const awayHandler = client.slice(client.indexOf("querySelectorAll('[data-away-close]')"));
+  assert.match(awayHandler.slice(0, 400), /e\.target !== el/);
+});
