@@ -1045,28 +1045,30 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/harvest', async (request, reply) => {
         const { idx } = request.body ?? {};
         const me = request.farmer;
-        const plot = getPlot.get(me.user_id, idx);
-        if (!plot) return reply.code(400).send({ error: 'no_plot' });
-        const ripe = plot.tree ? treeSettle(me, plot).stock > 0 : Date.now() >= plot.ready_at;
-        if (!ripe) return reply.code(400).send({ error: 'not_ready' });
-        let crop;
-        db.transaction(() => {
-          crop = harvestPlot(me, plot);
-        })();
-        return { me: fresh(me.user_id), item: crop.id };
+        const harvest = runJournaledMutation(request, 'harvest', () => {
+          const plot = getPlot.get(me.user_id, idx);
+          if (!plot) return { error: 'no_plot' };
+          const ripe = plot.tree ? treeSettle(me, plot).stock > 0 : Date.now() >= plot.ready_at;
+          if (!ripe) return { error: 'not_ready' };
+          return { item: harvestPlot(me, plot).id };
+        });
+        if (harvest.error) return reply.code(harvest.error === 'idempotency_conflict' ? 409 : 400).send({ error: harvest.error });
+        return { me: fresh(me.user_id), ...harvest.outcome };
       });
 
       api.post('/harvest-all', async (request, reply) => {
         const me = request.farmer;
-        const now = Date.now();
-        for (const p of db.prepare('SELECT * FROM plots WHERE owner_id = ? AND tree = 1').all(me.user_id)) treeSettle(me, p, now);
-        const ready = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0))').all(me.user_id, now);
-        if (ready.length === 0) return reply.code(400).send({ error: 'nothing_ready' });
-        db.transaction(() => {
+        const harvest = runJournaledMutation(request, 'harvest-all', () => {
+          const now = Date.now();
+          for (const p of db.prepare('SELECT * FROM plots WHERE owner_id = ? AND tree = 1').all(me.user_id)) treeSettle(me, p, now);
+          const ready = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0))').all(me.user_id, now);
+          if (ready.length === 0) return { error: 'nothing_ready' };
           for (const p of ready) harvestPlot(me, p);
-        })();
-        logEvent(`🧺 ${me.name} thu hoạch ${ready.length} ô một lượt`);
-        return { me: fresh(me.user_id), harvested: ready.length };
+          return { harvested: ready.length };
+        });
+        if (harvest.error) return reply.code(harvest.error === 'idempotency_conflict' ? 409 : 400).send({ error: harvest.error });
+        if (!harvest.replay) logEvent(`🧺 ${me.name} thu hoạch ${harvest.outcome.harvested} ô một lượt`);
+        return { me: fresh(me.user_id), ...harvest.outcome };
       });
 
       // Tưới: ruộng mình hoặc ruộng người khác (mỗi vụ 1 lần/ô/người).

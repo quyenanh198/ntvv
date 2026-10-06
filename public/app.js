@@ -64,7 +64,7 @@
   // tới server, nên cứ thử lại tại chỗ mỗi 2s thay vì reload cả trang — người
   // chơi giữ nguyên màn hình đang mở. Chỉ reload khi chờ quá lâu.
   const WAKE_RETRIES = 20;
-  const REPLAY_SAFE_POSTS = new Set(['/sell', '/buy', '/buy-animal', '/buy-chicken', '/lottery-buy', '/want-create', '/want-cancel', '/want-fill', '/gold-give', '/quest-chest', '/star-claim', '/fest-claim', '/order-deliver', '/order-discard']);
+  const REPLAY_SAFE_POSTS = new Set(['/harvest', '/harvest-all', '/sell', '/buy', '/buy-animal', '/buy-chicken', '/lottery-buy', '/want-create', '/want-cancel', '/want-fill', '/gold-give', '/quest-chest', '/star-claim', '/fest-claim', '/order-deliver', '/order-discard']);
   let reloading = false;
   function checkServerBoot(state) {
     if (reloading || !MY_BOOT || !state?.boot || state.boot === MY_BOOT) return false;
