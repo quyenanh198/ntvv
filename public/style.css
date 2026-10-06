@@ -559,12 +559,12 @@ img { display: block; max-width: 100%; }
 .sb-barn { left: 36%; bottom: 25%; width: 18%; z-index: 4; }
 .sb-green { right: 24%; bottom: 26%; width: 13.5%; z-index: 2; }
 .sb-tree2 { right: 17.5%; bottom: 25%; width: 8%; z-index: 3; }
-.sb-mill { right: .5%; bottom: 20%; width: 13.5%; z-index: 4; }
+.sb-mill { right: .5%; bottom: 20%; width: 17%; z-index: 4; }
 .sb-mill > img { animation: mill-sway 5.6s ease-in-out infinite; }
 img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
-.sb-coop { left: 1.5%; bottom: -1%; width: 12.5%; z-index: 6; }
+.sb-coop { left: 1.5%; bottom: -1%; width: 16%; z-index: 6; }
 .sb-hen2 { left: 14.5%; bottom: 0; width: 4.5%; z-index: 7; animation: hen-bob 2.4s ease-in-out infinite; }
-.sb-shop { left: 20.5%; bottom: -2%; width: 11.5%; z-index: 6; }
+.sb-shop { left: 20.5%; bottom: -2%; width: 17%; z-index: 6; }
 .sb-well { left: 47%; bottom: 3%; width: 7%; z-index: 5; }
 .sb-pen {
   right: 8%;
@@ -675,21 +675,26 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   pointer-events: none;
 }
 .welcome-sign b { display: inline-block; margin-top: .08rem; color: #ffe27a; font-size: .82rem; }
-.next-step {
+.farm-next-step {
   display: flex;
   align-items: center;
-  gap: .5rem;
-  max-width: min(280px, calc(100vw - 1.2rem));
+  flex: 1 1 170px;
+  min-width: 0;
+  min-height: 43px;
+  gap: .4rem;
+  padding: .3rem .55rem;
+  border: 2px solid #9a622d;
+  border-radius: 12px;
+  background: #fff0c3;
+  color: #5a351c;
   text-align: left;
-  transform: none;
-  pointer-events: auto;
   cursor: pointer;
 }
-.next-step:hover { filter: brightness(1.08); }
-.next-step:focus-visible { outline: 3px solid #fff7b8; outline-offset: 3px; }
-.next-step > span:first-child { font-size: 1.35rem; }
-.next-step b { display: block; }
-.next-step small { display: block; font-size: .68rem; font-weight: 600; }
+.farm-next-step:hover { background: #fff8de; }
+.farm-next-step:focus-visible { outline: 3px solid #376f41; outline-offset: 2px; }
+.farm-next-step > span:first-child { font-size: 1.2rem; }
+.farm-next-step b { display: block; font-size: .76rem; }
+.farm-next-step small { display: block; font-size: .62rem; line-height: 1.2; font-weight: 600; }
 .pond-img {
   position: absolute;
   z-index: 3;
@@ -1437,11 +1442,11 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .sb-house { left: 16%; width: 21%; }
   .sb-barn { left: 38%; width: 20%; }
   .sb-green { right: 22%; width: 15%; }
-  .sb-mill { right: 0; width: 15%; }
+  .sb-mill { right: 0; width: 19%; }
   .sb-logo { width: 28%; }
-  .sb-coop { left: 1%; width: 14%; }
+  .sb-coop { left: 1%; width: 18%; }
   .sb-hen2 { left: 16%; width: 5.5%; }
-  .sb-shop { left: 23%; width: 13%; }
+  .sb-shop { left: 22%; width: 17%; }
   .sb-well { display: none; }
   .sb-sheep { width: 10%; }
   .sb-pig { width: 10.5%; }

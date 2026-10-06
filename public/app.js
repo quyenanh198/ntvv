@@ -512,7 +512,6 @@
 
         </div>
 
-        ${!visiting ? renderNextStep() : ''}
         <button class="pond-img pond-btn" data-sheet="fishing" title="Hồ câu cá"><img src="${A('assets/pack/fish_pond.png')}" alt="Hồ câu cá" /></button>
 
         ${!visiting ? renderQuickbar() : ''}
@@ -563,7 +562,7 @@
     const dryN = m.plots.filter((p) => p.crop && !p.ready && !p.watered).length;
     return `
       <div class="farm-toolbar">
-        <span class="ribbon">🏡 Ruộng nhà mình</span>
+        ${renderNextStep()}
         ${readyN >= 2 ? `<button class="gbtn gbtn--gold btn-mini" id="btn-harvestall-tb">🧺 Thu hết ${readyN}</button>` : ''}
         ${dryN >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-waterall">💧 Tưới hết ${dryN}</button>` : ''}
         ${empty >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-plantall">🌱 Gieo hết ${empty} ô</button>` : ''}
@@ -583,7 +582,7 @@
         : dry
           ? { kind: 'water', icon: '💧', title: `${dry} ô cần tưới`, detail: 'Chạm để tưới ô đầu tiên và nhận EXP.' }
           : { kind: 'orders', icon: '🏡', title: 'Nông trại đang lớn lên', detail: 'Chạm để xem mục tiêu tiếp theo.' };
-    return `<button class="welcome-sign next-step" type="button" data-next-step="${step.kind}" aria-label="${step.title}. ${step.detail}"><span aria-hidden="true">${step.icon}</span><span><b>${step.title}</b><small>${step.detail}</small></span></button>`;
+    return `<button class="farm-next-step" type="button" data-next-step="${step.kind}" aria-label="${step.title}. ${step.detail}"><span aria-hidden="true">${step.icon}</span><span><b>${step.title}</b><small>${step.detail}</small></span></button>`;
   }
 
   function renderPlots(visiting) {
