@@ -1645,34 +1645,38 @@ export function buildApp({ config, db, logger = true }) {
       // ---- Nhiệm vụ ngày: rương ----
       api.post('/quest-chest', async (request, reply) => {
         const me = request.farmer;
-        const d = getDaily(me.user_id);
-        if (d.chest_claimed) return reply.code(400).send({ error: 'already_claimed' });
-        const done = DAILY_QUESTS.filter((q) => (d.counters[q.id] || 0) >= q.target);
-        if (done.length < DAILY_CHEST.questsRequired) return reply.code(400).send({ error: 'not_enough_quests' });
-        const gem = Math.random() < DAILY_CHEST.gemChance ? 1 : 0;
-        db.transaction(() => {
+        const claim = runJournaledMutation(request, 'quest-chest', () => {
+          const d = getDaily(me.user_id);
+          if (d.chest_claimed) return { error: 'already_claimed' };
+          const done = DAILY_QUESTS.filter((q) => (d.counters[q.id] || 0) >= q.target);
+          if (done.length < DAILY_CHEST.questsRequired) return { error: 'not_enough_quests' };
+          const gem = Math.random() < DAILY_CHEST.gemChance ? 1 : 0;
           // Thưởng từng nhiệm vụ đã xong + rương tổng.
           for (const q of done) grant(me.user_id, { gold: q.gold * GOLD_MULT, xp: q.exp, stars: q.stars || 0 });
           grant(me.user_id, { gold: DAILY_CHEST.gold * GOLD_MULT, xp: DAILY_CHEST.exp, gems: gem });
           db.prepare('UPDATE daily SET chest_claimed = 1 WHERE owner_id = ? AND day = ?').run(me.user_id, d.day);
-        })();
-        logEvent(`🎁 ${me.name} mở rương nhiệm vụ ngày`);
-        return { me: fresh(me.user_id), gem };
+          return { gem };
+        });
+        if (claim.error) return reply.code(claim.error === 'idempotency_conflict' ? 409 : 400).send({ error: claim.error });
+        if (!claim.replay) logEvent(`🎁 ${me.name} mở rương nhiệm vụ ngày`);
+        return { me: fresh(me.user_id), ...claim.outcome };
       });
 
       // ---- Mốc sao ----
       api.post('/star-claim', async (request, reply) => {
         const me = request.farmer;
-        const next = STAR_MILESTONES.find(
-          (m) => !db.prepare('SELECT 1 FROM star_claims WHERE owner_id = ? AND milestone = ?').get(me.user_id, m.stars),
-        );
-        if (!next) return reply.code(400).send({ error: 'no_milestone' });
-        if (me.stars < next.stars) return reply.code(400).send({ error: 'not_enough_stars' });
-        db.transaction(() => {
+        const claim = runJournaledMutation(request, 'star-claim', () => {
+          const next = STAR_MILESTONES.find(
+            (m) => !db.prepare('SELECT 1 FROM star_claims WHERE owner_id = ? AND milestone = ?').get(me.user_id, m.stars),
+          );
+          if (!next) return { error: 'no_milestone' };
+          if (me.stars < next.stars) return { error: 'not_enough_stars' };
           grant(me.user_id, { gold: (next.gold || 0) * GOLD_MULT, gems: next.gems || 0 });
           db.prepare('INSERT INTO star_claims (owner_id, milestone) VALUES (?, ?)').run(me.user_id, next.stars);
-        })();
-        return { me: fresh(me.user_id), claimed: next };
+          return { claimed: next };
+        });
+        if (claim.error) return reply.code(claim.error === 'idempotency_conflict' ? 409 : 400).send({ error: claim.error });
+        return { me: fresh(me.user_id), ...claim.outcome };
       });
 
       // ---- Mở rộng đất ----
@@ -2255,17 +2259,19 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         const ms = FESTIVAL.milestones.find((x) => x.id === Number(id));
         if (!ms) return reply.code(400).send({ error: 'bad_request' });
-        const f = getFest(me.user_id);
-        if (f.claims.includes(ms.id)) return reply.code(400).send({ error: 'already_claimed' });
-        if ((f.counters[ms.type] || 0) < ms.target) return reply.code(400).send({ error: 'not_enough_progress' });
-        db.transaction(() => {
+        const claim = runJournaledMutation(request, 'fest-claim', () => {
+          const f = getFest(me.user_id);
+          if (f.claims.includes(ms.id)) return { error: 'already_claimed' };
+          if ((f.counters[ms.type] || 0) < ms.target) return { error: 'not_enough_progress' };
           grant(me.user_id, { gold: (ms.gold || 0) * GOLD_MULT, gems: ms.gems || 0 });
           f.claims.push(ms.id);
           db.prepare('UPDATE festival SET claims_json = ? WHERE owner_id = ? AND cycle = ?')
             .run(JSON.stringify(f.claims), me.user_id, f.cycle);
-        })();
-        logEvent(`🎪 ${me.name} nhận thưởng Lễ Hội Thu Hoạch: ${ms.label}`);
-        return { me: fresh(me.user_id), claimed: ms };
+          return { claimed: ms };
+        });
+        if (claim.error) return reply.code(claim.error === 'idempotency_conflict' ? 409 : 400).send({ error: claim.error });
+        if (!claim.replay) logEvent(`🎪 ${me.name} nhận thưởng Lễ Hội Thu Hoạch: ${ms.label}`);
+        return { me: fresh(me.user_id), ...claim.outcome };
       });
 
       // ---- Tưới toàn bộ ruộng mình ----
