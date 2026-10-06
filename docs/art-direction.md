@@ -16,7 +16,7 @@ Each crop has three visible states: seedling, growing, and ripe. The current cod
 
 | Crop | Unlock | Ripe art | Growing art | Next art action |
 | --- | ---: | --- | --- | --- |
-| Wheat (`luami`) | 1 | `public/assets/crops-v3/wheat-ripe.png` | legacy SVG | Matching growing sprite |
+| Wheat (`luami`) | 1 | `public/assets/crops-v3/wheat-ripe.png` | `public/assets/crops-v3/wheat-growing.png` | Matching seedling sprite |
 | Carrot (`carot`) | 1 | `public/assets/crops-v3/carrot-ripe.png` | legacy SVG | Matching growing sprite |
 | Corn (`ngo`) | 4 | `public/assets/crops-v3/corn-ripe.png` | legacy SVG | Matching growing sprite |
 | Potato (`khoaitay`) | 5 | `public/assets/crops-v3/potato-ripe.png` | legacy SVG | Matching growing sprite |
