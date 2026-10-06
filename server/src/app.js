@@ -1356,26 +1356,33 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/want-fill', async (request, reply) => {
         const { id, qty } = request.body ?? {};
         const me = request.farmer;
-        const w = db.prepare('SELECT * FROM wants WHERE id = ?').get(Number(id));
-        if (!w) return reply.code(400).send({ error: 'no_want' });
-        if (w.owner_id === me.user_id) return reply.code(400).send({ error: 'own_want' });
-        const remaining = w.qty - w.filled;
-        const n = Math.max(1, Math.min(remaining, Math.floor(Number(qty) || 1)));
-        if (invQty(me.user_id, w.item) < n) return reply.code(400).send({ error: 'not_enough_items' });
-        const info = itemInfo(w.item);
-        const owner = getFarmer.get(w.owner_id);
-        db.transaction(() => {
-          invTake(me.user_id, w.item, n);
+        if (!Number.isSafeInteger(id) || id < 1 || !Number.isSafeInteger(qty) || qty < 1) {
+          return reply.code(400).send({ error: 'bad_request' });
+        }
+        const fill = runJournaledMutation(request, 'want-fill', () => {
+          const w = db.prepare('SELECT * FROM wants WHERE id = ?').get(id);
+          if (!w) return { error: 'no_want' };
+          if (w.owner_id === me.user_id) return { error: 'own_want' };
+          const remaining = w.qty - w.filled;
+          const n = Math.min(remaining, qty);
+          if (!invTake(me.user_id, w.item, n)) return { error: 'not_enough_items' };
           invAdd(w.owner_id, w.item, n);
           grant(me.user_id, { gold: w.price * n });
           addSold.run(w.price * n, me.user_id);
           if (w.filled + n >= w.qty) db.prepare('DELETE FROM wants WHERE id = ?').run(w.id);
           else db.prepare('UPDATE wants SET filled = filled + ? WHERE id = ?').run(n, w.id);
           bumpQuest(me.user_id, 'sell', n);
-        })();
-        logEvent(`🤝 ${me.name} bán ${n} ${info.name} ${info.emoji} cho ${owner?.name || '?'} — ${(w.price * n).toLocaleString('vi')} vàng`);
-        pushTo([w.owner_id], 'Ăn trộm dzui dzẻ 😋', `🤝 ${me.name} vừa bán cho bạn ${n} ${info.name} ${info.emoji}${w.filled + n >= w.qty ? ' — đủ hàng rồi!' : ''}`);
-        return { me: fresh(me.user_id), wants: wantsView(me.user_id), gained: w.price * n, sold: n };
+          return { gained: w.price * n, sold: n, ownerId: w.owner_id, item: w.item, completed: w.filled + n >= w.qty };
+        });
+        if (fill.error) return reply.code(fill.error === 'idempotency_conflict' ? 409 : 400).send({ error: fill.error });
+        const { gained, sold, ownerId, item, completed } = fill.outcome;
+        if (!fill.replay) {
+          const info = itemInfo(item);
+          const owner = getFarmer.get(ownerId);
+          logEvent(`🤝 ${me.name} bán ${sold} ${info.name} ${info.emoji} cho ${owner?.name || '?'} — ${gained.toLocaleString('vi')} vàng`);
+          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🤝 ${me.name} vừa bán cho bạn ${sold} ${info.name} ${info.emoji}${completed ? ' — đủ hàng rồi!' : ''}`);
+        }
+        return { me: fresh(me.user_id), wants: wantsView(me.user_id), gained, sold };
       });
 
       api.post('/buy', async (request, reply) => {
@@ -1670,10 +1677,17 @@ export function buildApp({ config, db, logger = true }) {
         const to = getFarmer.get(Number(toId));
         if (!to || to.user_id === me.user_id) return reply.code(400).send({ error: 'no_farm' });
         if (!n) return reply.code(400).send({ error: 'bad_amount' });
-        if (me.gold < n) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => { grant(me.user_id, { gold: -n }); grant(to.user_id, { gold: n }); })();
-        logEvent(`💝 ${me.name} tặng ${to.name} ${n.toLocaleString('vi')} vàng`);
-        pushTo([to.user_id], 'Ăn trộm dzui dzẻ 😋', `💝 ${me.name} vừa tặng bạn ${n.toLocaleString('vi')} vàng!`);
+        const transfer = runJournaledMutation(request, 'gold-give', () => {
+          if (getFarmer.get(me.user_id).gold < n) return { error: 'not_enough_gold' };
+          grant(me.user_id, { gold: -n });
+          grant(to.user_id, { gold: n });
+          return { given: n };
+        });
+        if (transfer.error) return reply.code(transfer.error === 'idempotency_conflict' ? 409 : 400).send({ error: transfer.error });
+        if (!transfer.replay) {
+          logEvent(`💝 ${me.name} tặng ${to.name} ${n.toLocaleString('vi')} vàng`);
+          pushTo([to.user_id], 'Ăn trộm dzui dzẻ 😋', `💝 ${me.name} vừa tặng bạn ${n.toLocaleString('vi')} vàng!`);
+        }
         return { me: fresh(me.user_id), given: n };
       });
       api.post('/gold-ask', async (request, reply) => {
