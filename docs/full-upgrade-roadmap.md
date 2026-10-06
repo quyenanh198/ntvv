@@ -85,6 +85,6 @@ This is the project plan for the farm game, separate from the older stability au
 ### Current acceptance record
 
 - 47 automated tests pass on the upgrade branch.
-- New assets: coop, windmill, market, farmer, growing and ripe wheat and carrot, ripe corn, and ripe potato.
+- New assets: coop, windmill, market, farmer, growing and ripe wheat, carrot, and corn, plus ripe potato.
 - First-session guidance, mobile HUD, starter tax grace, and eighteen replay-safe gameplay/economy routes are implemented.
 - Player research, complete art conversion, balance model, full mutation coverage, accessibility audit, staged release, and merge remain open.
