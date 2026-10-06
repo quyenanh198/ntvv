@@ -577,13 +577,13 @@
     const empty = plots.filter((plot) => !plot.crop).length;
     const dry = plots.filter((plot) => plot.crop && !plot.ready && !plot.watered).length;
     const step = ready
-      ? { icon: '🧺', title: `${ready} ô đã chín`, detail: 'Chạm cây để thu hoạch, rồi gieo vụ mới.' }
+      ? { kind: 'harvest', icon: '🧺', title: `${ready} ô đã chín`, detail: 'Chạm để thu hoạch ô đầu tiên.' }
       : empty
-        ? { icon: '🌱', title: `${empty} ô đang trống`, detail: 'Chạm ô đất để chọn hạt giống.' }
+        ? { kind: 'seed', icon: '🌱', title: `${empty} ô đang trống`, detail: 'Chạm để chọn hạt giống.' }
         : dry
-          ? { icon: '💧', title: `${dry} ô cần tưới`, detail: 'Chạm cây đang lớn để tưới và nhận thưởng EXP.' }
-          : { icon: '🏡', title: 'Nông trại đang lớn lên', detail: 'Xem đơn hàng hoặc ghé thăm bạn bè trong lúc chờ.' };
-    return `<div class="welcome-sign next-step" role="status" aria-live="polite"><span aria-hidden="true">${step.icon}</span><span><b>${step.title}</b><small>${step.detail}</small></span></div>`;
+          ? { kind: 'water', icon: '💧', title: `${dry} ô cần tưới`, detail: 'Chạm để tưới ô đầu tiên và nhận EXP.' }
+          : { kind: 'orders', icon: '🏡', title: 'Nông trại đang lớn lên', detail: 'Chạm để xem mục tiêu tiếp theo.' };
+    return `<button class="welcome-sign next-step" type="button" data-next-step="${step.kind}" aria-label="${step.title}. ${step.detail}"><span aria-hidden="true">${step.icon}</span><span><b>${step.title}</b><small>${step.detail}</small></span></button>`;
   }
 
   function renderPlots(visiting) {
@@ -1558,6 +1558,12 @@
       sfx('playTap');
       if (VISIT) { VISIT = null; INSPECT = false; refresh(); }
       else { sheet = null; showLb = null; render(); }
+    });
+    document.querySelector('[data-next-step]')?.addEventListener('click', (ev) => {
+      const kind = ev.currentTarget.dataset.nextStep;
+      if (kind === 'seed') { sheet = { type: 'seed' }; render(); return; }
+      if (kind === 'orders') { sheet = { type: me().level >= DATA.config.orderUnlockLevel ? 'orders' : 'quests' }; render(); return; }
+      document.querySelector(kind === 'harvest' ? '.plot[data-kind="harvest"]' : '.plot[data-kind="waterplot"]')?.click();
     });
     document.getElementById('btn-inspect-mode')?.addEventListener('click', () => { INSPECT = !INSPECT; toast(INSPECT ? '🔍 Bấm vào một ô đang trồng để khám xét' : 'Tắt khám xét'); render(); });
     document.getElementById('btn-gold-give')?.addEventListener('click', async () => {

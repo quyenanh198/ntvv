@@ -682,7 +682,11 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   max-width: min(280px, calc(100vw - 1.2rem));
   text-align: left;
   transform: none;
+  pointer-events: auto;
+  cursor: pointer;
 }
+.next-step:hover { filter: brightness(1.08); }
+.next-step:focus-visible { outline: 3px solid #fff7b8; outline-offset: 3px; }
 .next-step > span:first-child { font-size: 1.35rem; }
 .next-step b { display: block; }
 .next-step small { display: block; font-size: .68rem; font-weight: 600; }
