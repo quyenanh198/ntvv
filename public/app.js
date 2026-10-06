@@ -24,11 +24,14 @@
 
   // ---------- sprite ----------
   const SPRITE_ALIAS = { luami: 'lua', dautay: 'dau' };
+  const RIPE_CROP_ART = { luami: 'assets/crops-v3/wheat-ripe.png', carot: 'assets/crops-v3/carrot-ripe.png' };
   // Mọi URL tài nguyên tĩnh kèm ?v=<boot>: mỗi lần deploy đổi URL nên không dính
   // bản Cloudflare/trình duyệt cache nhầm (đã có vụ trang chờ HTML nằm ở URL ảnh).
   const A = (path) => `${path}?v=${MY_BOOT || '1'}`;
   const spriteBase = (id) => SPRITE_ALIAS[id] || id;
-  const cropSprite = (id, stage) => A(`assets/crops/${stage === 1 ? 'seed-1' : `${spriteBase(id)}-${stage}`}.svg`);
+  const cropSprite = (id, stage) => A(stage === 3 && RIPE_CROP_ART[id]
+    ? RIPE_CROP_ART[id]
+    : `assets/crops/${stage === 1 ? 'seed-1' : `${spriteBase(id)}-${stage}`}.svg`);
   // Cây ăn quả có tranh riêng; loại mới dùng tranh cây chung + emoji quả.
   const TREE_PNG = new Set(['cam', 'tao', 'xoai', 'thanhlong']);
   const treeArt = (id) => A(TREE_PNG.has(id) ? `assets/art/trees/${id}.png` : 'assets/art/tree.png');
@@ -614,7 +617,7 @@
     const cells = farm.plots.map((p) => {
       if (!p.crop) {
         return `<button class="plot plot--empty" data-idx="${p.idx}" data-kind="empty" ${mine ? '' : 'disabled'}>
-          <span class="plot-main">${mine ? '➕' : '🟫'}</span>
+          <span class="plot-main">${mine ? `<img class="plot-empty-sprout" src="${A('assets/crops/seed-1.svg')}" alt="" />` : ''}</span>
           ${mine ? '<span class="plot-note">Gieo hạt</span>' : ''}
         </button>`;
       }

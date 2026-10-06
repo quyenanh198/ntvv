@@ -885,9 +885,14 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 }
 .plot:not(:disabled):hover { filter: brightness(1.035); transform: translateY(-1px); }
 .plot--empty {
-  border-style: dashed;
-  border-color: #8b5b37;
-  background: linear-gradient(180deg, #bc8759, #9b6740);
+  border-color: #77462c;
+  background: linear-gradient(160deg, #b98351, #965b36);
+}
+.plot--empty::before {
+  inset: 12% 8% 22%;
+  border-radius: 10px;
+  background: repeating-linear-gradient(168deg, #8b502d 0 8px, #ad7045 8px 16px);
+  opacity: .66;
 }
 .plot--ready {
   border-color: #d68e16;
@@ -930,6 +935,14 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   color: rgba(255,255,255,.84);
   text-shadow: 0 2px 0 rgba(88, 52, 28, .25);
 }
+.plot-empty-sprout {
+  width: 38%;
+  height: 46%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 2px rgba(43, 64, 27, .25));
+  transition: transform .15s ease;
+}
+.plot--empty:not(:disabled):hover .plot-empty-sprout { transform: translateY(-2px); }
 .plot-note {
   position: absolute;
   z-index: 5;
