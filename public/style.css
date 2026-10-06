@@ -582,7 +582,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 }
 .sb-sheep { right: 22%; bottom: 3%; width: 9%; z-index: 6; }
 .sb-pig { right: 10.5%; bottom: 2%; width: 9.5%; z-index: 6; }
-.sb-farmer { left: 37%; bottom: -3%; width: 9%; z-index: 7; }
+.sb-farmer { left: 37%; bottom: -3%; width: 13%; z-index: 7; animation: farmer-idle 3.8s ease-in-out infinite; }
 .sb-dog { left: 51.5%; bottom: -2%; width: 9.5%; z-index: 7; animation: hen-bob 2.8s ease-in-out infinite; }
 .sb-logo {
   left: 0;
@@ -595,6 +595,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 }
 @keyframes mill-sway { 50% { transform: rotate(1.4deg); } }
 @keyframes hen-bob { 50% { transform: translateY(-3px) rotate(-2deg); } }
+@keyframes farmer-idle { 50% { transform: translateY(-2px); } }
 @keyframes logo-float { 50% { transform: translateY(-3px) rotate(-2.5deg) scale(1.02); } }
 
 /* buildings you can tap (chuồng gà, cối xay, sạp chợ) */
@@ -1450,7 +1451,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .sb-well { display: none; }
   .sb-sheep { width: 10%; }
   .sb-pig { width: 10.5%; }
-  .sb-farmer { width: 11%; }
+  .sb-farmer { width: 16%; }
   .sb-dog { width: 11%; }
   .sb-tag { display: none; }
   .welcome-sign, .pond-img { display: none; }
@@ -1785,7 +1786,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
   .crop-sprite, .tree-sprite, .seed-sprite, .scarecrow-img, .sb, .sb img, .hen img, .tree-emoji { filter: none !important; }
   .plot, .plot--ready, .plot--growing { animation: none !important; }
-  .crop-sprite, .tree-sprite, .plot-act, .sb-hen2, .sb-dog, .sb-mill > img, img.sb-mill, .butterfly, .scarecrow-img, .pond-img, .sb-logo { animation: none !important; }
+  .crop-sprite, .tree-sprite, .plot-act, .sb-hen2, .sb-dog, .sb-farmer, .sb-mill > img, img.sb-mill, .butterfly, .scarecrow-img, .pond-img, .sb-logo { animation: none !important; }
   .plot { box-shadow: 0 4px 0 rgba(72, 113, 41, .2) !important; }
   .plot:not(:disabled):hover { filter: none !important; transform: none !important; }
   .plot-progress i { transition: none !important; }

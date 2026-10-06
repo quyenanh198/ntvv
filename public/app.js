@@ -463,7 +463,7 @@
             : `<img class="sb sb-cowbarn sb--locked" src="${A('assets/art/cow.png')}" alt="" title="Chuồng bò — cần Lv ${DATA.config.animals.bo.level}" />`}
             <img class="sb sb-pig" src="${A('assets/pack/pig_adult.png')}" alt="" />
             <img class="sb sb-well" src="${A('assets/pack/well.png')}" alt="" />
-            <img class="sb sb-farmer" src="${A('assets/pack/farmer_female_full.png')}" alt="" />
+            <img class="sb sb-farmer" src="${A('assets/pack/farmer_v3.png')}" alt="" />
             <img class="sb sb-dog" src="${A('assets/pack/pet_dogs.png')}" alt="" />
             ${renderSceneButtons(visiting)}
             <img class="sb sb-logo" src="${A('assets/pack/farm_logo.png')}" alt="Nông Trại Vui Vẻ" />

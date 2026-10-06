@@ -19,6 +19,12 @@ test('failed gold credit rolls back inventory removal during a sale', async () =
     assert.equal(initial.statusCode, 200);
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 3)').run('luami');
     const goldBefore = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
+    for (const qty of [-2, 0, 1.5, '2']) {
+      const invalid = await app.inject({ method: 'POST', url: '/farm/api/sell', payload: { item: 'luami', qty } });
+      assert.equal(invalid.statusCode, 400);
+    }
+    assert.equal(db.prepare('SELECT qty FROM inventory WHERE owner_id = 1 AND item = ?').get('luami').qty, 3);
+    assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, goldBefore);
     db.exec(`CREATE TRIGGER reject_gold_credit BEFORE UPDATE OF gold ON farmers
       WHEN NEW.gold > OLD.gold BEGIN SELECT RAISE(ABORT, 'gold_credit_failed'); END;`);
 

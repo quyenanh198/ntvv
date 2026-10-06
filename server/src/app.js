@@ -1250,9 +1250,11 @@ export function buildApp({ config, db, logger = true }) {
         const { item, qty } = request.body ?? {};
         const info = itemInfo(item);
         const me = request.farmer;
-        // Không giới hạn 999: nút "Hết" bán toàn bộ số đang có trong kho.
-        const n = Math.max(1, Math.floor(Number(qty) || 1));
-        if (!info || !info.sell) return reply.code(400).send({ error: 'bad_request' });
+        // Nút "Hết" có thể bán toàn bộ kho; số lượng vẫn phải là số nguyên dương.
+        if (!info || !info.sell || !Number.isSafeInteger(qty) || qty < 1) {
+          return reply.code(400).send({ error: 'bad_request' });
+        }
+        const n = qty;
         const sale = db.transaction(() => {
           if (!invTake(me.user_id, item, n)) return null;
           let mult = 1;
