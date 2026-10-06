@@ -610,6 +610,23 @@
     return `<button class="farm-next-step" type="button" data-next-step="${step.kind}" aria-label="${step.title}. ${step.detail}"><span aria-hidden="true">${step.icon}</span><span><b>${step.title}</b><small>${step.detail}</small></span></button>`;
   }
 
+  function renderUpcomingUnlocks(level) {
+    const unlocks = [
+      ...Object.values(DATA.config.crops).filter((item) => !item.risky).map((item) => ({ ...item, type: 'Cây trồng' })),
+      ...Object.values(DATA.config.trees).map((item) => ({ ...item, type: 'Cây ăn quả' })),
+      ...Object.values(DATA.config.animals).map((item) => ({ ...item, type: 'Vật nuôi' })),
+      ...Object.values(DATA.config.machines).map((item) => ({ ...item, type: 'Chế biến' })),
+      { level: DATA.config.orderUnlockLevel, name: 'Đơn hàng', emoji: '🚚', type: 'Tính năng' },
+      { level: DATA.config.fishing.level, name: 'Hồ câu cá', emoji: '🎣', type: 'Tính năng' },
+    ].filter((item) => item.level > level).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name, 'vi'));
+    const nextLevels = [...new Set(unlocks.map((item) => item.level))].slice(0, 3);
+    if (!nextLevels.length) return '';
+    return `<section class="upcoming-unlocks" aria-label="Sắp mở khóa">
+      <h4>Sắp mở khóa</h4>
+      ${nextLevels.map((nextLevel) => `<div class="unlock-level"><b>Cấp ${nextLevel}</b><div>${unlocks.filter((item) => item.level === nextLevel).map((item) => `<span class="unlock-item">${item.emoji || '✨'} ${esc(item.name)} <small>${item.type}</small></span>`).join('')}</div></div>`).join('')}
+    </section>`;
+  }
+
   function renderPlots(visiting) {
     const farm = visiting ? visiting.farm : me();
     const mine = !visiting;
@@ -1487,7 +1504,7 @@
             <span class="mc-name">Bảng xếp hạng</span>
             <span class="mc-sub">Vinh danh làng</span>
           </button>
-        </div>`
+        </div>${renderUpcomingUnlocks(m.level)}`
       );
     }
 
