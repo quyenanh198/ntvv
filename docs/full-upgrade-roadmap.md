@@ -11,10 +11,10 @@ This is the project plan for the farm game, separate from the older stability au
 
 ## 2. Define the visual language and asset inventory
 
-- Set a shared camera angle, outline weight, lighting direction, palette, shadow, and sprite scale. Draw a reference farm scene.
+- Set a shared camera angle, outline weight, lighting direction, palette, shadow, and sprite scale. Draw a reference farm scene. The working standard and inventory are in [art-direction.md](art-direction.md).
 - Inventory every crop growth state, tree, animal, building, machine, product, UI icon, and background; label missing assets and inconsistent styles.
 - Set export rules: transparent PNG/WebP, predictable names, size variants, and a source file for every new sprite.
-- **Gate:** a single screen using the new art feels coherent at phone and desktop sizes. **Status:** first coherent building set, farmer, and two ripe crop sprites added; art bible and full inventory pending.
+- **Gate:** a single screen using the new art feels coherent at phone and desktop sizes. **Status:** first coherent building set, farmer, four ripe crop sprites, and a working art guide added; complete inventory and reference scene pending.
 
 ## 3. Upgrade the farm scene and graphics
 
@@ -85,6 +85,6 @@ This is the project plan for the farm game, separate from the older stability au
 ### Current acceptance record
 
 - 43 automated tests pass on the upgrade branch.
-- New assets: coop, windmill, market, farmer, ripe wheat, ripe carrot, and ripe corn.
+- New assets: coop, windmill, market, farmer, ripe wheat, ripe carrot, ripe corn, and ripe potato.
 - First-session guidance, mobile HUD, starter tax grace, and nine replay-safe economy/reward routes are implemented.
 - Player research, complete art conversion, balance model, full mutation coverage, accessibility audit, staged release, and merge remain open.
