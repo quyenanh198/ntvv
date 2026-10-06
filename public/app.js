@@ -658,7 +658,7 @@
       return `
         <img class="sb sb-coop" src="${A('assets/pack/chicken_coop_v3.png')}" alt="" />
         <img class="sb sb-hen2" src="${A('assets/pack/chicken_brown.png')}" alt="" />
-        <img class="sb sb-mill" src="${A('assets/pack/windmill.png')}" alt="" />
+        <img class="sb sb-mill" src="${A('assets/pack/windmill_v3.png')}" alt="" />
         <img class="sb sb-shop" src="${A('assets/pack/market_shop.png')}" alt="" />`;
     }
     return `
@@ -672,11 +672,11 @@
       : `<img class="sb sb-coop sb--locked" src="${A('assets/pack/chicken_coop_v3.png')}" alt="" title="Chuồng gà — cần Lv ${DATA.config.chicken.level}" />`}
       ${millUnlocked ? `
         <button class="sb sb-btn sb-mill" data-sheet="mill" title="Cối xay">
-          <img src="${A('assets/pack/windmill.png')}" alt="Cối xay" />
+          <img src="${A('assets/pack/windmill_v3.png')}" alt="Cối xay" />
           ${millDone ? '<i class="dot"></i>' : ''}
           <span class="sb-tag">${millDone ? '✅ Xong!' : m.mill ? 'Đang xay…' : 'Cối xay'}</span>
         </button>`
-      : `<img class="sb sb-mill sb--locked" src="${A('assets/pack/windmill.png')}" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
+      : `<img class="sb sb-mill sb--locked" src="${A('assets/pack/windmill_v3.png')}" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
       <button class="sb sb-btn sb-shop" data-sheet="shop" title="Cửa hàng">
         <img src="${A('assets/pack/market_shop.png')}" alt="Cửa hàng" />
         <span class="sb-tag">Cửa hàng</span>
