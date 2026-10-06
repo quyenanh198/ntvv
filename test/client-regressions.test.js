@@ -10,12 +10,6 @@ test('inspect reads the plot index before constructing its request', () => {
   assert.ok(handler.indexOf('const idx = Number(btn.dataset.idx)') < handler.indexOf("api('/inspect'"));
 });
 
-test('gateway failures never recursively retry a mutation', () => {
-  const apiHelper = client.slice(client.indexOf('async function api('), client.indexOf('const ERRORS'));
-  assert.match(apiHelper, /if \(isMutation\)[\s\S]*throw new Error\('mutation_outcome_unknown'\)/);
-  assert.ok(apiHelper.indexOf('if (isMutation)') < apiHelper.indexOf('return api(path, body, attempt + 1)'));
-});
-
 test('release identity is content-based instead of process-start time', () => {
   assert.match(server, /createHash\('sha256'\)/);
   assert.doesNotMatch(server, /BOOT_VERSION\s*=\s*Date\.now/);

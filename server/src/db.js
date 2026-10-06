@@ -204,6 +204,17 @@ CREATE TABLE IF NOT EXISTS events (
   text TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_events_at ON events(at DESC);
+
+CREATE TABLE IF NOT EXISTS mutation_results (
+  owner_id INTEGER NOT NULL,
+  request_key TEXT NOT NULL,
+  route TEXT NOT NULL,
+  body_hash TEXT NOT NULL,
+  outcome_json TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (owner_id, request_key)
+);
+CREATE INDEX IF NOT EXISTS idx_mutation_results_created ON mutation_results(created_at);
 `;
 
 export function openDb(dataDir) {

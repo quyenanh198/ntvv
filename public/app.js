@@ -61,6 +61,7 @@
   // tới server, nên cứ thử lại tại chỗ mỗi 2s thay vì reload cả trang — người
   // chơi giữ nguyên màn hình đang mở. Chỉ reload khi chờ quá lâu.
   const WAKE_RETRIES = 20;
+  const REPLAY_SAFE_POSTS = new Set(['/sell', '/buy']);
   let reloading = false;
   function checkServerBoot(state) {
     if (reloading || !MY_BOOT || !state?.boot || state.boot === MY_BOOT) return false;
@@ -70,13 +71,27 @@
     return true;
   }
 
-  async function api(path, body, attempt = 0) {
+  async function api(path, body, attempt = 0, requestKey = body !== undefined && REPLAY_SAFE_POSTS.has(path) ? crypto.randomUUID() : null) {
     const isMutation = body !== undefined;
-    const res = await fetch(`/farm/api${path}`, {
-      method: isMutation ? 'POST' : 'GET',
-      headers: isMutation ? { 'content-type': 'application/json' } : undefined,
-      body: isMutation ? JSON.stringify(body) : undefined,
-    });
+    let res;
+    try {
+      res = await fetch(`/farm/api${path}`, {
+        method: isMutation ? 'POST' : 'GET',
+        headers: isMutation ? { 'content-type': 'application/json', ...(requestKey ? { 'idempotency-key': requestKey } : {}) } : undefined,
+        body: isMutation ? JSON.stringify(body) : undefined,
+      });
+    } catch (err) {
+      if (attempt < WAKE_RETRIES && (!isMutation || requestKey)) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        return api(path, body, attempt + 1, requestKey);
+      }
+      if (isMutation) {
+        toast('⚠️ Chưa xác nhận được thao tác — đang đồng bộ lại…');
+        setTimeout(refresh, 300);
+        throw new Error('mutation_outcome_unknown');
+      }
+      throw err;
+    }
     if (res.status === 401) {
       renderGate();
       throw new Error('not_logged_in');
@@ -84,15 +99,18 @@
     if (checkServerBoot({ boot: res.headers.get('x-farm-boot') })) throw new Error('reloading');
     const type = res.headers.get('content-type') || '';
     if (!type.includes('application/json') || res.status === 502 || res.status === 503 || res.status === 504) {
-      // Không tự gửi lại mutation: gateway có thể đã mất response sau khi server
-      // commit, retry lúc này sẽ nhân đôi vàng/vật phẩm. Đồng bộ state để người
-      // chơi thấy kết quả thực tế rồi mới cho thao tác tiếp.
-      if (isMutation) {
+      // Chỉ mutation có nhật ký idempotency mới được gửi lại cùng request key.
+      if (isMutation && !requestKey) {
         toast('⚠️ Chưa xác nhận được thao tác — đang đồng bộ lại…');
         setTimeout(refresh, 300);
         throw new Error('mutation_outcome_unknown');
       }
       if (attempt >= WAKE_RETRIES) {
+        if (isMutation) {
+          toast('⚠️ Chưa xác nhận được thao tác — đang đồng bộ lại…');
+          setTimeout(refresh, 300);
+          throw new Error('mutation_outcome_unknown');
+        }
         renderWaking();
         setTimeout(() => location.reload(), 2500);
         throw new Error('waking');
@@ -102,7 +120,7 @@
         else renderWaking();
       }
       await new Promise((r) => setTimeout(r, 2000));
-      return api(path, body, attempt + 1);
+      return api(path, body, attempt + 1, requestKey);
     }
     const data = await res.json();
     if (!res.ok) {

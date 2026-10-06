@@ -6,7 +6,7 @@ import test from 'node:test';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
 
-test('failed gold credit rolls back inventory removal during a sale', async () => {
+test('sales and purchases are atomic and replay safely with the same request key', async () => {
   const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-sale-'));
   const db = openDb(dataDir);
   const app = buildApp({
@@ -32,6 +32,7 @@ test('failed gold credit rolls back inventory removal during a sale', async () =
     const sale = await app.inject({
       method: 'POST',
       url: '/farm/api/sell',
+      headers: { 'idempotency-key': 'sale-request-0001' },
       payload: { item: 'luami', qty: 2 },
     });
     assert.equal(sale.statusCode, 500);
@@ -39,15 +40,30 @@ test('failed gold credit rolls back inventory removal during a sale', async () =
     assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, goldBefore);
 
     db.exec('DROP TRIGGER reject_gold_credit');
-    const successful = await app.inject({ method: 'POST', url: '/farm/api/sell', payload: { item: 'luami', qty: 2 } });
+    const successful = await app.inject({ method: 'POST', url: '/farm/api/sell', headers: { 'idempotency-key': 'sale-request-0001' }, payload: { item: 'luami', qty: 2 } });
     assert.equal(successful.statusCode, 200);
     assert.equal(successful.json().me.soldGold, successful.json().gained);
     assert.equal(db.prepare('SELECT qty FROM inventory WHERE owner_id = 1 AND item = ?').get('luami').qty, 1);
     assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, goldBefore + successful.json().gained);
+    const replay = await app.inject({ method: 'POST', url: '/farm/api/sell', headers: { 'idempotency-key': 'sale-request-0001' }, payload: { item: 'luami', qty: 2 } });
+    assert.equal(replay.statusCode, 200);
+    assert.equal(replay.json().gained, successful.json().gained);
+    assert.equal(db.prepare('SELECT qty FROM inventory WHERE owner_id = 1 AND item = ?').get('luami').qty, 1);
+    assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, goldBefore + successful.json().gained);
+    const conflict = await app.inject({ method: 'POST', url: '/farm/api/sell', headers: { 'idempotency-key': 'sale-request-0001' }, payload: { item: 'luami', qty: 1 } });
+    assert.equal(conflict.statusCode, 409);
 
     const oversell = await app.inject({ method: 'POST', url: '/farm/api/sell', payload: { item: 'luami', qty: 2 } });
     assert.equal(oversell.statusCode, 400);
     assert.equal(db.prepare('SELECT qty FROM inventory WHERE owner_id = 1 AND item = ?').get('luami').qty, 1);
+
+    const goldBeforeBuy = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
+    const buy = await app.inject({ method: 'POST', url: '/farm/api/buy', headers: { 'idempotency-key': 'buy-request-00001' }, payload: { item: 'thucan', qty: 2 } });
+    assert.equal(buy.statusCode, 200);
+    const buyReplay = await app.inject({ method: 'POST', url: '/farm/api/buy', headers: { 'idempotency-key': 'buy-request-00001' }, payload: { item: 'thucan', qty: 2 } });
+    assert.equal(buyReplay.statusCode, 200);
+    assert.equal(db.prepare('SELECT qty FROM inventory WHERE owner_id = 1 AND item = ?').get('thucan').qty, 2);
+    assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, goldBeforeBuy - 24);
   } finally {
     await app.close();
     db.close();

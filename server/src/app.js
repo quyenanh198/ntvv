@@ -98,6 +98,30 @@ export function buildApp({ config, db, logger = true }) {
   const meCache = new Map();
   const rateBuckets = new Map();
   const upstreamTimeoutMs = config.upstreamTimeoutMs || 5_000;
+  const mutationRecord = db.prepare('SELECT route, body_hash, outcome_json FROM mutation_results WHERE owner_id = ? AND request_key = ?');
+  const insertMutationRecord = db.prepare('INSERT INTO mutation_results (owner_id, request_key, route, body_hash, outcome_json, created_at) VALUES (?, ?, ?, ?, ?, ?)');
+  db.prepare('DELETE FROM mutation_results WHERE created_at < ?').run(Date.now() - 7 * 24 * 60 * 60_000);
+
+  function runJournaledMutation(request, route, work) {
+    const key = request.headers['idempotency-key'];
+    if (key !== undefined && (typeof key !== 'string' || !/^[A-Za-z0-9_-]{16,100}$/.test(key))) {
+      return { error: 'bad_idempotency_key' };
+    }
+    const bodyHash = createHash('sha256').update(JSON.stringify(request.body ?? {})).digest('hex');
+    return db.transaction(() => {
+      if (key) {
+        const prior = mutationRecord.get(request.farmer.user_id, key);
+        if (prior) {
+          if (prior.route !== route || prior.body_hash !== bodyHash) return { error: 'idempotency_conflict' };
+          return { outcome: JSON.parse(prior.outcome_json), replay: true };
+        }
+      }
+      const outcome = work();
+      if (outcome?.error) return outcome;
+      if (key) insertMutationRecord.run(request.farmer.user_id, key, route, bodyHash, JSON.stringify(outcome), Date.now());
+      return { outcome, replay: false };
+    })();
+  }
 
   function chatFetch(path, options = {}) {
     return fetch(`${config.chatApiUrl}${path}`, {
@@ -1270,8 +1294,8 @@ export function buildApp({ config, db, logger = true }) {
           return reply.code(400).send({ error: 'bad_request' });
         }
         const n = qty;
-        const sale = db.transaction(() => {
-          if (!invTake(me.user_id, item, n)) return null;
+        const sale = runJournaledMutation(request, 'sell', () => {
+          if (!invTake(me.user_id, item, n)) return { error: 'not_enough_items' };
           let mult = 1;
           if (ANIMAL_PRODUCTS.has(item)) mult = 1 + 0.08 * skillRank(me, 'spcaocap');
           if (MACHINE_PRODUCTS.has(item)) mult = 1 + 0.05 * skillRank(me, 'donggoidep');
@@ -1282,9 +1306,9 @@ export function buildApp({ config, db, logger = true }) {
           bumpSaturation(item, info.sell * n * GOLD_MULT);
           bumpQuest(me.user_id, 'sell', n);
           return { gained, pm };
-        })();
-        if (!sale) return reply.code(400).send({ error: 'not_enough_items' });
-        const { gained, pm } = sale;
+        });
+        if (sale.error) return reply.code(sale.error === 'idempotency_conflict' ? 409 : 400).send({ error: sale.error });
+        const { gained, pm } = sale.outcome;
         return { me: fresh(me.user_id), gained, priceMult: Math.round(pm * 100) / 100 };
       });
 
@@ -1358,14 +1382,17 @@ export function buildApp({ config, db, logger = true }) {
         const { item, qty } = request.body ?? {};
         const info = GOODS[item];
         const me = request.farmer;
-        const rawQty = Number(qty);
-        const n = Math.max(1, Math.min(999, Math.floor(Number.isFinite(rawQty) ? rawQty : 1)));
-        if (!info || !info.buy) return reply.code(400).send({ error: 'bad_request' });
-        if (me.gold < info.buy * n) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        if (!info || !info.buy || !Number.isSafeInteger(qty) || qty < 1 || qty > 999) {
+          return reply.code(400).send({ error: 'bad_request' });
+        }
+        const n = qty;
+        const purchase = runJournaledMutation(request, 'buy', () => {
+          if (getFarmer.get(me.user_id).gold < info.buy * n) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -info.buy * n });
           invAdd(me.user_id, item, n);
-        })();
+          return { bought: n };
+        });
+        if (purchase.error) return reply.code(purchase.error === 'idempotency_conflict' ? 409 : 400).send({ error: purchase.error });
         return { me: fresh(me.user_id) };
       });
 
