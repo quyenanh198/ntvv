@@ -949,64 +949,67 @@ export function buildApp({ config, db, logger = true }) {
 
       // ---- Trồng trọt ----
       api.post('/plant', async (request, reply) => {
-        if (request.farmer.tax_owed > 0) return reply.code(400).send({ error: 'tax_due' });
         const { idx, crop: cropId } = request.body ?? {};
         const crop = CROPS[cropId];
         const me = request.farmer;
         if (!crop || !Number.isInteger(idx) || idx < 0 || idx >= me.plots_count) {
           return reply.code(400).send({ error: 'bad_request' });
         }
-        if (levelFor(me.xp) < crop.level) return reply.code(400).send({ error: 'level_too_low' });
-        if (me.gold < crop.seed) return reply.code(400).send({ error: 'not_enough_gold' });
-        if (getPlot.get(me.user_id, idx)) return reply.code(400).send({ error: 'plot_busy' });
-        const now = Date.now();
-        db.transaction(() => {
+        const plant = runJournaledMutation(request, 'plant', () => {
+          if (me.tax_owed > 0) return { error: 'tax_due' };
+          if (levelFor(me.xp) < crop.level) return { error: 'level_too_low' };
+          if (me.gold < crop.seed) return { error: 'not_enough_gold' };
+          if (getPlot.get(me.user_id, idx)) return { error: 'plot_busy' };
+          const now = Date.now();
           grant(me.user_id, { gold: -crop.seed, xp: crop.expSow });
           const fresh0 = Math.random() < 0.05 * skillRank(me, 'datmaumo') ? 1 : 0;
           db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (?, ?, ?, ?, ?, ?)')
             .run(me.user_id, idx, crop.id, now, now + cropTime(me, scaleMs(crop.growMs, config.fast)), fresh0);
           bumpQuest(me.user_id, 'sow');
-        })();
+          return {};
+        });
+        if (plant.error) return reply.code(plant.error === 'idempotency_conflict' ? 409 : 400).send({ error: plant.error });
         return { me: fresh(me.user_id) };
       });
 
       api.post('/plant-all', async (request, reply) => {
-        if (request.farmer.tax_owed > 0) return reply.code(400).send({ error: 'tax_due' });
         const { crop: cropId } = request.body ?? {};
         const crop = CROPS[cropId];
         const tree = TREES[cropId];
         const me = request.farmer;
         if (!crop && !tree) return reply.code(400).send({ error: 'bad_request' });
-        if (levelFor(me.xp) < (crop || tree).level) return reply.code(400).send({ error: 'level_too_low' });
-        const occupied = new Set(db.prepare('SELECT idx FROM plots WHERE owner_id = ?').all(me.user_id).map((r) => r.idx));
-        const empty = [];
-        for (let i = 0; i < me.plots_count; i += 1) if (!occupied.has(i)) empty.push(i);
-        if (tree) {
+        const plant = runJournaledMutation(request, 'plant-all', () => {
+          if (me.tax_owed > 0) return { error: 'tax_due' };
+          if (levelFor(me.xp) < (crop || tree).level) return { error: 'level_too_low' };
+          const occupied = new Set(db.prepare('SELECT idx FROM plots WHERE owner_id = ?').all(me.user_id).map((r) => r.idx));
+          const empty = [];
+          for (let i = 0; i < me.plots_count; i += 1) if (!occupied.has(i)) empty.push(i);
+          if (tree) {
           // Cây ăn quả trồng kín ô trống: mỗi cây giá price, chiếm ô lâu dài.
-          const n = Math.min(empty.length, Math.floor(me.gold / tree.price));
-          if (n === 0) return reply.code(400).send({ error: empty.length === 0 ? 'no_empty_plot' : 'not_enough_gold' });
-          const now = Date.now();
-          const readyAt = now + cropTime(me, scaleMs(tree.growMs, config.fast));
-          db.transaction(() => {
+            const n = Math.min(empty.length, Math.floor(me.gold / tree.price));
+            if (n === 0) return { error: empty.length === 0 ? 'no_empty_plot' : 'not_enough_gold' };
+            const now = Date.now();
+            const readyAt = now + cropTime(me, scaleMs(tree.growMs, config.fast));
             grant(me.user_id, { gold: -tree.price * n });
             const ins = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, tree, tree_at) VALUES (?, ?, ?, ?, ?, 1, ?)');
             for (const i of empty.slice(0, n)) ins.run(me.user_id, i, tree.id, now, readyAt, now);
-          })();
-          logEvent(`${tree.emoji} ${me.name} trồng ${n} cây ${tree.name}`);
-          return { me: fresh(me.user_id), planted: n };
-        }
-        const count = Math.min(empty.length, Math.floor(me.gold / crop.seed));
-        if (count === 0) return reply.code(400).send({ error: empty.length === 0 ? 'no_empty_plot' : 'not_enough_gold' });
-        const now = Date.now();
-        const readyAt = now + cropTime(me, scaleMs(crop.growMs, config.fast));
-        db.transaction(() => {
+            return { planted: n };
+          }
+          const count = Math.min(empty.length, Math.floor(me.gold / crop.seed));
+          if (count === 0) return { error: empty.length === 0 ? 'no_empty_plot' : 'not_enough_gold' };
+          const now = Date.now();
+          const readyAt = now + cropTime(me, scaleMs(crop.growMs, config.fast));
           grant(me.user_id, { gold: -crop.seed * count, xp: crop.expSow * count });
           const ins = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (?, ?, ?, ?, ?, ?)');
           for (const i of empty.slice(0, count)) ins.run(me.user_id, i, crop.id, now, readyAt, Math.random() < 0.05 * skillRank(me, 'datmaumo') ? 1 : 0);
           bumpQuest(me.user_id, 'sow', count);
-        })();
-        logEvent(`${crop.emoji} ${me.name} gieo ${crop.name} kín ${count} ô`);
-        return { me: fresh(me.user_id), planted: count };
+          return { planted: count };
+        });
+        if (plant.error) return reply.code(plant.error === 'idempotency_conflict' ? 409 : 400).send({ error: plant.error });
+        if (!plant.replay) logEvent(tree
+          ? `${tree.emoji} ${me.name} trồng ${plant.outcome.planted} cây ${tree.name}`
+          : `${crop.emoji} ${me.name} gieo ${crop.name} kín ${plant.outcome.planted} ô`);
+        return { me: fresh(me.user_id), ...plant.outcome };
       });
 
       function harvestPlot(me, plot) {
