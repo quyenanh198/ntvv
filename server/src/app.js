@@ -1608,13 +1608,13 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/order-deliver', async (request, reply) => {
         const { id } = request.body ?? {};
         const me = request.farmer;
-        const order = db.prepare('SELECT * FROM orders WHERE id = ? AND owner_id = ?').get(id, me.user_id);
-        if (!order) return reply.code(400).send({ error: 'no_order' });
-        const items = JSON.parse(order.items_json);
-        for (const [item, qty] of Object.entries(items)) {
-          if (invQty(me.user_id, item) < qty) return reply.code(400).send({ error: 'not_enough_items' });
-        }
-        db.transaction(() => {
+        const delivery = runJournaledMutation(request, 'order-deliver', () => {
+          const order = db.prepare('SELECT * FROM orders WHERE id = ? AND owner_id = ?').get(id, me.user_id);
+          if (!order) return { error: 'no_order' };
+          const items = JSON.parse(order.items_json);
+          for (const [item, qty] of Object.entries(items)) {
+            if (invQty(me.user_id, item) < qty) return { error: 'not_enough_items' };
+          }
           for (const [item, qty] of Object.entries(items)) invTake(me.user_id, item, qty);
           const orderGold = Math.round(order.gold * (1 + 0.05 * skillRank(me, 'nguoibankheo')));
           grant(me.user_id, { gold: orderGold, xp: order.exp, stars: order.stars });
@@ -1624,21 +1624,25 @@ export function buildApp({ config, db, logger = true }) {
             .run(Date.now() + scaleMs(ORDER_REFRESH_MS, config.fast), me.user_id);
           bumpQuest(me.user_id, 'deliver');
           bumpFest(me.user_id, 'deliver');
-        })();
-        logEvent(`🚚 ${me.name} giao một đơn hàng, nhận ${order.gold} vàng`);
-        return { me: fresh(me.user_id), gained: order.gold };
+          return { gained: orderGold };
+        });
+        if (delivery.error) return reply.code(delivery.error === 'idempotency_conflict' ? 409 : 400).send({ error: delivery.error });
+        if (!delivery.replay) logEvent(`🚚 ${me.name} giao một đơn hàng, nhận ${delivery.outcome.gained} vàng`);
+        return { me: fresh(me.user_id), ...delivery.outcome };
       });
 
       api.post('/order-discard', async (request, reply) => {
         const { id } = request.body ?? {};
         const me = request.farmer;
-        const order = db.prepare('SELECT * FROM orders WHERE id = ? AND owner_id = ?').get(id, me.user_id);
-        if (!order) return reply.code(400).send({ error: 'no_order' });
-        db.transaction(() => {
+        const discard = runJournaledMutation(request, 'order-discard', () => {
+          const order = db.prepare('SELECT * FROM orders WHERE id = ? AND owner_id = ?').get(id, me.user_id);
+          if (!order) return { error: 'no_order' };
           db.prepare('DELETE FROM orders WHERE id = ?').run(order.id);
           db.prepare('UPDATE farmers SET next_order_at = ? WHERE user_id = ?')
             .run(Date.now() + scaleMs(ORDER_REFRESH_MS, config.fast), me.user_id);
-        })();
+          return {};
+        });
+        if (discard.error) return reply.code(discard.error === 'idempotency_conflict' ? 409 : 400).send({ error: discard.error });
         return { me: fresh(me.user_id) };
       });
 
