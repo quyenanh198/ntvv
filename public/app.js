@@ -512,7 +512,7 @@
 
         </div>
 
-        <div class="welcome-sign" aria-hidden="true">Chào mừng đến với<br /><b>Nông Trại Vui Vẻ!</b></div>
+        ${!visiting ? renderNextStep() : ''}
         <button class="pond-img pond-btn" data-sheet="fishing" title="Hồ câu cá"><img src="${A('assets/pack/fish_pond.png')}" alt="Hồ câu cá" /></button>
 
         ${!visiting ? renderQuickbar() : ''}
@@ -568,6 +568,22 @@
         ${dryN >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-waterall">💧 Tưới hết ${dryN}</button>` : ''}
         ${empty >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-plantall">🌱 Gieo hết ${empty} ô</button>` : ''}
       </div>`;
+  }
+
+  function renderNextStep() {
+    const farm = me();
+    const plots = farm.plots;
+    const ready = plots.filter((plot) => plot.crop && plot.ready).length;
+    const empty = plots.filter((plot) => !plot.crop).length;
+    const dry = plots.filter((plot) => plot.crop && !plot.ready && !plot.watered).length;
+    const step = ready
+      ? { icon: '🧺', title: `${ready} ô đã chín`, detail: 'Chạm cây để thu hoạch, rồi gieo vụ mới.' }
+      : empty
+        ? { icon: '🌱', title: `${empty} ô đang trống`, detail: 'Chạm ô đất để chọn hạt giống.' }
+        : dry
+          ? { icon: '💧', title: `${dry} ô cần tưới`, detail: 'Chạm cây đang lớn để tưới và nhận thưởng EXP.' }
+          : { icon: '🏡', title: 'Nông trại đang lớn lên', detail: 'Xem đơn hàng hoặc ghé thăm bạn bè trong lúc chờ.' };
+    return `<div class="welcome-sign next-step" role="status" aria-live="polite"><span aria-hidden="true">${step.icon}</span><span><b>${step.title}</b><small>${step.detail}</small></span></div>`;
   }
 
   function renderPlots(visiting) {
@@ -640,7 +656,7 @@
     const millDone = m.mill && m.mill.ready;
     if (visiting) {
       return `
-        <img class="sb sb-coop" src="${A('assets/pack/tiny_house.png')}" alt="" />
+        <img class="sb sb-coop" src="${A('assets/pack/chicken_coop_v3.png')}" alt="" />
         <img class="sb sb-hen2" src="${A('assets/pack/chicken_brown.png')}" alt="" />
         <img class="sb sb-mill" src="${A('assets/pack/windmill.png')}" alt="" />
         <img class="sb sb-shop" src="${A('assets/pack/market_shop.png')}" alt="" />`;
@@ -648,12 +664,12 @@
     return `
       ${coopUnlocked ? `
         <button class="sb sb-btn sb-coop" data-sheet="coop" title="Chuồng gà">
-          <img src="${A('assets/pack/tiny_house.png')}" alt="Chuồng gà" />
+          <img src="${A('assets/pack/chicken_coop_v3.png')}" alt="Chuồng gà" />
           ${eggReady ? '<i class="dot"></i>' : ''}
           <span class="sb-tag">${eggReady ? '🥚 Trứng!' : hungry ? 'Gà đói' : 'Chuồng gà'}</span>
         </button>
         <img class="sb sb-hen2" src="${A('assets/pack/chicken_brown.png')}" alt="" />`
-      : `<img class="sb sb-coop sb--locked" src="${A('assets/pack/tiny_house.png')}" alt="" title="Chuồng gà — cần Lv ${DATA.config.chicken.level}" />`}
+      : `<img class="sb sb-coop sb--locked" src="${A('assets/pack/chicken_coop_v3.png')}" alt="" title="Chuồng gà — cần Lv ${DATA.config.chicken.level}" />`}
       ${millUnlocked ? `
         <button class="sb sb-btn sb-mill" data-sheet="mill" title="Cối xay">
           <img src="${A('assets/pack/windmill.png')}" alt="Cối xay" />

@@ -675,6 +675,17 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   pointer-events: none;
 }
 .welcome-sign b { display: inline-block; margin-top: .08rem; color: #ffe27a; font-size: .82rem; }
+.next-step {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  max-width: min(280px, calc(100vw - 1.2rem));
+  text-align: left;
+  transform: none;
+}
+.next-step > span:first-child { font-size: 1.35rem; }
+.next-step b { display: block; }
+.next-step small { display: block; font-size: .68rem; font-weight: 600; }
 .pond-img {
   position: absolute;
   z-index: 3;
