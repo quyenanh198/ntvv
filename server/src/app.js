@@ -1253,16 +1253,21 @@ export function buildApp({ config, db, logger = true }) {
         // Không giới hạn 999: nút "Hết" bán toàn bộ số đang có trong kho.
         const n = Math.max(1, Math.floor(Number(qty) || 1));
         if (!info || !info.sell) return reply.code(400).send({ error: 'bad_request' });
-        if (!invTake(me.user_id, item, n)) return reply.code(400).send({ error: 'not_enough_items' });
-        let mult = 1;
-        if (ANIMAL_PRODUCTS.has(item)) mult = 1 + 0.08 * skillRank(me, 'spcaocap');
-        if (MACHINE_PRODUCTS.has(item)) mult = 1 + 0.05 * skillRank(me, 'donggoidep');
-        const pm = priceMult(item);
-        const gained = Math.round(info.sell * n * GOLD_MULT * mult * pm);
-        grant(me.user_id, { gold: gained });
-        addSold.run(gained, me.user_id);
-        bumpSaturation(item, info.sell * n * GOLD_MULT);
-        bumpQuest(me.user_id, 'sell', n);
+        const sale = db.transaction(() => {
+          if (!invTake(me.user_id, item, n)) return null;
+          let mult = 1;
+          if (ANIMAL_PRODUCTS.has(item)) mult = 1 + 0.08 * skillRank(me, 'spcaocap');
+          if (MACHINE_PRODUCTS.has(item)) mult = 1 + 0.05 * skillRank(me, 'donggoidep');
+          const pm = priceMult(item);
+          const gained = Math.round(info.sell * n * GOLD_MULT * mult * pm);
+          grant(me.user_id, { gold: gained });
+          addSold.run(gained, me.user_id);
+          bumpSaturation(item, info.sell * n * GOLD_MULT);
+          bumpQuest(me.user_id, 'sell', n);
+          return { gained, pm };
+        })();
+        if (!sale) return reply.code(400).send({ error: 'not_enough_items' });
+        const { gained, pm } = sale;
         return { me: fresh(me.user_id), gained, priceMult: Math.round(pm * 100) / 100 };
       });
 

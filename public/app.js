@@ -833,34 +833,45 @@
       const sortBar = `<div class="seed-sort">
         ${[['time', '⏱ Thời gian'], ['value', '💰 Giá trị'], ['level', '🔓 Cấp']].map(([k, label]) => `<button class="gbtn btn-mini${seedSort === k ? ' gbtn--gold' : ''}" data-seed-sort="${k}">${label}</button>`).join('')}
       </div>`;
-      const cropCards = sortBy(Object.values(crops()), 'growMs', 'sell').map((c) => {
+      const cropCard = (c) => {
         const lockLevel = m.level < c.level;
         const locked = lockLevel || m.gold < c.seed;
-        return `<button class="seed-card${locked ? ' seed-card--locked' : ''}" data-crop="${locked ? '' : c.id}" title="${c.name}">
+        return `<button class="seed-card${locked ? ' seed-card--locked' : ''}" data-crop="${locked ? '' : c.id}" title="${c.name}" ${locked ? 'disabled' : ''}>
           <img class="seed-sprite" src="${cropSprite(c.id, 3)}" alt="" />
           <span class="seed-name">${c.name}</span>
           <span class="seed-meta">⏱ ${fmtDuration(c.growMs)} · ${c.risky ? `${(DATA.config.cansa?.reward || 1000000).toLocaleString('vi')} ${COIN}/cây · bị khám xét = mất trắng` : `${c.sell} ${COIN}`}</span>
           ${lockLevel ? `<span class="seed-lock">Lv ${c.level}</span>` : `<span class="seed-cost">${c.seed} ${COIN}</span>`}
         </button>`;
-      }).join('');
-      const treeCards = sortBy(Object.values(trees()), 'growMs', 'sell').map((t) => {
+      };
+      const allCrops = sortBy(Object.values(crops()), 'growMs', 'sell');
+      const availableCrops = allCrops.filter((c) => c.level <= m.level);
+      const futureCrops = allCrops.filter((c) => c.level > m.level);
+      const treeCard = (t) => {
         const lockLevel = m.level < t.level;
         const locked = lockLevel || m.gold < t.price;
-        return `<button class="seed-card seed-card--tree${locked ? ' seed-card--locked' : ''}" data-tree="${locked ? '' : t.id}" title="${t.name} — lớn ${fmtDuration(t.growMs)}, rồi ${t.yield} quả mỗi ${fmtDuration(t.cycleMs)}, tàn sau ${fmtDuration(t.lifeMs)}">
+        return `<button class="seed-card seed-card--tree${locked ? ' seed-card--locked' : ''}" data-tree="${locked ? '' : t.id}" title="${t.name} — lớn ${fmtDuration(t.growMs)}, rồi ${t.yield} quả mỗi ${fmtDuration(t.cycleMs)}, tàn sau ${fmtDuration(t.lifeMs)}" ${locked ? 'disabled' : ''}>
           <img class="seed-sprite" src="${treeArt(t.id)}" alt="" />
           <span class="seed-name">${t.name} ${t.emoji}</span>
           <span class="seed-meta">🌳 lớn ${fmtDuration(t.growMs)} · ${t.yield} quả/${fmtDuration(t.cycleMs)} · sống ${fmtDuration(t.lifeMs)} · ${t.sell.toLocaleString('vi')} ${COIN}</span>
           ${lockLevel ? `<span class="seed-lock">Lv ${t.level}</span>` : `<span class="seed-cost">${t.price.toLocaleString('vi')} ${COIN}</span>`}
         </button>`;
-      }).join('');
+      };
+      const allTrees = sortBy(Object.values(trees()), 'growMs', 'sell');
+      const availableTrees = allTrees.filter((tree) => tree.level <= m.level);
+      const futureTrees = allTrees.filter((tree) => tree.level > m.level);
       return sheetShell(
         sheet.all ? `🧺 Gieo hết ô trống <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`
           : `🌱 Chọn hạt giống <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
         `${sheet.all ? '<p class="sheet-note">Chọn một giống — gieo kín mọi ô trống theo số vàng đang có.</p>' : ''}
+         ${m.level === 1 ? '<p class="sheet-note seed-tip">🌾 Bắt đầu với Lúa mì: thu sau 1 phút. Cà rốt cho nhiều vàng hơn nếu bạn có thời gian chờ.</p>' : ''}
          ${sortBar}
-         <div class="seed-grid">${cropCards}</div>
-         <p class="sheet-note" style="margin-top:.5rem">🌳 Cây ăn quả — chiếm ô lâu dài, tự ra quả lại sau mỗi lần hái:</p>
-         <div class="seed-grid">${treeCards}</div>`,
+         <h3 class="seed-section-title">🌱 Trồng được ở cấp ${m.level}</h3>
+         <div class="seed-grid">${availableCrops.map(cropCard).join('')}</div>
+         ${availableTrees.length ? `<h3 class="seed-section-title">🌳 Cây ăn quả</h3><div class="seed-grid">${availableTrees.map(treeCard).join('')}</div>` : ''}
+         ${futureCrops.length || futureTrees.length ? `<details class="seed-future"><summary>🔒 Xem giống sắp mở (${futureCrops.length + futureTrees.length})</summary>
+           ${futureCrops.length ? `<div class="seed-grid">${futureCrops.map(cropCard).join('')}</div>` : ''}
+           ${futureTrees.length ? `<h3 class="seed-section-title">🌳 Cây ăn quả sắp mở</h3><div class="seed-grid">${futureTrees.map(treeCard).join('')}</div>` : ''}
+         </details>` : ''}`,
         'sheet--wide',
       );
     }

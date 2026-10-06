@@ -1815,6 +1815,11 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 @media (max-width: 480px) { .seed-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 .seed-sort { display: flex; gap: .3rem; flex-wrap: wrap; margin: .2rem 0 .5rem; }
+.seed-section-title { margin: .65rem 0 .35rem; font-size: .85rem; color: #5a351c; }
+.seed-tip { margin: .15rem 0 .55rem; border-left: 3px solid #77ad4d; padding-left: .6rem; }
+.seed-future { margin-top: .75rem; padding: .5rem; border: 1px solid #cdbb93; border-radius: 10px; background: #fff8e9; }
+.seed-future summary { cursor: pointer; font-size: .78rem; font-weight: 800; color: #654a2e; }
+.seed-future[open] summary { margin-bottom: .55rem; }
 
 /* ---- Xa xỉ phẩm / thuế / xổ số ---- */
 .hud-title { display: block; font-size: .58rem; color: #ffe9a8; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
