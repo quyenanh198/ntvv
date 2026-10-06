@@ -1575,7 +1575,13 @@
     });
     document.querySelector('[data-next-step]')?.addEventListener('click', (ev) => {
       const kind = ev.currentTarget.dataset.nextStep;
-      if (kind === 'seed') { sheet = { type: 'seed' }; render(); return; }
+      if (kind === 'seed') {
+        const firstEmpty = me().plots.find((plot) => !plot.crop);
+        if (!firstEmpty) return;
+        sheet = { type: 'seed', idx: firstEmpty.idx };
+        render();
+        return;
+      }
       if (kind === 'orders' || kind === 'inventory') {
         sheet = { type: kind === 'inventory' ? 'inventory' : me().level >= DATA.config.orderUnlockLevel ? 'orders' : 'quests' };
         render();
