@@ -1415,27 +1415,29 @@ export function buildApp({ config, db, logger = true }) {
 
       // ---- Chuồng gà ----
       // want: số con muốn mua, hoặc 'max' = mua đầy chuồng (tới hết vàng).
-      async function buyAnimal(request, reply, kind, want = 1) {
+      async function buyAnimal(request, reply, kind, want = 1, route = 'buy-animal') {
         const a = ANIMALS[kind];
         const me = request.farmer;
         if (!a) return reply.code(400).send({ error: 'bad_request' });
-        if (levelFor(me.xp) < a.level) return reply.code(400).send({ error: 'level_too_low' });
-        const count = db.prepare('SELECT COUNT(*) c FROM animals WHERE owner_id = ? AND kind = ?').get(me.user_id, kind).c;
-        const space = a.capacities[barnLevel(me, kind) - 1] - count;
-        if (space <= 0) return reply.code(400).send({ error: 'coop_full' });
-        if (me.gold < a.price) return reply.code(400).send({ error: 'not_enough_gold' });
-        const asked = want === 'max' ? space : Math.max(1, Math.floor(Number(want) || 1));
-        const n = Math.min(asked, space, Math.floor(me.gold / a.price));
-        db.transaction(() => {
+        const purchase = runJournaledMutation(request, route, () => {
+          if (levelFor(me.xp) < a.level) return { error: 'level_too_low' };
+          const count = db.prepare('SELECT COUNT(*) c FROM animals WHERE owner_id = ? AND kind = ?').get(me.user_id, kind).c;
+          const space = a.capacities[barnLevel(me, kind) - 1] - count;
+          if (space <= 0) return { error: 'coop_full' };
+          if (me.gold < a.price) return { error: 'not_enough_gold' };
+          const asked = want === 'max' ? space : Math.max(1, Math.floor(Number(want) || 1));
+          const n = Math.min(asked, space, Math.floor(me.gold / a.price));
           grant(me.user_id, { gold: -a.price * n });
           const ins = db.prepare('INSERT INTO animals (owner_id, kind) VALUES (?, ?)');
           for (let i = 0; i < n; i += 1) ins.run(me.user_id, kind);
-        })();
-        logEvent(n > 1 ? `${a.emoji} ${me.name} đón ${n} chú ${a.name} mới về chuồng` : `${a.emoji} ${me.name} đón một chú ${a.name} mới về chuồng`);
-        return { me: fresh(me.user_id), bought: n };
+          return { bought: n };
+        });
+        if (purchase.error) return reply.code(purchase.error === 'idempotency_conflict' ? 409 : 400).send({ error: purchase.error });
+        if (!purchase.replay) logEvent(purchase.outcome.bought > 1 ? `${a.emoji} ${me.name} đón ${purchase.outcome.bought} chú ${a.name} mới về chuồng` : `${a.emoji} ${me.name} đón một chú ${a.name} mới về chuồng`);
+        return { me: fresh(me.user_id), ...purchase.outcome };
       }
       api.post('/buy-animal', async (request, reply) => buyAnimal(request, reply, request.body?.kind, request.body?.count ?? 1));
-      api.post('/buy-chicken', async (request, reply) => buyAnimal(request, reply, 'ga'));
+      api.post('/buy-chicken', async (request, reply) => buyAnimal(request, reply, 'ga', 1, 'buy-chicken'));
 
       api.post('/feed', async (request, reply) => {
         const me = request.farmer;
@@ -1828,17 +1830,19 @@ export function buildApp({ config, db, logger = true }) {
       api.get('/lottery', async (request) => { settleThiefBoard(); return lotteryView(request.farmer); });
       api.post('/lottery-buy', async (request, reply) => {
         const me = request.farmer;
-        const n = Math.max(1, Math.min(LOTTERY.maxPerDay, Math.floor(Number(request.body?.qty) || 1)));
-        const day = thiefDayKey();
-        const mine = db.prepare('SELECT qty FROM lottery_tickets WHERE day = ? AND owner_id = ?').get(day, me.user_id)?.qty || 0;
-        if (mine + n > LOTTERY.maxPerDay) return reply.code(400).send({ error: 'lottery_max' });
-        const cost = n * LOTTERY.ticket;
-        if (me.gold < cost) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const purchase = runJournaledMutation(request, 'lottery-buy', () => {
+          const n = Math.max(1, Math.min(LOTTERY.maxPerDay, Math.floor(Number(request.body?.qty) || 1)));
+          const day = thiefDayKey();
+          const mine = db.prepare('SELECT qty FROM lottery_tickets WHERE day = ? AND owner_id = ?').get(day, me.user_id)?.qty || 0;
+          if (mine + n > LOTTERY.maxPerDay) return { error: 'lottery_max' };
+          const cost = n * LOTTERY.ticket;
+          if (me.gold < cost) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -cost });
           db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(cost, me.user_id);
           db.prepare('INSERT INTO lottery_tickets (day, owner_id, qty) VALUES (?, ?, ?) ON CONFLICT(day, owner_id) DO UPDATE SET qty = qty + excluded.qty').run(day, me.user_id, n);
-        })();
+          return { bought: n };
+        });
+        if (purchase.error) return reply.code(purchase.error === 'idempotency_conflict' ? 409 : 400).send({ error: purchase.error });
         return { me: fresh(me.user_id), lottery: lotteryView(me) };
       });
 
