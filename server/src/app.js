@@ -13,6 +13,7 @@ import {
   MACHINE_UPGRADE_GOLD,
   LOTTERY,
   TAX_PER_PLOT,
+  LAND_TAX_UNLOCK_LEVEL,
   MARKET_SAT,
   GOODS,
   itemInfo,
@@ -151,6 +152,14 @@ export function buildApp({ config, db, logger = true }) {
     const f = getFarmer.get(userId);
     if (!f) return;
     const day = thiefDayKey();
+    if (levelFor(f.xp) < LAND_TAX_UNLOCK_LEVEL) {
+      // Nông dân mới không bị khóa gieo trồng vì khoản thuế lớn hơn vốn ban đầu.
+      // Cũng xóa nợ thuế cũ cho tài khoản còn dưới ngưỡng; không truy thu khi lên cấp.
+      if (f.tax_day !== day || f.tax_owed) {
+        db.prepare('UPDATE farmers SET tax_day = ?, tax_owed = 0 WHERE user_id = ?').run(day, userId);
+      }
+      return;
+    }
     let owed = f.tax_owed || 0;
     if (f.tax_day !== day) {
       owed += (f.plots_count || 0) * TAX_PER_PLOT;
@@ -588,6 +597,7 @@ export function buildApp({ config, db, logger = true }) {
       id: f.user_id,
       name: f.name,
       gold: f.gold,
+      soldGold: f.sold_gold || 0,
       gems: f.gems,
       xp: f.xp,
       level: li.level,
@@ -709,7 +719,12 @@ export function buildApp({ config, db, logger = true }) {
   const addSold = db.prepare('UPDATE farmers SET sold_gold = sold_gold + ? WHERE user_id = ?');
 
   // ---- Bể hút vàng: thuế, xa xỉ phẩm, nâng cấp nhà máy, giá bão hoà -------
-  const taxView = (f) => ({ perPlot: TAX_PER_PLOT, today: (f.plots_count || 0) * TAX_PER_PLOT, owed: f.tax_owed || 0 });
+  const taxView = (f) => ({
+    perPlot: TAX_PER_PLOT,
+    today: levelFor(f.xp) < LAND_TAX_UNLOCK_LEVEL ? 0 : (f.plots_count || 0) * TAX_PER_PLOT,
+    owed: f.tax_owed || 0,
+    unlockLevel: LAND_TAX_UNLOCK_LEVEL,
+  });
   // Giá trị kho theo giá bán hệ thống hiện tại (chưa tính bão hoà) → tài sản ước tính = vàng + kho.
   function inventoryValue(userId) {
     let total = 0;

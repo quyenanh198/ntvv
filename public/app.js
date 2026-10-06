@@ -575,8 +575,12 @@
     const ready = plots.filter((plot) => plot.crop && plot.ready).length;
     const empty = plots.filter((plot) => !plot.crop).length;
     const dry = plots.filter((plot) => plot.crop && !plot.ready && !plot.watered).length;
+    const firstSaleReady = farm.level <= 2 && !farm.soldGold
+      && Object.entries(farm.inventory).some(([id, qty]) => qty > 0 && crops()[id]);
     const step = ready
       ? { kind: 'harvest', icon: '🧺', title: `${ready} ô đã chín`, detail: 'Chạm để thu hoạch ô đầu tiên.' }
+      : firstSaleReady
+        ? { kind: 'inventory', icon: '🎒', title: 'Bán vụ đầu tiên', detail: 'Chạm để mở kho và bán nông sản.' }
       : empty
         ? { kind: 'seed', icon: '🌱', title: `${empty} ô đang trống`, detail: 'Chạm để chọn hạt giống.' }
         : dry
@@ -1354,7 +1358,7 @@
             <span class="lr-icon">🏛️</span>
             <div class="lr-info">
               <b>Thuế đất</b>
-              <div class="lr-desc">${taxOwed > 0 ? `Nợ ${taxOwed.toLocaleString('vi')} vàng (tự cấn trừ khi có vàng, cần trả để gieo hạt)` : 'Đã nộp đủ — đất đai tự do canh tác'}</div>
+              <div class="lr-desc">${m.level < (m.tax?.unlockLevel || 20) ? `Miễn thuế đến cấp ${m.tax?.unlockLevel || 20} — cứ yên tâm trồng trọt` : taxOwed > 0 ? `Nợ ${taxOwed.toLocaleString('vi')} vàng (tự cấn trừ khi có vàng, cần trả để gieo hạt)` : 'Đã nộp đủ — đất đai tự do canh tác'}</div>
             </div>
             <span class="lr-val">${taxOwed > 0 ? `<span class="tag-debt">−${taxOwed.toLocaleString('vi')}</span>` : '<span class="tag-ok">0</span>'}</span>
           </div>
@@ -1572,7 +1576,11 @@
     document.querySelector('[data-next-step]')?.addEventListener('click', (ev) => {
       const kind = ev.currentTarget.dataset.nextStep;
       if (kind === 'seed') { sheet = { type: 'seed' }; render(); return; }
-      if (kind === 'orders') { sheet = { type: me().level >= DATA.config.orderUnlockLevel ? 'orders' : 'quests' }; render(); return; }
+      if (kind === 'orders' || kind === 'inventory') {
+        sheet = { type: kind === 'inventory' ? 'inventory' : me().level >= DATA.config.orderUnlockLevel ? 'orders' : 'quests' };
+        render();
+        return;
+      }
       document.querySelector(kind === 'harvest' ? '.plot[data-kind="harvest"]' : '.plot[data-kind="waterplot"]')?.click();
     });
     document.getElementById('btn-inspect-mode')?.addEventListener('click', () => { INSPECT = !INSPECT; toast(INSPECT ? '🔍 Bấm vào một ô đang trồng để khám xét' : 'Tắt khám xét'); render(); });
