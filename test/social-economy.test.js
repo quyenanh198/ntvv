@@ -6,7 +6,7 @@ import test from 'node:test';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
 
-test('gold gifts and fulfilled trade orders replay without moving value twice', async () => {
+test('gold gifts and trade board actions replay without moving value twice', async () => {
   const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-social-'));
   const db = openDb(dataDir);
   const app = buildApp({
@@ -40,7 +40,14 @@ test('gold gifts and fulfilled trade orders replay without moving value twice', 
     assert.equal(gold(2), before2 + 100);
     assert.equal((await inject(1, 'POST', '/gold-give', { toId: 2, amount: 50 }, 'gold-gift-request-01')).statusCode, 409);
 
-    assert.equal((await inject(1, 'POST', '/want-create', { item: 'luami', qty: 1 })).statusCode, 200);
+    const goldBeforeOrder = gold(1);
+    const want = { item: 'luami', qty: 1 };
+    assert.equal((await inject(1, 'POST', '/want-create', want, 'want-create-request-01')).statusCode, 200);
+    const goldAfterOrder = gold(1);
+    assert.equal((await inject(1, 'POST', '/want-create', want, 'want-create-request-01')).statusCode, 200);
+    assert.equal(gold(1), goldAfterOrder);
+    assert.ok(goldAfterOrder < goldBeforeOrder);
+    assert.equal(db.prepare('SELECT COUNT(*) n FROM wants WHERE owner_id = 1').get().n, 1);
     const wantId = db.prepare('SELECT id FROM wants WHERE owner_id = 1').get().id;
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (2, ?, 1)').run('luami');
     const sellerGold = gold(2);
@@ -53,6 +60,16 @@ test('gold gifts and fulfilled trade orders replay without moving value twice', 
     assert.equal(db.prepare('SELECT qty FROM inventory WHERE owner_id = 1 AND item = ?').get('luami').qty, 1);
     assert.equal(db.prepare('SELECT qty FROM inventory WHERE owner_id = 2 AND item = ?').get('luami'), undefined);
     assert.equal(db.prepare('SELECT id FROM wants WHERE id = ?').get(wantId), undefined);
+
+    const goldBeforeCancel = gold(1);
+    assert.equal((await inject(1, 'POST', '/want-create', { item: 'luami', qty: 2 }, 'want-create-request-02')).statusCode, 200);
+    const cancelId = db.prepare('SELECT id FROM wants WHERE owner_id = 1').get().id;
+    assert.ok(gold(1) < goldBeforeCancel);
+    const cancel = await inject(1, 'POST', '/want-cancel', { id: cancelId }, 'want-cancel-request-01');
+    assert.equal(cancel.statusCode, 200);
+    assert.equal((await inject(1, 'POST', '/want-cancel', { id: cancelId }, 'want-cancel-request-01')).statusCode, 200);
+    assert.equal(gold(1), goldBeforeCancel);
+    assert.equal(db.prepare('SELECT id FROM wants WHERE id = ?').get(cancelId), undefined);
   } finally {
     await app.close();
     db.close();

@@ -1325,32 +1325,42 @@ export function buildApp({ config, db, logger = true }) {
         const { item, qty } = request.body ?? {};
         const me = request.farmer;
         const info = itemInfo(item);
-        const n = Math.floor(Number(qty) || 0);
-        if (!info || !info.sell || n < 1 || n > WANT_MAX_QTY) return reply.code(400).send({ error: 'bad_request' });
-        const open = db.prepare('SELECT COUNT(*) c FROM wants WHERE owner_id = ?').get(me.user_id).c;
-        if (open >= WANT_MAX_OPEN) return reply.code(400).send({ error: 'too_many_wants' });
+        if (!info || !info.sell || !Number.isSafeInteger(qty) || qty < 1 || qty > WANT_MAX_QTY) {
+          return reply.code(400).send({ error: 'bad_request' });
+        }
+        const n = qty;
         const price = wantPrice(item);
-        if (me.gold < price * n) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const created = runJournaledMutation(request, 'want-create', () => {
+          const open = db.prepare('SELECT COUNT(*) c FROM wants WHERE owner_id = ?').get(me.user_id).c;
+          if (open >= WANT_MAX_OPEN) return { error: 'too_many_wants' };
+          if (getFarmer.get(me.user_id).gold < price * n) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -price * n });
-          db.prepare('INSERT INTO wants (owner_id, item, qty, filled, price, created_at) VALUES (?, ?, ?, 0, ?, ?)').run(me.user_id, item, n, price, Date.now());
-        })();
-        logEvent(`🤝 ${me.name} cần mua ${n} ${info.name} ${info.emoji} — trả ${price.toLocaleString('vi')} vàng/cái`);
-        const others = db.prepare('SELECT user_id FROM farmers WHERE user_id != ?').all(me.user_id).map((r) => r.user_id);
-        pushTo(others, 'Ăn trộm dzui dzẻ 😋', `🤝 ${me.name} cần mua ${n} ${info.name} ${info.emoji} — trả ${price.toLocaleString('vi')} vàng/cái (130% giá chợ). Có hàng thì vào Thu mua bán ngay!`);
+          const row = db.prepare('INSERT INTO wants (owner_id, item, qty, filled, price, created_at) VALUES (?, ?, ?, 0, ?, ?)').run(me.user_id, item, n, price, Date.now());
+          return { wantId: Number(row.lastInsertRowid) };
+        });
+        if (created.error) return reply.code(created.error === 'idempotency_conflict' ? 409 : 400).send({ error: created.error });
+        if (!created.replay) {
+          logEvent(`🤝 ${me.name} cần mua ${n} ${info.name} ${info.emoji} — trả ${price.toLocaleString('vi')} vàng/cái`);
+          const others = db.prepare('SELECT user_id FROM farmers WHERE user_id != ?').all(me.user_id).map((r) => r.user_id);
+          pushTo(others, 'Ăn trộm dzui dzẻ 😋', `🤝 ${me.name} cần mua ${n} ${info.name} ${info.emoji} — trả ${price.toLocaleString('vi')} vàng/cái (130% giá chợ). Có hàng thì vào Thu mua bán ngay!`);
+        }
         return { me: fresh(me.user_id), wants: wantsView(me.user_id) };
       });
 
       api.post('/want-cancel', async (request, reply) => {
         const me = request.farmer;
-        const w = db.prepare('SELECT * FROM wants WHERE id = ? AND owner_id = ?').get(Number(request.body?.id), me.user_id);
-        if (!w) return reply.code(400).send({ error: 'no_want' });
-        const refund = (w.qty - w.filled) * w.price;
-        db.transaction(() => {
+        const id = request.body?.id;
+        if (!Number.isSafeInteger(id) || id < 1) return reply.code(400).send({ error: 'bad_request' });
+        const cancelled = runJournaledMutation(request, 'want-cancel', () => {
+          const w = db.prepare('SELECT * FROM wants WHERE id = ? AND owner_id = ?').get(id, me.user_id);
+          if (!w) return { error: 'no_want' };
+          const refund = (w.qty - w.filled) * w.price;
           grant(me.user_id, { gold: refund });
           db.prepare('DELETE FROM wants WHERE id = ?').run(w.id);
-        })();
-        return { me: fresh(me.user_id), wants: wantsView(me.user_id), refund };
+          return { refund };
+        });
+        if (cancelled.error) return reply.code(cancelled.error === 'idempotency_conflict' ? 409 : 400).send({ error: cancelled.error });
+        return { me: fresh(me.user_id), wants: wantsView(me.user_id), refund: cancelled.outcome.refund };
       });
 
       api.post('/want-fill', async (request, reply) => {
