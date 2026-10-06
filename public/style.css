@@ -1347,9 +1347,12 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .bg-tree, .hills-far { display: none; }
 
   .top-hud {
-    min-height: calc(70px + var(--top-safe));
-    padding: calc(.42rem + var(--top-safe)) .5rem .5rem;
-    gap: .4rem;
+    min-height: calc(96px + var(--top-safe));
+    padding: calc(.3rem + var(--top-safe)) .5rem .4rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 40px 38px;
+    gap: .3rem;
   }
   .hud-player {
     grid-template-columns: 42px minmax(0, 1fr);
@@ -1365,14 +1368,28 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .hud-xpnum { display: none; }
   .hud-lv { font-size: .54rem; padding-inline: .33rem; }
   .hud-xp { height: 8px; border-width: 1.5px; }
-  .hud-right { gap: .3rem; flex: 0 0 auto; }
+  .hud-right {
+    width: 100%;
+    min-width: 0;
+    margin-left: 0;
+    padding: 0 0 .2rem;
+    gap: .3rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .hud-right::-webkit-scrollbar { display: none; }
+  .hud-right > *, .hud-rounds { flex: 0 0 auto; }
+  .hud-rounds .hud-round[data-sheet="ledger"] { display: none; }
   .coin-pill { min-height: 36px; border-radius: 11px; border-width: 2px; padding: .18rem .2rem; gap: .18rem; }
   .coin-pill > .coin-img { width: 22px; height: 22px; }
   .coin-pill b { font-size: .72rem; }
   .pill-plus { width: 20px; height: 20px; border-radius: 7px; font-size: .8rem; }
 
   .stage-center {
-    top: calc(67px + var(--top-safe));
+    top: calc(96px + var(--top-safe));
     left: 0;
     right: 0;
     margin: 0 auto;
@@ -1553,6 +1570,10 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .side-right .side-btn > span:last-child { display: none; }
   .quickbar { display: none; }
   .farm-grid { grid-template-columns: repeat(6, minmax(58px, 1fr)); }
+}
+@media (max-height: 520px) and (max-width: 780px) {
+  .top-hud { grid-template-rows: 36px 34px; min-height: calc(80px + var(--top-safe)); }
+  .stage-center { top: calc(80px + var(--top-safe)); }
 }
 
 /* ---------- accessibility ---------- */

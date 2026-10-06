@@ -398,7 +398,7 @@
               </span>
             </span>
           </div>
-          <div class="hud-right">
+          <div class="hud-right" role="group" aria-label="Tài nguyên và công cụ" tabindex="0">
             <button class="coin-pill" data-sheet="inventory" title="Vàng ${m.gold.toLocaleString('vi')} · Tài sản ước tính (vàng + kho) ${(m.netWorth ?? m.gold).toLocaleString('vi')} — mở kho để bán đồ">${COIN}<b>${m.gold.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
             <button class="coin-pill coin-pill--gem" data-sheet="stars" title="Kim cương — nhận từ mốc sao và rương">${GEM}<b>${m.gems.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
             <button class="coin-pill coin-pill--energy" data-sheet="fishing" title="Năng lượng — mở Hồ câu cá">⚡<b>${m.energy.current}</b><span class="pill-plus">＋</span></button>
