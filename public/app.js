@@ -581,10 +581,10 @@
       ? { kind: 'harvest', icon: '🧺', title: `${ready} ô đã chín`, detail: 'Chạm để thu hoạch ô đầu tiên.' }
       : firstSaleReady
         ? { kind: 'inventory', icon: '🎒', title: 'Bán vụ đầu tiên', detail: 'Chạm để mở kho và bán nông sản.' }
-      : empty
-        ? { kind: 'seed', icon: '🌱', title: `${empty} ô đang trống`, detail: 'Chạm để chọn hạt giống.' }
-        : dry
-          ? { kind: 'water', icon: '💧', title: `${dry} ô cần tưới`, detail: 'Chạm để tưới ô đầu tiên và nhận EXP.' }
+      : dry
+        ? { kind: 'water', icon: '💧', title: `${dry} ô cần tưới`, detail: 'Chạm để tưới ô đầu tiên và nhận EXP.' }
+        : empty
+          ? { kind: 'seed', icon: '🌱', title: `${empty} ô đang trống`, detail: 'Chạm để chọn hạt giống.' }
           : { kind: 'orders', icon: '🏡', title: 'Nông trại đang lớn lên', detail: 'Chạm để xem mục tiêu tiếp theo.' };
     return `<button class="farm-next-step" type="button" data-next-step="${step.kind}" aria-label="${step.title}. ${step.detail}"><span aria-hidden="true">${step.icon}</span><span><b>${step.title}</b><small>${step.detail}</small></span></button>`;
   }
