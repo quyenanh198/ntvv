@@ -24,7 +24,7 @@
 
   // ---------- sprite ----------
   const SPRITE_ALIAS = { luami: 'lua', dautay: 'dau' };
-  const RIPE_CROP_ART = { luami: 'assets/crops-v3/wheat-ripe.png', carot: 'assets/crops-v3/carrot-ripe.png' };
+  const RIPE_CROP_ART = { luami: 'assets/crops-v3/wheat-ripe.png', carot: 'assets/crops-v3/carrot-ripe.png', ngo: 'assets/crops-v3/corn-ripe.png' };
   // Mọi URL tài nguyên tĩnh kèm ?v=<boot>: mỗi lần deploy đổi URL nên không dính
   // bản Cloudflare/trình duyệt cache nhầm (đã có vụ trang chờ HTML nằm ở URL ảnh).
   const A = (path) => `${path}?v=${MY_BOOT || '1'}`;
