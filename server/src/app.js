@@ -1448,36 +1448,39 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         const kind = ANIMALS[request.body?.kind] ? request.body.kind : 'ga';
         const a = ANIMALS[kind];
-        const hungry = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND kind = ? AND ready_at IS NULL').all(me.user_id, kind);
-        if (hungry.length === 0) return reply.code(400).send({ error: 'no_hungry_animal' });
-        const canFeed = Math.min(hungry.length, Math.floor(invQty(me.user_id, FEED_ITEM) / a.feedQty));
-        if (canFeed === 0) return reply.code(400).send({ error: 'not_enough_feed' });
-        const readyAt = Date.now() + scaleMs(a.produceMs, config.fast);
-        db.transaction(() => {
+        const feed = runJournaledMutation(request, 'feed', () => {
+          const hungry = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND kind = ? AND ready_at IS NULL').all(me.user_id, kind);
+          if (hungry.length === 0) return { error: 'no_hungry_animal' };
+          const canFeed = Math.min(hungry.length, Math.floor(invQty(me.user_id, FEED_ITEM) / a.feedQty));
+          if (canFeed === 0) return { error: 'not_enough_feed' };
+          const readyAt = Date.now() + scaleMs(a.produceMs, config.fast);
           invTake(me.user_id, FEED_ITEM, canFeed * a.feedQty);
           const upd = db.prepare('UPDATE animals SET ready_at = ? WHERE id = ?');
           for (const row of hungry.slice(0, canFeed)) upd.run(readyAt, row.id);
           bumpQuest(me.user_id, 'feed', canFeed);
-        })();
-        return { me: fresh(me.user_id), fed: canFeed };
+          return { fed: canFeed };
+        });
+        if (feed.error) return reply.code(feed.error === 'idempotency_conflict' ? 409 : 400).send({ error: feed.error });
+        return { me: fresh(me.user_id), ...feed.outcome };
       });
 
       api.post('/collect', async (request, reply) => {
         const me = request.farmer;
         const kind = ANIMALS[request.body?.kind] ? request.body.kind : 'ga';
         const a = ANIMALS[kind];
-        const now = Date.now();
-        const ready = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND kind = ? AND ready_at IS NOT NULL AND ready_at <= ?')
-          .all(me.user_id, kind, now);
-        if (ready.length === 0) return reply.code(400).send({ error: 'nothing_ready' });
-        db.transaction(() => {
+        const collect = runJournaledMutation(request, 'collect', () => {
+          const ready = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND kind = ? AND ready_at IS NOT NULL AND ready_at <= ?')
+            .all(me.user_id, kind, Date.now());
+          if (ready.length === 0) return { error: 'nothing_ready' };
           for (const row of ready) {
             invAdd(me.user_id, a.product, 1);
             grant(me.user_id, { xp: a.expCollect });
             db.prepare('UPDATE animals SET ready_at = NULL WHERE id = ?').run(row.id);
           }
-        })();
-        return { me: fresh(me.user_id), collected: ready.length, product: a.product };
+          return { collected: ready.length, product: a.product };
+        });
+        if (collect.error) return reply.code(collect.error === 'idempotency_conflict' ? 409 : 400).send({ error: collect.error });
+        return { me: fresh(me.user_id), ...collect.outcome };
       });
 
       // ---- Cối xay ----
