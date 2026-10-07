@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops/seed-1.svg`.
 
-**Coverage:** 4/36 crops have matching growing and ripe v3 art; 4/13 trees and 6/15 animals have individual PNG art. 12 machine types use emoji/UI art. 51 static asset paths appear in the client.
+**Coverage:** 5/36 crops have matching growing and ripe v3 art; 4/13 trees and 6/15 animals have individual PNG art. 12 machine types use emoji/UI art. 53 static asset paths appear in the client.
 
 ## Crops
 
@@ -13,7 +13,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Ngô | ngo | 4 | v3 PNG | v3 PNG |
 | Rau thơm | rauthom | 4 | legacy SVG | legacy SVG |
 | Khoai tây | khoaitay | 5 | v3 PNG | v3 PNG |
-| Tỏi | toi | 5 | legacy SVG | legacy SVG |
+| Tỏi | toi | 5 | v3 PNG | v3 PNG |
 | Dưa leo | dualeo | 6 | legacy SVG | legacy SVG |
 | Sả | sa | 6 | legacy SVG | legacy SVG |
 | Bắp cải | bapcai | 7 | legacy SVG | legacy SVG |
@@ -124,6 +124,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops-v3/carrot-ripe.png` | 93 KB |
 | `assets/crops-v3/corn-growing.png` | 96 KB |
 | `assets/crops-v3/corn-ripe.png` | 106 KB |
+| `assets/crops-v3/garlic-growing.png` | 61 KB |
+| `assets/crops-v3/garlic-ripe.png` | 94 KB |
 | `assets/crops-v3/potato-growing.png` | 101 KB |
 | `assets/crops-v3/potato-ripe.png` | 110 KB |
 | `assets/crops-v3/wheat-growing.png` | 54 KB |

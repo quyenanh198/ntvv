@@ -22,7 +22,10 @@ Each crop has three visible states: seedling, growing, and ripe. The current cod
 | Carrot (`carot`) | 1 | `public/assets/crops-v3/carrot-ripe.png` | `public/assets/crops-v3/carrot-growing.png` | Matching seedling sprite |
 | Corn (`ngo`) | 4 | `public/assets/crops-v3/corn-ripe.png` | `public/assets/crops-v3/corn-growing.png` | Matching seedling sprite |
 | Potato (`khoaitay`) | 5 | `public/assets/crops-v3/potato-ripe.png` | `public/assets/crops-v3/potato-growing.png` | Matching seedling sprite |
+| Garlic (`toi`) | 5 | `public/assets/crops-v3/garlic-ripe.png` | `public/assets/crops-v3/garlic-growing.png` | Matching seedling sprite |
 | Other crops | 4–29 | legacy SVG | legacy SVG | Prioritize by unlock level and visual frequency |
+
+Garlic source images: `asset/source_crops/v3/garlic-growing.png` and `asset/source_crops/v3/garlic-ripe.png` (1024×1024 transparent originals). The game exports are 256×256 PNGs.
 
 ## Other families
 
