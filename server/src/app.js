@@ -1092,32 +1092,29 @@ export function buildApp({ config, db, logger = true }) {
         const { ownerId: rawOwner, idx } = request.body ?? {};
         const me = request.farmer;
         const ownerId = Number.isInteger(rawOwner) ? rawOwner : me.user_id;
-        const owner = getFarmer.get(ownerId);
-        const plot = owner && getPlot.get(ownerId, idx);
-        if (!plot) return reply.code(400).send({ error: 'no_plot' });
-        const now = Date.now();
-        if (now >= plot.ready_at) return reply.code(400).send({ error: 'already_ready' });
-        if (ownerId === me.user_id) {
-          // Ruộng mình: tưới 1 lần/vụ cho bonus Tươi tốt.
-          if (plot.watered) return reply.code(400).send({ error: 'already_watered' });
-          db.transaction(() => {
+        const water = runJournaledMutation(request, 'water', () => {
+          const owner = getFarmer.get(ownerId);
+          const plot = owner && getPlot.get(ownerId, idx);
+          if (!plot) return { error: 'no_plot' };
+          const now = Date.now();
+          if (now >= plot.ready_at) return { error: 'already_ready' };
+          if (ownerId === me.user_id) {
+            if (plot.watered) return { error: 'already_watered' };
             db.prepare('UPDATE plots SET watered = 1 WHERE owner_id = ? AND idx = ?').run(ownerId, idx);
             markAction.run(ownerId, idx, plot.planted_at, me.user_id, 'water', now);
-          })();
-          return { me: fresh(me.user_id) };
-        }
-        // Tưới giúp nhà bạn: mỗi 15 phút một lần/ô, mỗi lần cây chín sớm 10 phút.
-        const last = lastAction.get(ownerId, idx, plot.planted_at, me.user_id, 'water');
-        if (last && now - last.at < scaleMs(WATER_HELP_COOLDOWN_MS, config.fast)) {
-          return reply.code(400).send({ error: 'water_cooldown' });
-        }
-        const boost = scaleMs(WATER_HELP_BOOST_MS, config.fast);
-        db.transaction(() => {
+            return { helped: false };
+          }
+          const last = lastAction.get(ownerId, idx, plot.planted_at, me.user_id, 'water');
+          if (last && now - last.at < scaleMs(WATER_HELP_COOLDOWN_MS, config.fast)) return { error: 'water_cooldown' };
+          const boost = scaleMs(WATER_HELP_BOOST_MS, config.fast);
           db.prepare('UPDATE plots SET watered = 1, ready_at = MAX(?, ready_at - ?) WHERE owner_id = ? AND idx = ?').run(now, boost, ownerId, idx);
           touchAction.run(ownerId, idx, plot.planted_at, me.user_id, 'water', now);
           grant(me.user_id, { gold: WATER_HELPER_GOLD * GOLD_MULT, xp: WATER_HELPER_EXP });
-        })();
-        logEvent(`💧 ${me.name} tưới giúp ruộng của ${owner.name} — cây chín sớm 10 phút`);
+          return { helped: true, ownerName: owner.name };
+        });
+        if (water.error) return reply.code(water.error === 'idempotency_conflict' ? 409 : 400).send({ error: water.error });
+        if (!water.outcome.helped) return { me: fresh(me.user_id) };
+        if (!water.replay) logEvent(`💧 ${me.name} tưới giúp ruộng của ${water.outcome.ownerName} — cây chín sớm 10 phút`);
         return visitPayload(request, ownerId);
       });
 
@@ -1213,18 +1210,18 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/inspect', async (request, reply) => {
         const { ownerId, idx } = request.body ?? {};
         const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(400).send({ error: 'no_farm' });
-        const plot = getPlot.get(ownerId, Number(idx));
-        if (!plot || !plot.crop || plot.tree) return reply.code(400).send({ error: 'no_plot' });
-        const now = Date.now();
-        if (lastAction.get(ownerId, plot.idx, plot.planted_at, me.user_id, 'inspect')) return reply.code(400).send({ error: 'already_inspected' });
-        const used = db.prepare("SELECT COUNT(*) n FROM plot_actions WHERE owner_id = ? AND helper_id = ? AND action = 'inspect' AND at > ?").get(ownerId, me.user_id, now - 24 * 60 * 60 * 1000).n;
-        if (used >= CANSA.inspectPerDay) return reply.code(400).send({ error: 'inspect_limit' });
-        if (CANSA.inspectFee > 0 && me.gold < CANSA.inspectFee) return reply.code(400).send({ error: 'not_enough_gold' });
-        const found = !!CROPS[plot.crop]?.risky;
-        db.transaction(() => {
+        const inspection = runJournaledMutation(request, 'inspect', () => {
+          if (ownerId === me.user_id) return { error: 'own_farm' };
+          const owner = getFarmer.get(ownerId);
+          if (!owner) return { error: 'no_farm' };
+          const plot = getPlot.get(ownerId, Number(idx));
+          if (!plot || !plot.crop || plot.tree) return { error: 'no_plot' };
+          const now = Date.now();
+          if (lastAction.get(ownerId, plot.idx, plot.planted_at, me.user_id, 'inspect')) return { error: 'already_inspected' };
+          const used = db.prepare("SELECT COUNT(*) n FROM plot_actions WHERE owner_id = ? AND helper_id = ? AND action = 'inspect' AND at > ?").get(ownerId, me.user_id, now - 24 * 60 * 60 * 1000).n;
+          if (used >= CANSA.inspectPerDay) return { error: 'inspect_limit' };
+          if (CANSA.inspectFee > 0 && getFarmer.get(me.user_id).gold < CANSA.inspectFee) return { error: 'not_enough_gold' };
+          const found = !!CROPS[plot.crop]?.risky;
           if (CANSA.inspectFee > 0) {
             grant(me.user_id, { gold: -CANSA.inspectFee });
             db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(CANSA.inspectFee, me.user_id);
@@ -1234,12 +1231,15 @@ export function buildApp({ config, db, logger = true }) {
             db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(ownerId, plot.idx);
             grant(me.user_id, { gold: CANSA.bounty });
           }
-        })();
-        if (found) {
-          logEvent(`🚨 ${me.name} phát hiện cần sa ở ruộng nhà ${owner.name} — nhổ sạch, lĩnh thưởng ${CANSA.bounty.toLocaleString('vi')} vàng`);
-          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🚨 ${me.name} phát hiện cần sa ô ${plot.idx + 1} nhà bạn — mất trắng!`);
+          return { found, bounty: found ? CANSA.bounty : 0, fee: CANSA.inspectFee, left: CANSA.inspectPerDay - used - 1, ownerName: owner.name, plotIdx: plot.idx };
+        });
+        if (inspection.error) return reply.code(inspection.error === 'idempotency_conflict' ? 409 : 400).send({ error: inspection.error });
+        const { found, bounty, fee, left, ownerName, plotIdx } = inspection.outcome;
+        if (found && !inspection.replay) {
+          logEvent(`🚨 ${me.name} phát hiện cần sa ở ruộng nhà ${ownerName} — nhổ sạch, lĩnh thưởng ${CANSA.bounty.toLocaleString('vi')} vàng`);
+          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🚨 ${me.name} phát hiện cần sa ô ${plotIdx + 1} nhà bạn — mất trắng!`);
         }
-        return { ...visitPayload(request, ownerId), found, bounty: found ? CANSA.bounty : 0, fee: CANSA.inspectFee, left: CANSA.inspectPerDay - used - 1 };
+        return { ...visitPayload(request, ownerId), found, bounty, fee, left };
       });
       api.post('/harvest-help', async (request, reply) => {
         const { ownerId, idx, all } = request.body ?? {};
@@ -1281,25 +1281,28 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/water-help-all', async (request, reply) => {
         const { ownerId } = request.body ?? {};
         const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(400).send({ error: 'no_farm' });
-        const now = Date.now();
-        const cooldown = scaleMs(WATER_HELP_COOLDOWN_MS, config.fast);
-        const boost = scaleMs(WATER_HELP_BOOST_MS, config.fast);
-        const plots = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ready_at > ? ORDER BY idx').all(ownerId, now)
-          .filter((p) => { const last = lastAction.get(ownerId, p.idx, p.planted_at, me.user_id, 'water'); return !last || now - last.at >= cooldown; });
-        if (!plots.length) return reply.code(400).send({ error: 'water_cooldown' });
-        db.transaction(() => {
+        const water = runJournaledMutation(request, 'water-help-all', () => {
+          if (ownerId === me.user_id) return { error: 'own_farm' };
+          const owner = getFarmer.get(ownerId);
+          if (!owner) return { error: 'no_farm' };
+          const now = Date.now();
+          const cooldown = scaleMs(WATER_HELP_COOLDOWN_MS, config.fast);
+          const boost = scaleMs(WATER_HELP_BOOST_MS, config.fast);
+          const plots = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ready_at > ? ORDER BY idx').all(ownerId, now)
+            .filter((p) => { const last = lastAction.get(ownerId, p.idx, p.planted_at, me.user_id, 'water'); return !last || now - last.at >= cooldown; });
+          if (!plots.length) return { error: 'water_cooldown' };
           const upd = db.prepare('UPDATE plots SET watered = 1, ready_at = MAX(?, ready_at - ?) WHERE owner_id = ? AND idx = ?');
           for (const p of plots) {
             upd.run(now, boost, ownerId, p.idx);
             touchAction.run(ownerId, p.idx, p.planted_at, me.user_id, 'water', now);
           }
-          grant(me.user_id, { gold: WATER_HELPER_GOLD * GOLD_MULT * plots.length, xp: WATER_HELPER_EXP * plots.length });
-        })();
-        logEvent(`💧 ${me.name} tưới giúp ${plots.length} ô nhà ${owner.name} — cây chín sớm 10 phút`);
-        return { ...visitPayload(request, ownerId), watered: plots.length, gained: WATER_HELPER_GOLD * GOLD_MULT * plots.length };
+          const gained = WATER_HELPER_GOLD * GOLD_MULT * plots.length;
+          grant(me.user_id, { gold: gained, xp: WATER_HELPER_EXP * plots.length });
+          return { watered: plots.length, gained, ownerName: owner.name };
+        });
+        if (water.error) return reply.code(water.error === 'idempotency_conflict' ? 409 : 400).send({ error: water.error });
+        if (!water.replay) logEvent(`💧 ${me.name} tưới giúp ${water.outcome.watered} ô nhà ${water.outcome.ownerName} — cây chín sớm 10 phút`);
+        return { ...visitPayload(request, ownerId), watered: water.outcome.watered, gained: water.outcome.gained };
       });
 
       // ---- Kho & cửa hàng ----
