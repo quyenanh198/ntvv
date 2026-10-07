@@ -1812,18 +1812,22 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         const lux = LUXURY[item];
         if (!lux) return reply.code(400).send({ error: 'bad_request' });
-        if (db.prepare('SELECT 1 FROM luxury WHERE owner_id = ? AND item = ?').get(me.user_id, item)) return reply.code(400).send({ error: 'already_owned' });
-        if (me.gold < lux.price) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const purchase = runJournaledMutation(request, 'luxury-buy', () => {
+          if (db.prepare('SELECT 1 FROM luxury WHERE owner_id = ? AND item = ?').get(me.user_id, item)) return { error: 'already_owned' };
+          if (getFarmer.get(me.user_id).gold < lux.price) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -lux.price });
           db.prepare('INSERT INTO luxury (owner_id, item, at) VALUES (?, ?, ?)').run(me.user_id, item, Date.now());
           db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(lux.price, me.user_id);
           if (lux.kind === 'title') db.prepare('UPDATE farmers SET title_id = ? WHERE user_id = ?').run(item, me.user_id);
           if (lux.kind === 'frame') db.prepare('UPDATE farmers SET frame_id = ? WHERE user_id = ?').run(item, me.user_id);
-        })();
-        logEvent(`💎 ${me.name} vung ${lux.price.toLocaleString('vi')} vàng tậu ${lux.emoji} ${lux.name}!`);
-        const others = db.prepare('SELECT user_id FROM farmers WHERE user_id != ?').all(me.user_id).map((r) => r.user_id);
-        pushTo(others, 'Ăn trộm dzui dzẻ 😋', `💎 ${me.name} vừa vung ${lux.price.toLocaleString('vi')} vàng tậu ${lux.emoji} ${lux.name}!`);
+          return { item };
+        });
+        if (purchase.error) return reply.code(purchase.error === 'idempotency_conflict' ? 409 : 400).send({ error: purchase.error });
+        if (!purchase.replay) {
+          logEvent(`💎 ${me.name} vung ${lux.price.toLocaleString('vi')} vàng tậu ${lux.emoji} ${lux.name}!`);
+          const others = db.prepare('SELECT user_id FROM farmers WHERE user_id != ?').all(me.user_id).map((r) => r.user_id);
+          pushTo(others, 'Ăn trộm dzui dzẻ 😋', `💎 ${me.name} vừa vung ${lux.price.toLocaleString('vi')} vàng tậu ${lux.emoji} ${lux.name}!`);
+        }
         return { me: fresh(me.user_id) };
       });
 
@@ -1832,8 +1836,12 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         const k = item ? LUXURY[item]?.kind : kind;
         if (!['title', 'frame'].includes(k)) return reply.code(400).send({ error: 'bad_request' });
-        if (item && !db.prepare('SELECT 1 FROM luxury WHERE owner_id = ? AND item = ?').get(me.user_id, item)) return reply.code(400).send({ error: 'not_owned' });
-        db.prepare(`UPDATE farmers SET ${k === 'title' ? 'title_id' : 'frame_id'} = ? WHERE user_id = ?`).run(item || '', me.user_id);
+        const equip = runJournaledMutation(request, 'luxury-equip', () => {
+          if (item && !db.prepare('SELECT 1 FROM luxury WHERE owner_id = ? AND item = ?').get(me.user_id, item)) return { error: 'not_owned' };
+          db.prepare(`UPDATE farmers SET ${k === 'title' ? 'title_id' : 'frame_id'} = ? WHERE user_id = ?`).run(item || '', me.user_id);
+          return { item: item || '', kind: k };
+        });
+        if (equip.error) return reply.code(equip.error === 'idempotency_conflict' ? 409 : 400).send({ error: equip.error });
         return { me: fresh(me.user_id) };
       });
 
