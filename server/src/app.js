@@ -1244,17 +1244,17 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/harvest-help', async (request, reply) => {
         const { ownerId, idx, all } = request.body ?? {};
         const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(400).send({ error: 'no_farm' });
-        const now = Date.now();
-        let plots = ripePlotsOf(owner, now);
-        if (!all) plots = plots.filter((p) => p.idx === Number(idx));
-        if (!plots.length) return reply.code(400).send({ error: 'nothing_ready' });
-        const got = {};
-        let riskyN = 0;
-        let riskyGold = 0;
-        db.transaction(() => {
+        const harvest = runJournaledMutation(request, 'harvest-help', () => {
+          if (ownerId === me.user_id) return { error: 'own_farm' };
+          const owner = getFarmer.get(ownerId);
+          if (!owner) return { error: 'no_farm' };
+          const now = Date.now();
+          let plots = ripePlotsOf(owner, now);
+          if (!all) plots = plots.filter((p) => p.idx === Number(idx));
+          if (!plots.length) return { error: 'nothing_ready' };
+          const got = {};
+          let riskyN = 0;
+          let riskyGold = 0;
           for (const p of plots) {
             if (CROPS[p.crop]?.risky) {
               // Cây đặc biệt: chủ nhận vàng thẳng; người giúp không thấy tên thật.
@@ -1267,14 +1267,20 @@ export function buildApp({ config, db, logger = true }) {
             harvestPlot(owner, p);
             got[p.crop] = (got[p.crop] || 0) + (invQty(owner.user_id, p.crop) - before);
           }
-          grant(me.user_id, { gold: WATER_HELPER_GOLD * GOLD_MULT * plots.length, xp: WATER_HELPER_EXP * plots.length });
-        })();
-        const descParts = Object.entries(got).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`);
+          const gained = WATER_HELPER_GOLD * GOLD_MULT * plots.length;
+          grant(me.user_id, { gold: gained, xp: WATER_HELPER_EXP * plots.length });
+          return { harvested: plots.length, items: got, gained, riskyN, riskyGold, ownerName: owner.name };
+        });
+        if (harvest.error) return reply.code(harvest.error === 'idempotency_conflict' ? 409 : 400).send({ error: harvest.error });
+        const { harvested, items, gained, riskyN, riskyGold, ownerName } = harvest.outcome;
+        const descParts = Object.entries(items).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`);
         if (riskyN) descParts.push(`${riskyN} ô cây đặc biệt`);
         const desc = descParts.join(', ');
-        logEvent(`🧺 ${me.name} thu hoạch giúp ${plots.length} ô nhà ${owner.name}: ${desc}`);
-        pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🧺 ${me.name} vừa thu hoạch giúp ${plots.length} ô — ${descParts.length ? desc : ''}${riskyGold ? ` (+${riskyGold.toLocaleString('vi')} vàng cây đặc biệt)` : ''} đã vào kho bạn!`);
-        return { ...visitPayload(request, ownerId), harvested: plots.length, items: got, gained: WATER_HELPER_GOLD * GOLD_MULT * plots.length };
+        if (!harvest.replay) {
+          logEvent(`🧺 ${me.name} thu hoạch giúp ${harvested} ô nhà ${ownerName}: ${desc}`);
+          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🧺 ${me.name} vừa thu hoạch giúp ${harvested} ô — ${descParts.length ? desc : ''}${riskyGold ? ` (+${riskyGold.toLocaleString('vi')} vàng cây đặc biệt)` : ''} đã vào kho bạn!`);
+        }
+        return { ...visitPayload(request, ownerId), harvested, items, gained };
       });
 
       // Tưới giúp hết: mọi ô đang lớn mà lượt 15 phút đã mở.
@@ -2137,33 +2143,37 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/plant-help', async (request, reply) => {
         const { ownerId } = request.body ?? {};
         const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(400).send({ error: 'no_farm' });
-        const occupied = new Set(db.prepare('SELECT idx FROM plots WHERE owner_id = ?').all(ownerId).map((r) => r.idx));
-        const empty = [];
-        for (let i = 0; i < owner.plots_count; i += 1) if (!occupied.has(i)) empty.push(i);
-        if (!empty.length) return reply.code(400).send({ error: 'no_empty_plot' });
-        const pool = Object.values(CROPS).filter((c) => c.level <= levelFor(owner.xp));
-        let gold = me.gold;
-        const plan = [];
-        for (const i of empty) {
-          const c = pool[Math.floor(Math.random() * pool.length)];
-          if (gold < c.seed) continue;
-          gold -= c.seed;
-          plan.push({ idx: i, crop: c });
-        }
-        if (!plan.length) return reply.code(400).send({ error: 'not_enough_gold' });
-        const now = Date.now();
-        const cost = plan.reduce((a, x) => a + x.crop.seed, 0);
-        db.transaction(() => {
+        const plant = runJournaledMutation(request, 'plant-help', () => {
+          if (ownerId === me.user_id) return { error: 'own_farm' };
+          const owner = getFarmer.get(ownerId);
+          if (!owner) return { error: 'no_farm' };
+          const occupied = new Set(db.prepare('SELECT idx FROM plots WHERE owner_id = ?').all(ownerId).map((r) => r.idx));
+          const empty = [];
+          for (let i = 0; i < owner.plots_count; i += 1) if (!occupied.has(i)) empty.push(i);
+          if (!empty.length) return { error: 'no_empty_plot' };
+          const pool = Object.values(CROPS).filter((c) => !c.risky && c.level <= levelFor(owner.xp));
+          let gold = getFarmer.get(me.user_id).gold;
+          const plan = [];
+          for (const i of empty) {
+            const c = pool[Math.floor(Math.random() * pool.length)];
+            if (gold < c.seed) continue;
+            gold -= c.seed;
+            plan.push({ idx: i, crop: c });
+          }
+          if (!plan.length) return { error: 'not_enough_gold' };
+          const now = Date.now();
+          const cost = plan.reduce((a, x) => a + x.crop.seed, 0);
           const ins = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (?, ?, ?, ?, ?, 0)');
           for (const x of plan) ins.run(ownerId, x.idx, x.crop.id, now, now + cropTime(owner, scaleMs(x.crop.growMs, config.fast)));
           grant(me.user_id, { gold: -cost, xp: PLANT_HELP_EXP * plan.length });
-        })();
-        logEvent(`🌱 ${me.name} trồng giúp ${plan.length} ô nhà ${owner.name}`);
-        pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🌱 ${me.name} vừa trồng giúp bạn ${plan.length} ô đó!`);
-        return { ...visitPayload(request, ownerId), helped: plan.length, cost };
+          return { helped: plan.length, cost, ownerName: owner.name };
+        });
+        if (plant.error) return reply.code(plant.error === 'idempotency_conflict' ? 409 : 400).send({ error: plant.error });
+        if (!plant.replay) {
+          logEvent(`🌱 ${me.name} trồng giúp ${plant.outcome.helped} ô nhà ${plant.outcome.ownerName}`);
+          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🌱 ${me.name} vừa trồng giúp bạn ${plant.outcome.helped} ô đó!`);
+        }
+        return { ...visitPayload(request, ownerId), helped: plant.outcome.helped, cost: plant.outcome.cost };
       });
 
       api.post('/plant-tree', async (request, reply) => {
@@ -2372,18 +2382,20 @@ export function buildApp({ config, db, logger = true }) {
       // ---- Tưới toàn bộ ruộng mình ----
       api.post('/water-all', async (request, reply) => {
         const me = request.farmer;
-        const now = Date.now();
-        const dry = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND watered = 0 AND ready_at > ?')
-          .all(me.user_id, now);
-        if (dry.length === 0) return reply.code(400).send({ error: 'nothing_to_water' });
-        db.transaction(() => {
+        const water = runJournaledMutation(request, 'water-all', () => {
+          const now = Date.now();
+          const dry = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND watered = 0 AND ready_at > ?')
+            .all(me.user_id, now);
+          if (dry.length === 0) return { error: 'nothing_to_water' };
           const upd = db.prepare('UPDATE plots SET watered = 1 WHERE owner_id = ? AND idx = ?');
           for (const plot of dry) {
             upd.run(me.user_id, plot.idx);
             markAction.run(me.user_id, plot.idx, plot.planted_at, me.user_id, 'water', now);
           }
-        })();
-        return { me: fresh(me.user_id), watered: dry.length };
+          return { watered: dry.length };
+        });
+        if (water.error) return reply.code(water.error === 'idempotency_conflict' ? 409 : 400).send({ error: water.error });
+        return { me: fresh(me.user_id), ...water.outcome };
       });
 
       // ---- Thăm ruộng ----

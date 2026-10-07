@@ -31,6 +31,14 @@ test('watering and inspection replay without duplicate social rewards or plot ch
     assert.equal((await post(1, '/water', own, 'own-water-retry-0001')).statusCode, 200);
     assert.equal(plot(1, 0).watered, 1);
     assert.equal((await post(1, '/water', own, 'own-water-new-key-0001')).statusCode, 400);
+    insert.run(1, 1, 'carot', Date.now(), future);
+    insert.run(1, 2, 'luami', Date.now(), future);
+    const ownBulk = await Promise.all([post(1, '/water-all', {}, 'own-bulk-water-0001'), post(1, '/water-all', {}, 'own-bulk-water-0001')]);
+    assert.deepEqual(ownBulk.map((response) => response.statusCode), [200, 200]);
+    assert.equal(ownBulk[0].json().watered, 2);
+    assert.equal(plot(1, 1).watered, 1);
+    assert.equal(plot(1, 2).watered, 1);
+    assert.equal((await post(1, '/water-all', {}, 'own-bulk-new-key-0001')).statusCode, 400);
 
     const beforeHelp = gold(1);
     const help = { ownerId: 2, idx: 0 };
