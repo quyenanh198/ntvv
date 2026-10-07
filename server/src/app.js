@@ -92,6 +92,10 @@ const PUBLIC_DIR = resolve(__dirname, '../../public');
 
 const ME_CACHE_TTL_MS = 30_000;
 const ME_CACHE_MAX = 300;
+const COLLECTIONS = [
+  { id: 'first_harvests', name: 'Vụ mùa đầu tiên', items: ['luami', 'carot', 'ngo'], gold: 400, gems: 0 },
+  { id: 'village_flavors', name: 'Hương vị làng quê', items: ['rauthom', 'toi', 'sa', 'cachua', 'ot'], gold: 2000, gems: 2 },
+];
 
 export function buildApp({ config, db, logger = true }) {
   const app = Fastify({ logger, trustProxy: true });
@@ -632,6 +636,11 @@ export function buildApp({ config, db, logger = true }) {
       expandNext,
       plots: plotViews(f.user_id, f.plots_count),
       inventory: invAll(f.user_id),
+      collections: (() => {
+        const found = new Set(db.prepare('SELECT item FROM collection_discoveries WHERE owner_id = ?').all(f.user_id).map((r) => r.item));
+        const claimed = new Set(db.prepare('SELECT collection_id FROM collection_claims WHERE owner_id = ?').all(f.user_id).map((r) => r.collection_id));
+        return COLLECTIONS.map((collection) => ({ ...collection, gold: collection.gold * GOLD_MULT, items: collection.items.map((id) => ({ id, found: found.has(id) })), claimed: claimed.has(collection.id) }));
+      })(),
       animals: db.prepare('SELECT id, kind, ready_at FROM animals WHERE owner_id = ?').all(f.user_id)
         .map((a) => ({ ...a, ready: a.ready_at != null && Date.now() >= a.ready_at })),
       mill: mill && mill.recipe
@@ -1039,7 +1048,10 @@ export function buildApp({ config, db, logger = true }) {
         const refund = Math.random() < 0.05 * skillRank(me, 'hatgiongtk') ? crop.seed : 0;
         grant(me.user_id, { xp, gold: refund });
         if (crop.risky) grant(me.user_id, { gold: CANSA.reward }); // cần sa: thu vàng thẳng, không ra hàng
-        else invAdd(me.user_id, crop.id, Math.max(1, HARVEST_YIELD - (plot.poached || 0)));
+        else {
+          invAdd(me.user_id, crop.id, Math.max(1, HARVEST_YIELD - (plot.poached || 0)));
+          db.prepare('INSERT OR IGNORE INTO collection_discoveries (owner_id, item, first_at) VALUES (?, ?, ?)').run(me.user_id, crop.id, Date.now());
+        }
         db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, plot.idx);
         bumpQuest(me.user_id, 'harvest');
         bumpFest(me.user_id, 'harvest');
@@ -1686,6 +1698,24 @@ export function buildApp({ config, db, logger = true }) {
         });
         if (claim.error) return reply.code(claim.error === 'idempotency_conflict' ? 409 : 400).send({ error: claim.error });
         if (!claim.replay) logEvent(`🎁 ${me.name} mở rương nhiệm vụ ngày`);
+        return { me: fresh(me.user_id), ...claim.outcome };
+      });
+
+      api.post('/collection-claim', async (request, reply) => {
+        const { id } = request.body ?? {};
+        const collection = COLLECTIONS.find((entry) => entry.id === id);
+        if (!collection) return reply.code(400).send({ error: 'bad_request' });
+        const me = request.farmer;
+        const claim = runJournaledMutation(request, 'collection-claim', () => {
+          if (db.prepare('SELECT 1 FROM collection_claims WHERE owner_id = ? AND collection_id = ?').get(me.user_id, id)) return { error: 'already_claimed' };
+          const found = new Set(db.prepare('SELECT item FROM collection_discoveries WHERE owner_id = ?').all(me.user_id).map((row) => row.item));
+          if (!collection.items.every((item) => found.has(item))) return { error: 'collection_incomplete' };
+          grant(me.user_id, { gold: collection.gold * GOLD_MULT, gems: collection.gems });
+          db.prepare('INSERT INTO collection_claims (owner_id, collection_id, claimed_at) VALUES (?, ?, ?)').run(me.user_id, id, Date.now());
+          return { id, gold: collection.gold * GOLD_MULT, gems: collection.gems };
+        });
+        if (claim.error) return reply.code(claim.error === 'idempotency_conflict' ? 409 : 400).send({ error: claim.error });
+        if (!claim.replay) logEvent(`📒 ${me.name} hoàn thành bộ sưu tập ${collection.name}`);
         return { me: fresh(me.user_id), ...claim.outcome };
       });
 

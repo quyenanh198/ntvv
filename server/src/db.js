@@ -215,6 +215,19 @@ CREATE TABLE IF NOT EXISTS mutation_results (
   PRIMARY KEY (owner_id, request_key)
 );
 CREATE INDEX IF NOT EXISTS idx_mutation_results_created ON mutation_results(created_at);
+
+CREATE TABLE IF NOT EXISTS collection_discoveries (
+  owner_id INTEGER NOT NULL,
+  item TEXT NOT NULL,
+  first_at INTEGER NOT NULL,
+  PRIMARY KEY (owner_id, item)
+);
+CREATE TABLE IF NOT EXISTS collection_claims (
+  owner_id INTEGER NOT NULL,
+  collection_id TEXT NOT NULL,
+  claimed_at INTEGER NOT NULL,
+  PRIMARY KEY (owner_id, collection_id)
+);
 `;
 
 export function openDb(dataDir) {

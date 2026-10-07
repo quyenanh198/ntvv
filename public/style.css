@@ -1799,6 +1799,11 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 /* ---- Vật nuôi/cây mới không có tranh riêng ---- */
 .emoji-ic--barn { font-size: 2rem; width: 44px; height: 44px; display: inline-grid; place-items: center; }
+.collection-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; margin: 12px 0; }
+.collection-item { display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 6px; padding: 6px; border: 1px solid #aab89b; border-radius: 10px; background: #f1f0e6; opacity: .72; font-size: .78rem; }
+.collection-item--found { border-color: #7ca559; background: #edf5e3; opacity: 1; }
+.collection-item img { width: 38px; height: 38px; object-fit: contain; }
+.collection-item b { color: #548334; }
 .hen .emoji-ic--barn { font-size: 1.8rem; }
 .plot--tree { position: relative; }
 .tree-emoji { position: absolute; right: 8%; top: 10%; font-size: 1.1rem; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); pointer-events: none; }

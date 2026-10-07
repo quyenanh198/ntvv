@@ -70,7 +70,7 @@
   // tới server, nên cứ thử lại tại chỗ mỗi 2s thay vì reload cả trang — người
   // chơi giữ nguyên màn hình đang mở. Chỉ reload khi chờ quá lâu.
   const WAKE_RETRIES = 20;
-  const REPLAY_SAFE_POSTS = new Set(['/plant', '/plant-all', '/harvest', '/harvest-all', '/feed', '/collect', '/machine-run', '/machine-run-all', '/machine-collect', '/machine-collect-all', '/mill', '/mill-collect', '/sell', '/buy', '/buy-animal', '/buy-chicken', '/lottery-buy', '/want-create', '/want-cancel', '/want-fill', '/gold-give', '/quest-chest', '/star-claim', '/fest-claim', '/order-deliver', '/order-discard', '/machine-upgrade', '/expand', '/upgrade-barn', '/upgrade-coop', '/upgrade-pond', '/fish', '/fish-stock', '/fish-harvest', '/buy-gems', '/buy-energy']);
+  const REPLAY_SAFE_POSTS = new Set(['/plant', '/plant-all', '/harvest', '/harvest-all', '/feed', '/collect', '/machine-run', '/machine-run-all', '/machine-collect', '/machine-collect-all', '/mill', '/mill-collect', '/sell', '/buy', '/buy-animal', '/buy-chicken', '/lottery-buy', '/want-create', '/want-cancel', '/want-fill', '/gold-give', '/quest-chest', '/collection-claim', '/star-claim', '/fest-claim', '/order-deliver', '/order-discard', '/machine-upgrade', '/expand', '/upgrade-barn', '/upgrade-coop', '/upgrade-pond', '/fish', '/fish-stock', '/fish-harvest', '/buy-gems', '/buy-energy', '/luxury-buy', '/luxury-equip']);
   let reloading = false;
   function checkServerBoot(state) {
     if (reloading || !MY_BOOT || !state?.boot || state.boot === MY_BOOT) return false;
@@ -160,6 +160,7 @@
     already_poached: 'Ô này hái ké rồi — chủ chậm thu thêm 1 giờ sẽ mở lượt mới 😏',
     poach_limit: 'Hôm nay hái ké đủ rồi, mai lại nhé!',
     already_claimed: 'Nhận rồi mà!',
+    collection_incomplete: 'Thu hoạch đủ các giống trong bộ sưu tập trước nhé.',
     not_enough_quests: 'Xong 3 nhiệm vụ đã rồi mở rương.',
     no_farm: 'Người này chưa mở nông trại.',
     max_plots: 'Đất mở hết cỡ rồi!',
@@ -1084,6 +1085,25 @@
       );
     }
 
+    if (t === 'collections') {
+      const rows = (m.collections || []).map((collection) => {
+        const count = collection.items.filter((entry) => entry.found).length;
+        const complete = count === collection.items.length;
+        return `<section class="machine-block" aria-label="${esc(collection.name)}">
+          <h4>📒 ${esc(collection.name)} · ${count}/${collection.items.length}</h4>
+          <p class="sheet-note">Thu hoạch mỗi giống một lần để ghi vào sổ. Tiến độ được giữ qua các mùa.</p>
+          <div class="collection-grid">${collection.items.map(({ id, found }) => `<div class="collection-item${found ? ' collection-item--found' : ''}">
+            <img src="${cropSprite(id, 3)}" alt="" />
+            <span>${esc(crops()[id]?.name || id)}</span><b>${found ? '✓' : '○'}</b>
+          </div>`).join('')}</div>
+          <div class="sheet-actions"><span class="seed-meta">Thưởng: ${collection.gold.toLocaleString('vi')} ${COIN}${collection.gems ? ` · ${collection.gems}${GEM}` : ''}</span>
+            <button class="gbtn gbtn--gold btn-mini" data-collection-claim="${collection.id}" ${complete && !collection.claimed ? '' : 'disabled'}>${collection.claimed ? 'Đã nhận' : complete ? 'Nhận thưởng' : 'Chưa đủ'}</button>
+          </div>
+        </section>`;
+      }).join('');
+      return sheetShell('📒 Sổ mùa vụ', `<p class="sheet-note">Bộ sưu tập ghi nhận các vụ thu hoạch từ khi Sổ mùa vụ ra mắt.</p>${rows}`);
+    }
+
     if (t === 'orders') {
       const rows = m.orders.length === 0
         ? '<p class="sheet-note">Đơn mới đang trên đường tới…</p>'
@@ -1497,6 +1517,11 @@
             <span class="mc-icon">🎪${fReady ? '<i class="dot"></i>' : ''}</span>
             <span class="mc-name">Sự kiện</span>
             <span class="mc-sub">Mùa lễ hội</span>
+          </button>
+          <button class="more-card" data-sheet="collections">
+            <span class="mc-icon">📒${(m.collections || []).some((c) => !c.claimed && c.items.every((i) => i.found)) ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-name">Sổ mùa vụ</span>
+            <span class="mc-sub">Mục tiêu lâu dài</span>
           </button>
           ${m.skills.unlocked ? `
           <button class="more-card" data-sheet="skills">
@@ -2063,6 +2088,12 @@
       el.addEventListener('click', async () => {
         const r = await run(() => api('/fest-claim', { id: Number(el.dataset.festClaim) }));
         if (r) { updateMe(r); toast(`🎪 Nhận thưởng: ${r.claimed.label}!`); render(); }
+      }));
+
+    document.querySelectorAll('[data-collection-claim]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        const r = await run(() => api('/collection-claim', { id: el.dataset.collectionClaim }));
+        if (r) { updateMe(r); toast(`📒 Hoàn thành bộ sưu tập! +${r.gold.toLocaleString('vi')} vàng${r.gems ? `, +${r.gems} kim cương` : ''}`); render(); }
       }));
 
     document.getElementById('btn-water-own')?.addEventListener('click', async (e) => {
