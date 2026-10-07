@@ -1791,16 +1791,19 @@ export function buildApp({ config, db, logger = true }) {
         const { machine } = request.body ?? {};
         const me = request.farmer;
         if (!MACHINES[machine]) return reply.code(400).send({ error: 'bad_request' });
-        const lv = machineLevel(me, machine);
-        if (lv >= MACHINE_UPGRADE_GOLD.length) return reply.code(400).send({ error: 'max_level' });
-        const cost = MACHINE_UPGRADE_GOLD[lv];
-        if (me.gold < cost) return reply.code(400).send({ error: 'not_enough_gold' });
-        const levels = { ...machineLevels(me), [machine]: lv + 1 };
-        db.transaction(() => {
+        const upgrade = runJournaledMutation(request, 'machine-upgrade', () => {
+          const current = getFarmer.get(me.user_id);
+          const lv = machineLevel(current, machine);
+          if (lv >= MACHINE_UPGRADE_GOLD.length) return { error: 'max_level' };
+          const cost = MACHINE_UPGRADE_GOLD[lv];
+          if (current.gold < cost) return { error: 'not_enough_gold' };
+          const levels = { ...machineLevels(current), [machine]: lv + 1 };
           grant(me.user_id, { gold: -cost });
           db.prepare('UPDATE farmers SET machine_levels_json = ?, sunk_gold = sunk_gold + ? WHERE user_id = ?').run(JSON.stringify(levels), cost, me.user_id);
-        })();
-        logEvent(`⚙️ ${me.name} nâng cấp ${MACHINES[machine].name} lên cấp ${lv + 1} (−${(lv + 1) * 10}% thời gian)`);
+          return { level: lv + 1 };
+        });
+        if (upgrade.error) return reply.code(upgrade.error === 'idempotency_conflict' ? 409 : 400).send({ error: upgrade.error });
+        if (!upgrade.replay) logEvent(`⚙️ ${me.name} nâng cấp ${MACHINES[machine].name} lên cấp ${upgrade.outcome.level}`);
         return { me: fresh(me.user_id) };
       });
 
@@ -1869,15 +1872,18 @@ export function buildApp({ config, db, logger = true }) {
 
       api.post('/expand', async (request, reply) => {
         const me = request.farmer;
-        if (me.plots_count >= MAX_PLOTS) return reply.code(400).send({ error: 'max_plots' });
-        const exp = EXPANSIONS[(me.plots_count - START_PLOTS) / 4];
-        if (levelFor(me.xp) < exp.level) return reply.code(400).send({ error: 'level_too_low' });
-        if (me.gold < exp.gold) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const expansion = runJournaledMutation(request, 'expand', () => {
+          const current = getFarmer.get(me.user_id);
+          if (current.plots_count >= MAX_PLOTS) return { error: 'max_plots' };
+          const exp = EXPANSIONS[(current.plots_count - START_PLOTS) / 4];
+          if (levelFor(current.xp) < exp.level) return { error: 'level_too_low' };
+          if (current.gold < exp.gold) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -exp.gold });
           db.prepare('UPDATE farmers SET plots_count = plots_count + 4 WHERE user_id = ?').run(me.user_id);
-        })();
-        logEvent(`🧱 ${me.name} mở rộng nông trại lên ${me.plots_count + 4} ô`);
+          return { plots: current.plots_count + 4 };
+        });
+        if (expansion.error) return reply.code(expansion.error === 'idempotency_conflict' ? 409 : 400).send({ error: expansion.error });
+        if (!expansion.replay) logEvent(`🧱 ${me.name} mở rộng nông trại lên ${expansion.outcome.plots} ô`);
         return { me: fresh(me.user_id) };
       });
 
@@ -2203,23 +2209,26 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       // ---- Nâng cấp chuồng gà / ao cá ----
-      async function upgradeBarn(request, reply, kind) {
+      async function upgradeBarn(request, reply, kind, route = 'upgrade-barn') {
         const a = ANIMALS[kind];
         const me = request.farmer;
         if (!a) return reply.code(400).send({ error: 'bad_request' });
-        const lv = barnLevel(me, kind);
-        if (lv >= a.capacities.length) return reply.code(400).send({ error: 'max_level' });
-        const gold = BARN_UPGRADE_GOLD[lv - 1];
-        if (me.gold < gold) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const upgrade = runJournaledMutation(request, route, () => {
+          const current = getFarmer.get(me.user_id);
+          const lv = barnLevel(current, kind);
+          if (lv >= a.capacities.length) return { error: 'max_level' };
+          const gold = BARN_UPGRADE_GOLD[lv - 1];
+          if (current.gold < gold) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -gold });
-          bumpBarnLevel(me, kind);
-        })();
-        logEvent(`${a.emoji} ${me.name} nâng chuồng ${a.name} lên cấp ${lv + 1}`);
+          bumpBarnLevel(current, kind);
+          return { level: lv + 1 };
+        });
+        if (upgrade.error) return reply.code(upgrade.error === 'idempotency_conflict' ? 409 : 400).send({ error: upgrade.error });
+        if (!upgrade.replay) logEvent(`${a.emoji} ${me.name} nâng chuồng ${a.name} lên cấp ${upgrade.outcome.level}`);
         return { me: fresh(me.user_id) };
       }
       api.post('/upgrade-barn', async (request, reply) => upgradeBarn(request, reply, request.body?.kind));
-      api.post('/upgrade-coop', async (request, reply) => upgradeBarn(request, reply, 'ga'));
+      api.post('/upgrade-coop', async (request, reply) => upgradeBarn(request, reply, 'ga', 'upgrade-coop'));
 
       // ---- Ao nuôi: thả giống (tiêu hao) → thu hoạch cả mẻ ----
       api.post('/fish-stock', async (request, reply) => {
@@ -2270,15 +2279,18 @@ export function buildApp({ config, db, logger = true }) {
 
       api.post('/upgrade-pond', async (request, reply) => {
         const me = request.farmer;
-        if (levelFor(me.xp) < FISHING.level) return reply.code(400).send({ error: 'level_too_low' });
-        if (me.pond_level >= POND_LEVELS.length) return reply.code(400).send({ error: 'max_level' });
-        const gold = POND_UPGRADE_GOLD[me.pond_level - 1];
-        if (me.gold < gold) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const upgrade = runJournaledMutation(request, 'upgrade-pond', () => {
+          const current = getFarmer.get(me.user_id);
+          if (levelFor(current.xp) < FISHING.level) return { error: 'level_too_low' };
+          if (current.pond_level >= POND_LEVELS.length) return { error: 'max_level' };
+          const gold = POND_UPGRADE_GOLD[current.pond_level - 1];
+          if (current.gold < gold) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -gold });
           db.prepare('UPDATE farmers SET pond_level = pond_level + 1 WHERE user_id = ?').run(me.user_id);
-        })();
-        logEvent(`🎣 ${me.name} nâng ao cá lên cấp ${me.pond_level + 1}`);
+          return { level: current.pond_level + 1 };
+        });
+        if (upgrade.error) return reply.code(upgrade.error === 'idempotency_conflict' ? 409 : 400).send({ error: upgrade.error });
+        if (!upgrade.replay) logEvent(`🎣 ${me.name} nâng ao cá lên cấp ${upgrade.outcome.level}`);
         return { me: fresh(me.user_id) };
       });
 

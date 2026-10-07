@@ -61,7 +61,7 @@ This is the project plan for the farm game, separate from the older stability au
 - Finish replay protection for every value-changing endpoint; keep each mutation and its result in one SQLite transaction.
 - Validate request bodies, enforce consistent error responses, review auth/CSRF boundaries, and add safe migrations and backup instructions.
 - Add request IDs and operational metrics for error rate, latency, cold starts, and replayed mutations.
-- **Gate:** mutation integration tests cover duplicate requests, concurrent requests, and restarts; migration works on a copy of production data. **Status:** journal foundation and twenty-six routes covered; rest pending.
+- **Gate:** mutation integration tests cover duplicate requests, concurrent requests, and restarts; migration works on a copy of production data. **Status:** journal foundation and thirty-one routes covered, including machine, land, barn, and pond upgrades; rest pending.
 
 ## 10. Improve speed and accessibility
 
@@ -86,5 +86,5 @@ This is the project plan for the farm game, separate from the older stability au
 
 - 49 automated tests pass on the upgrade branch.
 - New assets: coop, windmill, market, farmer, painted hen, quail, and duck, and growing and ripe wheat, carrot, corn, and potato. The generated art inventory shows 4/36 crops, 4/13 trees, and 6/15 animals with individual PNG art.
-- First-session guidance, mobile HUD, starter tax grace, and twenty-six replay-safe gameplay/economy routes are implemented.
+- First-session guidance, mobile HUD, starter tax grace, and thirty-one replay-safe gameplay/economy routes are implemented.
 - Player research, complete art conversion, balance model, full mutation coverage, accessibility audit, staged release, and merge remain open.
