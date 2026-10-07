@@ -9,7 +9,7 @@ const asset = (path) => existsSync(resolve(publicDir, path));
 const v3Name = { luami: 'wheat', carot: 'carrot', ngo: 'corn', khoaitay: 'potato' };
 const legacyName = { luami: 'lua', dautay: 'dau' };
 const treePng = new Set(['cam', 'tao', 'xoai', 'thanhlong']);
-const animalPng = { ga: 'chicken', bo: 'cow', cuu: 'sheep', heo: 'pig' };
+const animalPng = { ga: 'chicken_v3', cut: 'quail_v3', bo: 'cow', cuu: 'sheep', heo: 'pig' };
 const status = (path, kind) => asset(path) ? kind : 'MISSING';
 
 const cropRows = Object.values(CROPS).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name, 'vi')).map((crop) => {

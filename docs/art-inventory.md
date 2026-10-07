@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops/seed-1.svg`.
 
-**Coverage:** 4/36 crops have matching growing and ripe v3 art; 4/13 trees and 4/15 animals have individual PNG art. 12 machine types use emoji/UI art. 49 static asset paths appear in the client.
+**Coverage:** 4/36 crops have matching growing and ripe v3 art; 4/13 trees and 5/15 animals have individual PNG art. 12 machine types use emoji/UI art. 50 static asset paths appear in the client.
 
 ## Crops
 
@@ -68,7 +68,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Animal | ID | Unlock | Current art |
 | --- | --- | ---: | --- |
 | Gà | ga | 3 | unique PNG |
-| Chim cút | cut | 4 | emoji |
+| Chim cút | cut | 4 | unique PNG |
 | Vịt | vit | 6 | emoji |
 | Bò | bo | 8 | unique PNG |
 | Ngỗng | ngong | 9 | emoji |
@@ -108,9 +108,11 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | --- | ---: |
 | `assets/art/basket.png` | 7 KB |
 | `assets/art/chicken.png` | 7 KB |
+| `assets/art/chicken_v3.png` | 75 KB |
 | `assets/art/cow.png` | 15 KB |
 | `assets/art/feed.png` | 5 KB |
 | `assets/art/pig.png` | 10 KB |
+| `assets/art/quail_v3.png` | 61 KB |
 | `assets/art/sheep.png` | 14 KB |
 | `assets/art/tree.png` | 12 KB |
 | `assets/art/trees/cam-qua.png` | 3 KB |
@@ -126,7 +128,6 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops-v3/wheat-growing.png` | 54 KB |
 | `assets/crops-v3/wheat-ripe.png` | 85 KB |
 | `assets/crops/seed-1.svg` | <1 KB |
-| `assets/pack/chicken_brown.png` | 9 KB |
 | `assets/pack/chicken_coop_v3.png` | 246 KB |
 | `assets/pack/farm_house.png` | 80 KB |
 | `assets/pack/farm_logo.png` | 54 KB |

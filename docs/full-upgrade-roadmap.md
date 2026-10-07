@@ -85,6 +85,6 @@ This is the project plan for the farm game, separate from the older stability au
 ### Current acceptance record
 
 - 49 automated tests pass on the upgrade branch.
-- New assets: coop, windmill, market, farmer, and growing and ripe wheat, carrot, corn, and potato. The generated art inventory shows 4/36 crops, 4/13 trees, and 4/15 animals with individual PNG art.
+- New assets: coop, windmill, market, farmer, painted hen and quail, and growing and ripe wheat, carrot, corn, and potato. The generated art inventory shows 4/36 crops, 4/13 trees, and 5/15 animals with individual PNG art.
 - First-session guidance, mobile HUD, starter tax grace, and twenty-six replay-safe gameplay/economy routes are implemented.
 - Player research, complete art conversion, balance model, full mutation coverage, accessibility audit, staged release, and merge remain open.
