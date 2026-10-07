@@ -2158,28 +2158,32 @@ export function buildApp({ config, db, logger = true }) {
       // ---- Hồ câu cá ----
       api.post('/fish', async (request, reply) => {
         const me = request.farmer;
-        if (levelFor(me.xp) < FISHING.level) return reply.code(400).send({ error: 'level_too_low' });
-        const now = Date.now();
-        const cur = currentEnergy(me, now);
-        if (cur < FISHING.energyCost) return reply.code(400).send({ error: 'not_enough_energy' });
-        const casts = POND_LEVELS[me.pond_level - 1];
-        const caught = [];
-        let exp = 0;
-        for (let i = 0; i < casts; i += 1) {
-          const id = rollFish(Math.random);
-          caught.push(id);
-          exp += GOODS[id].expCatch;
-        }
-        db.transaction(() => {
-          setEnergy(me.user_id, me, cur - FISHING.energyCost, now);
+        const cast = runJournaledMutation(request, 'fish', () => {
+          const current = getFarmer.get(me.user_id);
+          if (levelFor(current.xp) < FISHING.level) return { error: 'level_too_low' };
+          const now = Date.now();
+          const cur = currentEnergy(current, now);
+          if (cur < FISHING.energyCost) return { error: 'not_enough_energy' };
+          const caught = [];
+          let exp = 0;
+          for (let i = 0; i < POND_LEVELS[current.pond_level - 1]; i += 1) {
+            const id = rollFish(Math.random);
+            caught.push(id);
+            exp += GOODS[id].expCatch;
+          }
+          setEnergy(me.user_id, current, cur - FISHING.energyCost, now);
           for (const id of caught) invAdd(me.user_id, id, 1);
           grant(me.user_id, { xp: exp });
           bumpQuest(me.user_id, 'fish');
-        })();
-        for (const id of caught) {
-          if (id === 'cakoi' || id === 'cachep') logEvent(`🎣 ${me.name} câu được ${GOODS[id].name} ${GOODS[id].emoji}!`);
+          return { caught, exp };
+        });
+        if (cast.error) return reply.code(cast.error === 'idempotency_conflict' ? 409 : 400).send({ error: cast.error });
+        if (!cast.replay) {
+          for (const id of cast.outcome.caught) {
+            if (id === 'cakoi' || id === 'cachep') logEvent(`🎣 ${me.name} câu được ${GOODS[id].name} ${GOODS[id].emoji}!`);
+          }
         }
-        return { me: fresh(me.user_id), caught, exp };
+        return { me: fresh(me.user_id), ...cast.outcome };
       });
 
       // Mua kim cương bằng vàng (vàng đốt khỏi kinh tế).
@@ -2187,24 +2191,29 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         const pack = GEM_PACKS.find((p) => p.id === request.body?.pack);
         if (!pack) return reply.code(400).send({ error: 'bad_request' });
-        if (me.gold < pack.gold) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const purchase = runJournaledMutation(request, 'buy-gems', () => {
+          if (getFarmer.get(me.user_id).gold < pack.gold) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -pack.gold, gems: pack.gems });
           db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(pack.gold, me.user_id);
-        })();
-        return { me: fresh(me.user_id), gems: pack.gems };
+          return { gems: pack.gems };
+        });
+        if (purchase.error) return reply.code(purchase.error === 'idempotency_conflict' ? 409 : 400).send({ error: purchase.error });
+        return { me: fresh(me.user_id), ...purchase.outcome };
       });
 
       api.post('/buy-energy', async (request, reply) => {
         const me = request.farmer;
-        if (me.gems < ENERGY.buyGems) return reply.code(400).send({ error: 'not_enough_gems' });
-        const now = Date.now();
-        const cur = currentEnergy(me, now);
-        if (cur >= ENERGY.buyCap) return reply.code(400).send({ error: 'energy_full' });
-        db.transaction(() => {
+        const purchase = runJournaledMutation(request, 'buy-energy', () => {
+          const current = getFarmer.get(me.user_id);
+          if (current.gems < ENERGY.buyGems) return { error: 'not_enough_gems' };
+          const now = Date.now();
+          const cur = currentEnergy(current, now);
+          if (cur >= ENERGY.buyCap) return { error: 'energy_full' };
           grant(me.user_id, { gems: -ENERGY.buyGems });
-          setEnergy(me.user_id, me, Math.min(ENERGY.buyCap, cur + ENERGY.buyAmount), now);
-        })();
+          setEnergy(me.user_id, current, Math.min(ENERGY.buyCap, cur + ENERGY.buyAmount), now);
+          return { energy: Math.min(ENERGY.buyCap, cur + ENERGY.buyAmount) };
+        });
+        if (purchase.error) return reply.code(purchase.error === 'idempotency_conflict' ? 409 : 400).send({ error: purchase.error });
         return { me: fresh(me.user_id) };
       });
 
@@ -2236,45 +2245,49 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         const sp = FISH_FARM[species];
         if (!sp) return reply.code(400).send({ error: 'bad_request' });
-        if (levelFor(me.xp) < sp.level) return reply.code(400).send({ error: 'level_too_low' });
-        const capacity = FISH_STOCK_BY_LEVEL[Math.min(me.pond_level, FISH_STOCK_BY_LEVEL.length) - 1];
-        const used = db.prepare('SELECT COALESCE(SUM(qty), 0) s FROM fish_batches WHERE owner_id = ?').get(me.user_id).s;
-        const room = capacity - used;
-        if (room <= 0) return reply.code(400).send({ error: 'pond_full' });
-        const asked = qty === 'max' ? room : Math.max(1, Math.floor(Number(qty) || 1));
-        const n = Math.min(asked, room, Math.floor(me.gold / sp.fry));
-        if (n < 1) return reply.code(400).send({ error: 'not_enough_gold' });
-        const now = Date.now();
-        db.transaction(() => {
+        const stock = runJournaledMutation(request, 'fish-stock', () => {
+          const current = getFarmer.get(me.user_id);
+          if (levelFor(current.xp) < sp.level) return { error: 'level_too_low' };
+          const capacity = FISH_STOCK_BY_LEVEL[Math.min(current.pond_level, FISH_STOCK_BY_LEVEL.length) - 1];
+          const used = db.prepare('SELECT COALESCE(SUM(qty), 0) s FROM fish_batches WHERE owner_id = ?').get(me.user_id).s;
+          const room = capacity - used;
+          if (room <= 0) return { error: 'pond_full' };
+          const asked = qty === 'max' ? room : Math.max(1, Math.floor(Number(qty) || 1));
+          const n = Math.min(asked, room, Math.floor(current.gold / sp.fry));
+          if (n < 1) return { error: 'not_enough_gold' };
+          const now = Date.now();
           grant(me.user_id, { gold: -sp.fry * n });
           db.prepare('INSERT INTO fish_batches (owner_id, species, qty, planted_at, ready_at) VALUES (?, ?, ?, ?, ?)')
-            .run(me.user_id, sp.id, n, now, now + animalTime(me, scaleMs(sp.growMs, config.fast)));
-        })();
-        logEvent(`${sp.emoji} ${me.name} thả ${n} con ${sp.name} xuống ao`);
-        return { me: fresh(me.user_id), stocked: n, cost: sp.fry * n };
+            .run(me.user_id, sp.id, n, now, now + animalTime(current, scaleMs(sp.growMs, config.fast)));
+          return { stocked: n, cost: sp.fry * n };
+        });
+        if (stock.error) return reply.code(stock.error === 'idempotency_conflict' ? 409 : 400).send({ error: stock.error });
+        if (!stock.replay) logEvent(`${sp.emoji} ${me.name} thả ${stock.outcome.stocked} con ${sp.name} xuống ao`);
+        return { me: fresh(me.user_id), ...stock.outcome };
       });
 
       api.post('/fish-harvest', async (request, reply) => {
         const me = request.farmer;
-        const now = Date.now();
-        const id = Number(request.body?.id);
-        const batches = id
-          ? db.prepare('SELECT * FROM fish_batches WHERE owner_id = ? AND id = ?').all(me.user_id, id)
-          : db.prepare('SELECT * FROM fish_batches WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
-        if (!batches.length) return reply.code(400).send({ error: 'not_ready' });
-        if (id && now < batches[0].ready_at) return reply.code(400).send({ error: 'not_ready' });
-        const got = {};
-        let xp = 0;
-        db.transaction(() => {
+        const harvest = runJournaledMutation(request, 'fish-harvest', () => {
+          const now = Date.now();
+          const id = Number(request.body?.id);
+          const batches = id
+            ? db.prepare('SELECT * FROM fish_batches WHERE owner_id = ? AND id = ?').all(me.user_id, id)
+            : db.prepare('SELECT * FROM fish_batches WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
+          if (!batches.length || (id && now < batches[0].ready_at)) return { error: 'not_ready' };
+          const items = {};
+          let xp = 0;
           for (const b of batches) {
             const sp = FISH_FARM[b.species];
-            if (sp) { invAdd(me.user_id, sp.product, b.qty); got[sp.product] = (got[sp.product] || 0) + b.qty; xp += sp.exp * b.qty; }
+            if (sp) { invAdd(me.user_id, sp.product, b.qty); items[sp.product] = (items[sp.product] || 0) + b.qty; xp += sp.exp * b.qty; }
             db.prepare('DELETE FROM fish_batches WHERE id = ?').run(b.id);
           }
           grant(me.user_id, { xp });
           bumpQuest(me.user_id, 'harvest', batches.length);
-        })();
-        return { me: fresh(me.user_id), items: got, xp };
+          return { items, xp };
+        });
+        if (harvest.error) return reply.code(harvest.error === 'idempotency_conflict' ? 409 : 400).send({ error: harvest.error });
+        return { me: fresh(me.user_id), ...harvest.outcome };
       });
 
       api.post('/upgrade-pond', async (request, reply) => {
