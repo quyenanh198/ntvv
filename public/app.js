@@ -41,7 +41,7 @@
   const TREE_PNG = new Set(['cam', 'tao', 'xoai', 'thanhlong']);
   const treeArt = (id) => A(TREE_PNG.has(id) ? `assets/art/trees/${id}.png` : 'assets/art/tree.png');
   // Vật nuôi có tranh: gà/bò/cừu/lợn; loại khác hiện emoji.
-  const BARN_ART = { ga: 'assets/art/chicken_v3.png', cut: 'assets/art/quail_v3.png', bo: 'assets/art/cow.png', cuu: 'assets/art/sheep.png', heo: 'assets/art/pig.png' };
+  const BARN_ART = { ga: 'assets/art/chicken_v3.png', cut: 'assets/art/quail_v3.png', vit: 'assets/art/duck_v3.png', bo: 'assets/art/cow.png', cuu: 'assets/art/sheep.png', heo: 'assets/art/pig.png' };
   const barnArtImg = (kind) => (BARN_ART[kind]
     ? `<img src="${A(BARN_ART[kind])}" alt="" />`
     : `<span class="emoji-ic emoji-ic--barn">${DATA?.config.animals[kind]?.emoji || '🐾'}</span>`);

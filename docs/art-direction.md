@@ -42,3 +42,7 @@ Each crop has three visible states: seedling, growing, and ripe. The current cod
 3. Wire it to the correct game ID and state; check fallback for other IDs.
 4. Check the plot at narrow phone width and on desktop, including ready badges and labels.
 5. Confirm the asset payload is reasonable and record it in this inventory.
+
+## New animal source
+
+- Duck (`vit`): `asset/source_animals/duck_v3.png` is the 1024×1024 transparent source; `public/assets/art/duck_v3.png` is the 256×256 game export. The barn, shop, and animal cards use the shared `BARN_ART` mapping.
