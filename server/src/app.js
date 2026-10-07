@@ -2099,63 +2099,66 @@ export function buildApp({ config, db, logger = true }) {
       const markLootGuard = db.prepare(`INSERT INTO poach_guard (owner_id, kind, at) VALUES (?, ?, ?)
         ON CONFLICT(owner_id, kind) DO UPDATE SET at = excluded.at`);
 
-      api.post('/poach-animal', async (request, reply) => {
-        const { ownerId } = request.body ?? {};
-        const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(400).send({ error: 'no_farm' });
-        const now = Date.now();
-        if (now < lootGuardAt(ownerId, 'animal')) return reply.code(400).send({ error: 'poach_cooldown' });
-        const row = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND ready_at IS NOT NULL AND ready_at <= ? ORDER BY ready_at LIMIT 1')
-          .get(ownerId, now);
-        if (!row) return reply.code(400).send({ error: 'nothing_to_poach' });
-        if (dogCheck(reply, owner, me)) return reply;
-        const a = ANIMALS[row.kind];
-        const got = 2 + Math.round(Math.random()); // khách nhận 2-3, chủ chỉ mất 1
-        db.transaction(() => {
-          invAdd(me.user_id, a.product, got);
-          recordTheft(owner.user_id, me.user_id, a.product, got);
-          grant(me.user_id, { xp: POACH_EXP * got });
-          db.prepare('UPDATE animals SET ready_at = NULL WHERE id = ?').run(row.id);
-          markLootGuard.run(ownerId, 'animal', now);
-          bumpPoached(me.user_id, got);
-        })();
-        const info = GOODS[a.product];
-        thiefEscaped.run(me.user_id);
-        logEvent(`😋 ${me.name} cuỗm ${got} ${info.name} ${info.emoji} trong chuồng nhà ${owner.name}`);
-        pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa cuỗm ${info.name} ${info.emoji} trong chuồng nhà bạn — thu hoạch nhanh kẻo mất!`);
-        return { ...visitPayload(request, ownerId), got };
-      });
-
-      api.post('/poach-machine', async (request, reply) => {
-        const { ownerId } = request.body ?? {};
-        const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(400).send({ error: 'no_farm' });
-        const now = Date.now();
-        if (now < lootGuardAt(ownerId, 'machine')) return reply.code(400).send({ error: 'poach_cooldown' });
-        const row = db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND ready_at <= ? AND poached = 0 ORDER BY ready_at LIMIT 1')
-          .get(ownerId, now);
-        if (!row || !MACHINES[row.kind]?.recipes[row.recipe]) return reply.code(400).send({ error: 'nothing_to_poach' });
-        if (dogCheck(reply, owner, me)) return reply;
-        const recipe = MACHINES[row.kind].recipes[row.recipe];
-        const product = Object.keys(recipe.out)[0];
-        const got = 2 + Math.round(Math.random()); // khách nhận 2-3, chủ chỉ mất 1 mẻ
-        db.transaction(() => {
+      function poachLoot(request, ownerId, kind) {
+        return runJournaledMutation(request, `poach-${kind}`, () => {
+          const me = getFarmer.get(request.farmer.user_id);
+          if (ownerId === me.user_id) return { error: 'own_farm' };
+          const owner = getFarmer.get(ownerId);
+          if (!owner) return { error: 'no_farm' };
+          const now = Date.now();
+          if (now < lootGuardAt(ownerId, kind)) return { error: 'poach_cooldown' };
+          const row = kind === 'animal'
+            ? db.prepare('SELECT * FROM animals WHERE owner_id = ? AND ready_at IS NOT NULL AND ready_at <= ? ORDER BY ready_at LIMIT 1').get(ownerId, now)
+            : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND ready_at <= ? AND poached = 0 ORDER BY ready_at LIMIT 1').get(ownerId, now);
+          if (!row || (kind === 'machine' && !MACHINES[row.kind]?.recipes[row.recipe])) return { error: 'nothing_to_poach' };
+          const caught = dogCatch(owner, me, { quiet: true });
+          if (caught) return { caught, ownerName: owner.name };
+          const product = kind === 'animal' ? ANIMALS[row.kind].product : Object.keys(MACHINES[row.kind].recipes[row.recipe].out)[0];
+          const got = 2 + Math.round(Math.random());
           invAdd(me.user_id, product, got);
           recordTheft(owner.user_id, me.user_id, product, got);
           grant(me.user_id, { xp: POACH_EXP * got });
-          db.prepare('UPDATE machine_jobs SET poached = 1 WHERE owner_id = ? AND kind = ? AND recipe = ?').run(ownerId, row.kind, row.recipe);
-          markLootGuard.run(ownerId, 'machine', now);
+          if (kind === 'animal') db.prepare('UPDATE animals SET ready_at = NULL WHERE id = ?').run(row.id);
+          else db.prepare('UPDATE machine_jobs SET poached = 1 WHERE owner_id = ? AND kind = ? AND recipe = ?').run(ownerId, row.kind, row.recipe);
+          markLootGuard.run(ownerId, kind, now);
           bumpPoached(me.user_id, got);
-        })();
-        const info = itemInfo(product);
-        thiefEscaped.run(me.user_id);
-        logEvent(`😋 ${me.name} cuỗm ${got} ${info.name} ${info.emoji} từ ${MACHINES[row.kind].name} nhà ${owner.name}`);
-        pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa cuỗm ${info.name} ${info.emoji} từ máy nhà bạn — thu vào kho kẻo mất!`);
+          thiefEscaped.run(me.user_id);
+          return { got, product, machine: row.kind, ownerName: owner.name };
+        });
+      }
+
+      function poachLootReply(request, reply, ownerId, kind) {
+        const result = poachLoot(request, ownerId, kind);
+        if (result.error) return reply.code(result.error === 'idempotency_conflict' ? 409 : 400).send({ error: result.error });
+        const { caught, got, product, machine, ownerName } = result.outcome;
+        const me = request.farmer;
+        if (caught) {
+          if (!result.replay) {
+            const debtNote = caught.debt > 0 ? ` — ghi nợ ${caught.debt.toLocaleString('vi')} vàng` : '';
+            logEvent(`🐕 Chó nhà ${ownerName} tóm được ${me.name}${caught.nth > 1 ? ` (lần ${caught.nth} liên tiếp)` : ''} — nộp phạt ${caught.paid.toLocaleString('vi')} vàng cho chủ vườn${debtNote}`);
+            pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🐕 Chó nhà bạn vừa tóm được ${me.name} — thu ${caught.paid.toLocaleString('vi')} vàng tiền phạt${caught.debt > 0 ? `, còn ghi nợ ${caught.debt.toLocaleString('vi')} vàng` : ''}!`);
+          }
+          return reply.code(400).send({ error: 'caught_by_dog', fine: caught.paid, streak: caught.nth, message: caught.message });
+        }
+        if (!result.replay) {
+          const info = itemInfo(product);
+          if (kind === 'animal') {
+            logEvent(`😋 ${me.name} cuỗm ${got} ${info.name} ${info.emoji} trong chuồng nhà ${ownerName}`);
+            pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa cuỗm ${info.name} ${info.emoji} trong chuồng nhà bạn — thu hoạch nhanh kẻo mất!`);
+          } else {
+            logEvent(`😋 ${me.name} cuỗm ${got} ${info.name} ${info.emoji} từ ${MACHINES[machine].name} nhà ${ownerName}`);
+            pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa cuỗm ${info.name} ${info.emoji} từ máy nhà bạn — thu vào kho kẻo mất!`);
+          }
+        }
         return { ...visitPayload(request, ownerId), got };
+      }
+
+      api.post('/poach-animal', async (request, reply) => {
+        return poachLootReply(request, reply, request.body?.ownerId, 'animal');
+      });
+
+      api.post('/poach-machine', async (request, reply) => {
+        return poachLootReply(request, reply, request.body?.ownerId, 'machine');
       });
 
       // ---- Cây ăn quả ----
