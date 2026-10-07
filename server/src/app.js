@@ -1631,21 +1631,22 @@ export function buildApp({ config, db, logger = true }) {
       // ---- Con vật may mắn: bấm trúng ăn kim cương ----
       api.post('/critter-catch', async (request, reply) => {
         const me = request.farmer;
-        const now = Date.now();
-        const at = me.critter_next_at;
-        if (!at || now < at || now > at + CRITTER.windowMs + CRITTER.graceMs) {
-          return reply.code(400).send({ error: 'critter_gone' });
-        }
-        const gems = CRITTER.gemMin + Math.floor(Math.random() * (CRITTER.gemMax - CRITTER.gemMin + 1));
-        const gapMin = scaleMs(CRITTER.minGapMs, config.fast);
-        const gapMax = scaleMs(CRITTER.maxGapMs, config.fast);
-        const next = now + gapMin + Math.floor(Math.random() * (gapMax - gapMin));
-        db.transaction(() => {
+        const catchResult = runJournaledMutation(request, 'critter-catch', () => {
+          const current = getFarmer.get(me.user_id);
+          const now = Date.now();
+          const at = current.critter_next_at;
+          if (!at || now < at || now > at + CRITTER.windowMs + CRITTER.graceMs) return { error: 'critter_gone' };
+          const gems = CRITTER.gemMin + Math.floor(Math.random() * (CRITTER.gemMax - CRITTER.gemMin + 1));
+          const gapMin = scaleMs(CRITTER.minGapMs, config.fast);
+          const gapMax = scaleMs(CRITTER.maxGapMs, config.fast);
+          const next = now + gapMin + Math.floor(Math.random() * (gapMax - gapMin));
           grant(me.user_id, { gems });
           db.prepare('UPDATE farmers SET critter_next_at = ? WHERE user_id = ?').run(next, me.user_id);
-        })();
-        logEvent(`✨ ${me.name} tóm được ${critterKindFor(at)} may mắn — +${gems} kim cương!`);
-        return { me: fresh(me.user_id), gems, kind: critterKindFor(at) };
+          return { gems, kind: critterKindFor(at) };
+        });
+        if (catchResult.error) return reply.code(catchResult.error === 'idempotency_conflict' ? 409 : 400).send({ error: catchResult.error });
+        if (!catchResult.replay) logEvent(`✨ ${me.name} tóm được ${catchResult.outcome.kind} may mắn — +${catchResult.outcome.gems} kim cương!`);
+        return { me: fresh(me.user_id), ...catchResult.outcome };
       });
 
       // ---- Đơn hàng ----
@@ -1828,8 +1829,12 @@ export function buildApp({ config, db, logger = true }) {
         return { me: fresh(me.user_id), requests: goldRequestsView(me.user_id) };
       });
 
-      api.post('/away-ack', async (request) => {
-        db.prepare('UPDATE farmers SET away_report_json = NULL WHERE user_id = ?').run(request.farmer.user_id);
+      api.post('/away-ack', async (request, reply) => {
+        const acknowledged = runJournaledMutation(request, 'away-ack', () => {
+          db.prepare('UPDATE farmers SET away_report_json = NULL WHERE user_id = ?').run(request.farmer.user_id);
+          return { acknowledged: true };
+        });
+        if (acknowledged.error) return reply.code(acknowledged.error === 'idempotency_conflict' ? 409 : 400).send({ error: acknowledged.error });
         return { me: fresh(request.farmer.user_id) };
       });
 
