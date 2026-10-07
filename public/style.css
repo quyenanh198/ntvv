@@ -894,6 +894,22 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   background: repeating-linear-gradient(168deg, #8b502d 0 8px, #ad7045 8px 16px);
   opacity: .66;
 }
+.plot--dry {
+  border-color: #cc8650;
+  background: linear-gradient(160deg, #d4a16a, #ad7045);
+}
+.plot--dry::before {
+  inset: 15% 8% 17%;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(145deg, transparent 0 19px, rgba(105, 60, 35, .38) 19px 21px, transparent 21px 30px),
+    repeating-linear-gradient(35deg, transparent 0 25px, rgba(105, 60, 35, .3) 25px 27px, transparent 27px 36px);
+}
+.plot--watered {
+  border-color: #478d8b;
+  background: linear-gradient(160deg, #8d6746, #604b3b);
+}
+.plot--watered::before { background: radial-gradient(ellipse, rgba(46, 104, 104, .28), transparent 72%); }
 .plot--ready {
   border-color: #d68e16;
   box-shadow: 0 0 0 3px rgba(255, 215, 77, .45), inset 0 3px 0 rgba(255,255,255,.14), 0 6px 0 rgba(71, 111, 42, .18), 0 10px 18px rgba(105, 82, 25, .16);
@@ -1012,6 +1028,8 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 }
 .plot-badge { left: 5px; top: 5px; }
 .plot-act { right: 5px; bottom: 5px; animation: act-bob 1.8s ease-in-out infinite; }
+.plot-act--water { border-color: #1c708f; background: #e8faff; }
+.plot-badge--fresh { border-color: #478d8b; background: #d7f2f2; }
 @keyframes act-bob { 50% { transform: translateY(-3px); } }
 
 .field-decor, .scarecrow-img, .butterfly { position: absolute; z-index: 4; pointer-events: none; }
@@ -1718,6 +1736,8 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 /* Cây ăn quả trên ô */
 .plot--tree { background: linear-gradient(180deg, #b9dc90, #94c765); }
+.plot--tree.plot--dry { background: linear-gradient(180deg, #d9bd83, #aa8358); }
+.plot--tree.plot--watered { background: linear-gradient(180deg, #a9ce9b, #709d70); }
 .tree-sprite { max-width: 78%; max-height: 72%; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(50, 80, 20, 0.35)); }
 .tree-sprite--wait { filter: grayscale(0.35) opacity(0.8) drop-shadow(0 4px 4px rgba(50, 80, 20, 0.25)); }
 .plot--tree.plot--growing .tree-sprite { animation: sway 4s ease-in-out infinite; transform-origin: bottom center; }

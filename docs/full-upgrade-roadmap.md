@@ -21,7 +21,7 @@ This is the project plan for the farm game, separate from the older stability au
 - Replace remaining mixed emoji/SVG gameplay art in batches: starter crops and growth states, trees, animals, machines, then decorations.
 - Add readable soil states, planting/watering/harvest feedback, object depth, and restrained ambient motion. Honor reduced-motion settings.
 - Test sprite clarity and tap targets at 320px; keep downloads small through resizing and compression.
-- **Gate:** a player can distinguish empty, growing, dry, and ready plots without reading labels. **Status:** starter crop and empty plot pass underway; other asset families pending.
+- **Gate:** a player can distinguish empty, growing, dry, and ready plots without reading labels. **Status:** four plot states now have distinct soil and border treatments, and a 320px browser check confirms they render together with accessible action names; observed-player validation and other asset families remain pending.
 
 ## 4. Rebuild the first session
 

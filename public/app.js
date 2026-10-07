@@ -670,7 +670,7 @@
     const now = Date.now();
     const cells = farm.plots.map((p) => {
       if (!p.crop) {
-        return `<button class="plot plot--empty" data-idx="${p.idx}" data-kind="empty" ${mine ? '' : 'disabled'}>
+        return `<button class="plot plot--empty" data-idx="${p.idx}" data-kind="empty" aria-label="${mine ? 'Ô đất trống, gieo hạt' : 'Ô đất trống'}" ${mine ? '' : 'disabled'}>
           <span class="plot-main">${mine ? `<img class="plot-empty-sprout" src="${A('assets/crops/seed-1.svg')}" alt="" />` : ''}</span>
           ${mine ? '<span class="plot-note">Gieo hạt</span>' : ''}
         </button>`;
@@ -680,11 +680,11 @@
         const acts = visiting ? visiting.myActs[p.idx] : null;
         const canPoach = visiting && p.ready && acts?.canPoach;
         const left = p.readyAt - now;
-        return `<button class="plot plot--tree${p.ready ? ' plot--ready' : ' plot--growing'}" data-idx="${p.idx}" data-kind="${p.ready ? (mine ? 'harvest' : canPoach ? 'poach' : 'ripe') : (mine ? (p.watered ? 'plotmenu' : 'waterplot') : (visiting && acts?.canWater ? 'water' : 'growing'))}" data-ready="${p.readyAt}" data-total="${t.growMs}" data-cropid="${p.crop}">
+        return `<button class="plot plot--tree${p.ready ? ' plot--ready' : p.watered ? ' plot--growing plot--watered' : ' plot--growing plot--dry'}" data-idx="${p.idx}" data-kind="${p.ready ? (mine ? 'harvest' : canPoach ? 'poach' : 'ripe') : (mine ? (p.watered ? 'plotmenu' : 'waterplot') : (visiting && acts?.canWater ? 'water' : 'growing'))}" aria-label="${esc(t.name)}: ${p.ready ? (mine ? 'hái quả' : canPoach ? 'hái ké' : 'đã chín') : p.watered ? 'đang lớn, đã tưới' : mine || acts?.canWater ? 'cần tưới' : 'đang lớn'}" data-ready="${p.readyAt}" data-total="${t.growMs}" data-cropid="${p.crop}">
           <img class="tree-sprite${p.ready ? '' : ' tree-sprite--wait'}" src="${treeArt(p.crop)}" alt="${t.name}" />${TREE_PNG.has(p.crop) ? '' : `<span class="tree-emoji">${t.emoji}</span>`}
           ${p.ready
             ? `<span class="plot-note">${mine ? (p.poached ? 'Bị hái ké 😭' : 'Hái quả!') : canPoach ? 'Hái ké!' : 'Chín rồi'}</span><span class="plot-badge">×${Math.max(0, (p.fruits || 0) - Math.floor((p.poachedN || 0) / 3))}</span>`
-            : `<span class="plot-timer">${fmtTime(left)}</span>`}
+            : `<span class="plot-timer">${fmtTime(left)}</span>${p.watered ? '<span class="plot-badge plot-badge--fresh" aria-hidden="true">💧</span>' : mine || acts?.canWater ? '<span class="plot-act plot-act--water" aria-hidden="true">💧</span>' : ''}`}
           ${p.poached && p.ready ? '<span class="plot-act">😋</span>' : ''}${p.treeEndsAt && p.treeEndsAt - Date.now() < t.cycleMs ? '<span class="plot-act" title="Cây sắp tàn">🍂</span>' : ''}
         </button>`;
       }
@@ -692,7 +692,7 @@
       if (p.ready) {
         const acts = visiting ? visiting.myActs[p.idx] : null;
         const canPoach = visiting && acts?.canPoach;
-        return `<button class="plot plot--ready" data-idx="${p.idx}" data-kind="${mine ? 'harvest' : canPoach ? 'poach' : 'ripe'}">
+        return `<button class="plot plot--ready" data-idx="${p.idx}" data-kind="${mine ? 'harvest' : canPoach ? 'poach' : 'ripe'}" aria-label="${esc(c.name)}: ${mine ? 'thu hoạch' : canPoach ? 'hái ké' : 'đã chín'}">
           <img class="crop-sprite crop-sprite--ready" src="${cropSprite(p.crop, 3)}" alt="${c.name}" />
           <span class="plot-note">${mine ? (p.poached ? 'Bị hái ké 😭' : 'Thu hoạch!') : canPoach ? 'Hái ké!' : 'Chín rồi'}</span>
           ${p.poached ? '<span class="plot-badge">😋</span>' : p.watered ? '<span class="plot-badge plot-badge--fresh">💧</span>' : ''}
@@ -704,11 +704,11 @@
       const pct = Math.min(100, Math.max(3, Math.round(((total - left) / total) * 100)));
       const acts = visiting ? visiting.myActs[p.idx] : null;
       const canWater = visiting ? !!acts?.canWater : !p.watered;
-      return `<button class="plot plot--growing" data-idx="${p.idx}" data-kind="${mine ? (p.watered ? 'plotmenu' : 'waterplot') : canWater ? 'water' : 'growing'}" data-ready="${p.readyAt}" data-total="${total}" data-cropid="${p.crop}">
+      return `<button class="plot plot--growing ${p.watered ? 'plot--watered' : 'plot--dry'}" data-idx="${p.idx}" data-kind="${mine ? (p.watered ? 'plotmenu' : 'waterplot') : canWater ? 'water' : 'growing'}" aria-label="${esc(c.name)}: ${p.watered ? 'đang lớn, đã tưới' : canWater ? 'cần tưới' : 'đang lớn'}" data-ready="${p.readyAt}" data-total="${total}" data-cropid="${p.crop}">
         <img class="crop-sprite" src="${cropSprite(p.crop, pct < 45 ? 1 : 2)}" alt="${c.name}" />
         <span class="plot-timer">${fmtTime(left)}</span>
         <div class="plot-progress"><i style="width:${pct}%"></i></div>
-        ${p.watered ? '<span class="plot-badge plot-badge--fresh">💧</span>' : canWater ? '<span class="plot-act">💧</span>' : ''}
+        ${p.watered ? '<span class="plot-badge plot-badge--fresh" aria-hidden="true">💧</span>' : canWater ? '<span class="plot-act plot-act--water" aria-hidden="true">💧</span>' : ''}
       </button>`;
     });
 
