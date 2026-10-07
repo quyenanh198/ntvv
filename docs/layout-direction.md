@@ -19,6 +19,7 @@ The bottom dock remains the main route to management sheets. The scene is decora
 - At 1180 and 1280px the farm and family panel are separated by 24px, and the last plot receives pointer input.
 - At 1280px the action dock is centered under the 720px farm canvas. A one-member family panel fits its content; a 51-member panel stays within the viewport and scrolls internally.
 - Family markup follows the field in document order, matching mobile keyboard focus order.
+- A compact collection goal now sits under the immediate-action toolbar. At 320px the first plot starts at y=364, the goal opens its sheet by touch, and the page has no horizontal overflow.
 
 ## Remaining review
 

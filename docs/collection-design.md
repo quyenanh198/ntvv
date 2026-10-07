@@ -12,3 +12,5 @@ The first successful harvest of each crop records a discovery for the farmer. He
 Claiming requires every discovery in that set. The unique claim row and mutation journal are written in the same SQLite transaction as the reward. A retry with the same request key returns the prior result, while a new claim after collection returns `already_claimed`.
 
 The first set gives an early return goal at corn's level 4 unlock. The second stretches through chili's level 9 unlock. Player sessions should check whether these feel achievable and whether the reward fits the measured gold economy before tuning values.
+
+The farm toolbar shows the first unclaimed set, its discovery count, and the next missing crop or unlock level. This keeps the longer goal visible beside the immediate farm action and opens the full collection sheet with one tap.

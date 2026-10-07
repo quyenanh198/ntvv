@@ -627,7 +627,22 @@
         ${readyN >= 2 ? `<button class="gbtn gbtn--gold btn-mini" id="btn-harvestall-tb">🧺 Thu hết ${readyN}</button>` : ''}
         ${dryN >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-waterall">💧 Tưới hết ${dryN}</button>` : ''}
         ${empty >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-plantall">🌱 Gieo hết ${empty} ô</button>` : ''}
+        ${renderCollectionGoal()}
       </div>`;
+  }
+
+  function renderCollectionGoal() {
+    const collection = (me().collections || []).find((entry) => !entry.claimed);
+    if (!collection) return '';
+    const found = collection.items.filter((item) => item.found).length;
+    const missing = collection.items.find((item) => !item.found);
+    const crop = missing && crops()[missing.id];
+    const hint = missing
+      ? me().level < crop.level ? `${crop.name} mở ở cấp ${crop.level}` : `Thu hoạch ${crop.name} để ghi sổ`
+      : `Đã đủ giống · nhận ${collection.gold.toLocaleString('vi')} vàng`;
+    return `<button class="collection-goal" type="button" data-sheet="collections" aria-label="Sổ mùa vụ: ${esc(collection.name)}, ${found} trên ${collection.items.length}. ${esc(hint)}">
+      <span aria-hidden="true">📒</span><span><b>${esc(collection.name)} · ${found}/${collection.items.length}</b><small>${esc(hint)}</small></span><span aria-hidden="true">›</span>
+    </button>`;
   }
 
   function renderNextStep() {

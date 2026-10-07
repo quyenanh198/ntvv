@@ -696,6 +696,13 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .farm-next-step > span:first-child { font-size: 1.2rem; }
 .farm-next-step b { display: block; font-size: .76rem; }
 .farm-next-step small { display: block; font-size: .62rem; line-height: 1.2; font-weight: 600; }
+.collection-goal { display: flex; align-items: center; flex: 1 0 100%; min-height: 38px; gap: .5rem; padding: .3rem .55rem; border: 1px solid #a4b990; border-radius: 10px; background: #f4f7e8; color: #345130; text-align: left; cursor: pointer; }
+.collection-goal:hover { background: #eaf2d9; }
+.collection-goal:focus-visible { outline: 3px solid #376f41; outline-offset: 2px; }
+.collection-goal > span:nth-child(2) { min-width: 0; flex: 1; }
+.collection-goal b { display: block; font-size: .7rem; }
+.collection-goal small { display: block; font-size: .62rem; line-height: 1.2; }
+.collection-goal > span:last-child { font-size: 1.25rem; }
 .pond-img {
   position: absolute;
   z-index: 3;

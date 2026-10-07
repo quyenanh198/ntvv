@@ -54,7 +54,7 @@ This is the project plan for the farm game, separate from the older stability au
 
 - Design collections, farm personalization, achievements, and event rewards around existing systems before adding more currencies.
 - Prototype one small collection and one recurring event; check that rewards serve ordinary play.
-- **Gate:** players have a visible goal for the next session and the next week. **Status:** unlock preview and a persistent two-set [harvest collection](collection-design.md) added, with one-time rewards and replay-safe claims. Existing festival supplies a recurring event; observed-player validation and event redesign remain pending.
+- **Gate:** players have a visible goal for the next session and the next week. **Status:** unlock preview and a persistent two-set [harvest collection](collection-design.md) added, with a farm-toolbar progress prompt, one-time rewards, and replay-safe claims. Existing festival supplies a recurring event; observed-player validation and event redesign remain pending.
 
 ## 9. Harden the backend and data model
 
