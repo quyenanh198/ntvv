@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { xpNeedFor } from '../server/src/game.js';
+import { HARVEST_YIELD, xpNeedFor } from '../server/src/game.js';
 
 test('new and returning low-level farmers can plant without land-tax debt', async () => {
   const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-new-farm-'));
@@ -18,6 +18,7 @@ test('new and returning low-level farmers can plant without land-tax debt', asyn
   try {
     const state = await app.inject({ method: 'GET', url: '/farm/api/state' });
     assert.equal(state.statusCode, 200);
+    assert.equal(state.json().config.harvestYield, HARVEST_YIELD);
     assert.equal(state.json().me.tax.owed, 0);
     assert.equal(state.json().me.tax.today, 0);
 

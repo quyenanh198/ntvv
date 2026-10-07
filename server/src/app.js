@@ -878,6 +878,7 @@ export function buildApp({ config, db, logger = true }) {
           family,
           config: {
             crops: Object.fromEntries(Object.entries(CROPS).map(([k, c]) => [k, { ...c, sell: c.sell * GOLD_MULT, growMs: scaleMs(c.growMs, config.fast) }])),
+            harvestYield: HARVEST_YIELD,
             goods: Object.fromEntries(Object.entries(GOODS).map(([k, x]) => [k, { ...x, sell: x.sell * GOLD_MULT }])),
             chicken: { ...CHICKEN, produceMs: scaleMs(CHICKEN.produceMs, config.fast) },
             animals: Object.fromEntries(Object.entries(ANIMALS).map(([k, a]) => [k, { ...a, produceMs: scaleMs(a.produceMs, config.fast) }])),

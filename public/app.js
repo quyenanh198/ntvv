@@ -878,10 +878,12 @@
       const cropCard = (c) => {
         const lockLevel = m.level < c.level;
         const locked = lockLevel || m.gold < c.seed;
+        const baseProfit = c.sell * DATA.config.harvestYield - c.seed;
+        const cycleXp = c.expSow + c.expHarvest;
         return `<button class="seed-card${locked ? ' seed-card--locked' : ''}" data-crop="${locked ? '' : c.id}" title="${c.name}" ${locked ? 'disabled' : ''}>
           <img class="seed-sprite" src="${cropSprite(c.id, 3)}" alt="" />
           <span class="seed-name">${c.name}</span>
-          <span class="seed-meta">⏱ ${fmtDuration(c.growMs)} · ${c.risky ? `${(DATA.config.cansa?.reward || 1000000).toLocaleString('vi')} ${COIN}/cây · bị khám xét = mất trắng` : `${c.sell} ${COIN}`}</span>
+          <span class="seed-meta">⏱ ${fmtDuration(c.growMs)} · ${c.risky ? `${(DATA.config.cansa?.reward || 1000000).toLocaleString('vi')} ${COIN}/cây · bị khám xét = mất trắng` : `~${baseProfit.toLocaleString('vi')} ${COIN}/ô · ${cycleXp} EXP`}</span>
           ${lockLevel ? `<span class="seed-lock">Lv ${c.level}</span>` : `<span class="seed-cost">${c.seed} ${COIN}</span>`}
         </button>`;
       };
@@ -906,6 +908,7 @@
           : `🌱 Chọn hạt giống <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
         `${sheet.all ? '<p class="sheet-note">Chọn một giống — gieo kín mọi ô trống theo số vàng đang có.</p>' : ''}
          ${m.level === 1 ? '<p class="sheet-note seed-tip">🌾 Bắt đầu với Lúa mì: thu sau 1 phút. Cà rốt cho nhiều vàng hơn nếu bạn có thời gian chờ.</p>' : ''}
+         <p class="sheet-note">Lãi ước tính cho một ô sau khi bán đủ ${DATA.config.harvestYield} nông sản; giá chợ có thể thay đổi.</p>
          ${sortBar}
          <h3 class="seed-section-title">🌱 Trồng được ở cấp ${m.level}</h3>
          <div class="seed-grid">${availableCrops.map(cropCard).join('')}</div>

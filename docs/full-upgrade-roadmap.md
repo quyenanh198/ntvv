@@ -42,7 +42,7 @@ This is the project plan for the farm game, separate from the older stability au
 - Model each level's expected play time, gold earned, seed cost, expansion price, and unlock value in a spreadsheet or script.
 - Set separate early, mid, and late game targets. Check profitable loops, dead ends, runaway currency, and pay-to-skip pressure.
 - Tune server constants, then run simulations and observed play sessions. Document every changed number and its reason.
-- **Gate:** no common action leaves a player unable to continue, and level pacing matches the product brief. **Status:** starter tax deadlock fixed; full simulation and tuning pending.
+- **Gate:** no common action leaves a player unable to continue, and level pacing matches the product brief. **Status:** starter tax deadlock fixed; an early-crop baseline model is in [balance-report.md](balance-report.md). The model exposes an outdated daily-income target in the gameplay spec; player measurement and tuning remain pending.
 
 ## 7. Improve social play
 
