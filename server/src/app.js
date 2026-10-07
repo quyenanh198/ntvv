@@ -1774,15 +1774,19 @@ export function buildApp({ config, db, logger = true }) {
         const { toId, amount, note } = request.body ?? {};
         const me = request.farmer;
         const n = parseAmount(amount);
-        const to = getFarmer.get(Number(toId));
-        if (!to || to.user_id === me.user_id) return reply.code(400).send({ error: 'no_farm' });
         if (!n) return reply.code(400).send({ error: 'bad_amount' });
-        const open = db.prepare("SELECT COUNT(*) n FROM gold_requests WHERE from_id = ? AND status = 'open'").get(me.user_id).n;
-        if (open >= GOLD_ASK_MAX_OPEN) return reply.code(400).send({ error: 'too_many_requests' });
-        const text = String(note || '').slice(0, 80);
-        db.prepare('INSERT INTO gold_requests (from_id, to_id, amount, note, status, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(me.user_id, to.user_id, n, text, 'open', Date.now());
-        pushTo([to.user_id], 'Ăn trộm dzui dzẻ 😋', `🙏 ${me.name} xin bạn ${n.toLocaleString('vi')} vàng${text ? `: “${text}”` : ''} — vào Xin/Cho để trả lời.`);
-        return { me: fresh(me.user_id), asked: n };
+        const ask = runJournaledMutation(request, 'gold-ask', () => {
+          const to = getFarmer.get(Number(toId));
+          if (!to || to.user_id === me.user_id) return { error: 'no_farm' };
+          const open = db.prepare("SELECT COUNT(*) n FROM gold_requests WHERE from_id = ? AND status = 'open'").get(me.user_id).n;
+          if (open >= GOLD_ASK_MAX_OPEN) return { error: 'too_many_requests' };
+          const text = String(note || '').slice(0, 80);
+          const inserted = db.prepare('INSERT INTO gold_requests (from_id, to_id, amount, note, status, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(me.user_id, to.user_id, n, text, 'open', Date.now());
+          return { asked: n, requestId: Number(inserted.lastInsertRowid), toId: to.user_id, note: text };
+        });
+        if (ask.error) return reply.code(ask.error === 'idempotency_conflict' ? 409 : 400).send({ error: ask.error });
+        if (!ask.replay) pushTo([ask.outcome.toId], 'Ăn trộm dzui dzẻ 😋', `🙏 ${me.name} xin bạn ${n.toLocaleString('vi')} vàng${ask.outcome.note ? `: “${ask.outcome.note}”` : ''} — vào Xin/Cho để trả lời.`);
+        return { me: fresh(me.user_id), asked: ask.outcome.asked };
       });
       function goldRequestsView(meId) {
         const q = (sql, ...a) => db.prepare(sql).all(...a).map((r) => ({ id: r.id, fromId: r.from_id, fromName: r.from_name, toId: r.to_id, toName: r.to_name, amount: r.amount, note: r.note, status: r.status, createdAt: r.created_at, resolvedAt: r.resolved_at }));
@@ -1796,28 +1800,31 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/gold-request-act', async (request, reply) => {
         const { id, action } = request.body ?? {};
         const me = request.farmer;
-        const row = db.prepare('SELECT * FROM gold_requests WHERE id = ?').get(Number(id));
-        if (!row || row.status !== 'open') return reply.code(400).send({ error: 'request_closed' });
-        const now = Date.now();
-        if (action === 'cancel') {
-          if (row.from_id !== me.user_id) return reply.code(403).send({ error: 'forbidden' });
-          db.prepare("UPDATE gold_requests SET status = 'cancelled', resolved_at = ? WHERE id = ?").run(now, row.id);
-        } else if (action === 'decline') {
-          if (row.to_id !== me.user_id) return reply.code(403).send({ error: 'forbidden' });
-          db.prepare("UPDATE gold_requests SET status = 'declined', resolved_at = ? WHERE id = ?").run(now, row.id);
-          pushTo([row.from_id], 'Ăn trộm dzui dzẻ 😋', `🙅 ${me.name} chưa cho được ${row.amount.toLocaleString('vi')} vàng bạn xin.`);
-        } else if (action === 'pay') {
-          if (row.to_id !== me.user_id) return reply.code(403).send({ error: 'forbidden' });
-          if (me.gold < row.amount) return reply.code(400).send({ error: 'not_enough_gold' });
-          db.transaction(() => {
+        const act = runJournaledMutation(request, 'gold-request-act', () => {
+          const row = db.prepare('SELECT * FROM gold_requests WHERE id = ?').get(Number(id));
+          if (!row || row.status !== 'open') return { error: 'request_closed' };
+          const now = Date.now();
+          if (action === 'cancel') {
+            if (row.from_id !== me.user_id) return { error: 'forbidden' };
+            db.prepare("UPDATE gold_requests SET status = 'cancelled', resolved_at = ? WHERE id = ?").run(now, row.id);
+          } else if (action === 'decline') {
+            if (row.to_id !== me.user_id) return { error: 'forbidden' };
+            db.prepare("UPDATE gold_requests SET status = 'declined', resolved_at = ? WHERE id = ?").run(now, row.id);
+          } else if (action === 'pay') {
+            if (row.to_id !== me.user_id) return { error: 'forbidden' };
+            if (getFarmer.get(me.user_id).gold < row.amount) return { error: 'not_enough_gold' };
             grant(me.user_id, { gold: -row.amount });
             grant(row.from_id, { gold: row.amount });
             db.prepare("UPDATE gold_requests SET status = 'paid', resolved_at = ? WHERE id = ?").run(now, row.id);
-          })();
-          const asker = getFarmer.get(row.from_id);
-          logEvent(`💝 ${me.name} cho ${asker?.name || '?'} ${row.amount.toLocaleString('vi')} vàng theo lời xin`);
-          pushTo([row.from_id], 'Ăn trộm dzui dzẻ 😋', `💝 ${me.name} đã cho bạn ${row.amount.toLocaleString('vi')} vàng như bạn xin!`);
-        } else return reply.code(400).send({ error: 'bad_request' });
+          } else return { error: 'bad_request' };
+          return { action, fromId: row.from_id, amount: row.amount, askerName: getFarmer.get(row.from_id)?.name || '?' };
+        });
+        if (act.error) return reply.code(act.error === 'idempotency_conflict' ? 409 : act.error === 'forbidden' ? 403 : 400).send({ error: act.error });
+        if (!act.replay && act.outcome.action === 'decline') pushTo([act.outcome.fromId], 'Ăn trộm dzui dzẻ 😋', `🙅 ${me.name} chưa cho được ${act.outcome.amount.toLocaleString('vi')} vàng bạn xin.`);
+        if (!act.replay && act.outcome.action === 'pay') {
+          logEvent(`💝 ${me.name} cho ${act.outcome.askerName} ${act.outcome.amount.toLocaleString('vi')} vàng theo lời xin`);
+          pushTo([act.outcome.fromId], 'Ăn trộm dzui dzẻ 😋', `💝 ${me.name} đã cho bạn ${act.outcome.amount.toLocaleString('vi')} vàng như bạn xin!`);
+        }
         return { me: fresh(me.user_id), requests: goldRequestsView(me.user_id) };
       });
 
