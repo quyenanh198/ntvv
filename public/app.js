@@ -14,6 +14,8 @@
   let INSPECT = false; // chế độ khám xét khi thăm ruộng: bấm ô = khám
   let MARKET = null; // { mine, others } — tin thu mua, nạp khi mở sheet
   let sheet = null;  // { type: 'seed'|'plotmenu'|'shop'|'inventory'|'quests'|'orders'|'coop'|'mill'|'expand'|'stars', ... }
+  let lastRenderedSheetType = null;
+  let sheetReturnFocus = null;
   let showLb = null;
   let pending = false;
   let familyFilter = '';
@@ -388,6 +390,12 @@
 
   function render() {
     if (!DATA) return;
+    const previousSheetType = lastRenderedSheetType;
+    const openingSheet = !!sheet && sheet.type !== previousSheetType;
+    if (openingSheet && !previousSheetType) {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && active !== document.body) sheetReturnFocus = active;
+    }
     const savedScroll = captureScroll();
     const searchWasFocused = document.activeElement?.classList?.contains('family-search');
     const m = me();
@@ -545,6 +553,16 @@
     restoreScroll(savedScroll);
     if (DATA.me?.awayReport && !VISIT && !sheet && !showLb) app.insertAdjacentHTML('beforeend', renderAway(DATA.me.awayReport));
     bind();
+    lastRenderedSheetType = sheet?.type || null;
+    if (openingSheet) document.querySelector('.sheet-close')?.focus({ preventScroll: true });
+    else if (!sheet && previousSheetType) {
+      if (!showLb) {
+        const target = sheetReturnFocus?.isConnected && !sheetReturnFocus.closest('.sheet')
+          ? sheetReturnFocus : document.getElementById('btn-dock-farm');
+        target?.focus({ preventScroll: true });
+      }
+      sheetReturnFocus = null;
+    }
     if (searchWasFocused) {
       const input = document.querySelector('.family-search');
       if (input) {
@@ -795,8 +813,9 @@
   function sheetShell(title, body, extraClass = '') {
     return `
       <div class="sheet-backdrop" data-close="1"></div>
-      <div class="sheet ${extraClass}">
-        <h3>${title}</h3>
+      <div class="sheet ${extraClass}" role="dialog" aria-modal="true" aria-labelledby="farm-sheet-title">
+        <h3 id="farm-sheet-title">${title}</h3>
+        <button class="sheet-close" type="button" data-close="1" aria-label="Đóng bảng">×</button>
         <div class="sheet-scroll">${body}</div>
       </div>`;
   }
@@ -1590,6 +1609,29 @@
     };
     document.querySelectorAll('[data-close]').forEach((el) =>
       el.addEventListener('click', () => { sheet = null; showLb = null; render(); }));
+    document.addEventListener('keydown', (ev) => {
+      if (!sheet) return;
+      if (ev.key === 'Escape') {
+        ev.preventDefault();
+        sheet = null;
+        render();
+        return;
+      }
+      if (ev.key !== 'Tab') return;
+      const panel = document.querySelector('.sheet');
+      const focusable = [...(panel?.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') || [])]
+        .filter((element) => element.getClientRects().length);
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (ev.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+        ev.preventDefault();
+        last.focus();
+      } else if (!ev.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+        ev.preventDefault();
+        first.focus();
+      }
+    });
 
     document.querySelectorAll('[data-sheet]').forEach((el) =>
       el.addEventListener('click', () => {

@@ -1127,12 +1127,30 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   top: -1rem;
   z-index: 10;
   margin: -1rem -1rem .75rem;
-  padding: 1.05rem 1rem .75rem;
+  padding: 1.05rem 3.2rem .75rem 1rem;
   background: linear-gradient(180deg, rgba(255,249,233,.98) 78%, rgba(255,249,233,.86));
   border-bottom: 1px solid rgba(192, 154, 101, .22);
   color: #634225;
   font-size: 1.05rem;
   font-weight: 800;
+}
+.sheet-close {
+  position: absolute;
+  z-index: 11;
+  top: .65rem;
+  right: .65rem;
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid #c8a57c;
+  border-radius: 50%;
+  background: #fff9e9;
+  color: #634225;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
 }
 .sheet-coins { float: right; display: inline-flex; align-items: center; gap: .25rem; font-size: .78rem; color: #7a5938; }
 .sheet-note { margin: .45rem 0 .75rem; color: #7e6a52; font-size: .8rem; font-weight: 650; line-height: 1.35; }
@@ -1534,7 +1552,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .qb-more { width: 34px; height: 34px; font-size: 1rem; }
 
   .sheet { width: 100%; max-height: 84dvh; padding-inline: .75rem; padding-bottom: calc(1.6rem + var(--bottom-safe)); border-left: 0; border-right: 0; }
-  .sheet h3 { margin-inline: -.75rem; padding-inline: .75rem; font-size: .95rem; }
+  .sheet h3 { margin-inline: -.75rem; padding-left: .75rem; padding-right: 3.2rem; font-size: .95rem; }
   .seed-row { grid-template-columns: 44px minmax(0, 1fr) auto; gap: .4rem; padding: .38rem .42rem; }
   .seed-sprite { width: 41px; height: 41px; }
   .seed-name { font-size: .76rem; }
