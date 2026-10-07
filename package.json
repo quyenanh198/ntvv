@@ -10,6 +10,7 @@
   "scripts": {
     "start": "node server/src/server.js",
     "dev": "node dev/dev-farm.mjs",
+    "art:inventory": "node scripts/art-inventory.mjs --write",
     "test": "node --test"
   },
   "dependencies": {

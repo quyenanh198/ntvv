@@ -1,5 +1,7 @@
 # Farm art direction and asset inventory
 
+The crop, tree, animal, and machine catalog and static client asset references are tracked in [art-inventory.md](art-inventory.md). Regenerate it with `npm run art:inventory` after changing game content or asset files.
+
 ## Scene standard
 
 - **View:** compact three-quarter view, with the soil or floor visible below the object. Keep the object upright so its silhouette reads in a square plot.

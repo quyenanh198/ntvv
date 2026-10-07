@@ -1,0 +1,158 @@
+# Farm art inventory
+
+Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops/seed-1.svg`.
+
+**Coverage:** 4/36 crops have matching growing and ripe v3 art; 4/13 trees and 4/15 animals have individual PNG art. 12 machine types use emoji/UI art. 49 static asset paths appear in the client.
+
+## Crops
+
+| Crop | ID | Unlock | Growing | Ripe |
+| --- | --- | ---: | --- | --- |
+| Cà rốt | carot | 1 | v3 PNG | v3 PNG |
+| Lúa mì | luami | 1 | v3 PNG | v3 PNG |
+| Ngô | ngo | 4 | v3 PNG | v3 PNG |
+| Rau thơm | rauthom | 4 | legacy SVG | legacy SVG |
+| Khoai tây | khoaitay | 5 | v3 PNG | v3 PNG |
+| Tỏi | toi | 5 | legacy SVG | legacy SVG |
+| Dưa leo | dualeo | 6 | legacy SVG | legacy SVG |
+| Sả | sa | 6 | legacy SVG | legacy SVG |
+| Bắp cải | bapcai | 7 | legacy SVG | legacy SVG |
+| Đậu phộng | dauphong | 7 | legacy SVG | legacy SVG |
+| Cà chua | cachua | 8 | legacy SVG | legacy SVG |
+| Khoai lang | khoailang | 8 | legacy SVG | legacy SVG |
+| Mè | me | 9 | legacy SVG | legacy SVG |
+| Ớt | ot | 9 | legacy SVG | legacy SVG |
+| Hành tây | hanhtay | 10 | legacy SVG | legacy SVG |
+| Đậu xanh | dauxanh | 11 | legacy SVG | legacy SVG |
+| Mía | mia | 12 | legacy SVG | legacy SVG |
+| Dâu tây | dautay | 13 | legacy SVG | legacy SVG |
+| Gừng | gung | 13 | legacy SVG | legacy SVG |
+| Cà tím | catim | 14 | legacy SVG | legacy SVG |
+| Hướng dương | huongduong | 15 | legacy SVG | legacy SVG |
+| Gạo | gao | 16 | legacy SVG | legacy SVG |
+| Bông cải | bongcai | 17 | legacy SVG | legacy SVG |
+| Bí ngô | bingo | 18 | legacy SVG | legacy SVG |
+| Trà | tra | 19 | legacy SVG | legacy SVG |
+| Dứa | thom | 20 | legacy SVG | legacy SVG |
+| Bông vải | bongvai | 21 | legacy SVG | legacy SVG |
+| Dưa hấu | duahau | 21 | legacy SVG | legacy SVG |
+| Nho | nho | 22 | legacy SVG | legacy SVG |
+| Cà phê | caphe | 23 | legacy SVG | legacy SVG |
+| Cần sa | cansa | 25 | legacy SVG | legacy SVG |
+| Hoa hồng | hoahong | 25 | legacy SVG | legacy SVG |
+| Ô liu | oliu | 26 | legacy SVG | legacy SVG |
+| Nấm | nam | 27 | legacy SVG | legacy SVG |
+| Ca cao | cacao | 28 | legacy SVG | legacy SVG |
+| Vani | vani | 29 | legacy SVG | legacy SVG |
+
+## Fruit trees
+
+| Tree | ID | Unlock | Current art |
+| --- | --- | ---: | --- |
+| Chuối | chuoi | 8 | shared PNG + emoji |
+| Cam | cam | 12 | unique PNG |
+| Táo | tao | 14 | unique PNG |
+| Me | quame | 15 | shared PNG + emoji |
+| Xoài | xoai | 16 | unique PNG |
+| Thanh long | thanhlong | 18 | unique PNG |
+| Chanh | chanh | 20 | shared PNG + emoji |
+| Cóc | coc | 21 | shared PNG + emoji |
+| Bơ trái | quabo | 22 | shared PNG + emoji |
+| Dừa | dua | 24 | shared PNG + emoji |
+| Đào | dao | 26 | shared PNG + emoji |
+| Sầu riêng | saurieng | 30 | shared PNG + emoji |
+| Anh đào | anhdao | 32 | shared PNG + emoji |
+
+## Animals
+
+| Animal | ID | Unlock | Current art |
+| --- | --- | ---: | --- |
+| Gà | ga | 3 | unique PNG |
+| Chim cút | cut | 4 | emoji |
+| Vịt | vit | 6 | emoji |
+| Bò | bo | 8 | unique PNG |
+| Ngỗng | ngong | 9 | emoji |
+| Thỏ | tho | 10 | emoji |
+| Ong | ong | 12 | emoji |
+| Cừu | cuu | 14 | unique PNG |
+| Gà tây | gatay | 15 | emoji |
+| Dê | de | 17 | emoji |
+| Tằm | tam | 18 | emoji |
+| Lợn | heo | 20 | unique PNG |
+| Trâu | trau | 22 | emoji |
+| Alpaca | alpaca | 25 | emoji |
+| Hươu | huou | 28 | emoji |
+
+## Machines
+
+| Machine | ID | Unlock | Current art |
+| --- | --- | ---: | --- |
+| Lò nướng cá | lonuong | 8 | emoji/UI |
+| Quán ốc | quanoc | 8 | emoji/UI |
+| Bếp gia đình | bepan | 9 | emoji/UI |
+| Cối xay bột | coixay | 10 | emoji/UI |
+| Quán ăn vặt | quanvat | 11 | emoji/UI |
+| Máy ép nước | mayep | 12 | emoji/UI |
+| Nồi mứt | noimut | 13 | emoji/UI |
+| Nhà máy sữa | nhamaysua | 15 | emoji/UI |
+| Lò bánh | lobanh | 17 | emoji/UI |
+| Máy rang cà phê | mayrang | 23 | emoji/UI |
+| Xưởng dệt | xuongdet | 25 | emoji/UI |
+| Xưởng cao cấp | xuongcaocap | 26 | emoji/UI |
+
+## Static client asset references
+
+This list includes scene buildings, backgrounds, UI icons, and product art named directly in `public/app.js`. Crop, tree, and animal IDs generated at runtime are covered by the catalog tables above.
+
+| Path | Size |
+| --- | ---: |
+| `assets/art/basket.png` | 7 KB |
+| `assets/art/chicken.png` | 7 KB |
+| `assets/art/cow.png` | 15 KB |
+| `assets/art/feed.png` | 5 KB |
+| `assets/art/pig.png` | 10 KB |
+| `assets/art/sheep.png` | 14 KB |
+| `assets/art/tree.png` | 12 KB |
+| `assets/art/trees/cam-qua.png` | 3 KB |
+| `assets/art/trees/tao-qua.png` | 3 KB |
+| `assets/art/trees/thanhlong-qua.png` | 4 KB |
+| `assets/art/trees/xoai-qua.png` | 4 KB |
+| `assets/crops-v3/carrot-growing.png` | 88 KB |
+| `assets/crops-v3/carrot-ripe.png` | 93 KB |
+| `assets/crops-v3/corn-growing.png` | 96 KB |
+| `assets/crops-v3/corn-ripe.png` | 106 KB |
+| `assets/crops-v3/potato-growing.png` | 101 KB |
+| `assets/crops-v3/potato-ripe.png` | 110 KB |
+| `assets/crops-v3/wheat-growing.png` | 54 KB |
+| `assets/crops-v3/wheat-ripe.png` | 85 KB |
+| `assets/crops/seed-1.svg` | <1 KB |
+| `assets/pack/chicken_brown.png` | 9 KB |
+| `assets/pack/chicken_coop_v3.png` | 246 KB |
+| `assets/pack/farm_house.png` | 80 KB |
+| `assets/pack/farm_logo.png` | 54 KB |
+| `assets/pack/farmer_v3.png` | 233 KB |
+| `assets/pack/fish_pond.png` | 40 KB |
+| `assets/pack/greenhouse.png` | 50 KB |
+| `assets/pack/market_shop_v3.png` | 431 KB |
+| `assets/pack/pet_dogs.png` | 21 KB |
+| `assets/pack/pig_adult.png` | 12 KB |
+| `assets/pack/red_barn.png` | 41 KB |
+| `assets/pack/sheep_adult.png` | 18 KB |
+| `assets/pack/tree_01.png` | 10 KB |
+| `assets/pack/tree_02.png` | 14 KB |
+| `assets/pack/well.png` | 17 KB |
+| `assets/pack/windmill_v3.png` | 327 KB |
+| `assets/ui/coin.svg` | <1 KB |
+| `assets/ui/egg.svg` | <1 KB |
+| `assets/ui/feed.svg` | <1 KB |
+| `assets/ui/fish-cachep.svg` | <1 KB |
+| `assets/ui/fish-cakoi.svg` | <1 KB |
+| `assets/ui/fish-canho.svg` | <1 KB |
+| `assets/ui/fish-caro.svg` | <1 KB |
+| `assets/ui/flour.svg` | <1 KB |
+| `assets/ui/gem.svg` | <1 KB |
+| `assets/ui/milk.svg` | <1 KB |
+| `assets/ui/scarecrow.svg` | <1 KB |
+| `assets/ui/star.svg` | <1 KB |
+| `assets/ui/wool.svg` | <1 KB |
+
