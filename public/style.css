@@ -1706,7 +1706,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .family-block {
     position: fixed; z-index: 24;
     top: calc(76px + var(--top-safe));
-    bottom: calc(14px + var(--bottom-safe));
+    max-height: calc(100dvh - 90px - var(--top-safe) - var(--bottom-safe));
     right: max(16px, calc((100vw - 970px) / 2));
     width: 226px;
     display: flex; flex-direction: column;
@@ -1717,7 +1717,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   }
   .family-block .family-search-wrap { width: 100%; margin: 0 0 0.5rem; }
   .family-block .family-strip {
-    width: 100%; margin: 0; flex: 1;
+    width: 100%; margin: 0; flex: 1; min-height: 0;
     flex-direction: column; align-items: stretch;
     overflow-y: auto; overflow-x: hidden;
     scrollbar-width: thin;
@@ -2000,6 +2000,9 @@ button, a, .plot, .side-btn, .gbtn, .hud-round, .coin-pill, .seed-card, .inv-row
   border: 1.5px solid rgba(230, 215, 185, 0.85);
   border-radius: 28px;
   box-shadow: 0 14px 36px rgba(45, 30, 15, 0.16), 0 2px 8px rgba(0,0,0,0.04);
+}
+@media (min-width: 1180px) {
+  .bottom-dock { left: calc(50% - 125px); }
 }
 .dock-btn {
   position: relative;

@@ -455,7 +455,7 @@
             </span>
           </div>
         </header>
-        <nav class="bottom-dock">
+        <nav class="bottom-dock" aria-label="Điều hướng nông trại">
           <button class="dock-btn${!visiting && !sheet && !showLb ? ' dock-btn--active' : ''}" id="btn-dock-farm" title="Nông trại">
             <span class="dock-icon">🏡</span>
             <span class="dock-label">Trại</span>
@@ -544,14 +544,14 @@
             <div class="farm-grid" id="grid">${renderPlots(visiting)}</div>
           </div>
 
-          <div class="family-block">
-            <h3 class="family-heading">👥 Người nhà</h3>
+          <section class="family-block" aria-labelledby="family-heading">
+            <h3 class="family-heading" id="family-heading">👥 Người nhà</h3>
             <div class="family-search-wrap">
               <span class="family-search-icon">🔍</span>
               <input class="family-search" type="search" placeholder="Tìm người nhà…" value="${esc(familyFilter)}" />
             </div>
             <div class="family-strip">${familyStripHtml()}</div>
-          </div>
+          </section>
 
         </div>
 
