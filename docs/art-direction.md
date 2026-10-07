@@ -35,7 +35,7 @@ Garlic source images: `asset/source_crops/v3/garlic-growing.png` and `asset/sour
 | Farm buildings | New coop, windmill, and market sprites; other buildings use mixed existing art | Replace visible outliers and align scale/shadow |
 | Farmer | New character sprite | Review size and silhouette against buildings at mobile width |
 | Fruit trees | Nine individual PNGs, others use generic tree plus emoji | Create distinct tree silhouettes for the remaining species |
-| Animals | Eleven individual PNGs, four species still use emoji | Replace remaining emoji with species sprites |
+| Animals | All fifteen species have individual PNGs | Review scale and shadow together at phone width |
 | Machines | Mixed SVG/PNG/emoji | Standardize machine footprint and active/ready feedback |
 | Products and UI icons | Mostly emoji | Use a consistent icon set after gameplay hierarchy is settled |
 
