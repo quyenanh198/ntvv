@@ -751,6 +751,12 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   padding: .15rem .08rem .32rem;
   scrollbar-width: none;
 }
+.family-heading {
+  margin: 0 0 .35rem;
+  color: #65472b;
+  font-size: .82rem;
+  font-weight: 900;
+}
 .family-strip::-webkit-scrollbar { display: none; }
 .family-member {
   position: relative;
@@ -1407,6 +1413,9 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 /* ---------- mobile: management at top, actions at bottom ---------- */
 @media (max-width: 780px) {
+  .stage-center { display: flex; flex-direction: column; }
+  .stage-center > * { flex-shrink: 0; }
+  .stage-center > .family-block { margin: .3rem 0 .8rem; }
   body { background: linear-gradient(180deg, #63c0f3 0%, #b9eaf7 34%, #e4f5d9 100%); }
   .bg-tree, .hills-far { display: none; }
 
@@ -1540,6 +1549,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .hud-rounds { gap: .28rem; }
   .coin-pill--star { display: none; } /* sheet Sao vẫn mở được từ pill kim cương */
 
+  .family-heading { margin: 0 0 .35rem; }
   .family-search-wrap { margin-bottom: .3rem; }
   .family-search { min-height: 35px; font-size: .74rem; border-radius: 11px; }
   .family-strip { margin-bottom: .45rem; gap: .32rem; }
@@ -1686,12 +1696,18 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 /* Family sidebar trên màn rộng (như danh sách nhóm chat) */
 @media (min-width: 1180px) {
-  .stage-center { max-width: 720px; left: 0; right: 0; margin: 0 auto; }
+  .stage-center {
+    width: 720px;
+    max-width: none;
+    left: max(16px, calc((100vw - 970px) / 2));
+    right: auto;
+    margin: 0;
+  }
   .family-block {
     position: fixed; z-index: 24;
     top: calc(76px + var(--top-safe));
     bottom: calc(14px + var(--bottom-safe));
-    right: clamp(96px, 10.5vw, 140px);
+    right: max(16px, calc((100vw - 970px) / 2));
     width: 226px;
     display: flex; flex-direction: column;
     background: rgba(255, 252, 240, 0.92);

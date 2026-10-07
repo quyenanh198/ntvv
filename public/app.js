@@ -511,14 +511,6 @@
             <img class="sb sb-logo" src="${A('assets/pack/farm_logo.png')}" alt="Nông Trại Vui Vẻ" />
           </div>
 
-          <div class="family-block">
-            <div class="family-search-wrap">
-              <span class="family-search-icon">🔍</span>
-              <input class="family-search" type="search" placeholder="Tìm người nhà…" value="${esc(familyFilter)}" />
-            </div>
-            <div class="family-strip">${familyStripHtml()}</div>
-          </div>
-
           ${visiting ? `
             <div class="visit-bar">
               <span>👀 Ruộng của <b class="${frameCls(visiting.farm.luxury?.frame)}">${esc(visiting.farm.name)}</b>${visiting.farm.luxury?.title && DATA.config.luxury?.[visiting.farm.luxury.title] ? ` <i class="vis-title">${DATA.config.luxury[visiting.farm.luxury.title].emoji} ${DATA.config.luxury[visiting.farm.luxury.title].name}</i>` : ''}${[...(visiting.farm.luxury?.pets || []), ...(visiting.farm.luxury?.decor || [])].length ? ` <span class="hud-decor">${[...(visiting.farm.luxury.pets || []), ...(visiting.farm.luxury.decor || [])].map((id) => DATA.config.luxury?.[id]?.emoji || '').join('')}</span>` : ''} · Lv ${visiting.farm.level}${visiting.farm.online ? ' <span class="online-dot" title="Chủ vườn đang online">🟢 online</span>' : ''}${visiting.farm.dogUntil > Date.now() ? ` <span class="dog-warn">🐕 Có chó canh — ${visiting.farm.dogChance || 20}% bị tóm${visiting.farm.online ? ' (chủ đang online +10%)' : ''}!</span>` : ''}</span>
@@ -550,6 +542,15 @@
             <img class="scarecrow-img" src="${A('assets/ui/scarecrow.svg')}" alt="" />
             <span class="butterfly">🦋</span>
             <div class="farm-grid" id="grid">${renderPlots(visiting)}</div>
+          </div>
+
+          <div class="family-block">
+            <h3 class="family-heading">👥 Người nhà</h3>
+            <div class="family-search-wrap">
+              <span class="family-search-icon">🔍</span>
+              <input class="family-search" type="search" placeholder="Tìm người nhà…" value="${esc(familyFilter)}" />
+            </div>
+            <div class="family-strip">${familyStripHtml()}</div>
           </div>
 
         </div>
