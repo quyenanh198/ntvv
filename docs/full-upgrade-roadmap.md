@@ -67,7 +67,7 @@ This is the project plan for the farm game, separate from the older stability au
 
 - Measure mobile startup, image payload, rendering work, and state polling. Optimize the measured bottlenecks.
 - Audit keyboard control, focus after sheets close, text contrast, screen-reader names, touch size, and reduced motion.
-- **Gate:** core game works at 320px, on keyboard, and with a screen reader; performance budgets set from baseline measurements. **Status:** 320px layout and targeted browser checks pass; farm sheets now have dialog semantics, close controls, Escape handling, and focus return. Full keyboard/screen-reader and performance audits remain pending.
+- **Gate:** core game works at 320px, on keyboard, and with a screen reader; performance budgets set from baseline measurements. **Status:** 320px layout and targeted browser checks pass; farm sheets, leaderboard, and return report now have dialog semantics, keyboard focus traps, Escape handling, and focus return. Full keyboard/screen-reader and performance audits remain pending.
 
 ## 11. Verify and release in stages
 

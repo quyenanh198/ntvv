@@ -17,6 +17,9 @@
   let lastRenderedSheetType = null;
   let sheetReturnFocus = null;
   let showLb = null;
+  let lastRenderedModalType = null;
+  let modalReturnFocus = null;
+  let modalReturnFocusId = null;
   let pending = false;
   let familyFilter = '';
   let lastLevel = null;
@@ -391,6 +394,15 @@
   function render() {
     if (!DATA) return;
     const previousSheetType = lastRenderedSheetType;
+    const previousModalType = lastRenderedModalType;
+    const modalType = showLb ? 'leaderboard' : DATA.me?.awayReport && !VISIT && !sheet ? 'away' : null;
+    if (modalType && !previousModalType) {
+      const active = document.activeElement;
+      modalReturnFocus = active instanceof HTMLElement && active !== document.body
+        ? active.closest('.sheet') ? document.querySelector('[data-sheet="more"]') : active
+        : document.getElementById('btn-dock-farm');
+      modalReturnFocusId = modalReturnFocus?.id || null;
+    }
     const openingSheet = !!sheet && sheet.type !== previousSheetType;
     if (openingSheet && !previousSheetType) {
       const active = document.activeElement;
@@ -554,6 +566,7 @@
     if (DATA.me?.awayReport && !VISIT && !sheet && !showLb) app.insertAdjacentHTML('beforeend', renderAway(DATA.me.awayReport));
     bind();
     lastRenderedSheetType = sheet?.type || null;
+    lastRenderedModalType = modalType;
     if (openingSheet) document.querySelector('.sheet-close')?.focus({ preventScroll: true });
     else if (!sheet && previousSheetType) {
       if (!showLb) {
@@ -562,6 +575,12 @@
         target?.focus({ preventScroll: true });
       }
       sheetReturnFocus = null;
+    }
+    if (modalType && !previousModalType) document.querySelector('.modal-close, #btn-away-ack')?.focus({ preventScroll: true });
+    else if (!modalType && previousModalType) {
+      (modalReturnFocus?.isConnected ? modalReturnFocus : document.getElementById(modalReturnFocusId) || document.getElementById('btn-dock-farm'))?.focus({ preventScroll: true });
+      modalReturnFocus = null;
+      modalReturnFocusId = null;
     }
     if (searchWasFocused) {
       const input = document.querySelector('.family-search');
@@ -795,8 +814,8 @@
       </div>`).join('');
     return `
       <div class="modal-backdrop" data-away-close="1">
-        <div class="modal modal--away" onclick="event.stopPropagation()">
-          <h3>😱 Trong lúc bạn vắng mặt</h3>
+        <div class="modal modal--away" role="dialog" aria-modal="true" aria-labelledby="away-title" onclick="event.stopPropagation()">
+          <h3 id="away-title">😱 Trong lúc bạn vắng mặt</h3>
           <p class="sheet-note">Từ ${fmt(r.since)} đến ${fmt(r.until)}, nhà bạn bị chôm tổng cộng <b>${r.total}</b> món:</p>
           <div class="away-scroll">
             ${items}
@@ -1559,7 +1578,9 @@
       <p class="sheet-note">💹 Kinh tế làng = tổng vàng cả làng đã <b>bán hàng</b> (hệ thống + đơn hàng + bạn bè; không tính vàng tặng/trộm/thưởng): ${(tb.economy?.villageGold || 0).toLocaleString('vi')} ${COIN} → thưởng ×${tb.economy?.mult || 1} (mỗi 5 triệu cộng thêm ×1).</p>`;
     return `
       <div class="modal-backdrop" data-close="1">
-        <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="leaderboard-title" onclick="event.stopPropagation()">
+          <h3 id="leaderboard-title">Bảng xếp hạng</h3>
+          <button class="modal-close" type="button" data-close="1" aria-label="Đóng bảng xếp hạng">×</button>
           <div class="lb-tabs">
             <button class="gbtn btn-mini${thiefTab ? '' : ' gbtn--gold'}" data-lb-tab="village">🏆 Làng</button>
             <button class="gbtn btn-mini${thiefTab ? ' gbtn--gold' : ''}" data-lb-tab="thief">🥷 Trộm</button>
@@ -1610,15 +1631,18 @@
     document.querySelectorAll('[data-close]').forEach((el) =>
       el.addEventListener('click', () => { sheet = null; showLb = null; render(); }));
     document.addEventListener('keydown', (ev) => {
-      if (!sheet) return;
+      const awayOpen = !!document.querySelector('.modal--away');
+      if (!sheet && !showLb && !awayOpen) return;
       if (ev.key === 'Escape') {
         ev.preventDefault();
-        sheet = null;
+        if (sheet) sheet = null;
+        else if (showLb) showLb = null;
+        else if (DATA.me) DATA.me.awayReport = null;
         render();
         return;
       }
       if (ev.key !== 'Tab') return;
-      const panel = document.querySelector('.sheet');
+      const panel = document.querySelector(sheet ? '.sheet' : '.modal');
       const focusable = [...(panel?.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') || [])]
         .filter((element) => element.getClientRects().length);
       if (!focusable.length) return;
