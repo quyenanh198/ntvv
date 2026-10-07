@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops/seed-1.svg`.
 
-**Coverage:** 6/36 crops have matching growing and ripe v3 art; 9/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 69 static asset paths appear in the client.
+**Coverage:** 6/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 69 static asset paths appear in the client.
 
 ## Crops
 
@@ -52,15 +52,15 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Chuối | chuoi | 8 | unique PNG |
 | Cam | cam | 12 | unique PNG |
 | Táo | tao | 14 | unique PNG |
-| Me | quame | 15 | shared PNG + emoji |
+| Me | quame | 15 | unique PNG |
 | Xoài | xoai | 16 | unique PNG |
 | Thanh long | thanhlong | 18 | unique PNG |
 | Chanh | chanh | 20 | unique PNG |
-| Cóc | coc | 21 | shared PNG + emoji |
-| Bơ trái | quabo | 22 | shared PNG + emoji |
+| Cóc | coc | 21 | unique PNG |
+| Bơ trái | quabo | 22 | unique PNG |
 | Dừa | dua | 24 | unique PNG |
 | Đào | dao | 26 | unique PNG |
-| Sầu riêng | saurieng | 30 | shared PNG + emoji |
+| Sầu riêng | saurieng | 30 | unique PNG |
 | Anh đào | anhdao | 32 | unique PNG |
 
 ## Animals

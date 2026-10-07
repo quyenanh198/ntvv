@@ -34,7 +34,7 @@ Garlic source images: `asset/source_crops/v3/garlic-growing.png` and `asset/sour
 | --- | --- | --- |
 | Farm buildings | New coop, windmill, and market sprites; other buildings use mixed existing art | Replace visible outliers and align scale/shadow |
 | Farmer | New character sprite | Review size and silhouette against buildings at mobile width |
-| Fruit trees | Nine individual PNGs, others use generic tree plus emoji | Create distinct tree silhouettes for the remaining species |
+| Fruit trees | All thirteen species have individual PNGs | Review scale and ready-state contrast together at phone width |
 | Animals | All fifteen species have individual PNGs | Review scale and shadow together at phone width |
 | Machines | Mixed SVG/PNG/emoji | Standardize machine footprint and active/ready feedback |
 | Products and UI icons | Mostly emoji | Use a consistent icon set after gameplay hierarchy is settled |
@@ -55,3 +55,5 @@ Garlic source images: `asset/source_crops/v3/garlic-growing.png` and `asset/sour
 ## Added tree sources
 
 Banana, lemon, coconut, peach, and cherry tree and fruit icons use the transparent originals in `asset/png/fruit_trees/`, copied into `public/assets/art/trees/` under their game IDs (`chuoi`, `chanh`, `dua`, `dao`, `anhdao`).
+
+Tamarind (`quame`), ambarella (`coc`), avocado (`quabo`), and durian (`saurieng`) have 1024×1024 transparent originals in `asset/source_trees/v3/` and 256×256 game exports in `public/assets/art/trees/` under their game IDs.

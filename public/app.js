@@ -37,8 +37,8 @@
   const spriteBase = (id) => SPRITE_ALIAS[id] || id;
   const cropSprite = (id, stage) => A((stage === 3 && RIPE_CROP_ART[id]) || (stage === 2 && GROWING_CROP_ART[id])
     || `assets/crops/${stage === 1 ? 'seed-1' : `${spriteBase(id)}-${stage}`}.svg`);
-  // Cây ăn quả có tranh riêng; loại mới dùng tranh cây chung + emoji quả.
-  const TREE_PNG = new Set(['cam', 'tao', 'xoai', 'thanhlong', 'chuoi', 'chanh', 'dua', 'dao', 'anhdao']);
+  // Mỗi cây ăn quả có tranh riêng để người chơi nhận ra vườn bằng hình dáng và quả.
+  const TREE_PNG = new Set(['cam', 'tao', 'xoai', 'thanhlong', 'chuoi', 'chanh', 'dua', 'dao', 'anhdao', 'quame', 'coc', 'quabo', 'saurieng']);
   const treeArt = (id) => A(TREE_PNG.has(id) ? `assets/art/trees/${id}.png` : 'assets/art/tree.png');
   // Mỗi loài vật nuôi có tranh riêng để giữ nét nhất quán trong chuồng.
   const BARN_ART = { ga: 'assets/art/chicken_v3.png', cut: 'assets/art/quail_v3.png', vit: 'assets/art/duck_v3.png', bo: 'assets/art/cow.png', ngong: 'assets/art/goose_v3.png', tho: 'assets/art/rabbit_v3.png', ong: 'assets/art/bee_v3.png', cuu: 'assets/art/sheep.png', gatay: 'assets/art/turkey_v3.png', de: 'assets/art/goat_v3.png', tam: 'assets/art/silkworm_v3.png', heo: 'assets/art/pig.png', trau: 'assets/art/buffalo_v3.png', alpaca: 'assets/art/alpaca_v3.png', huou: 'assets/art/deer_v3.png' };
