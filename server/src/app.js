@@ -1510,29 +1510,33 @@ export function buildApp({ config, db, logger = true }) {
         })();
         return { n, total: queued + n };
       }
-      async function machineRun(request, reply, machineId, recipeId, count = 1) {
-        const r = queueRecipe(request.farmer, machineId, recipeId, count);
-        if (r.error) return reply.code(400).send({ error: r.error });
-        return { me: fresh(request.farmer.user_id), queued: r.n, total: r.total };
+      async function machineRun(request, reply, machineId, recipeId, count = 1, route = 'machine-run') {
+        const run = runJournaledMutation(request, route, () => queueRecipe(request.farmer, machineId, recipeId, count));
+        if (run.error) return reply.code(run.error === 'idempotency_conflict' ? 409 : 400).send({ error: run.error });
+        return { me: fresh(request.farmer.user_id), queued: run.outcome.n, total: run.outcome.total };
       }
 
       // Chế biến hết: duyệt mọi máy đã mở, mọi công thức, xếp tối đa theo kho
       // (kho dùng chung nên công thức đứng trước được ưu tiên nguyên liệu).
       api.post('/machine-run-all', async (request, reply) => {
         const me = request.farmer;
-        const jobs = [];
-        let total = 0;
-        for (const machine of Object.values(MACHINES)) {
-          if (levelFor(me.xp) < machine.level) continue;
-          for (const recipe of Object.values(machine.recipes)) {
-            if (recipe.id === FEED_ITEM) continue; // thức ăn gia súc: tự chọn tay
-            const r = queueRecipe(me, machine.id, recipe.id, MACHINE_QUEUE_MAX);
-            if (!r.error) { jobs.push({ machine: machine.id, recipe: recipe.id, n: r.n }); total += r.n; }
+        const run = runJournaledMutation(request, 'machine-run-all', () => {
+          const jobs = [];
+          let total = 0;
+          for (const machine of Object.values(MACHINES)) {
+            if (levelFor(me.xp) < machine.level) continue;
+            for (const recipe of Object.values(machine.recipes)) {
+              if (recipe.id === FEED_ITEM) continue; // thức ăn gia súc: tự chọn tay
+              const r = queueRecipe(me, machine.id, recipe.id, MACHINE_QUEUE_MAX);
+              if (!r.error) { jobs.push({ machine: machine.id, recipe: recipe.id, n: r.n }); total += r.n; }
+            }
           }
-        }
-        if (!total) return reply.code(400).send({ error: 'not_enough_items' });
-        logEvent(`🏭 ${me.name} xếp một lượt ${total} mẻ vào ${new Set(jobs.map((j) => j.machine)).size} máy`);
-        return { me: fresh(me.user_id), queued: total, jobs };
+          if (!total) return { error: 'not_enough_items' };
+          return { queued: total, jobs };
+        });
+        if (run.error) return reply.code(run.error === 'idempotency_conflict' ? 409 : 400).send({ error: run.error });
+        if (!run.replay) logEvent(`🏭 ${me.name} xếp một lượt ${run.outcome.queued} mẻ vào ${new Set(run.outcome.jobs.map((j) => j.machine)).size} máy`);
+        return { me: fresh(me.user_id), ...run.outcome };
       });
 
       // Lấy một món (recipeId) hoặc mọi món đã chín của máy (recipeId bỏ trống).
@@ -1564,35 +1568,43 @@ export function buildApp({ config, db, logger = true }) {
           if (counter.n) { bumpQuest(me.user_id, 'process', counter.n); bumpFest(me.user_id, 'process', counter.n); }
         })();
       }
-      async function machineCollect(request, reply, machineId, recipeId) {
+      async function machineCollect(request, reply, machineId, recipeId, route = 'machine-collect') {
         const machine = MACHINES[machineId];
         const me = request.farmer;
         if (!machine) return reply.code(400).send({ error: 'bad_request' });
-        const now = Date.now();
-        const jobs = recipeId
-          ? db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').all(me.user_id, machineId, recipeId)
-          : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND ready_at <= ?').all(me.user_id, machineId, now);
-        if (!jobs.length) return reply.code(400).send({ error: recipeId ? 'mill_empty' : 'not_ready' });
-        if (recipeId && now < jobs[0].ready_at) return reply.code(400).send({ error: 'not_ready' });
-        const got = {}; const counter = { n: 0 };
-        collectJobs(me, jobs, now, got, counter);
-        return { me: fresh(me.user_id), product: Object.keys(got)[0], items: got, collected: counter.n };
+        const collect = runJournaledMutation(request, route, () => {
+          const now = Date.now();
+          const jobs = recipeId
+            ? db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').all(me.user_id, machineId, recipeId)
+            : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND ready_at <= ?').all(me.user_id, machineId, now);
+          if (!jobs.length) return { error: recipeId ? 'mill_empty' : 'not_ready' };
+          if (recipeId && now < jobs[0].ready_at) return { error: 'not_ready' };
+          const got = {}; const counter = { n: 0 };
+          collectJobs(me, jobs, now, got, counter);
+          return { product: Object.keys(got)[0], items: got, collected: counter.n };
+        });
+        if (collect.error) return reply.code(collect.error === 'idempotency_conflict' ? 409 : 400).send({ error: collect.error });
+        return { me: fresh(me.user_id), ...collect.outcome };
       }
       // Thu hết: mọi job đã chín ở mọi máy.
       api.post('/machine-collect-all', async (request, reply) => {
         const me = request.farmer;
-        const now = Date.now();
-        const jobs = db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
-        if (!jobs.length) return reply.code(400).send({ error: 'not_ready' });
-        const got = {}; const counter = { n: 0 };
-        collectJobs(me, jobs, now, got, counter);
-        return { me: fresh(me.user_id), product: Object.keys(got)[0], items: got, collected: counter.n };
+        const collect = runJournaledMutation(request, 'machine-collect-all', () => {
+          const now = Date.now();
+          const jobs = db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
+          if (!jobs.length) return { error: 'not_ready' };
+          const got = {}; const counter = { n: 0 };
+          collectJobs(me, jobs, now, got, counter);
+          return { product: Object.keys(got)[0], items: got, collected: counter.n };
+        });
+        if (collect.error) return reply.code(collect.error === 'idempotency_conflict' ? 409 : 400).send({ error: collect.error });
+        return { me: fresh(me.user_id), ...collect.outcome };
       });
 
       api.post('/machine-run', async (request, reply) => machineRun(request, reply, request.body?.machine, request.body?.recipe, request.body?.count));
       api.post('/machine-collect', async (request, reply) => machineCollect(request, reply, request.body?.machine, request.body?.recipe));
-      api.post('/mill', async (request, reply) => machineRun(request, reply, 'coixay', request.body?.recipe));
-      api.post('/mill-collect', async (request, reply) => machineCollect(request, reply, 'coixay'));
+      api.post('/mill', async (request, reply) => machineRun(request, reply, 'coixay', request.body?.recipe, 1, 'mill'));
+      api.post('/mill-collect', async (request, reply) => machineCollect(request, reply, 'coixay', undefined, 'mill-collect'));
 
       // ---- Con vật may mắn: bấm trúng ăn kim cương ----
       api.post('/critter-catch', async (request, reply) => {
