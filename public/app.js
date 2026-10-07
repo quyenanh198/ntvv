@@ -40,8 +40,8 @@
   // Cây ăn quả có tranh riêng; loại mới dùng tranh cây chung + emoji quả.
   const TREE_PNG = new Set(['cam', 'tao', 'xoai', 'thanhlong', 'chuoi', 'chanh', 'dua', 'dao', 'anhdao']);
   const treeArt = (id) => A(TREE_PNG.has(id) ? `assets/art/trees/${id}.png` : 'assets/art/tree.png');
-  // Vật nuôi có tranh: gà/bò/cừu/lợn; loại khác hiện emoji.
-  const BARN_ART = { ga: 'assets/art/chicken_v3.png', cut: 'assets/art/quail_v3.png', vit: 'assets/art/duck_v3.png', bo: 'assets/art/cow.png', ngong: 'assets/art/goose_v3.png', tho: 'assets/art/rabbit_v3.png', ong: 'assets/art/bee_v3.png', cuu: 'assets/art/sheep.png', heo: 'assets/art/pig.png' };
+  // Vật nuôi có tranh riêng; các loài chưa có tranh dùng emoji.
+  const BARN_ART = { ga: 'assets/art/chicken_v3.png', cut: 'assets/art/quail_v3.png', vit: 'assets/art/duck_v3.png', bo: 'assets/art/cow.png', ngong: 'assets/art/goose_v3.png', tho: 'assets/art/rabbit_v3.png', ong: 'assets/art/bee_v3.png', cuu: 'assets/art/sheep.png', gatay: 'assets/art/turkey_v3.png', de: 'assets/art/goat_v3.png', heo: 'assets/art/pig.png' };
   const barnArtImg = (kind) => (BARN_ART[kind]
     ? `<img src="${A(BARN_ART[kind])}" alt="" />`
     : `<span class="emoji-ic emoji-ic--barn">${DATA?.config.animals[kind]?.emoji || '🐾'}</span>`);

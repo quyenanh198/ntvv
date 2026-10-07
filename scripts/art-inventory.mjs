@@ -9,7 +9,7 @@ const asset = (path) => existsSync(resolve(publicDir, path));
 const v3Name = { luami: 'wheat', carot: 'carrot', ngo: 'corn', khoaitay: 'potato', toi: 'garlic', rauthom: 'herbs' };
 const legacyName = { luami: 'lua', dautay: 'dau' };
 const treePng = new Set(['cam', 'tao', 'xoai', 'thanhlong', 'chuoi', 'chanh', 'dua', 'dao', 'anhdao']);
-const animalPng = { ga: 'chicken_v3', cut: 'quail_v3', vit: 'duck_v3', bo: 'cow', ngong: 'goose_v3', tho: 'rabbit_v3', ong: 'bee_v3', cuu: 'sheep', heo: 'pig' };
+const animalPng = { ga: 'chicken_v3', cut: 'quail_v3', vit: 'duck_v3', bo: 'cow', ngong: 'goose_v3', tho: 'rabbit_v3', ong: 'bee_v3', cuu: 'sheep', gatay: 'turkey_v3', de: 'goat_v3', heo: 'pig' };
 const status = (path, kind) => asset(path) ? kind : 'MISSING';
 
 const cropRows = Object.values(CROPS).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name, 'vi')).map((crop) => {
