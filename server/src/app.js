@@ -1945,37 +1945,35 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/speedup', async (request, reply) => {
         const { target, idx } = request.body ?? {};
         const me = request.farmer;
-        const now = Date.now();
-        let remaining;
-        if (target === 'plot') {
-          const plot = getPlot.get(me.user_id, idx);
-          if (!plot || now >= plot.ready_at) return reply.code(400).send({ error: 'not_growing' });
-          remaining = plot.ready_at - now;
-          const cost = speedupCost(remaining);
-          if (me.gems < cost) return reply.code(400).send({ error: 'not_enough_gems' });
-          db.transaction(() => {
+        const speedup = runJournaledMutation(request, 'speedup', () => {
+          const now = Date.now();
+          if (target === 'plot') {
+            const plot = getPlot.get(me.user_id, idx);
+            if (!plot || now >= plot.ready_at) return { error: 'not_growing' };
+            const cost = speedupCost(plot.ready_at - now);
+            if (getFarmer.get(me.user_id).gems < cost) return { error: 'not_enough_gems' };
             grant(me.user_id, { gems: -cost });
             db.prepare('UPDATE plots SET ready_at = ? WHERE owner_id = ? AND idx = ?').run(now, me.user_id, idx);
-          })();
-          return { me: fresh(me.user_id), cost };
-        }
-        if (target === 'mill' || target === 'machine') {
-          const mk = target === 'machine' && MACHINES[request.body?.kind] ? request.body.kind : 'coixay';
-          const rc = request.body?.recipe;
-          const cur = rc
-            ? db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').get(me.user_id, mk, rc)
-            : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND ready_at > ? ORDER BY ready_at LIMIT 1').get(me.user_id, mk, now);
-          if (!cur || now >= cur.ready_at) return reply.code(400).send({ error: 'not_processing' });
-          remaining = cur.ready_at - now;
-          const cost = speedupCost(remaining);
-          if (me.gems < cost) return reply.code(400).send({ error: 'not_enough_gems' });
-          db.transaction(() => {
+            return { cost };
+          }
+          if (target === 'mill' || target === 'machine') {
+            if (target === 'machine' && !MACHINES[request.body?.kind]) return { error: 'bad_request' };
+            const mk = target === 'machine' ? request.body.kind : 'coixay';
+            const rc = request.body?.recipe;
+            const cur = rc
+              ? db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').get(me.user_id, mk, rc)
+              : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND ready_at > ? ORDER BY ready_at LIMIT 1').get(me.user_id, mk, now);
+            if (!cur || now >= cur.ready_at) return { error: 'not_processing' };
+            const cost = speedupCost(cur.ready_at - now);
+            if (getFarmer.get(me.user_id).gems < cost) return { error: 'not_enough_gems' };
             grant(me.user_id, { gems: -cost });
             db.prepare('UPDATE machine_jobs SET ready_at = ? WHERE owner_id = ? AND kind = ? AND recipe = ?').run(now, me.user_id, mk, cur.recipe);
-          })();
-          return { me: fresh(me.user_id), cost };
-        }
-        return reply.code(400).send({ error: 'bad_request' });
+            return { cost };
+          }
+          return { error: 'bad_request' };
+        });
+        if (speedup.error) return reply.code(speedup.error === 'idempotency_conflict' ? 409 : 400).send({ error: speedup.error });
+        return { me: fresh(me.user_id), cost: speedup.outcome.cost };
       });
 
       // ---- Kỹ năng ----
@@ -1984,27 +1982,35 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         const node = SKILL_NODES[id];
         if (!node) return reply.code(400).send({ error: 'bad_request' });
-        if (levelFor(me.xp) < SKILLS.unlockLevel) return reply.code(400).send({ error: 'level_too_low' });
-        const learned = skillsOf(me);
-        const rank = learned[id] || 0;
-        if (rank >= SKILL_MAX_RANK) return reply.code(400).send({ error: 'max_rank' });
-        const cost = skillCost(node, rank + 1);
-        if (skillPointsLeft(me) < cost) return reply.code(400).send({ error: 'no_skill_points' });
-        learned[id] = rank + 1;
-        db.prepare('UPDATE farmers SET skills_json = ? WHERE user_id = ?').run(JSON.stringify(learned), me.user_id);
-        logEvent(`🎓 ${me.name} nâng kỹ năng ${node.name} lên bậc ${rank + 1}`);
-        return { me: fresh(me.user_id), rank: rank + 1 };
+        const learn = runJournaledMutation(request, 'skill-learn', () => {
+          const current = getFarmer.get(me.user_id);
+          if (levelFor(current.xp) < SKILLS.unlockLevel) return { error: 'level_too_low' };
+          const learned = skillsOf(current);
+          const rank = learned[id] || 0;
+          if (rank >= SKILL_MAX_RANK) return { error: 'max_rank' };
+          const cost = skillCost(node, rank + 1);
+          if (skillPointsLeft(current) < cost) return { error: 'no_skill_points' };
+          learned[id] = rank + 1;
+          db.prepare('UPDATE farmers SET skills_json = ? WHERE user_id = ?').run(JSON.stringify(learned), me.user_id);
+          return { rank: rank + 1 };
+        });
+        if (learn.error) return reply.code(learn.error === 'idempotency_conflict' ? 409 : 400).send({ error: learn.error });
+        if (!learn.replay) logEvent(`🎓 ${me.name} nâng kỹ năng ${node.name} lên bậc ${learn.outcome.rank}`);
+        return { me: fresh(me.user_id), ...learn.outcome };
       });
 
       api.post('/skill-respec', async (request, reply) => {
         const me = request.farmer;
-        const now = Date.now();
-        if (now < (me.last_respec_at || 0) + SKILLS.respecCooldownMs) return reply.code(400).send({ error: 'respec_cooldown' });
-        if (me.gems < SKILLS.respecGems) return reply.code(400).send({ error: 'not_enough_gems' });
-        db.transaction(() => {
+        const respec = runJournaledMutation(request, 'skill-respec', () => {
+          const current = getFarmer.get(me.user_id);
+          const now = Date.now();
+          if (now < (current.last_respec_at || 0) + SKILLS.respecCooldownMs) return { error: 'respec_cooldown' };
+          if (current.gems < SKILLS.respecGems) return { error: 'not_enough_gems' };
           grant(me.user_id, { gems: -SKILLS.respecGems });
           db.prepare("UPDATE farmers SET skills_json = '{}', last_respec_at = ? WHERE user_id = ?").run(now, me.user_id);
-        })();
+          return { gems: SKILLS.respecGems };
+        });
+        if (respec.error) return reply.code(respec.error === 'idempotency_conflict' ? 409 : 400).send({ error: respec.error });
         return { me: fresh(me.user_id) };
       });
 
@@ -2064,14 +2070,17 @@ export function buildApp({ config, db, logger = true }) {
         const hours = Number(request.body?.hours);
         if (!DOG.hoursOptions.includes(hours)) return reply.code(400).send({ error: 'bad_request' });
         const cost = DOG.pricePerHour * hours;
-        if (me.gold < cost) return reply.code(400).send({ error: 'not_enough_gold' });
-        const now = Date.now();
-        const until = Math.max(now, me.dog_until || 0) + scaleMs(hours * 60 * 60 * 1000, config.fast);
-        db.transaction(() => {
+        const hire = runJournaledMutation(request, 'dog-hire', () => {
+          const current = getFarmer.get(me.user_id);
+          if (current.gold < cost) return { error: 'not_enough_gold' };
+          const now = Date.now();
+          const until = Math.max(now, current.dog_until || 0) + scaleMs(hours * 60 * 60 * 1000, config.fast);
           grant(me.user_id, { gold: -cost });
           db.prepare('UPDATE farmers SET dog_until = ? WHERE user_id = ?').run(until, me.user_id);
-        })();
-        logEvent(`🐕 ${me.name} thuê chó canh vườn ${hours} giờ`);
+          return { until };
+        });
+        if (hire.error) return reply.code(hire.error === 'idempotency_conflict' ? 409 : 400).send({ error: hire.error });
+        if (!hire.replay) logEvent(`🐕 ${me.name} thuê chó canh vườn ${hours} giờ`);
         return { me: fresh(me.user_id) };
       });
 
