@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops/seed-1.svg`.
 
-**Coverage:** 5/36 crops have matching growing and ripe v3 art; 9/13 trees and 6/15 animals have individual PNG art. 12 machine types use emoji/UI art. 58 static asset paths appear in the client.
+**Coverage:** 5/36 crops have matching growing and ripe v3 art; 9/13 trees and 9/15 animals have individual PNG art. 12 machine types use emoji/UI art. 61 static asset paths appear in the client.
 
 ## Crops
 
@@ -71,9 +71,9 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Chim cút | cut | 4 | unique PNG |
 | Vịt | vit | 6 | unique PNG |
 | Bò | bo | 8 | unique PNG |
-| Ngỗng | ngong | 9 | emoji |
-| Thỏ | tho | 10 | emoji |
-| Ong | ong | 12 | emoji |
+| Ngỗng | ngong | 9 | unique PNG |
+| Thỏ | tho | 10 | unique PNG |
+| Ong | ong | 12 | unique PNG |
 | Cừu | cuu | 14 | unique PNG |
 | Gà tây | gatay | 15 | emoji |
 | Dê | de | 17 | emoji |
@@ -107,13 +107,16 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | Path | Size |
 | --- | ---: |
 | `assets/art/basket.png` | 7 KB |
+| `assets/art/bee_v3.png` | 53 KB |
 | `assets/art/chicken.png` | 7 KB |
 | `assets/art/chicken_v3.png` | 75 KB |
 | `assets/art/cow.png` | 15 KB |
 | `assets/art/duck_v3.png` | 57 KB |
 | `assets/art/feed.png` | 5 KB |
+| `assets/art/goose_v3.png` | 46 KB |
 | `assets/art/pig.png` | 10 KB |
 | `assets/art/quail_v3.png` | 61 KB |
+| `assets/art/rabbit_v3.png` | 70 KB |
 | `assets/art/sheep.png` | 14 KB |
 | `assets/art/tree.png` | 12 KB |
 | `assets/art/trees/anhdao-qua.png` | 6 KB |

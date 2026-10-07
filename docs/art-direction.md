@@ -49,6 +49,7 @@ Garlic source images: `asset/source_crops/v3/garlic-growing.png` and `asset/sour
 ## New animal source
 
 - Duck (`vit`): `asset/source_animals/duck_v3.png` is the 1024×1024 transparent source; `public/assets/art/duck_v3.png` is the 256×256 game export. The barn, shop, and animal cards use the shared `BARN_ART` mapping.
+- Goose (`ngong`), rabbit (`tho`), and bee (`ong`): `asset/source_animals/{goose,rabbit,bee}_v3.png` are the 1024×1024 transparent sources; `public/assets/art/{goose,rabbit,bee}_v3.png` are the 256×256 game exports.
 
 ## Added tree sources
 
