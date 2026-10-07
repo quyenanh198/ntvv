@@ -86,5 +86,5 @@ This is the project plan for the farm game, separate from the older stability au
 
 - 51 automated tests pass on the upgrade branch.
 - New assets: coop, windmill, market, farmer, individual art for all fifteen animal species and thirteen fruit-tree species, and growing and ripe wheat, carrot, corn, potato, garlic, and herbs. Five tree and fruit pairs from the source pack now have individual game assets. The generated art inventory shows 6/36 crops, 13/13 trees, and 15/15 animals with individual PNG art.
-- First-session guidance, mobile HUD, starter tax grace, persistent harvest collections, and fifty-one replay-safe gameplay/economy routes are implemented.
+- First-session guidance, mobile HUD, starter tax grace, persistent harvest collections, and fifty-three replay-safe gameplay/economy routes are implemented.
 - Player research, complete art conversion, balance model, full mutation coverage, accessibility audit, staged release, and merge remain open.

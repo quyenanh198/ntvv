@@ -2193,32 +2193,40 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       api.post('/plant-tree', async (request, reply) => {
-        if (request.farmer.tax_owed > 0) return reply.code(400).send({ error: 'tax_due' });
         const { idx, tree: treeId } = request.body ?? {};
-        const tree = TREES[treeId];
         const me = request.farmer;
-        if (!tree || !Number.isInteger(idx) || idx < 0 || idx >= me.plots_count) {
-          return reply.code(400).send({ error: 'bad_request' });
-        }
-        if (levelFor(me.xp) < tree.level) return reply.code(400).send({ error: 'level_too_low' });
-        if (me.gold < tree.price) return reply.code(400).send({ error: 'not_enough_gold' });
-        if (getPlot.get(me.user_id, idx)) return reply.code(400).send({ error: 'plot_busy' });
-        const now = Date.now();
-        db.transaction(() => {
+        const planted = runJournaledMutation(request, 'plant-tree', () => {
+          const tree = TREES[treeId];
+          const current = getFarmer.get(me.user_id);
+          if (current.tax_owed > 0) return { error: 'tax_due' };
+          if (!tree || !Number.isInteger(idx) || idx < 0 || idx >= current.plots_count) return { error: 'bad_request' };
+          if (levelFor(current.xp) < tree.level) return { error: 'level_too_low' };
+          if (current.gold < tree.price) return { error: 'not_enough_gold' };
+          if (getPlot.get(me.user_id, idx)) return { error: 'plot_busy' };
+          const now = Date.now();
           grant(me.user_id, { gold: -tree.price });
           db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, tree, tree_at) VALUES (?, ?, ?, ?, ?, 1, ?)')
-            .run(me.user_id, idx, tree.id, now, now + cropTime(me, scaleMs(tree.growMs, config.fast)), now);
-        })();
-        logEvent(`${tree.emoji} ${me.name} trồng một cây ${tree.name}`);
+            .run(me.user_id, idx, tree.id, now, now + cropTime(current, scaleMs(tree.growMs, config.fast)), now);
+          return { treeId };
+        });
+        if (planted.error) return reply.code(planted.error === 'idempotency_conflict' ? 409 : 400).send({ error: planted.error });
+        if (!planted.replay) {
+          const tree = TREES[planted.outcome.treeId];
+          logEvent(`${tree.emoji} ${me.name} trồng một cây ${tree.name}`);
+        }
         return { me: fresh(me.user_id) };
       });
 
       api.post('/remove-tree', async (request, reply) => {
         const { idx } = request.body ?? {};
         const me = request.farmer;
-        const plot = getPlot.get(me.user_id, idx);
-        if (!plot || !plot.tree) return reply.code(400).send({ error: 'no_plot' });
-        db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, idx);
+        const removed = runJournaledMutation(request, 'remove-tree', () => {
+          const plot = getPlot.get(me.user_id, idx);
+          if (!plot || !plot.tree) return { error: 'no_plot' };
+          db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, idx);
+          return { idx };
+        });
+        if (removed.error) return reply.code(removed.error === 'idempotency_conflict' ? 409 : 400).send({ error: removed.error });
         return { me: fresh(me.user_id) };
       });
 
