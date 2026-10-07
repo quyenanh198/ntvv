@@ -8,7 +8,7 @@ const publicDir = resolve(root, 'public');
 const asset = (path) => existsSync(resolve(publicDir, path));
 const v3Name = { luami: 'wheat', carot: 'carrot', ngo: 'corn', khoaitay: 'potato', toi: 'garlic' };
 const legacyName = { luami: 'lua', dautay: 'dau' };
-const treePng = new Set(['cam', 'tao', 'xoai', 'thanhlong']);
+const treePng = new Set(['cam', 'tao', 'xoai', 'thanhlong', 'chuoi', 'chanh', 'dua', 'dao', 'anhdao']);
 const animalPng = { ga: 'chicken_v3', cut: 'quail_v3', vit: 'duck_v3', bo: 'cow', cuu: 'sheep', heo: 'pig' };
 const status = (path, kind) => asset(path) ? kind : 'MISSING';
 

@@ -14,7 +14,7 @@ This is the project plan for the farm game, separate from the older stability au
 - Set a shared camera angle, outline weight, lighting direction, palette, shadow, and sprite scale. Draw a reference farm scene. The working standard and inventory are in [art-direction.md](art-direction.md).
 - Inventory every crop growth state, tree, animal, building, machine, product, UI icon, and background; label missing assets and inconsistent styles.
 - Set export rules: transparent PNG/WebP, predictable names, size variants, and a source file for every new sprite.
-- **Gate:** a single screen using the new art feels coherent at phone and desktop sizes. **Status:** first coherent building set, farmer, five matched crop pairs, hen/quail/duck sprites, a working art guide, and a generated catalog/static-asset inventory added; reference scene and remaining families pending.
+- **Gate:** a single screen using the new art feels coherent at phone and desktop sizes. **Status:** first coherent building set, farmer, five matched crop pairs, hen/quail/duck sprites, nine individual fruit trees, a working art guide, and a generated catalog/static-asset inventory added; reference scene and remaining families pending.
 
 ## 3. Upgrade the farm scene and graphics
 
@@ -85,6 +85,6 @@ This is the project plan for the farm game, separate from the older stability au
 ### Current acceptance record
 
 - 51 automated tests pass on the upgrade branch.
-- New assets: coop, windmill, market, farmer, painted hen, quail, and duck, and growing and ripe wheat, carrot, corn, potato, and garlic. The generated art inventory shows 5/36 crops, 4/13 trees, and 6/15 animals with individual PNG art.
+- New assets: coop, windmill, market, farmer, painted hen, quail, and duck, and growing and ripe wheat, carrot, corn, potato, and garlic. Five tree and fruit pairs from the source pack now have individual game assets. The generated art inventory shows 5/36 crops, 9/13 trees, and 6/15 animals with individual PNG art.
 - First-session guidance, mobile HUD, starter tax grace, and thirty-six replay-safe gameplay/economy routes are implemented.
 - Player research, complete art conversion, balance model, full mutation coverage, accessibility audit, staged release, and merge remain open.

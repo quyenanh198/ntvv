@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops/seed-1.svg`.
 
-**Coverage:** 5/36 crops have matching growing and ripe v3 art; 4/13 trees and 6/15 animals have individual PNG art. 12 machine types use emoji/UI art. 53 static asset paths appear in the client.
+**Coverage:** 5/36 crops have matching growing and ripe v3 art; 9/13 trees and 6/15 animals have individual PNG art. 12 machine types use emoji/UI art. 58 static asset paths appear in the client.
 
 ## Crops
 
@@ -49,19 +49,19 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 
 | Tree | ID | Unlock | Current art |
 | --- | --- | ---: | --- |
-| Chuối | chuoi | 8 | shared PNG + emoji |
+| Chuối | chuoi | 8 | unique PNG |
 | Cam | cam | 12 | unique PNG |
 | Táo | tao | 14 | unique PNG |
 | Me | quame | 15 | shared PNG + emoji |
 | Xoài | xoai | 16 | unique PNG |
 | Thanh long | thanhlong | 18 | unique PNG |
-| Chanh | chanh | 20 | shared PNG + emoji |
+| Chanh | chanh | 20 | unique PNG |
 | Cóc | coc | 21 | shared PNG + emoji |
 | Bơ trái | quabo | 22 | shared PNG + emoji |
-| Dừa | dua | 24 | shared PNG + emoji |
-| Đào | dao | 26 | shared PNG + emoji |
+| Dừa | dua | 24 | unique PNG |
+| Đào | dao | 26 | unique PNG |
 | Sầu riêng | saurieng | 30 | shared PNG + emoji |
-| Anh đào | anhdao | 32 | shared PNG + emoji |
+| Anh đào | anhdao | 32 | unique PNG |
 
 ## Animals
 
@@ -116,7 +116,12 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/art/quail_v3.png` | 61 KB |
 | `assets/art/sheep.png` | 14 KB |
 | `assets/art/tree.png` | 12 KB |
+| `assets/art/trees/anhdao-qua.png` | 6 KB |
 | `assets/art/trees/cam-qua.png` | 3 KB |
+| `assets/art/trees/chanh-qua.png` | 3 KB |
+| `assets/art/trees/chuoi-qua.png` | 6 KB |
+| `assets/art/trees/dao-qua.png` | 5 KB |
+| `assets/art/trees/dua-qua.png` | 7 KB |
 | `assets/art/trees/tao-qua.png` | 3 KB |
 | `assets/art/trees/thanhlong-qua.png` | 4 KB |
 | `assets/art/trees/xoai-qua.png` | 4 KB |

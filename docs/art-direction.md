@@ -33,7 +33,7 @@ Garlic source images: `asset/source_crops/v3/garlic-growing.png` and `asset/sour
 | --- | --- | --- |
 | Farm buildings | New coop, windmill, and market sprites; other buildings use mixed existing art | Replace visible outliers and align scale/shadow |
 | Farmer | New character sprite | Review size and silhouette against buildings at mobile width |
-| Fruit trees | A few individual PNGs, others use generic tree plus emoji | Create distinct tree silhouettes for each unlocked species |
+| Fruit trees | Nine individual PNGs, others use generic tree plus emoji | Create distinct tree silhouettes for the remaining species |
 | Animals | A few individual PNGs, others use emoji | Replace emoji with species sprites, starting with the first unlocks |
 | Machines | Mixed SVG/PNG/emoji | Standardize machine footprint and active/ready feedback |
 | Products and UI icons | Mostly emoji | Use a consistent icon set after gameplay hierarchy is settled |
@@ -49,3 +49,7 @@ Garlic source images: `asset/source_crops/v3/garlic-growing.png` and `asset/sour
 ## New animal source
 
 - Duck (`vit`): `asset/source_animals/duck_v3.png` is the 1024×1024 transparent source; `public/assets/art/duck_v3.png` is the 256×256 game export. The barn, shop, and animal cards use the shared `BARN_ART` mapping.
+
+## Added tree sources
+
+Banana, lemon, coconut, peach, and cherry tree and fruit icons use the transparent originals in `asset/png/fruit_trees/`, copied into `public/assets/art/trees/` under their game IDs (`chuoi`, `chanh`, `dua`, `dao`, `anhdao`).
