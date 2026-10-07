@@ -6,7 +6,7 @@ import { ANIMALS, CROPS, MACHINES, TREES } from '../server/src/game.js';
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const publicDir = resolve(root, 'public');
 const asset = (path) => existsSync(resolve(publicDir, path));
-const v3Name = { luami: 'wheat', carot: 'carrot', ngo: 'corn', khoaitay: 'potato', toi: 'garlic' };
+const v3Name = { luami: 'wheat', carot: 'carrot', ngo: 'corn', khoaitay: 'potato', toi: 'garlic', rauthom: 'herbs' };
 const legacyName = { luami: 'lua', dautay: 'dau' };
 const treePng = new Set(['cam', 'tao', 'xoai', 'thanhlong', 'chuoi', 'chanh', 'dua', 'dao', 'anhdao']);
 const animalPng = { ga: 'chicken_v3', cut: 'quail_v3', vit: 'duck_v3', bo: 'cow', ngong: 'goose_v3', tho: 'rabbit_v3', ong: 'bee_v3', cuu: 'sheep', heo: 'pig' };
