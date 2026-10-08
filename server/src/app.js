@@ -251,6 +251,26 @@ export function buildApp({ config, db, logger = true }) {
     request.chatUser = user;
   }
 
+  async function requireSameOriginMutation(request, reply) {
+    if (request.method !== 'POST') return;
+    if (request.headers['content-type']?.split(';', 1)[0].trim().toLowerCase() !== 'application/json') {
+      return reply.code(415).send({ error: 'unsupported_media_type' });
+    }
+    const fetchSite = request.headers['sec-fetch-site'];
+    if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') {
+      return reply.code(403).send({ error: 'cross_origin_request' });
+    }
+    const origin = request.headers.origin;
+    if (!origin) return;
+    try {
+      const expected = new URL(`${request.protocol}://${request.headers.host}`).origin;
+      if (new URL(origin).origin === expected) return;
+    } catch {
+      // Invalid Origin and Host values fail closed.
+    }
+    return reply.code(403).send({ error: 'cross_origin_request' });
+  }
+
   // ---- Push qua Chat ------------------------------------------------------
   function pushTo(userIds, title, body) {
     if (!config.internalSecret) return;
@@ -885,6 +905,7 @@ export function buildApp({ config, db, logger = true }) {
   // ---- API ----------------------------------------------------------------
   app.register(
     async (api) => {
+      api.addHook('preHandler', requireSameOriginMutation);
       api.addHook('preHandler', requireFarmer);
 
       api.get('/state', async (request) => {
