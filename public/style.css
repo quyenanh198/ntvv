@@ -1800,6 +1800,11 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   border: 2px solid rgba(180,129,74,.35);
   min-width: 0;
 }
+.machine-grid .machine-block h4 { display: flex; align-items: center; gap: .45rem; min-height: 48px; }
+.machine-grid .machine-block h4 span:not(.machine-emoji) { min-width: 0; }
+.machine-grid .machine-block h4 small { margin-left: auto; white-space: nowrap; }
+.machine-icon { display: block; width: 44px; height: 44px; object-fit: contain; flex: none; }
+.machine-emoji { display: inline-grid; place-items: center; width: 44px; height: 44px; flex: none; font-size: 1.7rem; }
 .machine-grid .seed-row { padding: .35rem .4rem; }
 @media (max-width: 900px) { .machine-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .machine-grid { grid-template-columns: 1fr; } }

@@ -10,6 +10,7 @@ const v3Name = { luami: 'wheat', carot: 'carrot', ngo: 'corn', khoaitay: 'potato
 const legacyName = { luami: 'lua', dautay: 'dau' };
 const treePng = new Set(['cam', 'tao', 'xoai', 'thanhlong', 'chuoi', 'chanh', 'dua', 'dao', 'anhdao', 'quame', 'coc', 'quabo', 'saurieng']);
 const animalPng = { ga: 'chicken_v3', cut: 'quail_v3', vit: 'duck_v3', bo: 'cow', ngong: 'goose_v3', tho: 'rabbit_v3', ong: 'bee_v3', cuu: 'sheep', gatay: 'turkey_v3', de: 'goat_v3', tam: 'silkworm_v3', heo: 'pig', trau: 'buffalo_v3', alpaca: 'alpaca_v3', huou: 'deer_v3' };
+const machinePng = { lonuong: 'fish-oven' };
 const status = (path, kind) => asset(path) ? kind : 'MISSING';
 
 const cropRows = Object.values(CROPS).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name, 'vi')).map((crop) => {
@@ -32,8 +33,10 @@ const animalRows = Object.values(ANIMALS).sort((a, b) => a.level - b.level).map(
   return `| ${animal.name} | ${animal.id} | ${animal.level} | ${path ? status(path, 'unique PNG') : 'emoji'} |`;
 });
 
-const machineRows = Object.values(MACHINES).sort((a, b) => a.level - b.level).map((machine) =>
-  `| ${machine.name} | ${machine.id} | ${machine.level} | emoji/UI |`);
+const machineRows = Object.values(MACHINES).sort((a, b) => a.level - b.level).map((machine) => {
+  const path = machinePng[machine.id] && `assets/machines-v3/${machinePng[machine.id]}.png`;
+  return `| ${machine.name} | ${machine.id} | ${machine.level} | ${path ? status(path, 'unique PNG') : 'emoji/UI'} |`;
+});
 
 const clientSource = readFileSync(resolve(publicDir, 'app.js'), 'utf8');
 const staticPaths = [...new Set(clientSource.match(/assets\/[\w./-]+\.(?:png|svg)/g) || [])].sort();
@@ -48,7 +51,7 @@ const lines = [
   '',
   'Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.',
   '',
-  `**Coverage:** ${completeCrops}/${cropRows.length} crops have matching growing and ripe v3 art; ${treePng.size}/${treeRows.length} trees and ${Object.keys(animalPng).length}/${animalRows.length} animals have individual PNG art. ${machineRows.length} machine types use emoji/UI art. ${staticPaths.length} static asset paths appear in the client.`,
+  `**Coverage:** ${completeCrops}/${cropRows.length} crops have matching growing and ripe v3 art; ${treePng.size}/${treeRows.length} trees and ${Object.keys(animalPng).length}/${animalRows.length} animals have individual PNG art. ${Object.keys(machinePng).length}/${machineRows.length} machines have individual PNG art. ${staticPaths.length} static asset paths appear in the client.`,
   '',
   '## Crops', '',
   '| Crop | ID | Unlock | Growing | Ripe |', '| --- | --- | ---: | --- | --- |', ...cropRows,

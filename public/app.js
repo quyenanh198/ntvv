@@ -31,9 +31,13 @@
   const SPRITE_ALIAS = { luami: 'lua', dautay: 'dau' };
   const GROWING_CROP_ART = { luami: 'assets/crops-v3/wheat-growing.png', carot: 'assets/crops-v3/carrot-growing.png', ngo: 'assets/crops-v3/corn-growing.png', khoaitay: 'assets/crops-v3/potato-growing.png', toi: 'assets/crops-v3/garlic-growing.png', rauthom: 'assets/crops-v3/herbs-growing.png', dualeo: 'assets/crops-v3/cucumber-growing.png', sa: 'assets/crops-v3/lemongrass-growing.png', bapcai: 'assets/crops-v3/cabbage-growing.png', dauphong: 'assets/crops-v3/peanut-growing.png', cachua: 'assets/crops-v3/tomato-growing.png', khoailang: 'assets/crops-v3/sweet-potato-growing.png', ot: 'assets/crops-v3/chili-growing.png', me: 'assets/crops-v3/sesame-growing.png', hanhtay: 'assets/crops-v3/onion-growing.png', dauxanh: 'assets/crops-v3/mung-bean-growing.png', mia: 'assets/crops-v3/sugarcane-growing.png', dautay: 'assets/crops-v3/strawberry-growing.png', gung: 'assets/crops-v3/ginger-growing.png', catim: 'assets/crops-v3/eggplant-growing.png', huongduong: 'assets/crops-v3/sunflower-growing.png', gao: 'assets/crops-v3/rice-growing.png', bongcai: 'assets/crops-v3/cauliflower-growing.png', bingo: 'assets/crops-v3/pumpkin-growing.png', tra: 'assets/crops-v3/tea-growing.png', thom: 'assets/crops-v3/pineapple-growing.png', bongvai: 'assets/crops-v3/cotton-growing.png', duahau: 'assets/crops-v3/watermelon-growing.png', nho: 'assets/crops-v3/grape-growing.png', caphe: 'assets/crops-v3/coffee-growing.png', cansa: 'assets/crops-v3/cannabis-growing.png', hoahong: 'assets/crops-v3/rose-growing.png', oliu: 'assets/crops-v3/olive-growing.png', nam: 'assets/crops-v3/mushroom-growing.png', cacao: 'assets/crops-v3/cacao-growing.png', vani: 'assets/crops-v3/vanilla-growing.png' };
   const RIPE_CROP_ART = { luami: 'assets/crops-v3/wheat-ripe.png', carot: 'assets/crops-v3/carrot-ripe.png', ngo: 'assets/crops-v3/corn-ripe.png', khoaitay: 'assets/crops-v3/potato-ripe.png', toi: 'assets/crops-v3/garlic-ripe.png', rauthom: 'assets/crops-v3/herbs-ripe.png', dualeo: 'assets/crops-v3/cucumber-ripe.png', sa: 'assets/crops-v3/lemongrass-ripe.png', bapcai: 'assets/crops-v3/cabbage-ripe.png', dauphong: 'assets/crops-v3/peanut-ripe.png', cachua: 'assets/crops-v3/tomato-ripe.png', khoailang: 'assets/crops-v3/sweet-potato-ripe.png', ot: 'assets/crops-v3/chili-ripe.png', me: 'assets/crops-v3/sesame-ripe.png', hanhtay: 'assets/crops-v3/onion-ripe.png', dauxanh: 'assets/crops-v3/mung-bean-ripe.png', mia: 'assets/crops-v3/sugarcane-ripe.png', dautay: 'assets/crops-v3/strawberry-ripe.png', gung: 'assets/crops-v3/ginger-ripe.png', catim: 'assets/crops-v3/eggplant-ripe.png', huongduong: 'assets/crops-v3/sunflower-ripe.png', gao: 'assets/crops-v3/rice-ripe.png', bongcai: 'assets/crops-v3/cauliflower-ripe.png', bingo: 'assets/crops-v3/pumpkin-ripe.png', tra: 'assets/crops-v3/tea-ripe.png', thom: 'assets/crops-v3/pineapple-ripe.png', bongvai: 'assets/crops-v3/cotton-ripe.png', duahau: 'assets/crops-v3/watermelon-ripe.png', nho: 'assets/crops-v3/grape-ripe.png', caphe: 'assets/crops-v3/coffee-ripe.png', cansa: 'assets/crops-v3/cannabis-ripe.png', hoahong: 'assets/crops-v3/rose-ripe.png', oliu: 'assets/crops-v3/olive-ripe.png', nam: 'assets/crops-v3/mushroom-ripe.png', cacao: 'assets/crops-v3/cacao-ripe.png', vani: 'assets/crops-v3/vanilla-ripe.png' };
+  const MACHINE_ART = { lonuong: 'assets/machines-v3/fish-oven.png' };
   // Mọi URL tài nguyên tĩnh kèm ?v=<boot>: mỗi lần deploy đổi URL nên không dính
   // bản Cloudflare/trình duyệt cache nhầm (đã có vụ trang chờ HTML nằm ở URL ảnh).
   const A = (path) => `${path}?v=${MY_BOOT || '1'}`;
+  const machineIcon = (machine) => MACHINE_ART[machine.id]
+    ? `<img class="machine-icon" src="${A(MACHINE_ART[machine.id])}" alt="" />`
+    : `<span class="machine-emoji" aria-hidden="true">${machine.emoji}</span>`;
   const spriteBase = (id) => SPRITE_ALIAS[id] || id;
   const cropSprite = (id, stage) => A((stage === 1 && 'assets/crops-v3/seedling.png')
     || (stage === 3 && RIPE_CROP_ART[id]) || (stage === 2 && GROWING_CROP_ART[id])
@@ -1227,7 +1231,7 @@
       const QMAX = DATA.config.machineQueueMax || 50;
       const blocks = Object.values(DATA.config.machines).map((mc) => {
         if (m.level < mc.level) {
-          return `<div class="machine-block machine-block--locked"><h4>${mc.emoji} ${mc.name}</h4><p class="sheet-note">🔒 Mở ở cấp ${mc.level}</p></div>`;
+          return `<div class="machine-block machine-block--locked"><h4>${machineIcon(mc)}<span>${mc.name}</span></h4><p class="sheet-note">🔒 Mở ở cấp ${mc.level}</p></div>`;
         }
         const jobs = m.machines[mc.id] || {};
         const jobList = Object.values(jobs);
@@ -1277,7 +1281,7 @@
         const up = ml >= ug.length
           ? `<div class="mc-status">⚙️ Cấp ${ml} tối đa · −${ml * 10}% thời gian</div>`
           : `<button class="btn btn-ghost mc-upgrade" data-machine-upgrade="${mc.id}" ${m.gold >= ug[ml] ? '' : 'disabled'}>⚙️ Nâng cấp ${ml + 1} — ${ug[ml].toLocaleString('vi')} ${COIN} (−${(ml + 1) * 10}% thời gian)</button>`;
-        return `<div class="machine-block"><h4>${mc.emoji} ${mc.name}${ml ? ` <small>⚙️${ml}</small>` : ''}</h4>${head}${rows}${up}</div>`;
+        return `<div class="machine-block"><h4>${machineIcon(mc)}<span>${mc.name}</span>${ml ? ` <small>⚙️${ml}</small>` : ''}</h4>${head}${rows}${up}</div>`;
       }).join('');
       const readyTotal = Object.values(m.machines).reduce((acc, jobs) => acc + Object.values(jobs || {}).reduce((n, j) => n + (j.completed || 0), 0), 0);
       const canCookAny = Object.values(DATA.config.machines).some((mc) => m.level >= mc.level && Object.values(mc.recipes).some((r) => r.id !== 'thucan'
