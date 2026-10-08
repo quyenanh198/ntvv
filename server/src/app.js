@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
@@ -99,6 +99,27 @@ const COLLECTIONS = [
 
 export function buildApp({ config, db, logger = true }) {
   const app = Fastify({ logger, trustProxy: true });
+  const startedAt = Date.now();
+  const apiMetrics = {
+    requests: 0,
+    errors4xx: 0,
+    errors5xx: 0,
+    replayedMutations: 0,
+    latencyMs: { le100: 0, le500: 0, le1000: 0, le5000: 0, over5000: 0 },
+  };
+  app.addHook('onRequest', async (request) => {
+    request.metricStartedAt = process.hrtime.bigint();
+  });
+  app.addHook('onResponse', async (request, reply) => {
+    if (!request.raw.url?.startsWith('/farm/api/')) return;
+    const elapsedMs = Number(process.hrtime.bigint() - request.metricStartedAt) / 1e6;
+    const bucket = elapsedMs <= 100 ? 'le100' : elapsedMs <= 500 ? 'le500'
+      : elapsedMs <= 1000 ? 'le1000' : elapsedMs <= 5000 ? 'le5000' : 'over5000';
+    apiMetrics.requests += 1;
+    apiMetrics.latencyMs[bucket] += 1;
+    if (reply.statusCode >= 500) apiMetrics.errors5xx += 1;
+    else if (reply.statusCode >= 400) apiMetrics.errors4xx += 1;
+  });
   const meCache = new Map();
   const rateBuckets = new Map();
   const upstreamTimeoutMs = config.upstreamTimeoutMs || 5_000;
@@ -117,6 +138,7 @@ export function buildApp({ config, db, logger = true }) {
         const prior = mutationRecord.get(request.farmer.user_id, key);
         if (prior) {
           if (prior.route !== route || prior.body_hash !== bodyHash) return { error: 'idempotency_conflict' };
+          apiMetrics.replayedMutations += 1;
           return { outcome: JSON.parse(prior.outcome_json), replay: true };
         }
       }
@@ -2527,7 +2549,10 @@ export function buildApp({ config, db, logger = true }) {
     const url = request.raw.url || '';
     // Mọi phản hồi API mang phiên bản boot — client lệch bản là tự tải lại
     // ngay ở thao tác kế tiếp, kể cả khi tab đang ẩn không chạy vòng refresh.
-    if (url.startsWith('/farm/api/')) reply.header('x-farm-boot', BOOT_VERSION);
+    if (url.startsWith('/farm/api/')) {
+      reply.header('x-farm-boot', BOOT_VERSION);
+      reply.header('x-request-id', request.id);
+    }
     reply.header('x-content-type-options', 'nosniff');
     reply.header('referrer-policy', 'same-origin');
     reply.header('x-frame-options', 'SAMEORIGIN');
@@ -2547,6 +2572,21 @@ export function buildApp({ config, db, logger = true }) {
   app.get('/farm', async (request, reply) => reply.redirect('/farm/'));
   app.get('/', async (request, reply) => reply.redirect('/farm/'));
   app.get('/healthz', async () => ({ ok: true }));
+  app.get('/internal/farm/metrics', async (request, reply) => {
+    const supplied = request.headers['x-farm-secret'];
+    if (!config.internalSecret || typeof supplied !== 'string') return reply.code(404).send({ error: 'not_found' });
+    const expected = Buffer.from(config.internalSecret);
+    const actual = Buffer.from(supplied);
+    if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+      return reply.code(403).send({ error: 'forbidden' });
+    }
+    return {
+      startedAt,
+      uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
+      ...apiMetrics,
+      latencyMs: { ...apiMetrics.latencyMs },
+    };
+  });
 
   return app;
 }
