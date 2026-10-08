@@ -14,7 +14,7 @@ The crop, tree, animal, and machine catalog and static client asset references a
 
 ## Crop state system
 
-Each crop has three visible states: seedling, growing, and ripe. The current code uses a shared hand-painted seedling PNG, then per-crop growing and ripe art. Thirty crops have matched PNG pairs; the others retain legacy SVGs. The next art batches should extend matching pairs by unlock level. Watered and ready badges must remain legible above the artwork.
+Each crop has three visible states: seedling, growing, and ripe. The current code uses a shared hand-painted seedling PNG, then per-crop growing and ripe art. Thirty-one crops have matched PNG pairs; the others retain legacy SVGs. The next art batches should extend matching pairs by unlock level. Watered and ready badges must remain legible above the artwork.
 
 | Crop | Unlock | Ripe art | Growing art | Next art action |
 | --- | ---: | --- | --- | --- |
@@ -48,6 +48,7 @@ Each crop has three visible states: seedling, growing, and ripe. The current cod
 | Watermelon (`duahau`) | 21 | `public/assets/crops-v3/watermelon-ripe.png` | `public/assets/crops-v3/watermelon-growing.png` | Shared seedling PNG |
 | Grape (`nho`) | 22 | `public/assets/crops-v3/grape-ripe.png` | `public/assets/crops-v3/grape-growing.png` | Shared seedling PNG |
 | Coffee (`caphe`) | 23 | `public/assets/crops-v3/coffee-ripe.png` | `public/assets/crops-v3/coffee-growing.png` | Shared seedling PNG |
+| Cannabis (`cansa`) | 25 | `public/assets/crops-v3/cannabis-ripe.png` | `public/assets/crops-v3/cannabis-growing.png` | Shared seedling PNG |
 | Other crops | 4–29 | legacy SVG | legacy SVG | Prioritize by unlock level and visual frequency |
 
 Garlic source images: `asset/source_crops/v3/garlic-growing.png` and `asset/source_crops/v3/garlic-ripe.png` (1024×1024 transparent originals). The game exports are 256×256 PNGs.
@@ -86,6 +87,8 @@ Watermelon source images are `asset/source_crops/v3/watermelon-growing.png` and 
 Grape source images are `asset/source_crops/v3/grape-growing.png` and `asset/source_crops/v3/grape-ripe.png`; their game exports are 256×256 PNGs.
 
 Coffee source images are `asset/source_crops/v3/coffee-growing.png` and `asset/source_crops/v3/coffee-ripe.png`; their game exports are 256×256 PNGs.
+
+Cannabis source images are `asset/source_crops/v3/cannabis-growing.png` and `asset/source_crops/v3/cannabis-ripe.png`; their game exports are 256×256 PNGs.
 
 ## Other families
 

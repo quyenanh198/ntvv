@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 30/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 118 static asset paths appear in the client.
+**Coverage:** 31/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 120 static asset paths appear in the client.
 
 ## Crops
 
@@ -38,7 +38,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Dưa hấu | duahau | 21 | v3 PNG | v3 PNG |
 | Nho | nho | 22 | v3 PNG | v3 PNG |
 | Cà phê | caphe | 23 | v3 PNG | v3 PNG |
-| Cần sa | cansa | 25 | legacy SVG | legacy SVG |
+| Cần sa | cansa | 25 | v3 PNG | v3 PNG |
 | Hoa hồng | hoahong | 25 | legacy SVG | legacy SVG |
 | Ô liu | oliu | 26 | legacy SVG | legacy SVG |
 | Nấm | nam | 27 | legacy SVG | legacy SVG |
@@ -136,6 +136,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/art/turkey_v3.png` | 105 KB |
 | `assets/crops-v3/cabbage-growing.png` | 66 KB |
 | `assets/crops-v3/cabbage-ripe.png` | 108 KB |
+| `assets/crops-v3/cannabis-growing.png` | 64 KB |
+| `assets/crops-v3/cannabis-ripe.png` | 111 KB |
 | `assets/crops-v3/carrot-growing.png` | 88 KB |
 | `assets/crops-v3/carrot-ripe.png` | 93 KB |
 | `assets/crops-v3/cauliflower-growing.png` | 107 KB |
