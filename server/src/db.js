@@ -236,6 +236,7 @@ export function openDb(dataDir) {
   }
   const db = new Database(dataDir === ':memory:' ? ':memory:' : join(dataDir, 'farm2.sqlite3'));
   db.pragma('journal_mode = WAL');
+  const migrate = db.transaction(() => {
   db.exec(SCHEMA);
   // Cột thêm sau khi farm2 đã chạy thật — ALTER có guard, idempotent.
   const cols = db.prepare('PRAGMA table_info(farmers)').all().map((c) => c.name);
@@ -297,6 +298,13 @@ export function openDb(dataDir) {
   if (!pcols.includes('fruit_stock')) db.exec('ALTER TABLE plots ADD COLUMN fruit_stock INTEGER NOT NULL DEFAULT 0');
   // Cây trồng trước khi có tuổi thọ: tính tuổi từ lúc nâng cấp.
   db.prepare('UPDATE plots SET tree_at = ? WHERE tree = 1 AND tree_at IS NULL').run(Date.now());
+  });
+  try {
+    migrate();
+  } catch (error) {
+    db.close();
+    throw error;
+  }
   return db;
 }
 

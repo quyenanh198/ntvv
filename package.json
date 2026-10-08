@@ -11,6 +11,7 @@
     "start": "node server/src/server.js",
     "dev": "node dev/dev-farm.mjs",
     "art:inventory": "node scripts/art-inventory.mjs --write",
+    "db:rehearse": "node scripts/rehearse-db.mjs",
     "balance:report": "node scripts/balance-report.mjs --write",
     "test": "node --test"
   },

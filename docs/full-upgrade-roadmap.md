@@ -61,7 +61,7 @@ This is the project plan for the farm game, separate from the older stability au
 - Finish replay protection for every value-changing endpoint; keep each mutation and its result in one SQLite transaction.
 - Validate request bodies, enforce consistent error responses, review auth/CSRF boundaries, and add safe migrations and backup instructions.
 - Add request IDs and operational metrics for error rate, latency, cold starts, and replayed mutations.
-- **Gate:** mutation integration tests cover duplicate requests, concurrent requests, and restarts; migration works on a copy of production data. **Status:** journal foundation and fifty-nine routes covered, including upgrades, fishing, fish farming, gem and energy purchases, luxury purchases/equipment, collection claims, watering, inspection, help planting/harvesting, gold requests, speedups, skills, dog hiring, fruit-tree changes, timed critter rewards, away-report dismissal, and crop/barn/machine theft. API responses now carry request IDs, and a secret-protected [metrics endpoint](operations.md) exposes process uptime, request/error counts, latency buckets, and mutation replays. Cold-start duration, persistent monitoring, migration rehearsal, and remaining route coverage are pending.
+- **Gate:** mutation integration tests cover duplicate requests, concurrent requests, and restarts; migration works on a copy of production data. **Status:** journal foundation and fifty-nine routes covered, including upgrades, fishing, fish farming, gem and energy purchases, luxury purchases/equipment, collection claims, watering, inspection, help planting/harvesting, gold requests, speedups, skills, dog hiring, fruit-tree changes, timed critter rewards, away-report dismissal, and crop/barn/machine theft. Schema upgrades now run in one transaction; tests cover preservation of a running legacy machine job, idempotent reopen, and rollback on forced failure. A [backup and rehearsal command](operations.md) migrates a temporary copy and verifies integrity and core row counts. API responses carry request IDs, and a secret-protected metrics endpoint exposes uptime, request/error counts, latency buckets, and mutation replays. Cold-start duration, persistent monitoring, production-data migration rehearsal, restore rehearsal, and remaining route-level tests are pending.
 
 ## 10. Improve speed and accessibility
 
@@ -84,7 +84,7 @@ This is the project plan for the farm game, separate from the older stability au
 
 ### Current acceptance record
 
-- 62 automated tests pass on the upgrade branch.
+- 65 automated tests pass on the upgrade branch.
 - New assets: coop, windmill, market, farmer, a shared seedling, individual art for all fifteen animal species and thirteen fruit-tree species, growing and ripe art for all thirty-six crops, all twelve factory machine sprites, and the first two hand-painted kitchen product icons. Five tree and fruit pairs from the source pack now have individual game assets. The generated art inventory shows 36/36 crops, 13/13 trees, 15/15 animals, and 12/12 machines with individual PNG art; 11/186 products have PNG or SVG icons.
 - First-session guidance, mobile HUD, starter tax grace, persistent harvest collections, and fifty-nine replay-safe gameplay/economy routes are implemented.
 - Player research, remaining interface and product art, balance model, route-level mutation test coverage, accessibility audit, staged release, and merge remain open. The client and server currently list the same 59 replay-safe POST routes.
