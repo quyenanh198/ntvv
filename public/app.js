@@ -1250,6 +1250,8 @@
           const room = QMAX - (job ? job.queue : 0);
           const maxBatches = Math.max(0, Math.min(room, ...Object.entries(r.in).map(([iid, q]) => Math.floor((m.inventory[iid] || 0) / q))));
           const canAdd = maxBatches > 0;
+          const missing = room > 0 ? Object.entries(r.in).filter(([iid, q]) => (m.inventory[iid] || 0) < q).map(([iid, q]) => `${iid}:${q - (m.inventory[iid] || 0)}`).join(',') : '';
+          const unavailable = missing ? `Thiếu nguyên liệu cho ${r.name}; bấm để đăng tin thu mua` : `Hàng đợi ${mc.name} đã đầy`;
           const ins = Object.entries(r.in).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(' + ');
           const outId = Object.keys(r.out)[0];
           const outInfo = itemInfo(outId);
@@ -1258,21 +1260,20 @@
             const running = job.processing
               ? `<small class="mc-run" data-machine-ready="${job.currentReadyAt}">🔄 mẻ kế · ${fmtTime(job.currentReadyAt - Date.now())} · chờ ${job.queued}</small>`
               : '';
-            state = `<button class="mc-plus mc-plus--done" data-machine-collect="${mc.id}" data-recipe="${r.id}" title="Lấy ${r.name}">✅ Lấy ${job.completed}</button>${running}`;
+            state = `<button class="mc-plus mc-plus--done" data-machine-collect="${mc.id}" data-recipe="${r.id}" aria-label="Lấy ${job.completed} mẻ ${r.name} từ ${mc.name}" title="Lấy ${r.name}">✅ Lấy ${job.completed}</button>${running}`;
           } else if (job) {
             const left = (job.currentReadyAt || job.readyAt) - Date.now();
             state = `<small class="mc-run" data-machine-ready="${job.currentReadyAt || job.readyAt}">🔄 1 đang làm · chờ ${job.queued} · ${fmtTime(left)}</small>
-              <button class="mc-plus mc-plus--gem" data-machine-speed="${mc.id}" data-recipe="${r.id}" title="Xong ngay">${GEM}${Math.max(1, Math.ceil(left / 300000))}</button>`;
+              <button class="mc-plus mc-plus--gem" data-machine-speed="${mc.id}" data-recipe="${r.id}" aria-label="Hoàn thành ngay ${r.name} với ${Math.max(1, Math.ceil(left / 300000))} kim cương" title="Xong ngay">${GEM}${Math.max(1, Math.ceil(left / 300000))}</button>`;
           }
-          const missing = Object.entries(r.in).filter(([iid, q]) => (m.inventory[iid] || 0) < q).map(([iid, q]) => `${iid}:${q - (m.inventory[iid] || 0)}`).join(',');
           return `<div class="seed-row mc-row${job ? ' mc-row--active' : ''}${canAdd ? '' : ' mc-row--dim'}" ${missing ? `data-missing="${missing}" data-missing-name="${r.name}" title="Thiếu nguyên liệu — bấm để đăng tin thu mua" style="cursor:pointer"` : 'style="cursor:default"'}>
             ${itemImg(outId, 'seed-sprite')}
             <span class="seed-info"><span class="seed-name">${r.name}</span>
               <div class="seed-meta">${ins} → ${Object.values(r.out)[0]} ${outInfo?.name || ''} · ⏱ ${fmtDuration(r.ms)} · bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp}EXP</div></span>
             <span class="mc-add">
               ${state}
-              <button class="mc-plus" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="1" ${canAdd ? '' : 'data-off="1" aria-disabled="true"'} title="${canAdd ? 'Thêm 1 mẻ' : 'Thiếu nguyên liệu — bấm để đăng tin thu mua'}">＋</button>
-              <button class="mc-plus mc-plus--max" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="${maxBatches}" ${canAdd && maxBatches > 1 ? '' : 'data-off="1" aria-disabled="true"'} title="${canAdd && maxBatches > 1 ? 'Xếp hết nguyên liệu' : 'Thiếu nguyên liệu — bấm để đăng tin thu mua'}">＋${maxBatches > 1 ? maxBatches : ''}</button>
+              <button class="mc-plus" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="1" ${canAdd ? '' : 'data-off="1" aria-disabled="true"'} aria-label="${canAdd ? `Thêm 1 mẻ ${r.name} tại ${mc.name}` : unavailable}" title="${canAdd ? 'Thêm 1 mẻ' : unavailable}">＋</button>
+              <button class="mc-plus mc-plus--max" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="${maxBatches}" ${canAdd && maxBatches > 1 ? '' : canAdd ? 'disabled' : 'data-off="1" aria-disabled="true"'} aria-label="${canAdd && maxBatches > 1 ? `Xếp ${maxBatches} mẻ ${r.name} tại ${mc.name}` : canAdd ? `Chỉ xếp được 1 mẻ ${r.name}` : unavailable}" title="${canAdd && maxBatches > 1 ? 'Xếp hết nguyên liệu' : canAdd ? 'Chỉ xếp được 1 mẻ' : unavailable}">＋${maxBatches > 1 ? maxBatches : ''}</button>
             </span>
           </div>`;
         }).join('');
