@@ -7,6 +7,7 @@ import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
 
 test('API request IDs and protected operational counters include replay and errors', async () => {
+  const bootStartedNs = process.hrtime.bigint() - 100_000_000n;
   const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-metrics-'));
   const db = openDb(dataDir);
   const app = buildApp({
@@ -14,6 +15,7 @@ test('API request IDs and protected operational counters include replay and erro
     logger: false,
     config: {
       dataDir,
+      bootStartedNs,
       internalSecret: 'test-metrics-secret',
       mockChatUser: { id: 1, username: 'metricsfarmer', display_name: 'Metrics Farmer' },
     },
@@ -50,6 +52,7 @@ test('API request IDs and protected operational counters include replay and erro
     assert.equal(snapshot.replayedMutations, 1);
     assert.equal(Object.values(snapshot.latencyMs).reduce((sum, count) => sum + count, 0), 4);
     assert.ok(snapshot.startedAt > 0);
+    assert.ok(snapshot.startupReadyMs >= 100);
   } finally {
     await app.close();
     db.close();

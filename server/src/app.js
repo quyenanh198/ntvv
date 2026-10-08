@@ -100,13 +100,18 @@ const COLLECTIONS = [
 export function buildApp({ config, db, logger = true }) {
   const app = Fastify({ logger, trustProxy: true });
   const startedAt = Date.now();
+  const bootStartedNs = config.bootStartedNs ?? process.hrtime.bigint();
   const apiMetrics = {
+    startupReadyMs: null,
     requests: 0,
     errors4xx: 0,
     errors5xx: 0,
     replayedMutations: 0,
     latencyMs: { le100: 0, le500: 0, le1000: 0, le5000: 0, over5000: 0 },
   };
+  app.addHook('onReady', async () => {
+    apiMetrics.startupReadyMs = Number(process.hrtime.bigint() - bootStartedNs) / 1e6;
+  });
   app.addHook('onRequest', async (request) => {
     request.metricStartedAt = process.hrtime.bigint();
   });
