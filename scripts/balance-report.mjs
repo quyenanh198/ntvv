@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { CROPS, GOLD_MULT, HARVEST_YIELD, START_GOLD, START_PLOTS, xpNeedFor } from '../server/src/game.js';
+import { CROPS, EXPANSIONS, GOLD_MULT, HARVEST_YIELD, LAND_TAX_UNLOCK_LEVEL, MAX_PLOTS, START_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const crops = Object.values(CROPS).filter((crop) => !crop.risky && crop.sell > 0).map((crop) => ({
@@ -32,6 +32,24 @@ const unlockRows = [...crops].sort((a, b) => a.level - b.level || a.id.localeCom
 const unprofitable = crops.filter((crop) => crop.profit <= 0);
 const unaffordable = crops.filter((crop) => crop.level === 1 && crop.seed > START_GOLD);
 const wheat = crops.find((crop) => crop.id === 'luami');
+const expansionModel = EXPANSIONS.map((expansion, index) => {
+  const available = crops.filter((crop) => crop.level <= expansion.level);
+  const oneVisit = rank(available, (crop) => hourly(crop, 1440));
+  const threeVisits = rank(available, (crop) => hourly(crop, 480));
+  const tax = expansion.level >= LAND_TAX_UNLOCK_LEVEL ? TAX_PER_PLOT : 0;
+  const dailyOne = hourly(oneVisit, 1440) * 24 - tax;
+  const dailyThree = hourly(threeVisits, 480) * 24 - tax;
+  return { ...expansion, index, plots: START_PLOTS + 4 * (index + 1), tax,
+    oneVisit, threeVisits, dailyOne, dailyThree,
+    paybackDays: dailyThree > 0 ? expansion.gold / (4 * dailyThree) : Infinity };
+});
+const sampledExpansionIndexes = [...new Set([0, 4, 9, 19, 24, 49, 74, EXPANSIONS.length - 1])].filter((index) => index < EXPANSIONS.length);
+const expansionRows = sampledExpansionIndexes.map((index) => {
+  const row = expansionModel[index];
+  return `| ${index + 1} | ${row.level} | ${row.plots} | ${fmt(row.gold)} | ${fmt(row.tax)} | ${name(row.oneVisit)}: ${fmt(row.dailyOne)} | ${name(row.threeVisits)}: ${fmt(row.dailyThree)} | ${Number.isFinite(row.paybackDays) ? row.paybackDays.toFixed(1) : 'never'} |`;
+});
+const nonpositiveExpansionIncome = expansionModel.filter((row) => row.dailyOne <= 0 || row.dailyThree <= 0);
+const longestPayback = [...expansionModel].sort((a, b) => b.paybackDays - a.paybackDays)[0];
 const lines = [
   '# Crop progression balance report', '',
   'Generated from the live rules in `server/src/game.js` by `npm run balance:report`. This is a deterministic crop-only baseline, not observed player behavior or a complete economy forecast.', '',
@@ -43,6 +61,12 @@ const lines = [
   '## All regular crop unlocks', '',
   '| Unlock | Crop | Grow min | Seed | Base profit/plot | XP/plot | Profit/h at 60-min visits |',
   '| ---: | --- | ---: | ---: | ---: | ---: | ---: |', ...unlockRows, '',
+  '## Expansion and land-tax stress test', '',
+  `The ${EXPANSIONS.length} live expansions add four plots each, from ${START_PLOTS} to ${MAX_PLOTS}. Rows below sample early, middle, and late prices; all expansions are included in the checks. Each daily-net figure is for one new plot after seed cost and daily land tax, using the most profitable crop unlocked at the expansion level. One visit means a 24-hour interval; three visits means an 8-hour interval. Payback divides expansion price by the daily net of four new plots at three visits. This assumes every new plot is planted and harvested on schedule and excludes other income and costs.`, '',
+  '| Expansion | Level | Plots after | Price | Tax/new plot/day | Best net/plot, 1 visit/day | Best net/plot, 3 visits/day | Payback, 3 visits (days) |',
+  '| ---: | ---: | ---: | ---: | ---: | --- | --- | ---: |', ...expansionRows, '',
+  `- Expansions with nonpositive new-plot income at either cadence: ${nonpositiveExpansionIncome.length ? nonpositiveExpansionIncome.map((row) => row.index + 1).join(', ') : 'none'}.`,
+  `- Longest modeled three-visit payback: expansion ${longestPayback.index + 1}, ${longestPayback.paybackDays.toFixed(1)} days. This is a crop-only warning, not a forecast of total late-game income.`, '',
   '## Automated viability checks', '',
   `- Nonprofitable regular crops: ${unprofitable.length ? unprofitable.map(name).join(', ') : 'none'}.`,
   `- Starter seeds above starting gold: ${unaffordable.length ? unaffordable.map(name).join(', ') : 'none'}.`,
@@ -50,7 +74,7 @@ const lines = [
   '## Next balance decisions', '',
   '1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.',
   '2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.',
-  '3. Model expansion, animals, machines, orders, and taxes alongside crops; rerun this report after any rule change.', '',
+  '3. Extend the model to animals, machines, and orders; compare their income with the late-expansion payback warning before tuning land prices.', '',
 ];
 const report = `${lines.join('\n')}\n`;
 if (process.argv.includes('--write')) writeFileSync(resolve(root, 'docs/balance-report.md'), report);

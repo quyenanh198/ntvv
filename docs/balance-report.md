@@ -57,6 +57,24 @@ The level time is a lower bound: it assumes every starting plot runs the best av
 | 28 | Ca cao (cacao) | 240 | 190 | 9,170 | 395 | 2,293 |
 | 29 | Vani (vani) | 300 | 170 | 8,150 | 334 | 1,630 |
 
+## Expansion and land-tax stress test
+
+The 97 live expansions add four plots each, from 12 to 400. Rows below sample early, middle, and late prices; all expansions are included in the checks. Each daily-net figure is for one new plot after seed cost and daily land tax, using the most profitable crop unlocked at the expansion level. One visit means a 24-hour interval; three visits means an 8-hour interval. Payback divides expansion price by the daily net of four new plots at three visits. This assumes every new plot is planted and harvested on schedule and excludes other income and costs.
+
+| Expansion | Level | Plots after | Price | Tax/new plot/day | Best net/plot, 1 visit/day | Best net/plot, 3 visits/day | Payback, 3 visits (days) |
+| ---: | ---: | ---: | ---: | ---: | --- | --- | ---: |
+| 1 | 2 | 16 | 500 | 0 | Cà rốt (carot): 172 | Cà rốt (carot): 516 | 0.2 |
+| 5 | 10 | 32 | 9,000 | 0 | Hành tây (hanhtay): 1,314 | Hành tây (hanhtay): 3,942 | 0.6 |
+| 10 | 20 | 52 | 72,000 | 2,000 | Cà tím (catim): 1,368 | Cà tím (catim): 8,104 | 2.2 |
+| 20 | 40 | 92 | 650,000 | 2,000 | Ca cao (cacao): 7,170 | Ca cao (cacao): 25,510 | 6.4 |
+| 25 | 50 | 112 | 1,300,000 | 2,000 | Ca cao (cacao): 7,170 | Ca cao (cacao): 25,510 | 12.7 |
+| 50 | 50 | 212 | 5,050,000 | 2,000 | Ca cao (cacao): 7,170 | Ca cao (cacao): 25,510 | 49.5 |
+| 75 | 50 | 312 | 9,700,000 | 2,000 | Ca cao (cacao): 7,170 | Ca cao (cacao): 25,510 | 95.1 |
+| 97 | 50 | 400 | 14,100,000 | 2,000 | Ca cao (cacao): 7,170 | Ca cao (cacao): 25,510 | 138.2 |
+
+- Expansions with nonpositive new-plot income at either cadence: none.
+- Longest modeled three-visit payback: expansion 97, 138.2 days. This is a crop-only warning, not a forecast of total late-game income.
+
 ## Automated viability checks
 
 - Nonprofitable regular crops: none.
@@ -67,5 +85,5 @@ The level time is a lower bound: it assumes every starting plot runs the best av
 
 1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.
 2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.
-3. Model expansion, animals, machines, orders, and taxes alongside crops; rerun this report after any rule change.
+3. Extend the model to animals, machines, and orders; compare their income with the late-expansion payback warning before tuning land prices.
 

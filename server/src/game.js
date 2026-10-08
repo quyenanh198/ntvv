@@ -472,7 +472,7 @@ export const MILL = MACHINES.coixay;
 
 // ---- Đất ------------------------------------------------------------------
 export const START_PLOTS = 12;
-// Mở rộng theo bảng mục 9.2 (MVP: 5 lần đầu, mỗi lần +4 ô → tối đa 32).
+// Mở rộng theo bảng mục 9.2; mỗi lần thêm 4 ô, từ 12 ô đến MAX_PLOTS.
 export const EXPANSIONS = [
   { level: 2,  gold: 500 },
   { level: 4,  gold: 1200 },

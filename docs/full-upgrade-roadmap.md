@@ -42,7 +42,7 @@ This is the project plan for the farm game, separate from the older stability au
 - Model each level's expected play time, gold earned, seed cost, expansion price, and unlock value in a spreadsheet or script.
 - Set separate early, mid, and late game targets. Check profitable loops, dead ends, runaway currency, and pay-to-skip pressure.
 - Tune server constants, then run simulations and observed play sessions. Document every changed number and its reason.
-- **Gate:** no common action leaves a player unable to continue, and level pacing matches the product brief. **Status:** starter tax deadlock fixed; a full regular-crop catalog and visit-cadence model is in [balance-report.md](balance-report.md). It shows different optimal crops for short and long visits and exposes an outdated daily-income target in the gameplay spec; player measurement and tuning remain pending.
+- **Gate:** no common action leaves a player unable to continue, and level pacing matches the product brief. **Status:** starter tax deadlock fixed; the [balance report](balance-report.md) now models all regular crops, visit cadence, expansion prices, and land tax across all 97 expansions. No modeled expansion loses gold from its four new plots at one or three visits per day, but crop-only payback reaches 138 days for the final expansion. The report also exposes an outdated daily-income target in the gameplay spec. Animal, machine, and order income, player measurement, and tuning remain pending.
 
 ## 7. Improve social play
 
