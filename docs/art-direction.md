@@ -14,7 +14,7 @@ The crop, tree, animal, and machine catalog and static client asset references a
 
 ## Crop state system
 
-Each crop has three visible states: seedling, growing, and ripe. The current code uses a shared hand-painted seedling PNG, then per-crop growing and ripe art. Twenty-two crops have matched PNG pairs; the others retain legacy SVGs. The next art batches should extend matching pairs by unlock level. Watered and ready badges must remain legible above the artwork.
+Each crop has three visible states: seedling, growing, and ripe. The current code uses a shared hand-painted seedling PNG, then per-crop growing and ripe art. Twenty-three crops have matched PNG pairs; the others retain legacy SVGs. The next art batches should extend matching pairs by unlock level. Watered and ready badges must remain legible above the artwork.
 
 | Crop | Unlock | Ripe art | Growing art | Next art action |
 | --- | ---: | --- | --- | --- |
@@ -40,6 +40,7 @@ Each crop has three visible states: seedling, growing, and ripe. The current cod
 | Eggplant (`catim`) | 14 | `public/assets/crops-v3/eggplant-ripe.png` | `public/assets/crops-v3/eggplant-growing.png` | Shared seedling PNG |
 | Sunflower (`huongduong`) | 15 | `public/assets/crops-v3/sunflower-ripe.png` | `public/assets/crops-v3/sunflower-growing.png` | Shared seedling PNG |
 | Rice (`gao`) | 16 | `public/assets/crops-v3/rice-ripe.png` | `public/assets/crops-v3/rice-growing.png` | Shared seedling PNG |
+| Cauliflower (`bongcai`) | 17 | `public/assets/crops-v3/cauliflower-ripe.png` | `public/assets/crops-v3/cauliflower-growing.png` | Shared seedling PNG |
 | Other crops | 4–29 | legacy SVG | legacy SVG | Prioritize by unlock level and visual frequency |
 
 Garlic source images: `asset/source_crops/v3/garlic-growing.png` and `asset/source_crops/v3/garlic-ripe.png` (1024×1024 transparent originals). The game exports are 256×256 PNGs.
@@ -62,6 +63,8 @@ Eggplant source images are `asset/source_crops/v3/eggplant-growing.png` and `ass
 Sunflower source images are `asset/source_crops/v3/sunflower-growing.png` and `asset/source_crops/v3/sunflower-ripe.png`; their game exports are 256×256 PNGs.
 
 Rice source images are `asset/source_crops/v3/rice-growing.png` and `asset/source_crops/v3/rice-ripe.png`; their game exports are 256×256 PNGs.
+
+Cauliflower source images are `asset/source_crops/v3/cauliflower-growing.png` and `asset/source_crops/v3/cauliflower-ripe.png`; their game exports are 256×256 PNGs.
 
 ## Other families
 
