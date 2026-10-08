@@ -14,7 +14,7 @@ The crop, tree, animal, and machine catalog and static client asset references a
 
 ## Crop state system
 
-Each crop has three visible states: seedling, growing, and ripe. The current code uses a shared hand-painted seedling PNG, then per-crop growing and ripe art. Thirty-four crops have matched PNG pairs; the others retain legacy SVGs. The next art batches should extend matching pairs by unlock level. Watered and ready badges must remain legible above the artwork.
+Each crop has three visible states: seedling, growing, and ripe. The current code uses a shared hand-painted seedling PNG, then per-crop growing and ripe art. Thirty-five crops have matched PNG pairs; the last crop retains legacy SVGs. Watered and ready badges must remain legible above the artwork.
 
 | Crop | Unlock | Ripe art | Growing art | Next art action |
 | --- | ---: | --- | --- | --- |
@@ -52,6 +52,7 @@ Each crop has three visible states: seedling, growing, and ripe. The current cod
 | Rose (`hoahong`) | 25 | `public/assets/crops-v3/rose-ripe.png` | `public/assets/crops-v3/rose-growing.png` | Shared seedling PNG |
 | Olive (`oliu`) | 26 | `public/assets/crops-v3/olive-ripe.png` | `public/assets/crops-v3/olive-growing.png` | Shared seedling PNG |
 | Mushroom (`nam`) | 27 | `public/assets/crops-v3/mushroom-ripe.png` | `public/assets/crops-v3/mushroom-growing.png` | Shared seedling PNG |
+| Cacao (`cacao`) | 28 | `public/assets/crops-v3/cacao-ripe.png` | `public/assets/crops-v3/cacao-growing.png` | Shared seedling PNG |
 | Other crops | 4–29 | legacy SVG | legacy SVG | Prioritize by unlock level and visual frequency |
 
 Garlic source images: `asset/source_crops/v3/garlic-growing.png` and `asset/source_crops/v3/garlic-ripe.png` (1024×1024 transparent originals). The game exports are 256×256 PNGs.
@@ -98,6 +99,8 @@ Rose source images are `asset/source_crops/v3/rose-growing.png` and `asset/sourc
 Olive source images are `asset/source_crops/v3/olive-growing.png` and `asset/source_crops/v3/olive-ripe.png`; their game exports are 256×256 PNGs.
 
 Mushroom source images are `asset/source_crops/v3/mushroom-growing.png` and `asset/source_crops/v3/mushroom-ripe.png`; their game exports are 256×256 PNGs.
+
+Cacao source images are `asset/source_crops/v3/cacao-growing.png` and `asset/source_crops/v3/cacao-ripe.png`; their game exports are 256×256 PNGs.
 
 ## Other families
 
