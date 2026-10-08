@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 27/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 112 static asset paths appear in the client.
+**Coverage:** 28/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 114 static asset paths appear in the client.
 
 ## Crops
 
@@ -35,7 +35,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Trà | tra | 19 | v3 PNG | v3 PNG |
 | Dứa | thom | 20 | v3 PNG | v3 PNG |
 | Bông vải | bongvai | 21 | v3 PNG | v3 PNG |
-| Dưa hấu | duahau | 21 | legacy SVG | legacy SVG |
+| Dưa hấu | duahau | 21 | v3 PNG | v3 PNG |
 | Nho | nho | 22 | legacy SVG | legacy SVG |
 | Cà phê | caphe | 23 | legacy SVG | legacy SVG |
 | Cần sa | cansa | 25 | legacy SVG | legacy SVG |
@@ -187,6 +187,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops-v3/tea-ripe.png` | 101 KB |
 | `assets/crops-v3/tomato-growing.png` | 71 KB |
 | `assets/crops-v3/tomato-ripe.png` | 104 KB |
+| `assets/crops-v3/watermelon-growing.png` | 77 KB |
+| `assets/crops-v3/watermelon-ripe.png` | 119 KB |
 | `assets/crops-v3/wheat-growing.png` | 54 KB |
 | `assets/crops-v3/wheat-ripe.png` | 85 KB |
 | `assets/crops/seed-1.svg` | <1 KB |

@@ -14,7 +14,7 @@ The crop, tree, animal, and machine catalog and static client asset references a
 
 ## Crop state system
 
-Each crop has three visible states: seedling, growing, and ripe. The current code uses a shared hand-painted seedling PNG, then per-crop growing and ripe art. Twenty-seven crops have matched PNG pairs; the others retain legacy SVGs. The next art batches should extend matching pairs by unlock level. Watered and ready badges must remain legible above the artwork.
+Each crop has three visible states: seedling, growing, and ripe. The current code uses a shared hand-painted seedling PNG, then per-crop growing and ripe art. Twenty-eight crops have matched PNG pairs; the others retain legacy SVGs. The next art batches should extend matching pairs by unlock level. Watered and ready badges must remain legible above the artwork.
 
 | Crop | Unlock | Ripe art | Growing art | Next art action |
 | --- | ---: | --- | --- | --- |
@@ -45,6 +45,7 @@ Each crop has three visible states: seedling, growing, and ripe. The current cod
 | Tea (`tra`) | 19 | `public/assets/crops-v3/tea-ripe.png` | `public/assets/crops-v3/tea-growing.png` | Shared seedling PNG |
 | Pineapple (`thom`) | 20 | `public/assets/crops-v3/pineapple-ripe.png` | `public/assets/crops-v3/pineapple-growing.png` | Shared seedling PNG |
 | Cotton (`bongvai`) | 21 | `public/assets/crops-v3/cotton-ripe.png` | `public/assets/crops-v3/cotton-growing.png` | Shared seedling PNG |
+| Watermelon (`duahau`) | 21 | `public/assets/crops-v3/watermelon-ripe.png` | `public/assets/crops-v3/watermelon-growing.png` | Shared seedling PNG |
 | Other crops | 4–29 | legacy SVG | legacy SVG | Prioritize by unlock level and visual frequency |
 
 Garlic source images: `asset/source_crops/v3/garlic-growing.png` and `asset/source_crops/v3/garlic-ripe.png` (1024×1024 transparent originals). The game exports are 256×256 PNGs.
@@ -77,6 +78,8 @@ Tea source images are `asset/source_crops/v3/tea-growing.png` and `asset/source_
 Pineapple source images are `asset/source_crops/v3/pineapple-growing.png` and `asset/source_crops/v3/pineapple-ripe.png`; their game exports are 256×256 PNGs.
 
 Cotton source images are `asset/source_crops/v3/cotton-growing.png` and `asset/source_crops/v3/cotton-ripe.png`; their game exports are 256×256 PNGs.
+
+Watermelon source images are `asset/source_crops/v3/watermelon-growing.png` and `asset/source_crops/v3/watermelon-ripe.png`; their game exports are 256×256 PNGs.
 
 ## Other families
 
