@@ -1481,14 +1481,14 @@ export function buildApp({ config, db, logger = true }) {
       async function buyAnimal(request, reply, kind, want = 1, route = 'buy-animal') {
         const a = ANIMALS[kind];
         const me = request.farmer;
-        if (!a) return reply.code(400).send({ error: 'bad_request' });
+        if (!a || (want !== 'max' && (!Number.isSafeInteger(want) || want < 1))) return reply.code(400).send({ error: 'bad_request' });
         const purchase = runJournaledMutation(request, route, () => {
           if (levelFor(me.xp) < a.level) return { error: 'level_too_low' };
           const count = db.prepare('SELECT COUNT(*) c FROM animals WHERE owner_id = ? AND kind = ?').get(me.user_id, kind).c;
           const space = a.capacities[barnLevel(me, kind) - 1] - count;
           if (space <= 0) return { error: 'coop_full' };
           if (me.gold < a.price) return { error: 'not_enough_gold' };
-          const asked = want === 'max' ? space : Math.max(1, Math.floor(Number(want) || 1));
+          const asked = want === 'max' ? space : want;
           const n = Math.min(asked, space, Math.floor(me.gold / a.price));
           grant(me.user_id, { gold: -a.price * n });
           const ins = db.prepare('INSERT INTO animals (owner_id, kind) VALUES (?, ?)');
@@ -1569,6 +1569,7 @@ export function buildApp({ config, db, logger = true }) {
         return { n, total: queued + n };
       }
       async function machineRun(request, reply, machineId, recipeId, count = 1, route = 'machine-run') {
+        if (!Number.isSafeInteger(count) || count < 1 || count > MACHINE_QUEUE_MAX) return reply.code(400).send({ error: 'bad_request' });
         const run = runJournaledMutation(request, route, () => queueRecipe(request.farmer, machineId, recipeId, count));
         if (run.error) return reply.code(run.error === 'idempotency_conflict' ? 409 : 400).send({ error: run.error });
         return { me: fresh(request.farmer.user_id), queued: run.outcome.n, total: run.outcome.total };
@@ -1949,8 +1950,10 @@ export function buildApp({ config, db, logger = true }) {
       api.get('/lottery', async (request) => { settleThiefBoard(); return lotteryView(request.farmer); });
       api.post('/lottery-buy', async (request, reply) => {
         const me = request.farmer;
+        const qty = request.body?.qty ?? 1;
+        if (!Number.isSafeInteger(qty) || qty < 1 || qty > LOTTERY.maxPerDay) return reply.code(400).send({ error: 'bad_request' });
         const purchase = runJournaledMutation(request, 'lottery-buy', () => {
-          const n = Math.max(1, Math.min(LOTTERY.maxPerDay, Math.floor(Number(request.body?.qty) || 1)));
+          const n = qty;
           const day = thiefDayKey();
           const mine = db.prepare('SELECT qty FROM lottery_tickets WHERE day = ? AND owner_id = ?').get(day, me.user_id)?.qty || 0;
           if (mine + n > LOTTERY.maxPerDay) return { error: 'lottery_max' };
@@ -2359,7 +2362,8 @@ export function buildApp({ config, db, logger = true }) {
         const { species, qty } = request.body ?? {};
         const me = request.farmer;
         const sp = FISH_FARM[species];
-        if (!sp) return reply.code(400).send({ error: 'bad_request' });
+        const requested = qty ?? 1;
+        if (!sp || (requested !== 'max' && (!Number.isSafeInteger(requested) || requested < 1))) return reply.code(400).send({ error: 'bad_request' });
         const stock = runJournaledMutation(request, 'fish-stock', () => {
           const current = getFarmer.get(me.user_id);
           if (levelFor(current.xp) < sp.level) return { error: 'level_too_low' };
@@ -2367,7 +2371,7 @@ export function buildApp({ config, db, logger = true }) {
           const used = db.prepare('SELECT COALESCE(SUM(qty), 0) s FROM fish_batches WHERE owner_id = ?').get(me.user_id).s;
           const room = capacity - used;
           if (room <= 0) return { error: 'pond_full' };
-          const asked = qty === 'max' ? room : Math.max(1, Math.floor(Number(qty) || 1));
+          const asked = requested === 'max' ? room : requested;
           const n = Math.min(asked, room, Math.floor(current.gold / sp.fry));
           if (n < 1) return { error: 'not_enough_gold' };
           const now = Date.now();
@@ -2383,10 +2387,11 @@ export function buildApp({ config, db, logger = true }) {
 
       api.post('/fish-harvest', async (request, reply) => {
         const me = request.farmer;
+        const id = request.body?.id;
+        if (id !== undefined && (!Number.isSafeInteger(id) || id < 1)) return reply.code(400).send({ error: 'bad_request' });
         const harvest = runJournaledMutation(request, 'fish-harvest', () => {
           const now = Date.now();
-          const id = Number(request.body?.id);
-          const batches = id
+          const batches = id !== undefined
             ? db.prepare('SELECT * FROM fish_batches WHERE owner_id = ? AND id = ?').all(me.user_id, id)
             : db.prepare('SELECT * FROM fish_batches WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
           if (!batches.length || (id && now < batches[0].ready_at)) return { error: 'not_ready' };
