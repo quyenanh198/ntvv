@@ -1891,10 +1891,11 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .machine-grid .mc-add {
   grid-column: 1 / -1;
   display: flex; align-items: center; justify-content: flex-end; gap: .3rem;
-  flex-wrap: nowrap; max-width: none;
+  flex-wrap: wrap; max-width: none;
 }
 .machine-grid .mc-run { margin-right: auto; }
-.machine-grid .mc-plus { height: 30px; min-width: 30px; font-size: .95rem; padding: 0 .45rem; }
+.machine-grid .mc-plus { min-height: 44px; min-width: 44px; font-size: .95rem; padding: 0 .55rem; }
+.machine-grid .mc-plus:focus-visible { outline: 3px solid #284f7d; outline-offset: 2px; }
 @media (max-width: 1000px) { .machine-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .machine-grid { grid-template-columns: 1fr; } }
 

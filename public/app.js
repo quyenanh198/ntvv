@@ -36,7 +36,7 @@
   // bản Cloudflare/trình duyệt cache nhầm (đã có vụ trang chờ HTML nằm ở URL ảnh).
   const A = (path) => `${path}?v=${MY_BOOT || '1'}`;
   const machineIcon = (machine) => MACHINE_ART[machine.id]
-    ? `<img class="machine-icon" src="${A(MACHINE_ART[machine.id])}" alt="" />`
+    ? `<img class="machine-icon" src="${A(MACHINE_ART[machine.id])}" alt="" loading="lazy" decoding="async" />`
     : `<span class="machine-emoji" aria-hidden="true">${machine.emoji}</span>`;
   const spriteBase = (id) => SPRITE_ALIAS[id] || id;
   const cropSprite = (id, stage) => A((stage === 1 && 'assets/crops-v3/seedling.png')

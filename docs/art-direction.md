@@ -117,7 +117,7 @@ Vanilla source images are `asset/source_crops/v3/vanilla-growing.png` and `asset
 
 ## Review checklist for each new sprite
 
-Machine sources are in `asset/source_machines/v3/`; the 256×256 game exports are in `public/assets/machines-v3/`. The set includes unique art for all twelve machines.
+Machine sources are in `asset/source_machines/v3/`; the 144×144 transparent game exports are in `public/assets/machines-v3/`. The set includes unique art for all twelve machines. The exports serve 44px card icons at up to roughly 3× display density; keep the full-resolution sources for larger future uses.
 
 1. Open original image and confirm real alpha transparency and complete silhouette.
 2. Resize to the export dimension and inspect that exact file.
