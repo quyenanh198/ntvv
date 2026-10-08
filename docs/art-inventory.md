@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 4/12 machines have individual PNG art. 134 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 6/12 machines have individual PNG art. 136 static asset paths appear in the client.
 
 ## Crops
 
@@ -91,8 +91,8 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Quán ốc | quanoc | 8 | unique PNG |
 | Bếp gia đình | bepan | 9 | unique PNG |
 | Cối xay bột | coixay | 10 | unique PNG |
-| Quán ăn vặt | quanvat | 11 | emoji/UI |
-| Máy ép nước | mayep | 12 | emoji/UI |
+| Quán ăn vặt | quanvat | 11 | unique PNG |
+| Máy ép nước | mayep | 12 | unique PNG |
 | Nồi mứt | noimut | 13 | emoji/UI |
 | Nhà máy sữa | nhamaysua | 15 | emoji/UI |
 | Lò bánh | lobanh | 17 | emoji/UI |
@@ -211,6 +211,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/machines-v3/family-kitchen.png` | 122 KB |
 | `assets/machines-v3/fish-oven.png` | 88 KB |
 | `assets/machines-v3/flour-mill.png` | 92 KB |
+| `assets/machines-v3/juice-press.png` | 76 KB |
+| `assets/machines-v3/snack-stall.png` | 114 KB |
 | `assets/machines-v3/snail-stall.png` | 117 KB |
 | `assets/pack/chicken_coop_v3.png` | 246 KB |
 | `assets/pack/farm_house.png` | 80 KB |
