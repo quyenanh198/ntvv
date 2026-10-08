@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 9/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 76 static asset paths appear in the client.
+**Coverage:** 10/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 78 static asset paths appear in the client.
 
 ## Crops
 
@@ -17,7 +17,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Dưa leo | dualeo | 6 | v3 PNG | v3 PNG |
 | Sả | sa | 6 | v3 PNG | v3 PNG |
 | Bắp cải | bapcai | 7 | v3 PNG | v3 PNG |
-| Đậu phộng | dauphong | 7 | legacy SVG | legacy SVG |
+| Đậu phộng | dauphong | 7 | v3 PNG | v3 PNG |
 | Cà chua | cachua | 8 | legacy SVG | legacy SVG |
 | Khoai lang | khoailang | 8 | legacy SVG | legacy SVG |
 | Mè | me | 9 | legacy SVG | legacy SVG |
@@ -148,6 +148,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops-v3/herbs-ripe.png` | 106 KB |
 | `assets/crops-v3/lemongrass-growing.png` | 42 KB |
 | `assets/crops-v3/lemongrass-ripe.png` | 96 KB |
+| `assets/crops-v3/peanut-growing.png` | 54 KB |
+| `assets/crops-v3/peanut-ripe.png` | 105 KB |
 | `assets/crops-v3/potato-growing.png` | 101 KB |
 | `assets/crops-v3/potato-ripe.png` | 110 KB |
 | `assets/crops-v3/seedling.png` | 43 KB |
