@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 8/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 74 static asset paths appear in the client.
+**Coverage:** 9/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 76 static asset paths appear in the client.
 
 ## Crops
 
@@ -16,7 +16,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Tỏi | toi | 5 | v3 PNG | v3 PNG |
 | Dưa leo | dualeo | 6 | v3 PNG | v3 PNG |
 | Sả | sa | 6 | v3 PNG | v3 PNG |
-| Bắp cải | bapcai | 7 | legacy SVG | legacy SVG |
+| Bắp cải | bapcai | 7 | v3 PNG | v3 PNG |
 | Đậu phộng | dauphong | 7 | legacy SVG | legacy SVG |
 | Cà chua | cachua | 8 | legacy SVG | legacy SVG |
 | Khoai lang | khoailang | 8 | legacy SVG | legacy SVG |
@@ -134,6 +134,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/art/trees/thanhlong-qua.png` | 4 KB |
 | `assets/art/trees/xoai-qua.png` | 4 KB |
 | `assets/art/turkey_v3.png` | 105 KB |
+| `assets/crops-v3/cabbage-growing.png` | 66 KB |
+| `assets/crops-v3/cabbage-ripe.png` | 108 KB |
 | `assets/crops-v3/carrot-growing.png` | 88 KB |
 | `assets/crops-v3/carrot-ripe.png` | 93 KB |
 | `assets/crops-v3/corn-growing.png` | 96 KB |
