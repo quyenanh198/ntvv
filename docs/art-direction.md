@@ -14,7 +14,7 @@ The crop, tree, animal, and machine catalog and static client asset references a
 
 ## Crop state system
 
-Each crop has three visible states: seedling, growing, and ripe. The current code uses a shared hand-painted seedling PNG, then per-crop growing and ripe art. Nineteen crops have matched PNG pairs; the others retain legacy SVGs. The next art batches should extend matching pairs by unlock level. Watered and ready badges must remain legible above the artwork.
+Each crop has three visible states: seedling, growing, and ripe. The current code uses a shared hand-painted seedling PNG, then per-crop growing and ripe art. Twenty crops have matched PNG pairs; the others retain legacy SVGs. The next art batches should extend matching pairs by unlock level. Watered and ready badges must remain legible above the artwork.
 
 | Crop | Unlock | Ripe art | Growing art | Next art action |
 | --- | ---: | --- | --- | --- |
@@ -37,6 +37,7 @@ Each crop has three visible states: seedling, growing, and ripe. The current cod
 | Sugarcane (`mia`) | 12 | `public/assets/crops-v3/sugarcane-ripe.png` | `public/assets/crops-v3/sugarcane-growing.png` | Shared seedling PNG |
 | Strawberry (`dautay`) | 13 | `public/assets/crops-v3/strawberry-ripe.png` | `public/assets/crops-v3/strawberry-growing.png` | Shared seedling PNG |
 | Ginger (`gung`) | 13 | `public/assets/crops-v3/ginger-ripe.png` | `public/assets/crops-v3/ginger-growing.png` | Shared seedling PNG |
+| Eggplant (`catim`) | 14 | `public/assets/crops-v3/eggplant-ripe.png` | `public/assets/crops-v3/eggplant-growing.png` | Shared seedling PNG |
 | Other crops | 4–29 | legacy SVG | legacy SVG | Prioritize by unlock level and visual frequency |
 
 Garlic source images: `asset/source_crops/v3/garlic-growing.png` and `asset/source_crops/v3/garlic-ripe.png` (1024×1024 transparent originals). The game exports are 256×256 PNGs.
@@ -54,6 +55,7 @@ Mung bean source images are `asset/source_crops/v3/mung-bean-growing.png` and `a
 Sugarcane source images are `asset/source_crops/v3/sugarcane-growing.png` and `asset/source_crops/v3/sugarcane-ripe.png`; their game exports are 256×256 PNGs.
 Strawberry source images are `asset/source_crops/v3/strawberry-growing.png` and `asset/source_crops/v3/strawberry-ripe.png`; their game exports are 256×256 PNGs.
 Ginger source images are `asset/source_crops/v3/ginger-growing.png` and `asset/source_crops/v3/ginger-ripe.png`; their game exports are 256×256 PNGs.
+Eggplant source images are `asset/source_crops/v3/eggplant-growing.png` and `asset/source_crops/v3/eggplant-ripe.png`; their game exports are 256×256 PNGs.
 
 ## Other families
 
