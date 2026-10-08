@@ -113,11 +113,13 @@ Vanilla source images are `asset/source_crops/v3/vanilla-growing.png` and `asset
 | Fruit trees | All thirteen species have individual PNGs | Review scale and ready-state contrast together at phone width |
 | Animals | All fifteen species have individual PNGs | Review scale and shadow together at phone width |
 | Machines | All twelve machines have unique PNGs in factory cards | Standardize footprint and active/ready feedback |
-| Products and UI icons | Mostly emoji | Use a consistent icon set after gameplay hierarchy is settled |
+| Products and UI icons | Fries and garden salad have hand-painted PNGs; most other products use emoji | Extend the product set in recipe and unlock order, then standardize UI icons |
 
 ## Review checklist for each new sprite
 
 Machine sources are in `asset/source_machines/v3/`; the 144×144 transparent game exports are in `public/assets/machines-v3/`. The set includes unique art for all twelve machines. The exports serve 44px card icons at up to roughly 3× display density; keep the full-resolution sources for larger future uses.
+
+Product sources are in `asset/source_products/v3/`; the 128×128 transparent game exports are in `public/assets/products-v3/`. The first two are potato fries (`khoaichien`) and garden salad (`salad`), used by the shared item-icon renderer in factory, inventory, and market views.
 
 1. Open original image and confirm real alpha transparency and complete silhouette.
 2. Resize to the export dimension and inspect that exact file.

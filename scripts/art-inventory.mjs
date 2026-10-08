@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { ANIMALS, CROPS, MACHINES, TREES } from '../server/src/game.js';
+import { ANIMALS, CROPS, GOODS, MACHINES, TREES } from '../server/src/game.js';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const publicDir = resolve(root, 'public');
@@ -39,6 +39,13 @@ const machineRows = Object.values(MACHINES).sort((a, b) => a.level - b.level).ma
 });
 
 const clientSource = readFileSync(resolve(publicDir, 'app.js'), 'utf8');
+const itemIconSource = clientSource.match(/const ITEM_ICON = \{([\s\S]*?)\n  \};/)?.[1];
+if (!itemIconSource) throw new Error('Could not find the client item icon map');
+const productPaths = Object.fromEntries([...itemIconSource.matchAll(/(\w+): '([^']+)'/g)].map((match) => [match[1], match[2]]));
+const productRows = Object.values(GOODS).sort((a, b) => a.name.localeCompare(b.name, 'vi')).map((good) => {
+  const path = productPaths[good.id];
+  return `| ${good.name} | ${good.id} | ${good.source} | ${path ? status(path, path.endsWith('.svg') ? 'SVG icon' : 'PNG art') : 'emoji'} |`;
+});
 const staticPaths = [...new Set(clientSource.match(/assets\/[\w./-]+\.(?:png|svg)/g) || [])].sort();
 const staticRows = staticPaths.map((path) => {
   const bytes = asset(path) ? statSync(resolve(publicDir, path)).size : null;
@@ -46,12 +53,13 @@ const staticRows = staticPaths.map((path) => {
 });
 
 const completeCrops = cropRows.filter((row) => row.includes('| v3 PNG | v3 PNG |')).length;
+const picturedProducts = Object.values(GOODS).filter((good) => productPaths[good.id] && asset(productPaths[good.id])).length;
 const lines = [
   '# Farm art inventory',
   '',
   'Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.',
   '',
-  `**Coverage:** ${completeCrops}/${cropRows.length} crops have matching growing and ripe v3 art; ${treePng.size}/${treeRows.length} trees and ${Object.keys(animalPng).length}/${animalRows.length} animals have individual PNG art. ${Object.keys(machinePng).length}/${machineRows.length} machines have individual PNG art. ${staticPaths.length} static asset paths appear in the client.`,
+  `**Coverage:** ${completeCrops}/${cropRows.length} crops have matching growing and ripe v3 art; ${treePng.size}/${treeRows.length} trees and ${Object.keys(animalPng).length}/${animalRows.length} animals have individual PNG art. ${Object.keys(machinePng).length}/${machineRows.length} machines have individual PNG art. ${picturedProducts}/${productRows.length} products have PNG or SVG icons. ${staticPaths.length} static asset paths appear in the client.`,
   '',
   '## Crops', '',
   '| Crop | ID | Unlock | Growing | Ripe |', '| --- | --- | ---: | --- | --- |', ...cropRows,
@@ -61,6 +69,8 @@ const lines = [
   '| Animal | ID | Unlock | Current art |', '| --- | --- | ---: | --- |', ...animalRows,
   '', '## Machines', '',
   '| Machine | ID | Unlock | Current art |', '| --- | --- | ---: | --- |', ...machineRows,
+  '', '## Products', '',
+  '| Product | ID | Source | Current art |', '| --- | --- | --- | --- |', ...productRows,
   '', '## Static client asset references', '',
   'This list includes scene buildings, backgrounds, UI icons, and product art named directly in `public/app.js`. Crop, tree, and animal IDs generated at runtime are covered by the catalog tables above.',
   '', '| Path | Size |', '| --- | ---: |', ...staticRows,

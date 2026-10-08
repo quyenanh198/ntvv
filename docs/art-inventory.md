@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 142 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 11/186 products have PNG or SVG icons. 144 static asset paths appear in the client.
 
 ## Crops
 
@@ -99,6 +99,197 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Máy rang cà phê | mayrang | 23 | unique PNG |
 | Xưởng dệt | xuongdet | 25 | unique PNG |
 | Xưởng cao cấp | xuongcaocap | 26 | unique PNG |
+
+## Products
+
+| Product | ID | Source | Current art |
+| --- | --- | --- | --- |
+| Áo dài lụa | aodai | xuongcaocap | emoji |
+| Áo len | aolen | xuongdet | emoji |
+| Bánh bí ngô | banhbi | lobanh | emoji |
+| Bánh cà rốt | banhcarot | lobanh | emoji |
+| Bánh dứa | banhdua | lobanh | emoji |
+| Bánh gừng | banhgung | lobanh | emoji |
+| Bánh kem dâu | banhkem | lobanh | emoji |
+| Bánh mật ong | banhmatong | lobanh | emoji |
+| Bánh mì trứng | banhmi | lobanh | emoji |
+| Bánh táo | banhtao | lobanh | emoji |
+| Bánh tôm | banhtom | quanvat | emoji |
+| Bánh tráng trộn | banhtrangtron | quanvat | emoji |
+| Bánh xèo | banhxeo | bepan | emoji |
+| Bắp xào bơ | bapxao | quanvat | emoji |
+| Bột bắp | botbap | coixay | emoji |
+| Bột ca cao | botcacao | mayrang | emoji |
+| Bột chiên | botchien | quanvat | emoji |
+| Bột gạo | botgao | coixay | emoji |
+| Bột mì | botmi | coixay | SVG icon |
+| Bơ | bo | nhamaysua | emoji |
+| Cá chép | cachep | ho | SVG icon |
+| Cá chim trắng | cachim | cachim | emoji |
+| Cá điêu hồng | dieuhong | dieuhong | emoji |
+| Cá điêu hồng chiên | cadieuhongchien | lonuong | emoji |
+| Cá kho tiêu | cakho | lonuong | emoji |
+| Cá koi | cakoi | ho | SVG icon |
+| Cá lóc | caloc | caloc | emoji |
+| Cá lóc nướng trui | calocnuong | lonuong | emoji |
+| Cá nhỏ | canho | ho | SVG icon |
+| Cá nướng | canuong | lonuong | emoji |
+| Cà phê hảo hạng | caphehaohang | xuongcaocap | emoji |
+| Cà phê rang | capherang | mayrang | emoji |
+| Cà phê sữa | caphesua | mayrang | emoji |
+| Cá rô | caro | ho | SVG icon |
+| Cá tra | catra | catra | emoji |
+| Cá tra kho tộ | catrakho | lonuong | emoji |
+| Cá viên chiên | cavienchien | quanvat | emoji |
+| Cao nhung hươu | caonhung | xuongcaocap | emoji |
+| Chả cá | chaca | lonuong | emoji |
+| Chè đậu xanh | chedauxanh | quanvat | emoji |
+| Chuối chiên | chuoichien | quanvat | emoji |
+| Cóc dầm muối ớt | cocdam | bepan | emoji |
+| Cơm chiên trứng | comchien | bepan | emoji |
+| Cua | cua | cua | emoji |
+| Cua hấp sả | cuahap | lonuong | emoji |
+| Cuộn len | cuonlen | xuongdet | emoji |
+| Dầu ô liu | dauoliu | mayep | emoji |
+| Đường mía | duongmia | coixay | emoji |
+| Ếch | ech | ech | emoji |
+| Gỏi cuốn cá | goicuon | lonuong | emoji |
+| Hộp phô mai thượng hạng | hopphomai | xuongcaocap | emoji |
+| Hộp quà nông trại | hopqua | xuongcaocap | emoji |
+| Kem dưa hấu | kem | nhamaysua | emoji |
+| Kem sầu riêng | kemsaurieng | nhamaysua | emoji |
+| Kem vani | kemvani | nhamaysua | emoji |
+| Kẹo đậu phộng | keodauphong | quanvat | emoji |
+| Khăn alpaca | khanalpaca | xuongdet | emoji |
+| Khăn len | khanlen | xuongdet | emoji |
+| Khoai lang kén | khoailangken | quanvat | emoji |
+| Khoai lang nướng | khoailangnuong | bepan | emoji |
+| Khoai tây chiên | khoaichien | bepan | PNG art |
+| Lẩu cá koi | lauca | lonuong | emoji |
+| Lẩu ếch | lauech | lonuong | emoji |
+| Len | len | cuu | SVG icon |
+| Lông alpaca | longalpaca | alpaca | emoji |
+| Lông thỏ | longtho | tho | emoji |
+| Lụa | lua | xuongdet | emoji |
+| Lươn | luon | luon | emoji |
+| Lươn xào sả ớt | luonxao | lonuong | emoji |
+| Mật ong | matong | ong | emoji |
+| Me rim ớt | merim | quanvat | emoji |
+| Mũ len thỏ | mulen | xuongdet | emoji |
+| Mực | muc | muc | emoji |
+| Mực nướng sa tế | mucnuong | lonuong | emoji |
+| Mứt cam | mutcam | noimut | emoji |
+| Mứt dâu | mutdau | noimut | emoji |
+| Mứt gừng | mutgung | noimut | emoji |
+| Mứt sầu riêng | mutsaurieng | noimut | emoji |
+| Nem chua | nemchua | quanvat | emoji |
+| Nhung hươu | nhunghuou | huou | emoji |
+| Nước cam | nuoccam | mayep | emoji |
+| Nước chanh | nuocchanh | mayep | emoji |
+| Nước dứa | nuocthom | mayep | emoji |
+| Nước ép cà rốt | nuoccarot | mayep | emoji |
+| Nước ép cóc | nuoccoc | mayep | emoji |
+| Nước ép dưa hấu | nuocduahau | mayep | emoji |
+| Nước hoa hoa hồng | nuochoa | xuongcaocap | emoji |
+| Ốc bàn tay | ocbantay | ocbantay | emoji |
+| Ốc bàn tay nướng phô mai | ocbantaynuongphomai | quanoc | emoji |
+| Ốc bàn tay xào sa tế | ocbantayxaosate | quanoc | emoji |
+| Ốc bông | ocbong | ocbong | emoji |
+| Ốc bông luộc sả | ocbongluocsa | quanoc | emoji |
+| Ốc bông rang muối ớt | ocbongrangmuoiot | quanoc | emoji |
+| Ốc bươu | oc | oc | emoji |
+| Ốc bươu luộc sả | ocluocsa | quanoc | emoji |
+| Ốc bươu rang muối ớt | ocrangmuoiot | quanoc | emoji |
+| Ốc cà na | occana | occana | emoji |
+| Ốc cà na hấp sả | occanahapsa | quanoc | emoji |
+| Ốc cà na xào dừa | occanaxaodua | quanoc | emoji |
+| Ốc dừa | ocdua | ocdua | emoji |
+| Ốc dừa hấp sả | ocduahapsa | quanoc | emoji |
+| Ốc dừa xào dừa | ocduaxaodua | quanoc | emoji |
+| Ốc đá | ocda | ocda | emoji |
+| Ốc đá xào sa tế | ocdaxaosate | quanoc | emoji |
+| Ốc đá xào tỏi | ocdaxaotoi | quanoc | emoji |
+| Ốc đắng | ocdang | ocdang | emoji |
+| Ốc đắng hấp sả | ocdanghapsa | quanoc | emoji |
+| Ốc đắng nướng mỡ hành | ocdangnuongmohanh | quanoc | emoji |
+| Ốc gai | ocgai | ocgai | emoji |
+| Ốc gai xào me | ocgaixaome | quanoc | emoji |
+| Ốc gai xào tỏi | ocgaixaotoi | quanoc | emoji |
+| Ốc gạo | ocgao | ocgao | emoji |
+| Ốc gạo xào bơ | ocgaoxaobo | quanoc | emoji |
+| Ốc gạo xào dừa | ocgaoxaodua | quanoc | emoji |
+| Ốc giác | ocgiac | ocgiac | emoji |
+| Ốc giác hấp sả | ocgiachapsa | quanoc | emoji |
+| Ốc giác nướng mỡ hành | ocgiacnuongmohanh | quanoc | emoji |
+| Ốc hương | ochuong | ochuong | emoji |
+| Ốc hương xào sa tế | ochuongxaosate | quanoc | emoji |
+| Ốc hương xào tỏi | ochuongxaotoi | quanoc | emoji |
+| Ốc lác | oclac | oclac | emoji |
+| Ốc lác nướng phô mai | oclacnuongphomai | quanoc | emoji |
+| Ốc lác xào me | oclacxaome | quanoc | emoji |
+| Ốc len | oclen | oclen | emoji |
+| Ốc len nướng mỡ hành | oclennuongmohanh | quanoc | emoji |
+| Ốc len xào bơ | oclenxaobo | quanoc | emoji |
+| Ốc luộc sả | ocluoc | quanvat | emoji |
+| Ốc mít | ocmit | ocmit | emoji |
+| Ốc mít nướng phô mai | ocmitnuongphomai | quanoc | emoji |
+| Ốc mít xào sa tế | ocmitxaosate | quanoc | emoji |
+| Ốc móng tay | ocmongtay | ocmongtay | emoji |
+| Ốc móng tay nướng mỡ hành | ocmongtaynuongmohanh | quanoc | emoji |
+| Ốc móng tay xào bơ | ocmongtayxaobo | quanoc | emoji |
+| Ốc mỡ | ocmo | ocmo | emoji |
+| Ốc mỡ luộc sả | ocmoluocsa | quanoc | emoji |
+| Ốc mỡ rang muối ớt | ocmorangmuoiot | quanoc | emoji |
+| Ốc nhảy | ocnhay | ocnhay | emoji |
+| Ốc nhảy xào bơ | ocnhayxaobo | quanoc | emoji |
+| Ốc nhảy xào dừa | ocnhayxaodua | quanoc | emoji |
+| Ốc nhồi | ocnhoi | ocnhoi | emoji |
+| Ốc nhồi xào me | ocnhoixaome | quanoc | emoji |
+| Ốc nhồi xào tỏi | ocnhoixaotoi | quanoc | emoji |
+| Ốc tỏi | octoi | octoi | emoji |
+| Ốc tỏi luộc sả | octoiluocsa | quanoc | emoji |
+| Ốc tỏi rang muối ớt | octoirangmuoiot | quanoc | emoji |
+| Ốc tù và | octuva | octuva | emoji |
+| Ốc tù và luộc sả | octuvaluocsa | quanoc | emoji |
+| Ốc tù và rang muối ớt | octuvarangmuoiot | quanoc | emoji |
+| Ốc vú nàng | ocvunang | ocvunang | emoji |
+| Ốc vú nàng nướng phô mai | ocvunangnuongphomai | quanoc | emoji |
+| Ốc vú nàng xào me | ocvunangxaome | quanoc | emoji |
+| Phô mai | phomai | nhamaysua | emoji |
+| Phô mai dê | phomaide | nhamaysua | emoji |
+| Phô mai trâu | phomaitrau | nhamaysua | emoji |
+| Pizza | pizza | lobanh | emoji |
+| Rượu nho ủ | ruouvang | xuongcaocap | emoji |
+| Salad rau | salad | bepan | PNG art |
+| Sầu riêng chiên | saurienchien | bepan | emoji |
+| Sinh tố xoài | sinhtoxoai | mayep | emoji |
+| Siro thanh long | siro | noimut | emoji |
+| Sô-cô-la | socola | mayrang | emoji |
+| Sốt cà chua | sotcachua | noimut | emoji |
+| Súp bí đỏ | supbi | bepan | emoji |
+| Sushi | sushi | lonuong | emoji |
+| Sữa | sua | bo | SVG icon |
+| Sữa chua dâu | suachua | nhamaysua | emoji |
+| Sữa dê | suade | de | emoji |
+| Sữa trâu | suatrau | trau | emoji |
+| Thịt heo | thit | heo | emoji |
+| Thức ăn gia súc | thucan | shop | PNG art |
+| Tiệc gia đình | buatiec | xuongcaocap | emoji |
+| Tôm | tom | tom | emoji |
+| Tôm nướng | tomnuong | lonuong | emoji |
+| Tơ tằm | totam | tam | emoji |
+| Trà sả mật ong | trasa | quanvat | emoji |
+| Trà sữa | trasua | bepan | emoji |
+| Trà túi lọc | tratui | mayrang | emoji |
+| Trứng | trung | ga | SVG icon |
+| Trứng cút | trungcut | cut | emoji |
+| Trứng gà tây | trunggatay | gatay | emoji |
+| Trứng muối | trungmuoi | bepan | emoji |
+| Trứng ngỗng | trungngong | ngong | emoji |
+| Trứng vịt | trungvit | vit | emoji |
+| Vải bông | vai | xuongdet | emoji |
+| Xôi đậu phộng | xoidauphong | quanvat | emoji |
+| Xúc xích | xucxich | bepan | emoji |
 
 ## Static client asset references
 
@@ -235,6 +426,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/tree_02.png` | 14 KB |
 | `assets/pack/well.png` | 17 KB |
 | `assets/pack/windmill_v3.png` | 327 KB |
+| `assets/products-v3/garden-salad.png` | 22 KB |
+| `assets/products-v3/potato-fries.png` | 23 KB |
 | `assets/ui/coin.svg` | <1 KB |
 | `assets/ui/egg.svg` | <1 KB |
 | `assets/ui/feed.svg` | <1 KB |

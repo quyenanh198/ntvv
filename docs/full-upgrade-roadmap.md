@@ -85,6 +85,6 @@ This is the project plan for the farm game, separate from the older stability au
 ### Current acceptance record
 
 - 62 automated tests pass on the upgrade branch.
-- New assets: coop, windmill, market, farmer, a shared seedling, individual art for all fifteen animal species and thirteen fruit-tree species, growing and ripe art for all thirty-six crops, and all twelve factory machine sprites. Five tree and fruit pairs from the source pack now have individual game assets. The generated art inventory shows 36/36 crops, 13/13 trees, 15/15 animals, and 12/12 machines with individual PNG art.
+- New assets: coop, windmill, market, farmer, a shared seedling, individual art for all fifteen animal species and thirteen fruit-tree species, growing and ripe art for all thirty-six crops, all twelve factory machine sprites, and the first two hand-painted kitchen product icons. Five tree and fruit pairs from the source pack now have individual game assets. The generated art inventory shows 36/36 crops, 13/13 trees, 15/15 animals, and 12/12 machines with individual PNG art; 11/186 products have PNG or SVG icons.
 - First-session guidance, mobile HUD, starter tax grace, persistent harvest collections, and fifty-nine replay-safe gameplay/economy routes are implemented.
-- Player research, interface and product art, balance model, full mutation coverage, accessibility audit, staged release, and merge remain open.
+- Player research, remaining interface and product art, balance model, route-level mutation test coverage, accessibility audit, staged release, and merge remain open. The client and server currently list the same 59 replay-safe POST routes.
