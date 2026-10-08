@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 20/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 98 static asset paths appear in the client.
+**Coverage:** 21/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 100 static asset paths appear in the client.
 
 ## Crops
 
@@ -28,7 +28,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Dâu tây | dautay | 13 | v3 PNG | v3 PNG |
 | Gừng | gung | 13 | v3 PNG | v3 PNG |
 | Cà tím | catim | 14 | v3 PNG | v3 PNG |
-| Hướng dương | huongduong | 15 | legacy SVG | legacy SVG |
+| Hướng dương | huongduong | 15 | v3 PNG | v3 PNG |
 | Gạo | gao | 16 | legacy SVG | legacy SVG |
 | Bông cải | bongcai | 17 | legacy SVG | legacy SVG |
 | Bí ngô | bingo | 18 | legacy SVG | legacy SVG |
@@ -169,6 +169,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops-v3/strawberry-ripe.png` | 98 KB |
 | `assets/crops-v3/sugarcane-growing.png` | 71 KB |
 | `assets/crops-v3/sugarcane-ripe.png` | 101 KB |
+| `assets/crops-v3/sunflower-growing.png` | 64 KB |
+| `assets/crops-v3/sunflower-ripe.png` | 103 KB |
 | `assets/crops-v3/sweet-potato-growing.png` | 52 KB |
 | `assets/crops-v3/sweet-potato-ripe.png` | 116 KB |
 | `assets/crops-v3/tomato-growing.png` | 71 KB |
