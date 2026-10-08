@@ -112,12 +112,12 @@ Vanilla source images are `asset/source_crops/v3/vanilla-growing.png` and `asset
 | Farmer | New character sprite | Review size and silhouette against buildings at mobile width |
 | Fruit trees | All thirteen species have individual PNGs | Review scale and ready-state contrast together at phone width |
 | Animals | All fifteen species have individual PNGs | Review scale and shadow together at phone width |
-| Machines | Fish oven, snail stall, family kitchen, flour mill, snack stall, juice press, jam kettle, dairy workshop, bakery oven, and coffee roaster have unique PNGs in factory cards; two machines still use emoji/UI art | Replace remaining card icons, then standardize footprint and active/ready feedback |
+| Machines | All twelve machines have unique PNGs in factory cards | Standardize footprint and active/ready feedback |
 | Products and UI icons | Mostly emoji | Use a consistent icon set after gameplay hierarchy is settled |
 
 ## Review checklist for each new sprite
 
-Machine sources are in `asset/source_machines/v3/`; the 256×256 game exports are in `public/assets/machines-v3/`. The set currently includes fish oven, snail stall, family kitchen, flour mill, snack stall, juice press, jam kettle, dairy workshop, bakery oven, and coffee roaster.
+Machine sources are in `asset/source_machines/v3/`; the 256×256 game exports are in `public/assets/machines-v3/`. The set includes unique art for all twelve machines.
 
 1. Open original image and confirm real alpha transparency and complete silhouette.
 2. Resize to the export dimension and inspect that exact file.
