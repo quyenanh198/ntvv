@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 11/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 80 static asset paths appear in the client.
+**Coverage:** 12/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 82 static asset paths appear in the client.
 
 ## Crops
 
@@ -19,7 +19,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Bắp cải | bapcai | 7 | v3 PNG | v3 PNG |
 | Đậu phộng | dauphong | 7 | v3 PNG | v3 PNG |
 | Cà chua | cachua | 8 | v3 PNG | v3 PNG |
-| Khoai lang | khoailang | 8 | legacy SVG | legacy SVG |
+| Khoai lang | khoailang | 8 | v3 PNG | v3 PNG |
 | Mè | me | 9 | legacy SVG | legacy SVG |
 | Ớt | ot | 9 | legacy SVG | legacy SVG |
 | Hành tây | hanhtay | 10 | legacy SVG | legacy SVG |
@@ -153,6 +153,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops-v3/potato-growing.png` | 101 KB |
 | `assets/crops-v3/potato-ripe.png` | 110 KB |
 | `assets/crops-v3/seedling.png` | 43 KB |
+| `assets/crops-v3/sweet-potato-growing.png` | 52 KB |
+| `assets/crops-v3/sweet-potato-ripe.png` | 116 KB |
 | `assets/crops-v3/tomato-growing.png` | 71 KB |
 | `assets/crops-v3/tomato-ripe.png` | 104 KB |
 | `assets/crops-v3/wheat-growing.png` | 54 KB |
