@@ -46,7 +46,7 @@ const completeCrops = cropRows.filter((row) => row.includes('| v3 PNG | v3 PNG |
 const lines = [
   '# Farm art inventory',
   '',
-  'Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops/seed-1.svg`.',
+  'Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.',
   '',
   `**Coverage:** ${completeCrops}/${cropRows.length} crops have matching growing and ripe v3 art; ${treePng.size}/${treeRows.length} trees and ${Object.keys(animalPng).length}/${animalRows.length} animals have individual PNG art. ${machineRows.length} machine types use emoji/UI art. ${staticPaths.length} static asset paths appear in the client.`,
   '',

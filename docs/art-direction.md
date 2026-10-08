@@ -14,23 +14,24 @@ The crop, tree, animal, and machine catalog and static client asset references a
 
 ## Crop state system
 
-Each crop has three visible states: seedling, growing, and ripe. The current code uses a shared seedling SVG, per-crop growing SVGs, and either a per-crop ripe SVG or a new PNG. The next art batch should give starter crops matching growing sprites, then extend the same system to later unlocks. Watered and ready badges must remain legible above the artwork.
+Each crop has three visible states: seedling, growing, and ripe. The current code uses a shared hand-painted seedling PNG, then per-crop growing and ripe art. Eight crops have matched PNG pairs; the others retain legacy SVGs. The next art batches should extend matching pairs by unlock level. Watered and ready badges must remain legible above the artwork.
 
 | Crop | Unlock | Ripe art | Growing art | Next art action |
 | --- | ---: | --- | --- | --- |
-| Wheat (`luami`) | 1 | `public/assets/crops-v3/wheat-ripe.png` | `public/assets/crops-v3/wheat-growing.png` | Matching seedling sprite |
-| Carrot (`carot`) | 1 | `public/assets/crops-v3/carrot-ripe.png` | `public/assets/crops-v3/carrot-growing.png` | Matching seedling sprite |
-| Corn (`ngo`) | 4 | `public/assets/crops-v3/corn-ripe.png` | `public/assets/crops-v3/corn-growing.png` | Matching seedling sprite |
-| Potato (`khoaitay`) | 5 | `public/assets/crops-v3/potato-ripe.png` | `public/assets/crops-v3/potato-growing.png` | Matching seedling sprite |
-| Garlic (`toi`) | 5 | `public/assets/crops-v3/garlic-ripe.png` | `public/assets/crops-v3/garlic-growing.png` | Matching seedling sprite |
-| Herbs (`rauthom`) | 4 | `public/assets/crops-v3/herbs-ripe.png` | `public/assets/crops-v3/herbs-growing.png` | Matching seedling sprite |
-| Cucumber (`dualeo`) | 6 | `public/assets/crops-v3/cucumber-ripe.png` | `public/assets/crops-v3/cucumber-growing.png` | Matching seedling sprite |
-| Lemongrass (`sa`) | 6 | `public/assets/crops-v3/lemongrass-ripe.png` | `public/assets/crops-v3/lemongrass-growing.png` | Matching seedling sprite |
+| Wheat (`luami`) | 1 | `public/assets/crops-v3/wheat-ripe.png` | `public/assets/crops-v3/wheat-growing.png` | Shared seedling PNG |
+| Carrot (`carot`) | 1 | `public/assets/crops-v3/carrot-ripe.png` | `public/assets/crops-v3/carrot-growing.png` | Shared seedling PNG |
+| Corn (`ngo`) | 4 | `public/assets/crops-v3/corn-ripe.png` | `public/assets/crops-v3/corn-growing.png` | Shared seedling PNG |
+| Potato (`khoaitay`) | 5 | `public/assets/crops-v3/potato-ripe.png` | `public/assets/crops-v3/potato-growing.png` | Shared seedling PNG |
+| Garlic (`toi`) | 5 | `public/assets/crops-v3/garlic-ripe.png` | `public/assets/crops-v3/garlic-growing.png` | Shared seedling PNG |
+| Herbs (`rauthom`) | 4 | `public/assets/crops-v3/herbs-ripe.png` | `public/assets/crops-v3/herbs-growing.png` | Shared seedling PNG |
+| Cucumber (`dualeo`) | 6 | `public/assets/crops-v3/cucumber-ripe.png` | `public/assets/crops-v3/cucumber-growing.png` | Shared seedling PNG |
+| Lemongrass (`sa`) | 6 | `public/assets/crops-v3/lemongrass-ripe.png` | `public/assets/crops-v3/lemongrass-growing.png` | Shared seedling PNG |
 | Other crops | 4–29 | legacy SVG | legacy SVG | Prioritize by unlock level and visual frequency |
 
 Garlic source images: `asset/source_crops/v3/garlic-growing.png` and `asset/source_crops/v3/garlic-ripe.png` (1024×1024 transparent originals). The game exports are 256×256 PNGs.
 Cucumber source images: `asset/source_crops/v3/cucumber-growing.png` and `asset/source_crops/v3/cucumber-ripe.png` (1024×1024 transparent originals). The game exports are 256×256 PNGs.
 Lemongrass source images: `asset/source_crops/v3/lemongrass-growing.png` and `asset/source_crops/v3/lemongrass-ripe.png` (1024×1024 transparent originals). The game exports are 256×256 PNGs.
+The shared seedling source is `asset/source_crops/v3/seedling.png`; its 256×256 game export is `public/assets/crops-v3/seedling.png`.
 
 ## Other families
 

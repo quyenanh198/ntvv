@@ -35,8 +35,9 @@
   // bản Cloudflare/trình duyệt cache nhầm (đã có vụ trang chờ HTML nằm ở URL ảnh).
   const A = (path) => `${path}?v=${MY_BOOT || '1'}`;
   const spriteBase = (id) => SPRITE_ALIAS[id] || id;
-  const cropSprite = (id, stage) => A((stage === 3 && RIPE_CROP_ART[id]) || (stage === 2 && GROWING_CROP_ART[id])
-    || `assets/crops/${stage === 1 ? 'seed-1' : `${spriteBase(id)}-${stage}`}.svg`);
+  const cropSprite = (id, stage) => A((stage === 1 && 'assets/crops-v3/seedling.png')
+    || (stage === 3 && RIPE_CROP_ART[id]) || (stage === 2 && GROWING_CROP_ART[id])
+    || `assets/crops/${spriteBase(id)}-${stage}.svg`);
   // Mỗi cây ăn quả có tranh riêng để người chơi nhận ra vườn bằng hình dáng và quả.
   const TREE_PNG = new Set(['cam', 'tao', 'xoai', 'thanhlong', 'chuoi', 'chanh', 'dua', 'dao', 'anhdao', 'quame', 'coc', 'quabo', 'saurieng']);
   const treeArt = (id) => A(TREE_PNG.has(id) ? `assets/art/trees/${id}.png` : 'assets/art/tree.png');
