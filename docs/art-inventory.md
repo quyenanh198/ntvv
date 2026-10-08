@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 18/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 94 static asset paths appear in the client.
+**Coverage:** 19/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 96 static asset paths appear in the client.
 
 ## Crops
 
@@ -26,7 +26,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Đậu xanh | dauxanh | 11 | v3 PNG | v3 PNG |
 | Mía | mia | 12 | v3 PNG | v3 PNG |
 | Dâu tây | dautay | 13 | v3 PNG | v3 PNG |
-| Gừng | gung | 13 | legacy SVG | legacy SVG |
+| Gừng | gung | 13 | v3 PNG | v3 PNG |
 | Cà tím | catim | 14 | legacy SVG | legacy SVG |
 | Hướng dương | huongduong | 15 | legacy SVG | legacy SVG |
 | Gạo | gao | 16 | legacy SVG | legacy SVG |
@@ -146,6 +146,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops-v3/cucumber-ripe.png` | 105 KB |
 | `assets/crops-v3/garlic-growing.png` | 61 KB |
 | `assets/crops-v3/garlic-ripe.png` | 94 KB |
+| `assets/crops-v3/ginger-growing.png` | 70 KB |
+| `assets/crops-v3/ginger-ripe.png` | 116 KB |
 | `assets/crops-v3/herbs-growing.png` | 42 KB |
 | `assets/crops-v3/herbs-ripe.png` | 106 KB |
 | `assets/crops-v3/lemongrass-growing.png` | 42 KB |
