@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 29/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 116 static asset paths appear in the client.
+**Coverage:** 30/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 118 static asset paths appear in the client.
 
 ## Crops
 
@@ -37,7 +37,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Bông vải | bongvai | 21 | v3 PNG | v3 PNG |
 | Dưa hấu | duahau | 21 | v3 PNG | v3 PNG |
 | Nho | nho | 22 | v3 PNG | v3 PNG |
-| Cà phê | caphe | 23 | legacy SVG | legacy SVG |
+| Cà phê | caphe | 23 | v3 PNG | v3 PNG |
 | Cần sa | cansa | 25 | legacy SVG | legacy SVG |
 | Hoa hồng | hoahong | 25 | legacy SVG | legacy SVG |
 | Ô liu | oliu | 26 | legacy SVG | legacy SVG |
@@ -142,6 +142,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops-v3/cauliflower-ripe.png` | 135 KB |
 | `assets/crops-v3/chili-growing.png` | 44 KB |
 | `assets/crops-v3/chili-ripe.png` | 93 KB |
+| `assets/crops-v3/coffee-growing.png` | 82 KB |
+| `assets/crops-v3/coffee-ripe.png` | 118 KB |
 | `assets/crops-v3/corn-growing.png` | 96 KB |
 | `assets/crops-v3/corn-ripe.png` | 106 KB |
 | `assets/crops-v3/cotton-growing.png` | 85 KB |
