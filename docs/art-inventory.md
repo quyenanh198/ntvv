@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 15/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 88 static asset paths appear in the client.
+**Coverage:** 16/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12 machine types use emoji/UI art. 90 static asset paths appear in the client.
 
 ## Crops
 
@@ -23,7 +23,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Mè | me | 9 | v3 PNG | v3 PNG |
 | Ớt | ot | 9 | v3 PNG | v3 PNG |
 | Hành tây | hanhtay | 10 | v3 PNG | v3 PNG |
-| Đậu xanh | dauxanh | 11 | legacy SVG | legacy SVG |
+| Đậu xanh | dauxanh | 11 | v3 PNG | v3 PNG |
 | Mía | mia | 12 | legacy SVG | legacy SVG |
 | Dâu tây | dautay | 13 | legacy SVG | legacy SVG |
 | Gừng | gung | 13 | legacy SVG | legacy SVG |
@@ -150,6 +150,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops-v3/herbs-ripe.png` | 106 KB |
 | `assets/crops-v3/lemongrass-growing.png` | 42 KB |
 | `assets/crops-v3/lemongrass-ripe.png` | 96 KB |
+| `assets/crops-v3/mung-bean-growing.png` | 54 KB |
+| `assets/crops-v3/mung-bean-ripe.png` | 102 KB |
 | `assets/crops-v3/onion-growing.png` | 55 KB |
 | `assets/crops-v3/onion-ripe.png` | 104 KB |
 | `assets/crops-v3/peanut-growing.png` | 54 KB |
