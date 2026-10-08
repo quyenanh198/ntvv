@@ -14,7 +14,7 @@ This is the project plan for the farm game, separate from the older stability au
 - Set a shared camera angle, outline weight, lighting direction, palette, shadow, and sprite scale. Draw a reference farm scene. The working standard and inventory are in [art-direction.md](art-direction.md).
 - Inventory every crop growth state, tree, animal, building, machine, product, UI icon, and background; label missing assets and inconsistent styles.
 - Set export rules: transparent PNG/WebP, predictable names, size variants, and a source file for every new sprite.
-- **Gate:** a single screen using the new art feels coherent at phone and desktop sizes. **Status:** first coherent building set, farmer, shared hand-painted seedling, all thirty-six matched crop pairs, individual art for all fifteen animal and thirteen fruit-tree species, and the first three factory machine sprites added to a working art guide and generated catalog/static-asset inventory; reference scene and remaining families pending.
+- **Gate:** a single screen using the new art feels coherent at phone and desktop sizes. **Status:** first coherent building set, farmer, shared hand-painted seedling, all thirty-six matched crop pairs, individual art for all fifteen animal and thirteen fruit-tree species, and the first four factory machine sprites added to a working art guide and generated catalog/static-asset inventory; reference scene and remaining families pending.
 
 ## 3. Upgrade the farm scene and graphics
 
@@ -85,6 +85,6 @@ This is the project plan for the farm game, separate from the older stability au
 ### Current acceptance record
 
 - 62 automated tests pass on the upgrade branch.
-- New assets: coop, windmill, market, farmer, a shared seedling, individual art for all fifteen animal species and thirteen fruit-tree species, growing and ripe art for all thirty-six crops, and three factory machine sprites. Five tree and fruit pairs from the source pack now have individual game assets. The generated art inventory shows 36/36 crops, 13/13 trees, 15/15 animals, and 3/12 machines with individual PNG art.
+- New assets: coop, windmill, market, farmer, a shared seedling, individual art for all fifteen animal species and thirteen fruit-tree species, growing and ripe art for all thirty-six crops, and four factory machine sprites. Five tree and fruit pairs from the source pack now have individual game assets. The generated art inventory shows 36/36 crops, 13/13 trees, 15/15 animals, and 4/12 machines with individual PNG art.
 - First-session guidance, mobile HUD, starter tax grace, persistent harvest collections, and fifty-nine replay-safe gameplay/economy routes are implemented.
 - Player research, remaining machine and interface art, balance model, full mutation coverage, accessibility audit, staged release, and merge remain open.

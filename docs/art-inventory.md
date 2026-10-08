@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 3/12 machines have individual PNG art. 133 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 4/12 machines have individual PNG art. 134 static asset paths appear in the client.
 
 ## Crops
 
@@ -90,7 +90,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Lò nướng cá | lonuong | 8 | unique PNG |
 | Quán ốc | quanoc | 8 | unique PNG |
 | Bếp gia đình | bepan | 9 | unique PNG |
-| Cối xay bột | coixay | 10 | emoji/UI |
+| Cối xay bột | coixay | 10 | unique PNG |
 | Quán ăn vặt | quanvat | 11 | emoji/UI |
 | Máy ép nước | mayep | 12 | emoji/UI |
 | Nồi mứt | noimut | 13 | emoji/UI |
@@ -210,6 +210,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops/seed-1.svg` | <1 KB |
 | `assets/machines-v3/family-kitchen.png` | 122 KB |
 | `assets/machines-v3/fish-oven.png` | 88 KB |
+| `assets/machines-v3/flour-mill.png` | 92 KB |
 | `assets/machines-v3/snail-stall.png` | 117 KB |
 | `assets/pack/chicken_coop_v3.png` | 246 KB |
 | `assets/pack/farm_house.png` | 80 KB |
