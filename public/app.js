@@ -567,7 +567,7 @@
 
         </div>
 
-        <button class="pond-img pond-btn" data-sheet="fishing" title="Hồ câu cá"><img src="${A('assets/pack/fish_pond.png')}" alt="Hồ câu cá" /></button>
+        <button class="pond-img pond-btn" data-sheet="fishing" title="Hồ câu cá"><img src="${A('assets/scene-v3/fishing_pond_v3.png')}" alt="Hồ câu cá" /></button>
 
         ${!visiting ? renderQuickbar() : ''}
       </div>

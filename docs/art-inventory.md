@@ -412,7 +412,6 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/machines-v3/snail-stall.png` | 39 KB |
 | `assets/machines-v3/weaving-workshop.png` | 37 KB |
 | `assets/pack/farm_logo.png` | 54 KB |
-| `assets/pack/fish_pond.png` | 40 KB |
 | `assets/pack/pet_dogs.png` | 21 KB |
 | `assets/pack/pig_adult.png` | 12 KB |
 | `assets/pack/sheep_adult.png` | 18 KB |
@@ -434,6 +433,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/scene-v3/chicken_coop_v3.png` | 66 KB |
 | `assets/scene-v3/farmer_v3.png` | 63 KB |
 | `assets/scene-v3/farmhouse_v3.png` | 63 KB |
+| `assets/scene-v3/fishing_pond_v3.png` | 82 KB |
 | `assets/scene-v3/greenhouse_v3.png` | 67 KB |
 | `assets/scene-v3/market_shop_v3.png` | 114 KB |
 | `assets/scene-v3/red_barn_v3.png` | 63 KB |

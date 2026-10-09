@@ -108,12 +108,14 @@ Vanilla source images are `asset/source_crops/v3/vanilla-growing.png` and `asset
 
 | Family | Current state | Next deliverable |
 | --- | --- | --- |
-| Farm buildings | New coop, windmill, market, farmhouse, red barn, and greenhouse sprites; remaining accents use mixed existing art | Replace visible outliers and align scale/shadow |
+| Farm buildings | New coop, windmill, market, farmhouse, red barn, greenhouse, and fishing pond sprites; remaining accents use mixed existing art | Replace visible outliers and align scale/shadow |
 | Farmer | New character sprite | Review size and silhouette against buildings at mobile width |
 | Fruit trees | All thirteen species have individual PNGs | Review scale and ready-state contrast together at phone width |
 | Animals | All fifteen species have individual PNGs | Review scale and shadow together at phone width |
 | Machines | All twelve machines have unique PNGs in factory cards | Standardize footprint and active/ready feedback |
 | Products and UI icons | Twelve early and midgame processed goods now have hand-painted PNGs; most other products use emoji | Extend the product set in recipe and unlock order, then standardize UI icons |
+
+The fishing pond source is `asset/source_scene/v3/fishing_pond_v3.png`; its 256×256 transparent game export is `public/assets/scene-v3/fishing_pond_v3.png`. It was generated with the built-in image tool using the coop and farmhouse as style references: a three-quarter hand-painted oval freshwater pond, grassy stone rim, reeds, lily pads, a small wooden dock, warm upper-left light, and transparent background. The source is retained for future size or color adjustments.
 
 ## Review checklist for each new sprite
 
