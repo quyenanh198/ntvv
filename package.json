@@ -10,6 +10,10 @@
   "scripts": {
     "start": "node server/src/server.js",
     "dev": "node dev/dev-farm.mjs",
+    "art:inventory": "node scripts/art-inventory.mjs --write",
+    "db:rehearse": "node scripts/rehearse-db.mjs",
+    "balance:report": "node scripts/balance-report.mjs --write",
+    "browser:smoke": "node scripts/browser-smoke.mjs",
     "test": "node --test"
   },
   "dependencies": {
@@ -19,5 +23,9 @@
   },
   "allowScripts": {
     "better-sqlite3@13.0.3": true
+  },
+  "devDependencies": {
+    "axe-core": "^4.14.0",
+    "playwright": "1.64.0"
   }
 }

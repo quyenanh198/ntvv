@@ -14,7 +14,12 @@
   let INSPECT = false; // chế độ khám xét khi thăm ruộng: bấm ô = khám
   let MARKET = null; // { mine, others } — tin thu mua, nạp khi mở sheet
   let sheet = null;  // { type: 'seed'|'plotmenu'|'shop'|'inventory'|'quests'|'orders'|'coop'|'mill'|'expand'|'stars', ... }
+  let lastRenderedSheetType = null;
+  let sheetReturnFocus = null;
   let showLb = null;
+  let lastRenderedModalType = null;
+  let modalReturnFocus = null;
+  let modalReturnFocusId = null;
   let pending = false;
   let familyFilter = '';
   let lastLevel = null;
@@ -24,23 +29,39 @@
 
   // ---------- sprite ----------
   const SPRITE_ALIAS = { luami: 'lua', dautay: 'dau' };
+  const GROWING_CROP_ART = { luami: 'assets/crops-v3/wheat-growing.png', carot: 'assets/crops-v3/carrot-growing.png', ngo: 'assets/crops-v3/corn-growing.png', khoaitay: 'assets/crops-v3/potato-growing.png', toi: 'assets/crops-v3/garlic-growing.png', rauthom: 'assets/crops-v3/herbs-growing.png', dualeo: 'assets/crops-v3/cucumber-growing.png', sa: 'assets/crops-v3/lemongrass-growing.png', bapcai: 'assets/crops-v3/cabbage-growing.png', dauphong: 'assets/crops-v3/peanut-growing.png', cachua: 'assets/crops-v3/tomato-growing.png', khoailang: 'assets/crops-v3/sweet-potato-growing.png', ot: 'assets/crops-v3/chili-growing.png', me: 'assets/crops-v3/sesame-growing.png', hanhtay: 'assets/crops-v3/onion-growing.png', dauxanh: 'assets/crops-v3/mung-bean-growing.png', mia: 'assets/crops-v3/sugarcane-growing.png', dautay: 'assets/crops-v3/strawberry-growing.png', gung: 'assets/crops-v3/ginger-growing.png', catim: 'assets/crops-v3/eggplant-growing.png', huongduong: 'assets/crops-v3/sunflower-growing.png', gao: 'assets/crops-v3/rice-growing.png', bongcai: 'assets/crops-v3/cauliflower-growing.png', bingo: 'assets/crops-v3/pumpkin-growing.png', tra: 'assets/crops-v3/tea-growing.png', thom: 'assets/crops-v3/pineapple-growing.png', bongvai: 'assets/crops-v3/cotton-growing.png', duahau: 'assets/crops-v3/watermelon-growing.png', nho: 'assets/crops-v3/grape-growing.png', caphe: 'assets/crops-v3/coffee-growing.png', cansa: 'assets/crops-v3/cannabis-growing.png', hoahong: 'assets/crops-v3/rose-growing.png', oliu: 'assets/crops-v3/olive-growing.png', nam: 'assets/crops-v3/mushroom-growing.png', cacao: 'assets/crops-v3/cacao-growing.png', vani: 'assets/crops-v3/vanilla-growing.png' };
+  const RIPE_CROP_ART = { luami: 'assets/crops-v3/wheat-ripe.png', carot: 'assets/crops-v3/carrot-ripe.png', ngo: 'assets/crops-v3/corn-ripe.png', khoaitay: 'assets/crops-v3/potato-ripe.png', toi: 'assets/crops-v3/garlic-ripe.png', rauthom: 'assets/crops-v3/herbs-ripe.png', dualeo: 'assets/crops-v3/cucumber-ripe.png', sa: 'assets/crops-v3/lemongrass-ripe.png', bapcai: 'assets/crops-v3/cabbage-ripe.png', dauphong: 'assets/crops-v3/peanut-ripe.png', cachua: 'assets/crops-v3/tomato-ripe.png', khoailang: 'assets/crops-v3/sweet-potato-ripe.png', ot: 'assets/crops-v3/chili-ripe.png', me: 'assets/crops-v3/sesame-ripe.png', hanhtay: 'assets/crops-v3/onion-ripe.png', dauxanh: 'assets/crops-v3/mung-bean-ripe.png', mia: 'assets/crops-v3/sugarcane-ripe.png', dautay: 'assets/crops-v3/strawberry-ripe.png', gung: 'assets/crops-v3/ginger-ripe.png', catim: 'assets/crops-v3/eggplant-ripe.png', huongduong: 'assets/crops-v3/sunflower-ripe.png', gao: 'assets/crops-v3/rice-ripe.png', bongcai: 'assets/crops-v3/cauliflower-ripe.png', bingo: 'assets/crops-v3/pumpkin-ripe.png', tra: 'assets/crops-v3/tea-ripe.png', thom: 'assets/crops-v3/pineapple-ripe.png', bongvai: 'assets/crops-v3/cotton-ripe.png', duahau: 'assets/crops-v3/watermelon-ripe.png', nho: 'assets/crops-v3/grape-ripe.png', caphe: 'assets/crops-v3/coffee-ripe.png', cansa: 'assets/crops-v3/cannabis-ripe.png', hoahong: 'assets/crops-v3/rose-ripe.png', oliu: 'assets/crops-v3/olive-ripe.png', nam: 'assets/crops-v3/mushroom-ripe.png', cacao: 'assets/crops-v3/cacao-ripe.png', vani: 'assets/crops-v3/vanilla-ripe.png' };
+  const MACHINE_ART = { lonuong: 'assets/machines-v3/fish-oven.png', quanoc: 'assets/machines-v3/snail-stall.png', bepan: 'assets/machines-v3/family-kitchen.png', coixay: 'assets/machines-v3/flour-mill.png', quanvat: 'assets/machines-v3/snack-stall.png', mayep: 'assets/machines-v3/juice-press.png', noimut: 'assets/machines-v3/jam-kettle.png', nhamaysua: 'assets/machines-v3/dairy-workshop.png', lobanh: 'assets/machines-v3/bakery-oven.png', mayrang: 'assets/machines-v3/coffee-roaster.png', xuongdet: 'assets/machines-v3/weaving-workshop.png', xuongcaocap: 'assets/machines-v3/premium-workshop.png' };
   // Mọi URL tài nguyên tĩnh kèm ?v=<boot>: mỗi lần deploy đổi URL nên không dính
   // bản Cloudflare/trình duyệt cache nhầm (đã có vụ trang chờ HTML nằm ở URL ảnh).
   const A = (path) => `${path}?v=${MY_BOOT || '1'}`;
+  const machineIcon = (machine) => MACHINE_ART[machine.id]
+    ? `<img class="machine-icon" src="${A(MACHINE_ART[machine.id])}" alt="" loading="lazy" decoding="async" />`
+    : `<span class="machine-emoji" aria-hidden="true">${machine.emoji}</span>`;
   const spriteBase = (id) => SPRITE_ALIAS[id] || id;
-  const cropSprite = (id, stage) => A(`assets/crops/${stage === 1 ? 'seed-1' : `${spriteBase(id)}-${stage}`}.svg`);
-  // Cây ăn quả có tranh riêng; loại mới dùng tranh cây chung + emoji quả.
-  const TREE_PNG = new Set(['cam', 'tao', 'xoai', 'thanhlong']);
+  const cropSprite = (id, stage) => A((stage === 1 && 'assets/crops-v3/seedling.png')
+    || (stage === 3 && RIPE_CROP_ART[id]) || (stage === 2 && GROWING_CROP_ART[id])
+    || `assets/crops/${spriteBase(id)}-${stage}.svg`);
+  // Mỗi cây ăn quả có tranh riêng để người chơi nhận ra vườn bằng hình dáng và quả.
+  const TREE_PNG = new Set(['cam', 'tao', 'xoai', 'thanhlong', 'chuoi', 'chanh', 'dua', 'dao', 'anhdao', 'quame', 'coc', 'quabo', 'saurieng']);
   const treeArt = (id) => A(TREE_PNG.has(id) ? `assets/art/trees/${id}.png` : 'assets/art/tree.png');
-  // Vật nuôi có tranh: gà/bò/cừu/lợn; loại khác hiện emoji.
-  const BARN_ART = { ga: 'assets/art/chicken.png', bo: 'assets/art/cow.png', cuu: 'assets/art/sheep.png', heo: 'assets/art/pig.png' };
+  // Mỗi loài vật nuôi có tranh riêng để giữ nét nhất quán trong chuồng.
+  const BARN_ART = { ga: 'assets/art/chicken_v3.png', cut: 'assets/art/quail_v3.png', vit: 'assets/art/duck_v3.png', bo: 'assets/art/cow.png', ngong: 'assets/art/goose_v3.png', tho: 'assets/art/rabbit_v3.png', ong: 'assets/art/bee_v3.png', cuu: 'assets/art/sheep.png', gatay: 'assets/art/turkey_v3.png', de: 'assets/art/goat_v3.png', tam: 'assets/art/silkworm_v3.png', heo: 'assets/art/pig.png', trau: 'assets/art/buffalo_v3.png', alpaca: 'assets/art/alpaca_v3.png', huou: 'assets/art/deer_v3.png' };
   const barnArtImg = (kind) => (BARN_ART[kind]
     ? `<img src="${A(BARN_ART[kind])}" alt="" />`
     : `<span class="emoji-ic emoji-ic--barn">${DATA?.config.animals[kind]?.emoji || '🐾'}</span>`);
   const ITEM_ICON = {
     trung: 'assets/ui/egg.svg', botmi: 'assets/ui/flour.svg', thucan: 'assets/art/feed.png',
     sua: 'assets/ui/milk.svg', len: 'assets/ui/wool.svg',
+    khoaichien: 'assets/products-v3/potato-fries.png', salad: 'assets/products-v3/garden-salad.png',
+    comchien: 'assets/products-v3/fried-rice.png', supbi: 'assets/products-v3/pumpkin-soup.png',
+    nuoccarot: 'assets/products-v3/carrot-juice.png', mutdau: 'assets/products-v3/strawberry-jam.png',
+    sotcachua: 'assets/products-v3/tomato-sauce.png', phomai: 'assets/products-v3/farm-cheese.png',
+    nuoccam: 'assets/products-v3/orange-juice.png', banhmi: 'assets/products-v3/egg-bread.png',
+    banhbi: 'assets/products-v3/pumpkin-pie.png', cuonlen: 'assets/products-v3/wool-roll.png',
+    botgao: 'assets/products-v3/rice-flour.png', duongmia: 'assets/products-v3/cane-sugar.png',
     cam: 'assets/art/trees/cam-qua.png', tao: 'assets/art/trees/tao-qua.png', xoai: 'assets/art/trees/xoai-qua.png', thanhlong: 'assets/art/trees/thanhlong-qua.png',
+    chuoi: 'assets/art/trees/chuoi-qua.png', chanh: 'assets/art/trees/chanh-qua.png', dua: 'assets/art/trees/dua-qua.png', dao: 'assets/art/trees/dao-qua.png', anhdao: 'assets/art/trees/anhdao-qua.png',
     canho: 'assets/ui/fish-canho.svg', caro: 'assets/ui/fish-caro.svg', cachep: 'assets/ui/fish-cachep.svg', cakoi: 'assets/ui/fish-cakoi.svg',
   };
   const itemIcon = (id) => ITEM_ICON[id] || (DATA?.config.crops[id] ? cropSprite(id, 3) : null);
@@ -61,6 +82,7 @@
   // tới server, nên cứ thử lại tại chỗ mỗi 2s thay vì reload cả trang — người
   // chơi giữ nguyên màn hình đang mở. Chỉ reload khi chờ quá lâu.
   const WAKE_RETRIES = 20;
+  const REPLAY_SAFE_POSTS = new Set(['/plant', '/plant-all', '/plant-tree', '/remove-tree', '/harvest', '/harvest-all', '/harvest-help', '/plant-help', '/water', '/water-all', '/water-help-all', '/inspect', '/feed', '/collect', '/machine-run', '/machine-run-all', '/machine-collect', '/machine-collect-all', '/mill', '/mill-collect', '/sell', '/buy', '/buy-animal', '/buy-chicken', '/lottery-buy', '/want-create', '/want-cancel', '/want-fill', '/gold-give', '/gold-ask', '/gold-request-act', '/quest-chest', '/collection-claim', '/star-claim', '/fest-claim', '/order-deliver', '/order-discard', '/machine-upgrade', '/expand', '/speedup', '/skill-learn', '/skill-respec', '/dog-hire', '/away-ack', '/critter-catch', '/poach', '/poach-all', '/poach-animal', '/poach-machine', '/upgrade-barn', '/upgrade-coop', '/upgrade-pond', '/fish', '/fish-stock', '/fish-harvest', '/buy-gems', '/buy-energy', '/luxury-buy', '/luxury-equip']);
   let reloading = false;
   function checkServerBoot(state) {
     if (reloading || !MY_BOOT || !state?.boot || state.boot === MY_BOOT) return false;
@@ -70,13 +92,27 @@
     return true;
   }
 
-  async function api(path, body, attempt = 0) {
+  async function api(path, body, attempt = 0, requestKey = body !== undefined && REPLAY_SAFE_POSTS.has(path) ? crypto.randomUUID() : null) {
     const isMutation = body !== undefined;
-    const res = await fetch(`/farm/api${path}`, {
-      method: isMutation ? 'POST' : 'GET',
-      headers: isMutation ? { 'content-type': 'application/json' } : undefined,
-      body: isMutation ? JSON.stringify(body) : undefined,
-    });
+    let res;
+    try {
+      res = await fetch(`/farm/api${path}`, {
+        method: isMutation ? 'POST' : 'GET',
+        headers: isMutation ? { 'content-type': 'application/json', ...(requestKey ? { 'idempotency-key': requestKey } : {}) } : undefined,
+        body: isMutation ? JSON.stringify(body) : undefined,
+      });
+    } catch (err) {
+      if (attempt < WAKE_RETRIES && (!isMutation || requestKey)) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        return api(path, body, attempt + 1, requestKey);
+      }
+      if (isMutation) {
+        toast('⚠️ Chưa xác nhận được thao tác — đang đồng bộ lại…');
+        setTimeout(refresh, 300);
+        throw new Error('mutation_outcome_unknown');
+      }
+      throw err;
+    }
     if (res.status === 401) {
       renderGate();
       throw new Error('not_logged_in');
@@ -84,15 +120,18 @@
     if (checkServerBoot({ boot: res.headers.get('x-farm-boot') })) throw new Error('reloading');
     const type = res.headers.get('content-type') || '';
     if (!type.includes('application/json') || res.status === 502 || res.status === 503 || res.status === 504) {
-      // Không tự gửi lại mutation: gateway có thể đã mất response sau khi server
-      // commit, retry lúc này sẽ nhân đôi vàng/vật phẩm. Đồng bộ state để người
-      // chơi thấy kết quả thực tế rồi mới cho thao tác tiếp.
-      if (isMutation) {
+      // Chỉ mutation có nhật ký idempotency mới được gửi lại cùng request key.
+      if (isMutation && !requestKey) {
         toast('⚠️ Chưa xác nhận được thao tác — đang đồng bộ lại…');
         setTimeout(refresh, 300);
         throw new Error('mutation_outcome_unknown');
       }
       if (attempt >= WAKE_RETRIES) {
+        if (isMutation) {
+          toast('⚠️ Chưa xác nhận được thao tác — đang đồng bộ lại…');
+          setTimeout(refresh, 300);
+          throw new Error('mutation_outcome_unknown');
+        }
         renderWaking();
         setTimeout(() => location.reload(), 2500);
         throw new Error('waking');
@@ -102,7 +141,7 @@
         else renderWaking();
       }
       await new Promise((r) => setTimeout(r, 2000));
-      return api(path, body, attempt + 1);
+      return api(path, body, attempt + 1, requestKey);
     }
     const data = await res.json();
     if (!res.ok) {
@@ -133,6 +172,7 @@
     already_poached: 'Ô này hái ké rồi — chủ chậm thu thêm 1 giờ sẽ mở lượt mới 😏',
     poach_limit: 'Hôm nay hái ké đủ rồi, mai lại nhé!',
     already_claimed: 'Nhận rồi mà!',
+    collection_incomplete: 'Thu hoạch đủ các giống trong bộ sưu tập trước nhé.',
     not_enough_quests: 'Xong 3 nhiệm vụ đã rồi mở rương.',
     no_farm: 'Người này chưa mở nông trại.',
     max_plots: 'Đất mở hết cỡ rồi!',
@@ -367,6 +407,21 @@
 
   function render() {
     if (!DATA) return;
+    const previousSheetType = lastRenderedSheetType;
+    const previousModalType = lastRenderedModalType;
+    const modalType = showLb ? 'leaderboard' : DATA.me?.awayReport && !VISIT && !sheet ? 'away' : null;
+    if (modalType && !previousModalType) {
+      const active = document.activeElement;
+      modalReturnFocus = active instanceof HTMLElement && active !== document.body
+        ? active.closest('.sheet') ? document.querySelector('[data-sheet="more"]') : active
+        : document.getElementById('btn-dock-farm');
+      modalReturnFocusId = modalReturnFocus?.id || null;
+    }
+    const openingSheet = !!sheet && sheet.type !== previousSheetType;
+    if (openingSheet && !previousSheetType) {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && active !== document.body) sheetReturnFocus = active;
+    }
     const savedScroll = captureScroll();
     const searchWasFocused = document.activeElement?.classList?.contains('family-search');
     const m = me();
@@ -398,22 +453,22 @@
               </span>
             </span>
           </div>
-          <div class="hud-right">
-            <button class="coin-pill" data-sheet="inventory" title="Vàng ${m.gold.toLocaleString('vi')} · Tài sản ước tính (vàng + kho) ${(m.netWorth ?? m.gold).toLocaleString('vi')} — mở kho để bán đồ">${COIN}<b>${m.gold.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
-            <button class="coin-pill coin-pill--gem" data-sheet="stars" title="Kim cương — nhận từ mốc sao và rương">${GEM}<b>${m.gems.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
-            <button class="coin-pill coin-pill--energy" data-sheet="fishing" title="Năng lượng — mở Hồ câu cá">⚡<b>${m.energy.current}</b><span class="pill-plus">＋</span></button>
-            ${m.dog?.active ? `<button class="coin-pill coin-pill--dog" data-sheet="shop" title="Chó canh vườn đang trực">🐕<b>${fmtTime(m.dog.until - Date.now())}</b></button>` : ''}
-            <button class="coin-pill coin-pill--star" data-sheet="stars" title="Sao Nông Trại">${STAR}<b>${m.stars.toLocaleString('vi')}</b>${starReady ? '<i class="dot"></i>' : ''}</button>
-            ${hasDebts ? `<button class="coin-pill coin-pill--debt" data-sheet="ledger" title="Sổ nợ & thuế đất — bấm để xem">${m.tax?.owed > 0 ? '🏛️' : '💸'}<b>${((m.tax?.owed || 0) + (m.debts?.owe || 0)).toLocaleString('vi')}</b><i class="dot"></i></button>` : ''}
+          <div class="hud-right" role="group" aria-label="Tài nguyên và công cụ">
+            <button class="coin-pill" data-sheet="inventory" aria-label="${m.gold.toLocaleString('vi')} vàng, mở kho đồ" title="Vàng ${m.gold.toLocaleString('vi')} · Tài sản ước tính (vàng + kho) ${(m.netWorth ?? m.gold).toLocaleString('vi')} — mở kho để bán đồ">${COIN}<b>${m.gold.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
+            <button class="coin-pill coin-pill--gem" data-sheet="stars" aria-label="${m.gems.toLocaleString('vi')} kim cương, mở mốc sao" title="Kim cương — nhận từ mốc sao và rương">${GEM}<b>${m.gems.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
+            <button class="coin-pill coin-pill--energy" data-sheet="fishing" aria-label="${m.energy.current} năng lượng, mở hồ câu cá" title="Năng lượng — mở Hồ câu cá">⚡<b>${m.energy.current}</b><span class="pill-plus">＋</span></button>
+            ${m.dog?.active ? `<button class="coin-pill coin-pill--dog" data-sheet="shop" aria-label="Chó canh vườn đang trực, còn ${fmtTime(m.dog.until - Date.now())}, mở cửa hàng" title="Chó canh vườn đang trực">🐕<b>${fmtTime(m.dog.until - Date.now())}</b></button>` : ''}
+            <button class="coin-pill coin-pill--star" data-sheet="stars" aria-label="${m.stars.toLocaleString('vi')} sao nông trại, mở mốc sao" title="Sao Nông Trại">${STAR}<b>${m.stars.toLocaleString('vi')}</b>${starReady ? '<i class="dot"></i>' : ''}</button>
+            ${hasDebts ? `<button class="coin-pill coin-pill--debt" data-sheet="ledger" aria-label="${((m.tax?.owed || 0) + (m.debts?.owe || 0)).toLocaleString('vi')} vàng nợ và thuế, mở sổ nông thôn" title="Sổ nợ & thuế đất — bấm để xem">${m.tax?.owed > 0 ? '🏛️' : '💸'}<b>${((m.tax?.owed || 0) + (m.debts?.owe || 0)).toLocaleString('vi')}</b><i class="dot"></i></button>` : ''}
             <span class="hud-rounds">
-              <button class="hud-round" id="btn-audio-toggle" title="Âm thanh">${window.NTVVAudio?.isMuted() ? '🔇' : '🔊'}</button>
-              <button class="hud-round" data-sheet="events" title="Bản tin làng">✉️</button>
-              <button class="hud-round" id="btn-lb" title="Bảng xếp hạng">🏆</button>
-              <button class="hud-round${hasDebts ? ' hud-round--warn' : ''}" data-sheet="ledger" title="Sổ nông thôn">📋${hasDebts ? '<i class="dot"></i>' : ''}</button>
+              <button class="hud-round" id="btn-audio-toggle" aria-label="${window.NTVVAudio?.isMuted() ? 'Bật âm thanh' : 'Tắt âm thanh'}" title="Âm thanh">${window.NTVVAudio?.isMuted() ? '🔇' : '🔊'}</button>
+              <button class="hud-round" data-sheet="events" aria-label="Mở bản tin làng" title="Bản tin làng">✉️</button>
+              <button class="hud-round" id="btn-lb" aria-label="Mở bảng xếp hạng" title="Bảng xếp hạng">🏆</button>
+              <button class="hud-round${hasDebts ? ' hud-round--warn' : ''}" data-sheet="ledger" aria-label="Mở sổ nông thôn" title="Sổ nông thôn">📋${hasDebts ? '<i class="dot"></i>' : ''}</button>
             </span>
           </div>
         </header>
-        <nav class="bottom-dock">
+        <nav class="bottom-dock" aria-label="Điều hướng nông trại">
           <button class="dock-btn${!visiting && !sheet && !showLb ? ' dock-btn--active' : ''}" id="btn-dock-farm" title="Nông trại">
             <span class="dock-icon">🏡</span>
             <span class="dock-label">Trại</span>
@@ -441,10 +496,10 @@
         <div class="stage-center">
           <div class="scene-banner">
             <div class="sb-hills"></div>
-            <img class="sb sb-house" src="${A('assets/pack/farm_house.png')}" alt="" />
+            <img class="sb sb-house" src="${A('assets/scene-v3/farmhouse_v3.png')}" alt="" />
             <img class="sb sb-tree1" src="${A('assets/pack/tree_01.png')}" alt="" />
-            <img class="sb sb-barn" src="${A('assets/pack/red_barn.png')}" alt="" />
-            <img class="sb sb-green" src="${A('assets/pack/greenhouse.png')}" alt="" />
+            <img class="sb sb-barn" src="${A('assets/scene-v3/red_barn_v3.png')}" alt="" />
+            <img class="sb sb-green" src="${A('assets/scene-v3/greenhouse_v3.png')}" alt="" />
             <img class="sb sb-tree2" src="${A('assets/pack/tree_02.png')}" alt="" />
             <span class="sb sb-pen" aria-hidden="true"></span>
             ${m.level >= DATA.config.animals.cuu.level ? `
@@ -463,18 +518,10 @@
             : `<img class="sb sb-cowbarn sb--locked" src="${A('assets/art/cow.png')}" alt="" title="Chuồng bò — cần Lv ${DATA.config.animals.bo.level}" />`}
             <img class="sb sb-pig" src="${A('assets/pack/pig_adult.png')}" alt="" />
             <img class="sb sb-well" src="${A('assets/pack/well.png')}" alt="" />
-            <img class="sb sb-farmer" src="${A('assets/pack/farmer_female_full.png')}" alt="" />
+            <img class="sb sb-farmer" src="${A('assets/scene-v3/farmer_v3.png')}" alt="" />
             <img class="sb sb-dog" src="${A('assets/pack/pet_dogs.png')}" alt="" />
             ${renderSceneButtons(visiting)}
             <img class="sb sb-logo" src="${A('assets/pack/farm_logo.png')}" alt="Nông Trại Vui Vẻ" />
-          </div>
-
-          <div class="family-block">
-            <div class="family-search-wrap">
-              <span class="family-search-icon">🔍</span>
-              <input class="family-search" type="search" placeholder="Tìm người nhà…" value="${esc(familyFilter)}" />
-            </div>
-            <div class="family-strip">${familyStripHtml()}</div>
           </div>
 
           ${visiting ? `
@@ -495,7 +542,7 @@
           ${visiting.farm.loot?.emptyPlots ? `<button class="gbtn gbtn--gold btn-mini" id="btn-plant-help">🌱 Trồng giúp (${visiting.farm.loot.emptyPlots})</button>` : ''}
           ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canWater).length; return n >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-water-help-all">💧 Tưới hết (${n})</button>` : ''; })()}
           ${(() => { const n = visiting.farm.plots.filter((p) => p.crop && p.ready).length; return n ? `<button class="gbtn gbtn--green btn-mini" id="btn-harvest-help">🧺 Thu hoạch giúp (${n})</button>` : ''; })()}
-              <button class="gbtn btn-mini${INSPECT ? ' gbtn--gold' : ''}" id="btn-inspect-mode" title="Khám xét: bấm vào ô đang trồng (${DATA.config.cansa?.inspectFee ? `tốn ${DATA.config.cansa.inspectFee.toLocaleString('vi')} vàng` : 'miễn phí'}, ${DATA.config.cansa?.inspectPerDay || 5} lượt/nhà/ngày); trúng cần sa thì lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')}">🔍 Khám xét${INSPECT ? ' — bấm ô' : ''}</button>
+              <button class="gbtn ${INSPECT ? 'gbtn--gold' : 'gbtn--green'} btn-mini" id="btn-inspect-mode" title="Khám xét: bấm vào ô đang trồng (${DATA.config.cansa?.inspectFee ? `tốn ${DATA.config.cansa.inspectFee.toLocaleString('vi')} vàng` : 'miễn phí'}, ${DATA.config.cansa?.inspectPerDay || 5} lượt/nhà/ngày); trúng cần sa thì lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')}">🔍 Khám xét${INSPECT ? ' — bấm ô' : ''}</button>
               <button class="gbtn gbtn--green btn-mini" id="btn-gold-give">💝 Cho tiền</button>
               <button class="gbtn gbtn--green btn-mini" id="btn-gold-ask">🙏 Xin tiền</button>
               <button id="btn-home" class="gbtn gbtn--gold">🏡 Về nhà</button>
@@ -510,10 +557,18 @@
             <div class="farm-grid" id="grid">${renderPlots(visiting)}</div>
           </div>
 
+          <section class="family-block" aria-labelledby="family-heading">
+            <h3 class="family-heading" id="family-heading">👥 Người nhà</h3>
+            <div class="family-search-wrap">
+              <span class="family-search-icon">🔍</span>
+              <input class="family-search" type="search" placeholder="Tìm người nhà…" value="${esc(familyFilter)}" />
+            </div>
+            <div class="family-strip">${familyStripHtml()}</div>
+          </section>
+
         </div>
 
-        <div class="welcome-sign" aria-hidden="true">Chào mừng đến với<br /><b>Nông Trại Vui Vẻ!</b></div>
-        <button class="pond-img pond-btn" data-sheet="fishing" title="Hồ câu cá"><img src="${A('assets/pack/fish_pond.png')}" alt="Hồ câu cá" /></button>
+        <button class="pond-img pond-btn" data-sheet="fishing" title="Hồ câu cá"><img src="${A('assets/scene-v3/fishing_pond_v3.png')}" alt="Hồ câu cá" /></button>
 
         ${!visiting ? renderQuickbar() : ''}
       </div>
@@ -525,6 +580,23 @@
     restoreScroll(savedScroll);
     if (DATA.me?.awayReport && !VISIT && !sheet && !showLb) app.insertAdjacentHTML('beforeend', renderAway(DATA.me.awayReport));
     bind();
+    lastRenderedSheetType = sheet?.type || null;
+    lastRenderedModalType = modalType;
+    if (openingSheet) document.querySelector('.sheet-close')?.focus({ preventScroll: true });
+    else if (!sheet && previousSheetType) {
+      if (!showLb) {
+        const target = sheetReturnFocus?.isConnected && !sheetReturnFocus.closest('.sheet')
+          ? sheetReturnFocus : document.getElementById('btn-dock-farm');
+        target?.focus({ preventScroll: true });
+      }
+      sheetReturnFocus = null;
+    }
+    if (modalType && !previousModalType) document.querySelector('.modal-close, #btn-away-ack')?.focus({ preventScroll: true });
+    else if (!modalType && previousModalType) {
+      (modalReturnFocus?.isConnected ? modalReturnFocus : document.getElementById(modalReturnFocusId) || document.getElementById('btn-dock-farm'))?.focus({ preventScroll: true });
+      modalReturnFocus = null;
+      modalReturnFocusId = null;
+    }
     if (searchWasFocused) {
       const input = document.querySelector('.family-search');
       if (input) {
@@ -563,11 +635,63 @@
     const dryN = m.plots.filter((p) => p.crop && !p.ready && !p.watered).length;
     return `
       <div class="farm-toolbar">
-        <span class="ribbon">🏡 Ruộng nhà mình</span>
+        ${renderNextStep()}
         ${readyN >= 2 ? `<button class="gbtn gbtn--gold btn-mini" id="btn-harvestall-tb">🧺 Thu hết ${readyN}</button>` : ''}
         ${dryN >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-waterall">💧 Tưới hết ${dryN}</button>` : ''}
         ${empty >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-plantall">🌱 Gieo hết ${empty} ô</button>` : ''}
+        ${renderCollectionGoal()}
       </div>`;
+  }
+
+  function renderCollectionGoal() {
+    const collection = (me().collections || []).find((entry) => !entry.claimed);
+    if (!collection) return '';
+    const found = collection.items.filter((item) => item.found).length;
+    const missing = collection.items.find((item) => !item.found);
+    const crop = missing && crops()[missing.id];
+    const hint = missing
+      ? me().level < crop.level ? `${crop.name} mở ở cấp ${crop.level}` : `Thu hoạch ${crop.name} để ghi sổ`
+      : `Đã đủ giống · nhận ${collection.gold.toLocaleString('vi')} vàng`;
+    return `<button class="collection-goal" type="button" data-sheet="collections">
+      <span aria-hidden="true">📒</span><span><b>${esc(collection.name)} · ${found}/${collection.items.length}</b><small>${esc(hint)}</small></span><span aria-hidden="true">›</span>
+    </button>`;
+  }
+
+  function renderNextStep() {
+    const farm = me();
+    const plots = farm.plots;
+    const ready = plots.filter((plot) => plot.crop && plot.ready).length;
+    const empty = plots.filter((plot) => !plot.crop).length;
+    const dry = plots.filter((plot) => plot.crop && !plot.ready && !plot.watered).length;
+    const firstSaleReady = farm.level <= 2 && !farm.soldGold
+      && Object.entries(farm.inventory).some(([id, qty]) => qty > 0 && crops()[id]);
+    const step = ready
+      ? { kind: 'harvest', icon: '🧺', title: `${ready} ô đã chín`, detail: 'Chạm để thu hoạch ô đầu tiên.' }
+      : firstSaleReady
+        ? { kind: 'inventory', icon: '🎒', title: 'Bán vụ đầu tiên', detail: 'Chạm để mở kho và bán nông sản.' }
+      : dry
+        ? { kind: 'water', icon: '💧', title: `${dry} ô cần tưới`, detail: 'Chạm để tưới ô đầu tiên và nhận EXP.' }
+        : empty
+          ? { kind: 'seed', icon: '🌱', title: `${empty} ô đang trống`, detail: 'Chạm để chọn hạt giống.' }
+          : { kind: 'orders', icon: '🏡', title: 'Nông trại đang lớn lên', detail: 'Chạm để xem mục tiêu tiếp theo.' };
+    return `<button class="farm-next-step" type="button" data-next-step="${step.kind}"><span aria-hidden="true">${step.icon}</span><span><b>${step.title}</b><small>${step.detail}</small></span></button>`;
+  }
+
+  function renderUpcomingUnlocks(level) {
+    const unlocks = [
+      ...Object.values(DATA.config.crops).filter((item) => !item.risky).map((item) => ({ ...item, type: 'Cây trồng' })),
+      ...Object.values(DATA.config.trees).map((item) => ({ ...item, type: 'Cây ăn quả' })),
+      ...Object.values(DATA.config.animals).map((item) => ({ ...item, type: 'Vật nuôi' })),
+      ...Object.values(DATA.config.machines).map((item) => ({ ...item, type: 'Chế biến' })),
+      { level: DATA.config.orderUnlockLevel, name: 'Đơn hàng', emoji: '🚚', type: 'Tính năng' },
+      { level: DATA.config.fishing.level, name: 'Hồ câu cá', emoji: '🎣', type: 'Tính năng' },
+    ].filter((item) => item.level > level).sort((a, b) => a.level - b.level || a.name.localeCompare(b.name, 'vi'));
+    const nextLevels = [...new Set(unlocks.map((item) => item.level))].slice(0, 3);
+    if (!nextLevels.length) return '';
+    return `<section class="upcoming-unlocks" aria-label="Sắp mở khóa">
+      <h4>Sắp mở khóa</h4>
+      ${nextLevels.map((nextLevel) => `<div class="unlock-level"><b>Cấp ${nextLevel}</b><div>${unlocks.filter((item) => item.level === nextLevel).map((item) => `<span class="unlock-item">${item.emoji || '✨'} ${esc(item.name)} <small>${item.type}</small></span>`).join('')}</div></div>`).join('')}
+    </section>`;
   }
 
   function renderPlots(visiting) {
@@ -575,9 +699,10 @@
     const mine = !visiting;
     const now = Date.now();
     const cells = farm.plots.map((p) => {
+      const plotName = `Ô đất ${p.idx + 1}`;
       if (!p.crop) {
-        return `<button class="plot plot--empty" data-idx="${p.idx}" data-kind="empty" ${mine ? '' : 'disabled'}>
-          <span class="plot-main">${mine ? '➕' : '🟫'}</span>
+        return `<button class="plot plot--empty" data-idx="${p.idx}" data-kind="empty" aria-label="${mine ? 'Gieo hạt, ' : ''}${plotName}: ${mine ? 'trống, chọn hạt để gieo' : 'trống'}" ${mine ? '' : 'disabled'}>
+          <span class="plot-main">${mine ? `<img class="plot-empty-sprout" src="${A('assets/crops/seed-1.svg')}" alt="" />` : ''}</span>
           ${mine ? '<span class="plot-note">Gieo hạt</span>' : ''}
         </button>`;
       }
@@ -586,11 +711,11 @@
         const acts = visiting ? visiting.myActs[p.idx] : null;
         const canPoach = visiting && p.ready && acts?.canPoach;
         const left = p.readyAt - now;
-        return `<button class="plot plot--tree${p.ready ? ' plot--ready' : ' plot--growing'}" data-idx="${p.idx}" data-kind="${p.ready ? (mine ? 'harvest' : canPoach ? 'poach' : 'ripe') : (mine ? (p.watered ? 'plotmenu' : 'waterplot') : (visiting && acts?.canWater ? 'water' : 'growing'))}" data-ready="${p.readyAt}" data-total="${t.growMs}" data-cropid="${p.crop}">
+        return `<button class="plot plot--tree${p.ready ? ' plot--ready' : p.watered ? ' plot--growing plot--watered' : ' plot--growing plot--dry'}" data-idx="${p.idx}" data-kind="${p.ready ? (mine ? 'harvest' : canPoach ? 'poach' : 'ripe') : (mine ? (p.watered ? 'plotmenu' : 'waterplot') : (visiting && acts?.canWater ? 'water' : 'growing'))}" aria-label="${plotName}, ${esc(t.name)}: ${p.ready ? (mine ? 'hái quả' : canPoach ? 'hái ké' : 'đã chín') : `${p.watered ? (mine ? 'đã tưới, mở tùy chọn' : 'đã tưới') : mine ? 'tưới cây' : acts?.canWater ? 'tưới giúp' : 'đang lớn'}, còn ${fmtTime(left)}`}" data-ready="${p.readyAt}" data-total="${t.growMs}" data-cropid="${p.crop}">
           <img class="tree-sprite${p.ready ? '' : ' tree-sprite--wait'}" src="${treeArt(p.crop)}" alt="${t.name}" />${TREE_PNG.has(p.crop) ? '' : `<span class="tree-emoji">${t.emoji}</span>`}
           ${p.ready
             ? `<span class="plot-note">${mine ? (p.poached ? 'Bị hái ké 😭' : 'Hái quả!') : canPoach ? 'Hái ké!' : 'Chín rồi'}</span><span class="plot-badge">×${Math.max(0, (p.fruits || 0) - Math.floor((p.poachedN || 0) / 3))}</span>`
-            : `<span class="plot-timer">${fmtTime(left)}</span>`}
+            : `<span class="plot-timer">${fmtTime(left)}</span>${p.watered ? '<span class="plot-badge plot-badge--fresh" aria-hidden="true">💧</span>' : mine || acts?.canWater ? '<span class="plot-act plot-act--water" aria-hidden="true">💧</span>' : ''}`}
           ${p.poached && p.ready ? '<span class="plot-act">😋</span>' : ''}${p.treeEndsAt && p.treeEndsAt - Date.now() < t.cycleMs ? '<span class="plot-act" title="Cây sắp tàn">🍂</span>' : ''}
         </button>`;
       }
@@ -598,7 +723,7 @@
       if (p.ready) {
         const acts = visiting ? visiting.myActs[p.idx] : null;
         const canPoach = visiting && acts?.canPoach;
-        return `<button class="plot plot--ready" data-idx="${p.idx}" data-kind="${mine ? 'harvest' : canPoach ? 'poach' : 'ripe'}">
+        return `<button class="plot plot--ready" data-idx="${p.idx}" data-kind="${mine ? 'harvest' : canPoach ? 'poach' : 'ripe'}" aria-label="${plotName}, ${esc(c.name)}: ${mine ? 'thu hoạch' : canPoach ? 'hái ké' : 'đã chín'}">
           <img class="crop-sprite crop-sprite--ready" src="${cropSprite(p.crop, 3)}" alt="${c.name}" />
           <span class="plot-note">${mine ? (p.poached ? 'Bị hái ké 😭' : 'Thu hoạch!') : canPoach ? 'Hái ké!' : 'Chín rồi'}</span>
           ${p.poached ? '<span class="plot-badge">😋</span>' : p.watered ? '<span class="plot-badge plot-badge--fresh">💧</span>' : ''}
@@ -610,11 +735,11 @@
       const pct = Math.min(100, Math.max(3, Math.round(((total - left) / total) * 100)));
       const acts = visiting ? visiting.myActs[p.idx] : null;
       const canWater = visiting ? !!acts?.canWater : !p.watered;
-      return `<button class="plot plot--growing" data-idx="${p.idx}" data-kind="${mine ? (p.watered ? 'plotmenu' : 'waterplot') : canWater ? 'water' : 'growing'}" data-ready="${p.readyAt}" data-total="${total}" data-cropid="${p.crop}">
+      return `<button class="plot plot--growing ${p.watered ? 'plot--watered' : 'plot--dry'}" data-idx="${p.idx}" data-kind="${mine ? (p.watered ? 'plotmenu' : 'waterplot') : canWater ? 'water' : 'growing'}" aria-label="${plotName}, ${esc(c.name)}: ${p.watered ? (mine ? 'đã tưới, mở tùy chọn' : 'đã tưới') : mine ? 'tưới cây' : canWater ? 'tưới giúp' : 'đang lớn'}, còn ${fmtTime(left)}" data-ready="${p.readyAt}" data-total="${total}" data-cropid="${p.crop}">
         <img class="crop-sprite" src="${cropSprite(p.crop, pct < 45 ? 1 : 2)}" alt="${c.name}" />
         <span class="plot-timer">${fmtTime(left)}</span>
         <div class="plot-progress"><i style="width:${pct}%"></i></div>
-        ${p.watered ? '<span class="plot-badge plot-badge--fresh">💧</span>' : canWater ? '<span class="plot-act">💧</span>' : ''}
+        ${p.watered ? '<span class="plot-badge plot-badge--fresh" aria-hidden="true">💧</span>' : canWater ? '<span class="plot-act plot-act--water" aria-hidden="true">💧</span>' : ''}
       </button>`;
     });
 
@@ -640,29 +765,29 @@
     const millDone = m.mill && m.mill.ready;
     if (visiting) {
       return `
-        <img class="sb sb-coop" src="${A('assets/pack/tiny_house.png')}" alt="" />
-        <img class="sb sb-hen2" src="${A('assets/pack/chicken_brown.png')}" alt="" />
-        <img class="sb sb-mill" src="${A('assets/pack/windmill.png')}" alt="" />
-        <img class="sb sb-shop" src="${A('assets/pack/market_shop.png')}" alt="" />`;
+        <img class="sb sb-coop" src="${A('assets/scene-v3/chicken_coop_v3.png')}" alt="" />
+        <img class="sb sb-hen2" src="${A('assets/art/chicken_v3.png')}" alt="" />
+        <img class="sb sb-mill" src="${A('assets/scene-v3/windmill_v3.png')}" alt="" />
+        <img class="sb sb-shop" src="${A('assets/scene-v3/market_shop_v3.png')}" alt="" />`;
     }
     return `
       ${coopUnlocked ? `
         <button class="sb sb-btn sb-coop" data-sheet="coop" title="Chuồng gà">
-          <img src="${A('assets/pack/tiny_house.png')}" alt="Chuồng gà" />
+          <img src="${A('assets/scene-v3/chicken_coop_v3.png')}" alt="Chuồng gà" />
           ${eggReady ? '<i class="dot"></i>' : ''}
           <span class="sb-tag">${eggReady ? '🥚 Trứng!' : hungry ? 'Gà đói' : 'Chuồng gà'}</span>
         </button>
-        <img class="sb sb-hen2" src="${A('assets/pack/chicken_brown.png')}" alt="" />`
-      : `<img class="sb sb-coop sb--locked" src="${A('assets/pack/tiny_house.png')}" alt="" title="Chuồng gà — cần Lv ${DATA.config.chicken.level}" />`}
+        <img class="sb sb-hen2" src="${A('assets/art/chicken_v3.png')}" alt="" />`
+      : `<img class="sb sb-coop sb--locked" src="${A('assets/scene-v3/chicken_coop_v3.png')}" alt="" title="Chuồng gà — cần Lv ${DATA.config.chicken.level}" />`}
       ${millUnlocked ? `
         <button class="sb sb-btn sb-mill" data-sheet="mill" title="Cối xay">
-          <img src="${A('assets/pack/windmill.png')}" alt="Cối xay" />
+          <img src="${A('assets/scene-v3/windmill_v3.png')}" alt="Cối xay" />
           ${millDone ? '<i class="dot"></i>' : ''}
           <span class="sb-tag">${millDone ? '✅ Xong!' : m.mill ? 'Đang xay…' : 'Cối xay'}</span>
         </button>`
-      : `<img class="sb sb-mill sb--locked" src="${A('assets/pack/windmill.png')}" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
+      : `<img class="sb sb-mill sb--locked" src="${A('assets/scene-v3/windmill_v3.png')}" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
       <button class="sb sb-btn sb-shop" data-sheet="shop" title="Cửa hàng">
-        <img src="${A('assets/pack/market_shop.png')}" alt="Cửa hàng" />
+          <img src="${A('assets/scene-v3/market_shop_v3.png')}" alt="Cửa hàng" />
         <span class="sb-tag">Cửa hàng</span>
       </button>`;
   }
@@ -720,8 +845,8 @@
       </div>`).join('');
     return `
       <div class="modal-backdrop" data-away-close="1">
-        <div class="modal modal--away" onclick="event.stopPropagation()">
-          <h3>😱 Trong lúc bạn vắng mặt</h3>
+        <div class="modal modal--away" role="dialog" aria-modal="true" aria-labelledby="away-title" onclick="event.stopPropagation()">
+          <h3 id="away-title">😱 Trong lúc bạn vắng mặt</h3>
           <p class="sheet-note">Từ ${fmt(r.since)} đến ${fmt(r.until)}, nhà bạn bị chôm tổng cộng <b>${r.total}</b> món:</p>
           <div class="away-scroll">
             ${items}
@@ -738,8 +863,9 @@
   function sheetShell(title, body, extraClass = '') {
     return `
       <div class="sheet-backdrop" data-close="1"></div>
-      <div class="sheet ${extraClass}">
-        <h3>${title}</h3>
+      <div class="sheet ${extraClass}" role="dialog" aria-modal="true" aria-labelledby="farm-sheet-title">
+        <h3 id="farm-sheet-title">${title}</h3>
+        <button class="sheet-close" type="button" data-close="1" aria-label="Đóng bảng">×</button>
         <div class="sheet-scroll">${body}</div>
       </div>`;
   }
@@ -818,34 +944,48 @@
       const sortBar = `<div class="seed-sort">
         ${[['time', '⏱ Thời gian'], ['value', '💰 Giá trị'], ['level', '🔓 Cấp']].map(([k, label]) => `<button class="gbtn btn-mini${seedSort === k ? ' gbtn--gold' : ''}" data-seed-sort="${k}">${label}</button>`).join('')}
       </div>`;
-      const cropCards = sortBy(Object.values(crops()), 'growMs', 'sell').map((c) => {
+      const cropCard = (c) => {
         const lockLevel = m.level < c.level;
         const locked = lockLevel || m.gold < c.seed;
-        return `<button class="seed-card${locked ? ' seed-card--locked' : ''}" data-crop="${locked ? '' : c.id}" title="${c.name}">
+        const baseProfit = c.sell * DATA.config.harvestYield - c.seed;
+        const cycleXp = c.expSow + c.expHarvest;
+        return `<button class="seed-card${locked ? ' seed-card--locked' : ''}" data-crop="${locked ? '' : c.id}" title="${c.name}" ${locked ? 'disabled' : ''}>
           <img class="seed-sprite" src="${cropSprite(c.id, 3)}" alt="" />
           <span class="seed-name">${c.name}</span>
-          <span class="seed-meta">⏱ ${fmtDuration(c.growMs)} · ${c.risky ? `${(DATA.config.cansa?.reward || 1000000).toLocaleString('vi')} ${COIN}/cây · bị khám xét = mất trắng` : `${c.sell} ${COIN}`}</span>
+          <span class="seed-meta">⏱ ${fmtDuration(c.growMs)} · ${c.risky ? `${(DATA.config.cansa?.reward || 1000000).toLocaleString('vi')} ${COIN}/cây · bị khám xét = mất trắng` : `~${baseProfit.toLocaleString('vi')} ${COIN}/ô · ${cycleXp} EXP`}</span>
           ${lockLevel ? `<span class="seed-lock">Lv ${c.level}</span>` : `<span class="seed-cost">${c.seed} ${COIN}</span>`}
         </button>`;
-      }).join('');
-      const treeCards = sortBy(Object.values(trees()), 'growMs', 'sell').map((t) => {
+      };
+      const allCrops = sortBy(Object.values(crops()), 'growMs', 'sell');
+      const availableCrops = allCrops.filter((c) => c.level <= m.level);
+      const futureCrops = allCrops.filter((c) => c.level > m.level);
+      const treeCard = (t) => {
         const lockLevel = m.level < t.level;
         const locked = lockLevel || m.gold < t.price;
-        return `<button class="seed-card seed-card--tree${locked ? ' seed-card--locked' : ''}" data-tree="${locked ? '' : t.id}" title="${t.name} — lớn ${fmtDuration(t.growMs)}, rồi ${t.yield} quả mỗi ${fmtDuration(t.cycleMs)}, tàn sau ${fmtDuration(t.lifeMs)}">
+        return `<button class="seed-card seed-card--tree${locked ? ' seed-card--locked' : ''}" data-tree="${locked ? '' : t.id}" title="${t.name} — lớn ${fmtDuration(t.growMs)}, rồi ${t.yield} quả mỗi ${fmtDuration(t.cycleMs)}, tàn sau ${fmtDuration(t.lifeMs)}" ${locked ? 'disabled' : ''}>
           <img class="seed-sprite" src="${treeArt(t.id)}" alt="" />
           <span class="seed-name">${t.name} ${t.emoji}</span>
           <span class="seed-meta">🌳 lớn ${fmtDuration(t.growMs)} · ${t.yield} quả/${fmtDuration(t.cycleMs)} · sống ${fmtDuration(t.lifeMs)} · ${t.sell.toLocaleString('vi')} ${COIN}</span>
           ${lockLevel ? `<span class="seed-lock">Lv ${t.level}</span>` : `<span class="seed-cost">${t.price.toLocaleString('vi')} ${COIN}</span>`}
         </button>`;
-      }).join('');
+      };
+      const allTrees = sortBy(Object.values(trees()), 'growMs', 'sell');
+      const availableTrees = allTrees.filter((tree) => tree.level <= m.level);
+      const futureTrees = allTrees.filter((tree) => tree.level > m.level);
       return sheetShell(
         sheet.all ? `🧺 Gieo hết ô trống <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`
           : `🌱 Chọn hạt giống <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
         `${sheet.all ? '<p class="sheet-note">Chọn một giống — gieo kín mọi ô trống theo số vàng đang có.</p>' : ''}
+         ${m.level === 1 ? '<p class="sheet-note seed-tip">🌾 Bắt đầu với Lúa mì: thu sau 1 phút. Cà rốt cho nhiều vàng hơn nếu bạn có thời gian chờ.</p>' : ''}
+         <p class="sheet-note">Lãi ước tính cho một ô sau khi bán đủ ${DATA.config.harvestYield} nông sản; giá chợ có thể thay đổi.</p>
          ${sortBar}
-         <div class="seed-grid">${cropCards}</div>
-         <p class="sheet-note" style="margin-top:.5rem">🌳 Cây ăn quả — chiếm ô lâu dài, tự ra quả lại sau mỗi lần hái:</p>
-         <div class="seed-grid">${treeCards}</div>`,
+         <h3 class="seed-section-title">🌱 Trồng được ở cấp ${m.level}</h3>
+         <div class="seed-grid">${availableCrops.map(cropCard).join('')}</div>
+         ${availableTrees.length ? `<h3 class="seed-section-title">🌳 Cây ăn quả</h3><div class="seed-grid">${availableTrees.map(treeCard).join('')}</div>` : ''}
+         ${futureCrops.length || futureTrees.length ? `<details class="seed-future"><summary>🔒 Xem giống sắp mở (${futureCrops.length + futureTrees.length})</summary>
+           ${futureCrops.length ? `<div class="seed-grid">${futureCrops.map(cropCard).join('')}</div>` : ''}
+           ${futureTrees.length ? `<h3 class="seed-section-title">🌳 Cây ăn quả sắp mở</h3><div class="seed-grid">${futureTrees.map(treeCard).join('')}</div>` : ''}
+         </details>` : ''}`,
         'sheet--wide',
       );
     }
@@ -882,7 +1022,7 @@
                 <span class="btn-group">
                   <span class="qty-ctl">
                     <button type="button" data-qstep="-1">−</button>
-                    <input class="qty-input" type="number" inputmode="numeric" min="1" max="${q}" value="1" />
+                    <input class="qty-input" type="number" inputmode="numeric" aria-label="Số lượng ${esc(info?.name || id)} muốn bán" min="1" max="${q}" value="1" />
                     <button type="button" data-qstep="1">＋</button>
                   </span>
                   <button class="gbtn gbtn--gold btn-mini" data-sell="${id}">Bán 1</button>
@@ -973,21 +1113,45 @@
       );
     }
 
+    if (t === 'collections') {
+      const rows = (m.collections || []).map((collection) => {
+        const count = collection.items.filter((entry) => entry.found).length;
+        const complete = count === collection.items.length;
+        return `<section class="machine-block" aria-label="${esc(collection.name)}">
+          <h4>📒 ${esc(collection.name)} · ${count}/${collection.items.length}</h4>
+          <p class="sheet-note">Thu hoạch mỗi giống một lần để ghi vào sổ. Tiến độ được giữ qua các mùa.</p>
+          <div class="collection-grid">${collection.items.map(({ id, found }) => `<div class="collection-item${found ? ' collection-item--found' : ''}">
+            <img src="${cropSprite(id, 3)}" alt="" />
+            <span>${esc(crops()[id]?.name || id)}</span><b>${found ? '✓' : '○'}</b>
+          </div>`).join('')}</div>
+          <div class="sheet-actions"><span class="seed-meta">Thưởng: ${collection.gold.toLocaleString('vi')} ${COIN}${collection.gems ? ` · ${collection.gems}${GEM}` : ''}</span>
+            <button class="gbtn gbtn--gold btn-mini" data-collection-claim="${collection.id}" ${complete && !collection.claimed ? '' : 'disabled'}>${collection.claimed ? 'Đã nhận' : complete ? 'Nhận thưởng' : 'Chưa đủ'}</button>
+          </div>
+        </section>`;
+      }).join('');
+      return sheetShell('📒 Sổ mùa vụ', `<p class="sheet-note">Bộ sưu tập ghi nhận các vụ thu hoạch từ khi Sổ mùa vụ ra mắt.</p>${rows}`);
+    }
+
     if (t === 'orders') {
       const rows = m.orders.length === 0
         ? '<p class="sheet-note">Đơn mới đang trên đường tới…</p>'
-        : m.orders.map((o) => {
+        : [...m.orders].sort((a, b) => Number(canDeliver(b)) - Number(canDeliver(a)) || a.slot - b.slot).map((o) => {
             const ok = canDeliver(o);
+            const missing = Object.entries(o.items).reduce((sum, [id, q]) => sum + Math.max(0, q - (m.inventory[id] || 0)), 0);
+            const quick = o.slot === 0 && Object.keys(o.items).length === 1 && Boolean(crops()[Object.keys(o.items)[0]]);
             const items = Object.entries(o.items).map(([id, q]) => {
               const have = m.inventory[id] || 0;
-              return `<span class="o-item${have >= q ? ' o-item--ok' : ''}">${itemImg(id)}${Math.min(have, q)}/${q}</span>`;
+              const itemName = esc(itemInfo(id)?.name || id);
+              return `<span class="o-item${have >= q ? ' o-item--ok' : ''}">${itemImg(id)}<span class="o-item-name">${itemName}</span><span class="o-item-count">${Math.min(have, q)}/${q}</span></span>`;
             }).join('');
-            return `<div class="order-card">
+            return `<div class="order-card${ok ? ' order-card--ready' : ''}">
+              <div class="o-status">${ok ? '✓ Sẵn sàng giao' : `Còn thiếu ${missing} sản phẩm`}</div>
+              ${quick ? '<div class="o-fast">🌱 Đơn cây trồng nhanh</div>' : ''}
               <div class="o-items">${items}</div>
               <div class="o-reward">${o.gold.toLocaleString('vi')} ${COIN} · +${o.exp}EXP · ${o.stars}${STAR}</div>
               <div class="sheet-actions">
-                <button class="btn-mini gbtn gbtn--green" data-deliver="${o.id}" ${ok ? '' : 'disabled'}>🚚 Giao</button>
-                <button class="btn-mini btn-ghost" data-discard="${o.id}">Bỏ</button>
+                <button class="btn-mini gbtn gbtn--green" data-deliver="${o.id}" aria-label="Giao đơn hàng ${o.slot + 1}" ${ok ? '' : 'disabled'}>🚚 Giao</button>
+                <button class="btn-mini btn-ghost" data-discard="${o.id}" aria-label="Bỏ đơn hàng ${o.slot + 1}">Bỏ</button>
               </div>
             </div>`;
           }).join('');
@@ -1014,7 +1178,7 @@
             <div class="seed-meta">còn ${rem}/${w.qty} · trả <b>${w.price.toLocaleString('vi')}</b> ${COIN}/cái · bạn có ${have}</div></span>
           ${can > 0 ? `<span class="btn-group"><span class="qty-ctl">
               <button type="button" data-qstep="-1">−</button>
-              <input class="qty-input" type="number" inputmode="numeric" min="1" max="${can}" value="${can}" />
+              <input class="qty-input" type="number" inputmode="numeric" aria-label="Số lượng ${esc(itemInfo(w.item)?.name || w.item)} muốn bán cho ${esc(w.ownerName)}" min="1" max="${can}" value="${can}" />
               <button type="button" data-qstep="1">＋</button>
             </span>
             <button class="gbtn gbtn--green btn-mini" data-want-fill="${w.id}">Bán</button></span>` : '<span class="seed-lock">Không có hàng</span>'}
@@ -1025,8 +1189,8 @@
         `<div class="machine-block"><h4>📣 Đăng tin cần mua</h4>
           <p class="sheet-note">Giá thu mua = <b>130%</b> giá bán cho hệ thống. Vàng ký quỹ lúc đăng; huỷ thì hoàn phần chưa nhận. Tối đa 5 tin.</p>
           <div class="want-form">
-            <select id="want-item">${options}</select>
-            <input id="want-qty" type="number" inputmode="numeric" min="1" max="999" value="10" />
+            <label class="want-field want-field--item">Mặt hàng<select id="want-item">${options}</select></label>
+            <label class="want-field want-field--qty">Số lượng<input id="want-qty" type="number" inputmode="numeric" min="1" max="999" value="10" /></label>
             <button class="gbtn gbtn--gold btn-mini" id="btn-want-create">Đăng tin</button>
           </div>
           <p class="sheet-note" id="want-preview"></p>
@@ -1080,7 +1244,7 @@
       const QMAX = DATA.config.machineQueueMax || 50;
       const blocks = Object.values(DATA.config.machines).map((mc) => {
         if (m.level < mc.level) {
-          return `<div class="machine-block machine-block--locked"><h4>${mc.emoji} ${mc.name}</h4><p class="sheet-note">🔒 Mở ở cấp ${mc.level}</p></div>`;
+          return `<div class="machine-block machine-block--locked"><h4>${machineIcon(mc)}<span>${mc.name}</span></h4><p class="sheet-note">🔒 Mở ở cấp ${mc.level}</p></div>`;
         }
         const jobs = m.machines[mc.id] || {};
         const jobList = Object.values(jobs);
@@ -1099,6 +1263,8 @@
           const room = QMAX - (job ? job.queue : 0);
           const maxBatches = Math.max(0, Math.min(room, ...Object.entries(r.in).map(([iid, q]) => Math.floor((m.inventory[iid] || 0) / q))));
           const canAdd = maxBatches > 0;
+          const missing = room > 0 ? Object.entries(r.in).filter(([iid, q]) => (m.inventory[iid] || 0) < q).map(([iid, q]) => `${iid}:${q - (m.inventory[iid] || 0)}`).join(',') : '';
+          const unavailable = missing ? `Thiếu nguyên liệu cho ${r.name}; bấm để đăng tin thu mua` : `Hàng đợi ${mc.name} đã đầy`;
           const ins = Object.entries(r.in).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`).join(' + ');
           const outId = Object.keys(r.out)[0];
           const outInfo = itemInfo(outId);
@@ -1107,21 +1273,20 @@
             const running = job.processing
               ? `<small class="mc-run" data-machine-ready="${job.currentReadyAt}">🔄 mẻ kế · ${fmtTime(job.currentReadyAt - Date.now())} · chờ ${job.queued}</small>`
               : '';
-            state = `<button class="mc-plus mc-plus--done" data-machine-collect="${mc.id}" data-recipe="${r.id}" title="Lấy ${r.name}">✅ Lấy ${job.completed}</button>${running}`;
+            state = `<button class="mc-plus mc-plus--done" data-machine-collect="${mc.id}" data-recipe="${r.id}" aria-label="Lấy ${job.completed} mẻ ${r.name} từ ${mc.name}" title="Lấy ${r.name}">✅ Lấy ${job.completed}</button>${running}`;
           } else if (job) {
             const left = (job.currentReadyAt || job.readyAt) - Date.now();
             state = `<small class="mc-run" data-machine-ready="${job.currentReadyAt || job.readyAt}">🔄 1 đang làm · chờ ${job.queued} · ${fmtTime(left)}</small>
-              <button class="mc-plus mc-plus--gem" data-machine-speed="${mc.id}" data-recipe="${r.id}" title="Xong ngay">${GEM}${Math.max(1, Math.ceil(left / 300000))}</button>`;
+              <button class="mc-plus mc-plus--gem" data-machine-speed="${mc.id}" data-recipe="${r.id}" aria-label="Hoàn thành ngay ${r.name} với ${Math.max(1, Math.ceil(left / 300000))} kim cương" title="Xong ngay">${GEM}${Math.max(1, Math.ceil(left / 300000))}</button>`;
           }
-          const missing = Object.entries(r.in).filter(([iid, q]) => (m.inventory[iid] || 0) < q).map(([iid, q]) => `${iid}:${q - (m.inventory[iid] || 0)}`).join(',');
           return `<div class="seed-row mc-row${job ? ' mc-row--active' : ''}${canAdd ? '' : ' mc-row--dim'}" ${missing ? `data-missing="${missing}" data-missing-name="${r.name}" title="Thiếu nguyên liệu — bấm để đăng tin thu mua" style="cursor:pointer"` : 'style="cursor:default"'}>
             ${itemImg(outId, 'seed-sprite')}
             <span class="seed-info"><span class="seed-name">${r.name}</span>
               <div class="seed-meta">${ins} → ${Object.values(r.out)[0]} ${outInfo?.name || ''} · ⏱ ${fmtDuration(r.ms)} · bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp}EXP</div></span>
             <span class="mc-add">
               ${state}
-              <button class="mc-plus" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="1" ${canAdd ? '' : 'data-off="1" aria-disabled="true"'} title="${canAdd ? 'Thêm 1 mẻ' : 'Thiếu nguyên liệu — bấm để đăng tin thu mua'}">＋</button>
-              <button class="mc-plus mc-plus--max" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="${maxBatches}" ${canAdd && maxBatches > 1 ? '' : 'data-off="1" aria-disabled="true"'} title="${canAdd && maxBatches > 1 ? 'Xếp hết nguyên liệu' : 'Thiếu nguyên liệu — bấm để đăng tin thu mua'}">＋${maxBatches > 1 ? maxBatches : ''}</button>
+              <button class="mc-plus" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="1" ${canAdd ? '' : 'data-off="1" aria-disabled="true"'} aria-label="${canAdd ? `Thêm 1 mẻ ${r.name} tại ${mc.name}` : unavailable}" title="${canAdd ? 'Thêm 1 mẻ' : unavailable}">＋</button>
+              <button class="mc-plus mc-plus--max" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="${maxBatches}" ${canAdd && maxBatches > 1 ? '' : canAdd ? 'disabled' : 'data-off="1" aria-disabled="true"'} aria-label="${canAdd && maxBatches > 1 ? `Xếp ${maxBatches} mẻ ${r.name} tại ${mc.name}` : canAdd ? `Chỉ xếp được 1 mẻ ${r.name}` : unavailable}" title="${canAdd && maxBatches > 1 ? 'Xếp hết nguyên liệu' : canAdd ? 'Chỉ xếp được 1 mẻ' : unavailable}">＋${maxBatches > 1 ? maxBatches : ''}</button>
             </span>
           </div>`;
         }).join('');
@@ -1130,7 +1295,7 @@
         const up = ml >= ug.length
           ? `<div class="mc-status">⚙️ Cấp ${ml} tối đa · −${ml * 10}% thời gian</div>`
           : `<button class="btn btn-ghost mc-upgrade" data-machine-upgrade="${mc.id}" ${m.gold >= ug[ml] ? '' : 'disabled'}>⚙️ Nâng cấp ${ml + 1} — ${ug[ml].toLocaleString('vi')} ${COIN} (−${(ml + 1) * 10}% thời gian)</button>`;
-        return `<div class="machine-block"><h4>${mc.emoji} ${mc.name}${ml ? ` <small>⚙️${ml}</small>` : ''}</h4>${head}${rows}${up}</div>`;
+        return `<div class="machine-block"><h4>${machineIcon(mc)}<span>${mc.name}</span>${ml ? ` <small>⚙️${ml}</small>` : ''}</h4>${head}${rows}${up}</div>`;
       }).join('');
       const readyTotal = Object.values(m.machines).reduce((acc, jobs) => acc + Object.values(jobs || {}).reduce((n, j) => n + (j.completed || 0), 0), 0);
       const canCookAny = Object.values(DATA.config.machines).some((mc) => m.level >= mc.level && Object.values(mc.recipes).some((r) => r.id !== 'thucan'
@@ -1328,7 +1493,7 @@
             <span class="lr-icon">🏛️</span>
             <div class="lr-info">
               <b>Thuế đất</b>
-              <div class="lr-desc">${taxOwed > 0 ? `Nợ ${taxOwed.toLocaleString('vi')} vàng (tự cấn trừ khi có vàng, cần trả để gieo hạt)` : 'Đã nộp đủ — đất đai tự do canh tác'}</div>
+              <div class="lr-desc">${m.level < (m.tax?.unlockLevel || 20) ? `Miễn thuế đến cấp ${m.tax?.unlockLevel || 20} — cứ yên tâm trồng trọt` : taxOwed > 0 ? `Nợ ${taxOwed.toLocaleString('vi')} vàng (tự cấn trừ khi có vàng, cần trả để gieo hạt)` : 'Đã nộp đủ — đất đai tự do canh tác'}</div>
             </div>
             <span class="lr-val">${taxOwed > 0 ? `<span class="tag-debt">−${taxOwed.toLocaleString('vi')}</span>` : '<span class="tag-ok">0</span>'}</span>
           </div>
@@ -1387,6 +1552,11 @@
             <span class="mc-name">Sự kiện</span>
             <span class="mc-sub">Mùa lễ hội</span>
           </button>
+          <button class="more-card" data-sheet="collections">
+            <span class="mc-icon">📒${(m.collections || []).some((c) => !c.claimed && c.items.every((i) => i.found)) ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-name">Sổ mùa vụ</span>
+            <span class="mc-sub">Mục tiêu lâu dài</span>
+          </button>
           ${m.skills.unlocked ? `
           <button class="more-card" data-sheet="skills">
             <span class="mc-icon">🎓${canSkill ? '<i class="dot"></i>' : ''}</span>
@@ -1436,7 +1606,7 @@
             <span class="mc-name">Bảng xếp hạng</span>
             <span class="mc-sub">Vinh danh làng</span>
           </button>
-        </div>`
+        </div>${renderUpcomingUnlocks(m.level)}`
       );
     }
 
@@ -1469,7 +1639,9 @@
       <p class="sheet-note">💹 Kinh tế làng = tổng vàng cả làng đã <b>bán hàng</b> (hệ thống + đơn hàng + bạn bè; không tính vàng tặng/trộm/thưởng): ${(tb.economy?.villageGold || 0).toLocaleString('vi')} ${COIN} → thưởng ×${tb.economy?.mult || 1} (mỗi 5 triệu cộng thêm ×1).</p>`;
     return `
       <div class="modal-backdrop" data-close="1">
-        <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="leaderboard-title" onclick="event.stopPropagation()">
+          <h3 id="leaderboard-title">Bảng xếp hạng</h3>
+          <button class="modal-close" type="button" data-close="1" aria-label="Đóng bảng xếp hạng">×</button>
           <div class="lb-tabs">
             <button class="gbtn btn-mini${thiefTab ? '' : ' gbtn--gold'}" data-lb-tab="village">🏆 Làng</button>
             <button class="gbtn btn-mini${thiefTab ? ' gbtn--gold' : ''}" data-lb-tab="thief">🥷 Trộm</button>
@@ -1519,6 +1691,32 @@
     };
     document.querySelectorAll('[data-close]').forEach((el) =>
       el.addEventListener('click', () => { sheet = null; showLb = null; render(); }));
+    document.addEventListener('keydown', (ev) => {
+      const awayOpen = !!document.querySelector('.modal--away');
+      if (!sheet && !showLb && !awayOpen) return;
+      if (ev.key === 'Escape') {
+        ev.preventDefault();
+        if (sheet) sheet = null;
+        else if (showLb) showLb = null;
+        else if (DATA.me) DATA.me.awayReport = null;
+        render();
+        return;
+      }
+      if (ev.key !== 'Tab') return;
+      const panel = document.querySelector(sheet ? '.sheet' : '.modal');
+      const focusable = [...(panel?.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') || [])]
+        .filter((element) => element.getClientRects().length);
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (ev.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+        ev.preventDefault();
+        last.focus();
+      } else if (!ev.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+        ev.preventDefault();
+        first.focus();
+      }
+    });
 
     document.querySelectorAll('[data-sheet]').forEach((el) =>
       el.addEventListener('click', () => {
@@ -1542,6 +1740,22 @@
       sfx('playTap');
       if (VISIT) { VISIT = null; INSPECT = false; refresh(); }
       else { sheet = null; showLb = null; render(); }
+    });
+    document.querySelector('[data-next-step]')?.addEventListener('click', (ev) => {
+      const kind = ev.currentTarget.dataset.nextStep;
+      if (kind === 'seed') {
+        const firstEmpty = me().plots.find((plot) => !plot.crop);
+        if (!firstEmpty) return;
+        sheet = { type: 'seed', idx: firstEmpty.idx };
+        render();
+        return;
+      }
+      if (kind === 'orders' || kind === 'inventory') {
+        sheet = { type: kind === 'inventory' ? 'inventory' : me().level >= DATA.config.orderUnlockLevel ? 'orders' : 'quests' };
+        render();
+        return;
+      }
+      document.querySelector(kind === 'harvest' ? '.plot[data-kind="harvest"]' : '.plot[data-kind="waterplot"]')?.click();
     });
     document.getElementById('btn-inspect-mode')?.addEventListener('click', () => { INSPECT = !INSPECT; toast(INSPECT ? '🔍 Bấm vào một ô đang trồng để khám xét' : 'Tắt khám xét'); render(); });
     document.getElementById('btn-gold-give')?.addEventListener('click', async () => {
@@ -1569,7 +1783,10 @@
       const muted = window.NTVVAudio?.toggleMute();
       sfx('playTap');
       const btn = document.getElementById('btn-audio-toggle');
-      if (btn) btn.textContent = muted ? '🔇' : '🔊';
+      if (btn) {
+        btn.textContent = muted ? '🔇' : '🔊';
+        btn.setAttribute('aria-label', muted ? 'Bật âm thanh' : 'Tắt âm thanh');
+      }
       toast(muted ? '🔇 Đã tắt âm thanh' : '🔊 Đã bật âm thanh');
     });
     document.getElementById('btn-away-ack')?.addEventListener('click', async () => {
@@ -1908,6 +2125,12 @@
       el.addEventListener('click', async () => {
         const r = await run(() => api('/fest-claim', { id: Number(el.dataset.festClaim) }));
         if (r) { updateMe(r); toast(`🎪 Nhận thưởng: ${r.claimed.label}!`); render(); }
+      }));
+
+    document.querySelectorAll('[data-collection-claim]').forEach((el) =>
+      el.addEventListener('click', async () => {
+        const r = await run(() => api('/collection-claim', { id: el.dataset.collectionClaim }));
+        if (r) { updateMe(r); toast(`📒 Hoàn thành bộ sưu tập! +${r.gold.toLocaleString('vi')} vàng${r.gems ? `, +${r.gems} kim cương` : ''}`); render(); }
       }));
 
     document.getElementById('btn-water-own')?.addEventListener('click', async (e) => {

@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
@@ -13,6 +13,7 @@ import {
   MACHINE_UPGRADE_GOLD,
   LOTTERY,
   TAX_PER_PLOT,
+  LAND_TAX_UNLOCK_LEVEL,
   MARKET_SAT,
   GOODS,
   itemInfo,
@@ -91,12 +92,67 @@ const PUBLIC_DIR = resolve(__dirname, '../../public');
 
 const ME_CACHE_TTL_MS = 30_000;
 const ME_CACHE_MAX = 300;
+const COLLECTIONS = [
+  { id: 'first_harvests', name: 'Vụ mùa đầu tiên', items: ['luami', 'carot', 'ngo'], gold: 400, gems: 0 },
+  { id: 'village_flavors', name: 'Hương vị làng quê', items: ['rauthom', 'toi', 'sa', 'cachua', 'ot'], gold: 2000, gems: 2 },
+];
 
 export function buildApp({ config, db, logger = true }) {
   const app = Fastify({ logger, trustProxy: true });
+  const startedAt = Date.now();
+  const bootStartedNs = config.bootStartedNs ?? process.hrtime.bigint();
+  const apiMetrics = {
+    startupReadyMs: null,
+    requests: 0,
+    errors4xx: 0,
+    errors5xx: 0,
+    replayedMutations: 0,
+    latencyMs: { le100: 0, le500: 0, le1000: 0, le5000: 0, over5000: 0 },
+  };
+  app.addHook('onReady', async () => {
+    apiMetrics.startupReadyMs = Number(process.hrtime.bigint() - bootStartedNs) / 1e6;
+  });
+  app.addHook('onRequest', async (request) => {
+    request.metricStartedAt = process.hrtime.bigint();
+  });
+  app.addHook('onResponse', async (request, reply) => {
+    if (!request.raw.url?.startsWith('/farm/api/')) return;
+    const elapsedMs = Number(process.hrtime.bigint() - request.metricStartedAt) / 1e6;
+    const bucket = elapsedMs <= 100 ? 'le100' : elapsedMs <= 500 ? 'le500'
+      : elapsedMs <= 1000 ? 'le1000' : elapsedMs <= 5000 ? 'le5000' : 'over5000';
+    apiMetrics.requests += 1;
+    apiMetrics.latencyMs[bucket] += 1;
+    if (reply.statusCode >= 500) apiMetrics.errors5xx += 1;
+    else if (reply.statusCode >= 400) apiMetrics.errors4xx += 1;
+  });
   const meCache = new Map();
   const rateBuckets = new Map();
   const upstreamTimeoutMs = config.upstreamTimeoutMs || 5_000;
+  const mutationRecord = db.prepare('SELECT route, body_hash, outcome_json FROM mutation_results WHERE owner_id = ? AND request_key = ?');
+  const insertMutationRecord = db.prepare('INSERT INTO mutation_results (owner_id, request_key, route, body_hash, outcome_json, created_at) VALUES (?, ?, ?, ?, ?, ?)');
+  db.prepare('DELETE FROM mutation_results WHERE created_at < ?').run(Date.now() - 7 * 24 * 60 * 60_000);
+
+  function runJournaledMutation(request, route, work) {
+    const key = request.headers['idempotency-key'];
+    if (key !== undefined && (typeof key !== 'string' || !/^[A-Za-z0-9_-]{16,100}$/.test(key))) {
+      return { error: 'bad_idempotency_key' };
+    }
+    const bodyHash = createHash('sha256').update(JSON.stringify(request.body ?? {})).digest('hex');
+    return db.transaction(() => {
+      if (key) {
+        const prior = mutationRecord.get(request.farmer.user_id, key);
+        if (prior) {
+          if (prior.route !== route || prior.body_hash !== bodyHash) return { error: 'idempotency_conflict' };
+          apiMetrics.replayedMutations += 1;
+          return { outcome: JSON.parse(prior.outcome_json), replay: true };
+        }
+      }
+      const outcome = work();
+      if (outcome?.error) return outcome;
+      if (key) insertMutationRecord.run(request.farmer.user_id, key, route, bodyHash, JSON.stringify(outcome), Date.now());
+      return { outcome, replay: false };
+    })();
+  }
 
   function chatFetch(path, options = {}) {
     return fetch(`${config.chatApiUrl}${path}`, {
@@ -151,6 +207,14 @@ export function buildApp({ config, db, logger = true }) {
     const f = getFarmer.get(userId);
     if (!f) return;
     const day = thiefDayKey();
+    if (levelFor(f.xp) < LAND_TAX_UNLOCK_LEVEL) {
+      // Nông dân mới không bị khóa gieo trồng vì khoản thuế lớn hơn vốn ban đầu.
+      // Cũng xóa nợ thuế cũ cho tài khoản còn dưới ngưỡng; không truy thu khi lên cấp.
+      if (f.tax_day !== day || f.tax_owed) {
+        db.prepare('UPDATE farmers SET tax_day = ?, tax_owed = 0 WHERE user_id = ?').run(day, userId);
+      }
+      return;
+    }
     let owed = f.tax_owed || 0;
     if (f.tax_day !== day) {
       owed += (f.plots_count || 0) * TAX_PER_PLOT;
@@ -190,6 +254,26 @@ export function buildApp({ config, db, logger = true }) {
     touchSeen(user.id);
     request.farmer = getFarmer.get(user.id);
     request.chatUser = user;
+  }
+
+  async function requireSameOriginMutation(request, reply) {
+    if (request.method !== 'POST') return;
+    if (request.headers['content-type']?.split(';', 1)[0].trim().toLowerCase() !== 'application/json') {
+      return reply.code(415).send({ error: 'unsupported_media_type' });
+    }
+    const fetchSite = request.headers['sec-fetch-site'];
+    if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') {
+      return reply.code(403).send({ error: 'cross_origin_request' });
+    }
+    const origin = request.headers.origin;
+    if (!origin) return;
+    try {
+      const expected = new URL(`${request.protocol}://${request.headers.host}`).origin;
+      if (new URL(origin).origin === expected) return;
+    } catch {
+      // Invalid Origin and Host values fail closed.
+    }
+    return reply.code(403).send({ error: 'cross_origin_request' });
   }
 
   // ---- Push qua Chat ------------------------------------------------------
@@ -506,7 +590,7 @@ export function buildApp({ config, db, logger = true }) {
     const level = levelFor(farmer.xp);
     for (let slot = 0; slot < slots; slot += 1) {
       if (have.includes(slot)) continue;
-      const o = generateOrder(level, rng);
+      const o = generateOrder(level, rng, { quick: slot === 0 });
       db.prepare('INSERT INTO orders (owner_id, slot, items_json, gold, exp, stars) VALUES (?, ?, ?, ?, ?, ?)')
         .run(farmer.user_id, slot, JSON.stringify(o.items), o.gold, o.exp, o.stars);
     }
@@ -588,6 +672,7 @@ export function buildApp({ config, db, logger = true }) {
       id: f.user_id,
       name: f.name,
       gold: f.gold,
+      soldGold: f.sold_gold || 0,
       gems: f.gems,
       xp: f.xp,
       level: li.level,
@@ -598,6 +683,11 @@ export function buildApp({ config, db, logger = true }) {
       expandNext,
       plots: plotViews(f.user_id, f.plots_count),
       inventory: invAll(f.user_id),
+      collections: (() => {
+        const found = new Set(db.prepare('SELECT item FROM collection_discoveries WHERE owner_id = ?').all(f.user_id).map((r) => r.item));
+        const claimed = new Set(db.prepare('SELECT collection_id FROM collection_claims WHERE owner_id = ?').all(f.user_id).map((r) => r.collection_id));
+        return COLLECTIONS.map((collection) => ({ ...collection, gold: collection.gold * GOLD_MULT, items: collection.items.map((id) => ({ id, found: found.has(id) })), claimed: claimed.has(collection.id) }));
+      })(),
       animals: db.prepare('SELECT id, kind, ready_at FROM animals WHERE owner_id = ?').all(f.user_id)
         .map((a) => ({ ...a, ready: a.ready_at != null && Date.now() >= a.ready_at })),
       mill: mill && mill.recipe
@@ -709,7 +799,12 @@ export function buildApp({ config, db, logger = true }) {
   const addSold = db.prepare('UPDATE farmers SET sold_gold = sold_gold + ? WHERE user_id = ?');
 
   // ---- Bể hút vàng: thuế, xa xỉ phẩm, nâng cấp nhà máy, giá bão hoà -------
-  const taxView = (f) => ({ perPlot: TAX_PER_PLOT, today: (f.plots_count || 0) * TAX_PER_PLOT, owed: f.tax_owed || 0 });
+  const taxView = (f) => ({
+    perPlot: TAX_PER_PLOT,
+    today: levelFor(f.xp) < LAND_TAX_UNLOCK_LEVEL ? 0 : (f.plots_count || 0) * TAX_PER_PLOT,
+    owed: f.tax_owed || 0,
+    unlockLevel: LAND_TAX_UNLOCK_LEVEL,
+  });
   // Giá trị kho theo giá bán hệ thống hiện tại (chưa tính bão hoà) → tài sản ước tính = vàng + kho.
   function inventoryValue(userId) {
     let total = 0;
@@ -815,6 +910,7 @@ export function buildApp({ config, db, logger = true }) {
   // ---- API ----------------------------------------------------------------
   app.register(
     async (api) => {
+      api.addHook('preHandler', requireSameOriginMutation);
       api.addHook('preHandler', requireFarmer);
 
       api.get('/state', async (request) => {
@@ -839,6 +935,7 @@ export function buildApp({ config, db, logger = true }) {
           family,
           config: {
             crops: Object.fromEntries(Object.entries(CROPS).map(([k, c]) => [k, { ...c, sell: c.sell * GOLD_MULT, growMs: scaleMs(c.growMs, config.fast) }])),
+            harvestYield: HARVEST_YIELD,
             goods: Object.fromEntries(Object.entries(GOODS).map(([k, x]) => [k, { ...x, sell: x.sell * GOLD_MULT }])),
             chicken: { ...CHICKEN, produceMs: scaleMs(CHICKEN.produceMs, config.fast) },
             animals: Object.fromEntries(Object.entries(ANIMALS).map(([k, a]) => [k, { ...a, produceMs: scaleMs(a.produceMs, config.fast) }])),
@@ -910,64 +1007,67 @@ export function buildApp({ config, db, logger = true }) {
 
       // ---- Trồng trọt ----
       api.post('/plant', async (request, reply) => {
-        if (request.farmer.tax_owed > 0) return reply.code(400).send({ error: 'tax_due' });
         const { idx, crop: cropId } = request.body ?? {};
         const crop = CROPS[cropId];
         const me = request.farmer;
         if (!crop || !Number.isInteger(idx) || idx < 0 || idx >= me.plots_count) {
           return reply.code(400).send({ error: 'bad_request' });
         }
-        if (levelFor(me.xp) < crop.level) return reply.code(400).send({ error: 'level_too_low' });
-        if (me.gold < crop.seed) return reply.code(400).send({ error: 'not_enough_gold' });
-        if (getPlot.get(me.user_id, idx)) return reply.code(400).send({ error: 'plot_busy' });
-        const now = Date.now();
-        db.transaction(() => {
+        const plant = runJournaledMutation(request, 'plant', () => {
+          if (me.tax_owed > 0) return { error: 'tax_due' };
+          if (levelFor(me.xp) < crop.level) return { error: 'level_too_low' };
+          if (me.gold < crop.seed) return { error: 'not_enough_gold' };
+          if (getPlot.get(me.user_id, idx)) return { error: 'plot_busy' };
+          const now = Date.now();
           grant(me.user_id, { gold: -crop.seed, xp: crop.expSow });
           const fresh0 = Math.random() < 0.05 * skillRank(me, 'datmaumo') ? 1 : 0;
           db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (?, ?, ?, ?, ?, ?)')
             .run(me.user_id, idx, crop.id, now, now + cropTime(me, scaleMs(crop.growMs, config.fast)), fresh0);
           bumpQuest(me.user_id, 'sow');
-        })();
+          return {};
+        });
+        if (plant.error) return reply.code(plant.error === 'idempotency_conflict' ? 409 : 400).send({ error: plant.error });
         return { me: fresh(me.user_id) };
       });
 
       api.post('/plant-all', async (request, reply) => {
-        if (request.farmer.tax_owed > 0) return reply.code(400).send({ error: 'tax_due' });
         const { crop: cropId } = request.body ?? {};
         const crop = CROPS[cropId];
         const tree = TREES[cropId];
         const me = request.farmer;
         if (!crop && !tree) return reply.code(400).send({ error: 'bad_request' });
-        if (levelFor(me.xp) < (crop || tree).level) return reply.code(400).send({ error: 'level_too_low' });
-        const occupied = new Set(db.prepare('SELECT idx FROM plots WHERE owner_id = ?').all(me.user_id).map((r) => r.idx));
-        const empty = [];
-        for (let i = 0; i < me.plots_count; i += 1) if (!occupied.has(i)) empty.push(i);
-        if (tree) {
+        const plant = runJournaledMutation(request, 'plant-all', () => {
+          if (me.tax_owed > 0) return { error: 'tax_due' };
+          if (levelFor(me.xp) < (crop || tree).level) return { error: 'level_too_low' };
+          const occupied = new Set(db.prepare('SELECT idx FROM plots WHERE owner_id = ?').all(me.user_id).map((r) => r.idx));
+          const empty = [];
+          for (let i = 0; i < me.plots_count; i += 1) if (!occupied.has(i)) empty.push(i);
+          if (tree) {
           // Cây ăn quả trồng kín ô trống: mỗi cây giá price, chiếm ô lâu dài.
-          const n = Math.min(empty.length, Math.floor(me.gold / tree.price));
-          if (n === 0) return reply.code(400).send({ error: empty.length === 0 ? 'no_empty_plot' : 'not_enough_gold' });
-          const now = Date.now();
-          const readyAt = now + cropTime(me, scaleMs(tree.growMs, config.fast));
-          db.transaction(() => {
+            const n = Math.min(empty.length, Math.floor(me.gold / tree.price));
+            if (n === 0) return { error: empty.length === 0 ? 'no_empty_plot' : 'not_enough_gold' };
+            const now = Date.now();
+            const readyAt = now + cropTime(me, scaleMs(tree.growMs, config.fast));
             grant(me.user_id, { gold: -tree.price * n });
             const ins = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, tree, tree_at) VALUES (?, ?, ?, ?, ?, 1, ?)');
             for (const i of empty.slice(0, n)) ins.run(me.user_id, i, tree.id, now, readyAt, now);
-          })();
-          logEvent(`${tree.emoji} ${me.name} trồng ${n} cây ${tree.name}`);
-          return { me: fresh(me.user_id), planted: n };
-        }
-        const count = Math.min(empty.length, Math.floor(me.gold / crop.seed));
-        if (count === 0) return reply.code(400).send({ error: empty.length === 0 ? 'no_empty_plot' : 'not_enough_gold' });
-        const now = Date.now();
-        const readyAt = now + cropTime(me, scaleMs(crop.growMs, config.fast));
-        db.transaction(() => {
+            return { planted: n };
+          }
+          const count = Math.min(empty.length, Math.floor(me.gold / crop.seed));
+          if (count === 0) return { error: empty.length === 0 ? 'no_empty_plot' : 'not_enough_gold' };
+          const now = Date.now();
+          const readyAt = now + cropTime(me, scaleMs(crop.growMs, config.fast));
           grant(me.user_id, { gold: -crop.seed * count, xp: crop.expSow * count });
           const ins = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (?, ?, ?, ?, ?, ?)');
           for (const i of empty.slice(0, count)) ins.run(me.user_id, i, crop.id, now, readyAt, Math.random() < 0.05 * skillRank(me, 'datmaumo') ? 1 : 0);
           bumpQuest(me.user_id, 'sow', count);
-        })();
-        logEvent(`${crop.emoji} ${me.name} gieo ${crop.name} kín ${count} ô`);
-        return { me: fresh(me.user_id), planted: count };
+          return { planted: count };
+        });
+        if (plant.error) return reply.code(plant.error === 'idempotency_conflict' ? 409 : 400).send({ error: plant.error });
+        if (!plant.replay) logEvent(tree
+          ? `${tree.emoji} ${me.name} trồng ${plant.outcome.planted} cây ${tree.name}`
+          : `${crop.emoji} ${me.name} gieo ${crop.name} kín ${plant.outcome.planted} ô`);
+        return { me: fresh(me.user_id), ...plant.outcome };
       });
 
       function harvestPlot(me, plot) {
@@ -996,7 +1096,10 @@ export function buildApp({ config, db, logger = true }) {
         const refund = Math.random() < 0.05 * skillRank(me, 'hatgiongtk') ? crop.seed : 0;
         grant(me.user_id, { xp, gold: refund });
         if (crop.risky) grant(me.user_id, { gold: CANSA.reward }); // cần sa: thu vàng thẳng, không ra hàng
-        else invAdd(me.user_id, crop.id, Math.max(1, HARVEST_YIELD - (plot.poached || 0)));
+        else {
+          invAdd(me.user_id, crop.id, Math.max(1, HARVEST_YIELD - (plot.poached || 0)));
+          db.prepare('INSERT OR IGNORE INTO collection_discoveries (owner_id, item, first_at) VALUES (?, ?, ?)').run(me.user_id, crop.id, Date.now());
+        }
         db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, plot.idx);
         bumpQuest(me.user_id, 'harvest');
         bumpFest(me.user_id, 'harvest');
@@ -1006,28 +1109,30 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/harvest', async (request, reply) => {
         const { idx } = request.body ?? {};
         const me = request.farmer;
-        const plot = getPlot.get(me.user_id, idx);
-        if (!plot) return reply.code(400).send({ error: 'no_plot' });
-        const ripe = plot.tree ? treeSettle(me, plot).stock > 0 : Date.now() >= plot.ready_at;
-        if (!ripe) return reply.code(400).send({ error: 'not_ready' });
-        let crop;
-        db.transaction(() => {
-          crop = harvestPlot(me, plot);
-        })();
-        return { me: fresh(me.user_id), item: crop.id };
+        const harvest = runJournaledMutation(request, 'harvest', () => {
+          const plot = getPlot.get(me.user_id, idx);
+          if (!plot) return { error: 'no_plot' };
+          const ripe = plot.tree ? treeSettle(me, plot).stock > 0 : Date.now() >= plot.ready_at;
+          if (!ripe) return { error: 'not_ready' };
+          return { item: harvestPlot(me, plot).id };
+        });
+        if (harvest.error) return reply.code(harvest.error === 'idempotency_conflict' ? 409 : 400).send({ error: harvest.error });
+        return { me: fresh(me.user_id), ...harvest.outcome };
       });
 
       api.post('/harvest-all', async (request, reply) => {
         const me = request.farmer;
-        const now = Date.now();
-        for (const p of db.prepare('SELECT * FROM plots WHERE owner_id = ? AND tree = 1').all(me.user_id)) treeSettle(me, p, now);
-        const ready = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0))').all(me.user_id, now);
-        if (ready.length === 0) return reply.code(400).send({ error: 'nothing_ready' });
-        db.transaction(() => {
+        const harvest = runJournaledMutation(request, 'harvest-all', () => {
+          const now = Date.now();
+          for (const p of db.prepare('SELECT * FROM plots WHERE owner_id = ? AND tree = 1').all(me.user_id)) treeSettle(me, p, now);
+          const ready = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0))').all(me.user_id, now);
+          if (ready.length === 0) return { error: 'nothing_ready' };
           for (const p of ready) harvestPlot(me, p);
-        })();
-        logEvent(`🧺 ${me.name} thu hoạch ${ready.length} ô một lượt`);
-        return { me: fresh(me.user_id), harvested: ready.length };
+          return { harvested: ready.length };
+        });
+        if (harvest.error) return reply.code(harvest.error === 'idempotency_conflict' ? 409 : 400).send({ error: harvest.error });
+        if (!harvest.replay) logEvent(`🧺 ${me.name} thu hoạch ${harvest.outcome.harvested} ô một lượt`);
+        return { me: fresh(me.user_id), ...harvest.outcome };
       });
 
       // Tưới: ruộng mình hoặc ruộng người khác (mỗi vụ 1 lần/ô/người).
@@ -1035,32 +1140,29 @@ export function buildApp({ config, db, logger = true }) {
         const { ownerId: rawOwner, idx } = request.body ?? {};
         const me = request.farmer;
         const ownerId = Number.isInteger(rawOwner) ? rawOwner : me.user_id;
-        const owner = getFarmer.get(ownerId);
-        const plot = owner && getPlot.get(ownerId, idx);
-        if (!plot) return reply.code(400).send({ error: 'no_plot' });
-        const now = Date.now();
-        if (now >= plot.ready_at) return reply.code(400).send({ error: 'already_ready' });
-        if (ownerId === me.user_id) {
-          // Ruộng mình: tưới 1 lần/vụ cho bonus Tươi tốt.
-          if (plot.watered) return reply.code(400).send({ error: 'already_watered' });
-          db.transaction(() => {
+        const water = runJournaledMutation(request, 'water', () => {
+          const owner = getFarmer.get(ownerId);
+          const plot = owner && getPlot.get(ownerId, idx);
+          if (!plot) return { error: 'no_plot' };
+          const now = Date.now();
+          if (now >= plot.ready_at) return { error: 'already_ready' };
+          if (ownerId === me.user_id) {
+            if (plot.watered) return { error: 'already_watered' };
             db.prepare('UPDATE plots SET watered = 1 WHERE owner_id = ? AND idx = ?').run(ownerId, idx);
             markAction.run(ownerId, idx, plot.planted_at, me.user_id, 'water', now);
-          })();
-          return { me: fresh(me.user_id) };
-        }
-        // Tưới giúp nhà bạn: mỗi 15 phút một lần/ô, mỗi lần cây chín sớm 10 phút.
-        const last = lastAction.get(ownerId, idx, plot.planted_at, me.user_id, 'water');
-        if (last && now - last.at < scaleMs(WATER_HELP_COOLDOWN_MS, config.fast)) {
-          return reply.code(400).send({ error: 'water_cooldown' });
-        }
-        const boost = scaleMs(WATER_HELP_BOOST_MS, config.fast);
-        db.transaction(() => {
+            return { helped: false };
+          }
+          const last = lastAction.get(ownerId, idx, plot.planted_at, me.user_id, 'water');
+          if (last && now - last.at < scaleMs(WATER_HELP_COOLDOWN_MS, config.fast)) return { error: 'water_cooldown' };
+          const boost = scaleMs(WATER_HELP_BOOST_MS, config.fast);
           db.prepare('UPDATE plots SET watered = 1, ready_at = MAX(?, ready_at - ?) WHERE owner_id = ? AND idx = ?').run(now, boost, ownerId, idx);
           touchAction.run(ownerId, idx, plot.planted_at, me.user_id, 'water', now);
           grant(me.user_id, { gold: WATER_HELPER_GOLD * GOLD_MULT, xp: WATER_HELPER_EXP });
-        })();
-        logEvent(`💧 ${me.name} tưới giúp ruộng của ${owner.name} — cây chín sớm 10 phút`);
+          return { helped: true, ownerName: owner.name };
+        });
+        if (water.error) return reply.code(water.error === 'idempotency_conflict' ? 409 : 400).send({ error: water.error });
+        if (!water.outcome.helped) return { me: fresh(me.user_id) };
+        if (!water.replay) logEvent(`💧 ${me.name} tưới giúp ruộng của ${water.outcome.ownerName} — cây chín sớm 10 phút`);
         return visitPayload(request, ownerId);
       });
 
@@ -1068,27 +1170,38 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/poach', async (request, reply) => {
         const { ownerId, idx } = request.body ?? {};
         const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        const plot = owner && getPlot.get(ownerId, idx);
-        if (!plot) return reply.code(400).send({ error: 'no_plot' });
-        let allowed;
-        if (plot.tree) {
-          // Cây ăn quả: mỗi quả trên cây mở 1 lượt hái ké (chủ chỉ mất 1 quả sau mỗi 3 lượt).
-          const st = treeSettle(owner, plot);
-          if (st.stock <= 0) return reply.code(400).send({ error: 'not_ready' });
-          allowed = st.stock;
-        } else {
-          if (Date.now() < plot.ready_at) return reply.code(400).send({ error: 'not_ready' });
-          // Mỗi kẻ trộm hái ké mỗi ô 1 lần mỗi lứa; không giới hạn tổng số người.
-          if (lastAction.get(ownerId, plot.idx, plot.planted_at, me.user_id, 'poach')) return reply.code(400).send({ error: 'already_poached' });
-          allowed = Infinity;
+        const theft = runJournaledMutation(request, 'poach', () => {
+          if (ownerId === me.user_id) return { error: 'own_farm' };
+          const owner = getFarmer.get(ownerId);
+          const plot = owner && getPlot.get(ownerId, idx);
+          if (!plot) return { error: 'no_plot' };
+          let allowed;
+          if (plot.tree) {
+            const st = treeSettle(owner, plot);
+            if (st.stock <= 0) return { error: 'not_ready' };
+            allowed = st.stock;
+          } else {
+            if (Date.now() < plot.ready_at) return { error: 'not_ready' };
+            if (lastAction.get(ownerId, plot.idx, plot.planted_at, me.user_id, 'poach')) return { error: 'already_poached' };
+            allowed = Infinity;
+          }
+          if ((plot.poached || 0) >= allowed) return { error: 'already_poached' };
+          const caught = dogCatch(owner, getFarmer.get(me.user_id), { quiet: true });
+          if (caught) return { caught, ownerName: owner.name };
+          const crop = poachPlot(me, owner, plot);
+          return { cropId: crop.id, ownerName: owner.name };
+        });
+        if (theft.error) return reply.code(theft.error === 'idempotency_conflict' ? 409 : 400).send({ error: theft.error });
+        if (theft.outcome.caught) {
+          if (!theft.replay) notifyDogCatch(ownerId, theft.outcome.ownerName, me, theft.outcome.caught);
+          const c = theft.outcome.caught;
+          return reply.code(400).send({ error: 'caught_by_dog', fine: c.paid, streak: c.nth, message: c.message });
         }
-        if ((plot.poached || 0) >= allowed) return reply.code(400).send({ error: 'already_poached' });
-        if (dogCheck(reply, owner, me)) return reply;
-        const crop = poachPlot(me, owner, plot);
-        logEvent(`😋 ${me.name} hái ké ${POACH_YIELD} ${crop.name} ${crop.emoji} nhà ${owner.name}`);
-        pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa hái ké ${POACH_YIELD} ${crop.name} ${crop.emoji} nhà bạn!`);
+        if (!theft.replay) {
+          const crop = itemInfo(theft.outcome.cropId);
+          logEvent(`😋 ${me.name} hái ké ${POACH_YIELD} ${crop.name} ${crop.emoji} nhà ${theft.outcome.ownerName}`);
+          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa hái ké ${POACH_YIELD} ${crop.name} ${crop.emoji} nhà bạn!`);
+        }
         return visitPayload(request, ownerId);
       });
 
@@ -1097,43 +1210,46 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/poach-all', async (request, reply) => {
         const { ownerId } = request.body ?? {};
         const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(400).send({ error: 'no_farm' });
-        const now = Date.now();
-        const again = scaleMs(POACH_AGAIN_MS, config.fast);
-        for (const p of db.prepare('SELECT * FROM plots WHERE owner_id = ? AND tree = 1').all(ownerId)) treeSettle(owner, p, now);
-        const targets = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0)) ORDER BY idx').all(ownerId, now)
-          .filter((p) => (p.tree ? (p.poached || 0) < (p.fruit_stock || 0) : !lastAction.get(ownerId, p.idx, p.planted_at, me.user_id, 'poach')));
-        if (!targets.length) return reply.code(400).send({ error: 'nothing_to_poach' });
-        const got = {};
-        let times = 0;
-        let fines = 0;
-        let attempts = 0;
-        for (const plot of targets) {
-          // Cây ăn quả: vét hết số lượt còn lại (mỗi quả trên cây = 1 lượt); cây trồng: 1 lượt/người.
-          const left = plot.tree ? Math.max(1, (plot.fruit_stock || 0) - (plot.poached || 0)) : 1;
-          for (let k = 0; k < left && attempts < 2000; k += 1) {
-            attempts += 1;
-            const thief = getFarmer.get(me.user_id); // vàng + chuỗi phạt mới nhất
-            const c = dogCatch(owner, thief, { quiet: true });
-            if (c) { times += 1; fines += c.paid; continue; }
-            const crop = poachPlot(me, owner, plot);
-            got[crop.id] = (got[crop.id] || 0) + POACH_YIELD;
+        const theft = runJournaledMutation(request, 'poach-all', () => {
+          if (ownerId === me.user_id) return { error: 'own_farm' };
+          const owner = getFarmer.get(ownerId);
+          if (!owner) return { error: 'no_farm' };
+          const now = Date.now();
+          for (const p of db.prepare('SELECT * FROM plots WHERE owner_id = ? AND tree = 1').all(ownerId)) treeSettle(owner, p, now);
+          const targets = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0)) ORDER BY idx').all(ownerId, now)
+            .filter((p) => (p.tree ? (p.poached || 0) < (p.fruit_stock || 0) : !lastAction.get(ownerId, p.idx, p.planted_at, me.user_id, 'poach')));
+          if (!targets.length) return { error: 'nothing_to_poach' };
+          const got = {};
+          let times = 0;
+          let fines = 0;
+          let attempts = 0;
+          for (const plot of targets) {
+            const left = plot.tree ? Math.max(1, (plot.fruit_stock || 0) - (plot.poached || 0)) : 1;
+            for (let k = 0; k < left && attempts < 2000; k += 1) {
+              attempts += 1;
+              const thief = getFarmer.get(me.user_id);
+              const c = dogCatch(owner, thief, { quiet: true });
+              if (c) { times += 1; fines += c.paid; continue; }
+              const crop = poachPlot(me, owner, plot);
+              got[crop.id] = (got[crop.id] || 0) + POACH_YIELD;
+            }
           }
-        }
+          return { got, times, fines, attempts, targetCount: targets.length, ownerName: owner.name };
+        });
+        if (theft.error) return reply.code(theft.error === 'idempotency_conflict' ? 409 : 400).send({ error: theft.error });
+        const { got, times, fines, attempts, targetCount, ownerName } = theft.outcome;
         const n = Object.values(got).reduce((x, y) => x + y, 0);
-        const desc = Object.entries(got).map(([id, q]) => `${q} ${itemInfo(id).name} ${itemInfo(id).emoji}`).join(', ');
-        const dogNote = times ? ` — chó tóm ${times} lần, nộp phạt ${fines.toLocaleString('vi')} vàng` : '';
-        if (n || times) {
-          logEvent(`😋 ${me.name} hái ké một lượt ${targets.length} ô${attempts > targets.length ? ` (${attempts} lượt)` : ''} nhà ${owner.name}: ${desc || 'trắng tay'}${dogNote}`);
+        if (!theft.replay && (n || times)) {
+          const desc = Object.entries(got).map(([id, q]) => `${q} ${itemInfo(id).name} ${itemInfo(id).emoji}`).join(', ');
+          const dogNote = times ? ` — chó tóm ${times} lần, nộp phạt ${fines.toLocaleString('vi')} vàng` : '';
+          logEvent(`😋 ${me.name} hái ké một lượt ${targetCount} ô${attempts > targetCount ? ` (${attempts} lượt)` : ''} nhà ${ownerName}: ${desc || 'trắng tay'}${dogNote}`);
           pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa hái ké ${desc || 'hụt'} nhà bạn${times ? ` — chó nhà bạn tóm được ${times} lần, thu ${fines.toLocaleString('vi')} vàng` : ''}!`);
         }
         return {
           ...visitPayload(request, ownerId),
           poached: n,
           items: got,
-          caught: times ? { times, fine: fines, message: `🐕 Chó nhà ${owner.name} tóm được bạn ${times}/${attempts} lần — nộp phạt ${fines.toLocaleString('vi')} vàng` } : null,
+          caught: times ? { times, fine: fines, message: `🐕 Chó nhà ${ownerName} tóm được bạn ${times}/${attempts} lần — nộp phạt ${fines.toLocaleString('vi')} vàng` } : null,
         };
       });
 
@@ -1156,18 +1272,18 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/inspect', async (request, reply) => {
         const { ownerId, idx } = request.body ?? {};
         const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(400).send({ error: 'no_farm' });
-        const plot = getPlot.get(ownerId, Number(idx));
-        if (!plot || !plot.crop || plot.tree) return reply.code(400).send({ error: 'no_plot' });
-        const now = Date.now();
-        if (lastAction.get(ownerId, plot.idx, plot.planted_at, me.user_id, 'inspect')) return reply.code(400).send({ error: 'already_inspected' });
-        const used = db.prepare("SELECT COUNT(*) n FROM plot_actions WHERE owner_id = ? AND helper_id = ? AND action = 'inspect' AND at > ?").get(ownerId, me.user_id, now - 24 * 60 * 60 * 1000).n;
-        if (used >= CANSA.inspectPerDay) return reply.code(400).send({ error: 'inspect_limit' });
-        if (CANSA.inspectFee > 0 && me.gold < CANSA.inspectFee) return reply.code(400).send({ error: 'not_enough_gold' });
-        const found = !!CROPS[plot.crop]?.risky;
-        db.transaction(() => {
+        const inspection = runJournaledMutation(request, 'inspect', () => {
+          if (ownerId === me.user_id) return { error: 'own_farm' };
+          const owner = getFarmer.get(ownerId);
+          if (!owner) return { error: 'no_farm' };
+          const plot = getPlot.get(ownerId, Number(idx));
+          if (!plot || !plot.crop || plot.tree) return { error: 'no_plot' };
+          const now = Date.now();
+          if (lastAction.get(ownerId, plot.idx, plot.planted_at, me.user_id, 'inspect')) return { error: 'already_inspected' };
+          const used = db.prepare("SELECT COUNT(*) n FROM plot_actions WHERE owner_id = ? AND helper_id = ? AND action = 'inspect' AND at > ?").get(ownerId, me.user_id, now - 24 * 60 * 60 * 1000).n;
+          if (used >= CANSA.inspectPerDay) return { error: 'inspect_limit' };
+          if (CANSA.inspectFee > 0 && getFarmer.get(me.user_id).gold < CANSA.inspectFee) return { error: 'not_enough_gold' };
+          const found = !!CROPS[plot.crop]?.risky;
           if (CANSA.inspectFee > 0) {
             grant(me.user_id, { gold: -CANSA.inspectFee });
             db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(CANSA.inspectFee, me.user_id);
@@ -1177,27 +1293,30 @@ export function buildApp({ config, db, logger = true }) {
             db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(ownerId, plot.idx);
             grant(me.user_id, { gold: CANSA.bounty });
           }
-        })();
-        if (found) {
-          logEvent(`🚨 ${me.name} phát hiện cần sa ở ruộng nhà ${owner.name} — nhổ sạch, lĩnh thưởng ${CANSA.bounty.toLocaleString('vi')} vàng`);
-          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🚨 ${me.name} phát hiện cần sa ô ${plot.idx + 1} nhà bạn — mất trắng!`);
+          return { found, bounty: found ? CANSA.bounty : 0, fee: CANSA.inspectFee, left: CANSA.inspectPerDay - used - 1, ownerName: owner.name, plotIdx: plot.idx };
+        });
+        if (inspection.error) return reply.code(inspection.error === 'idempotency_conflict' ? 409 : 400).send({ error: inspection.error });
+        const { found, bounty, fee, left, ownerName, plotIdx } = inspection.outcome;
+        if (found && !inspection.replay) {
+          logEvent(`🚨 ${me.name} phát hiện cần sa ở ruộng nhà ${ownerName} — nhổ sạch, lĩnh thưởng ${CANSA.bounty.toLocaleString('vi')} vàng`);
+          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🚨 ${me.name} phát hiện cần sa ô ${plotIdx + 1} nhà bạn — mất trắng!`);
         }
-        return { ...visitPayload(request, ownerId), found, bounty: found ? CANSA.bounty : 0, fee: CANSA.inspectFee, left: CANSA.inspectPerDay - used - 1 };
+        return { ...visitPayload(request, ownerId), found, bounty, fee, left };
       });
       api.post('/harvest-help', async (request, reply) => {
         const { ownerId, idx, all } = request.body ?? {};
         const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(400).send({ error: 'no_farm' });
-        const now = Date.now();
-        let plots = ripePlotsOf(owner, now);
-        if (!all) plots = plots.filter((p) => p.idx === Number(idx));
-        if (!plots.length) return reply.code(400).send({ error: 'nothing_ready' });
-        const got = {};
-        let riskyN = 0;
-        let riskyGold = 0;
-        db.transaction(() => {
+        const harvest = runJournaledMutation(request, 'harvest-help', () => {
+          if (ownerId === me.user_id) return { error: 'own_farm' };
+          const owner = getFarmer.get(ownerId);
+          if (!owner) return { error: 'no_farm' };
+          const now = Date.now();
+          let plots = ripePlotsOf(owner, now);
+          if (!all) plots = plots.filter((p) => p.idx === Number(idx));
+          if (!plots.length) return { error: 'nothing_ready' };
+          const got = {};
+          let riskyN = 0;
+          let riskyGold = 0;
           for (const p of plots) {
             if (CROPS[p.crop]?.risky) {
               // Cây đặc biệt: chủ nhận vàng thẳng; người giúp không thấy tên thật.
@@ -1210,39 +1329,48 @@ export function buildApp({ config, db, logger = true }) {
             harvestPlot(owner, p);
             got[p.crop] = (got[p.crop] || 0) + (invQty(owner.user_id, p.crop) - before);
           }
-          grant(me.user_id, { gold: WATER_HELPER_GOLD * GOLD_MULT * plots.length, xp: WATER_HELPER_EXP * plots.length });
-        })();
-        const descParts = Object.entries(got).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`);
+          const gained = WATER_HELPER_GOLD * GOLD_MULT * plots.length;
+          grant(me.user_id, { gold: gained, xp: WATER_HELPER_EXP * plots.length });
+          return { harvested: plots.length, items: got, gained, riskyN, riskyGold, ownerName: owner.name };
+        });
+        if (harvest.error) return reply.code(harvest.error === 'idempotency_conflict' ? 409 : 400).send({ error: harvest.error });
+        const { harvested, items, gained, riskyN, riskyGold, ownerName } = harvest.outcome;
+        const descParts = Object.entries(items).map(([id, q]) => `${q} ${itemInfo(id)?.name || id}`);
         if (riskyN) descParts.push(`${riskyN} ô cây đặc biệt`);
         const desc = descParts.join(', ');
-        logEvent(`🧺 ${me.name} thu hoạch giúp ${plots.length} ô nhà ${owner.name}: ${desc}`);
-        pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🧺 ${me.name} vừa thu hoạch giúp ${plots.length} ô — ${descParts.length ? desc : ''}${riskyGold ? ` (+${riskyGold.toLocaleString('vi')} vàng cây đặc biệt)` : ''} đã vào kho bạn!`);
-        return { ...visitPayload(request, ownerId), harvested: plots.length, items: got, gained: WATER_HELPER_GOLD * GOLD_MULT * plots.length };
+        if (!harvest.replay) {
+          logEvent(`🧺 ${me.name} thu hoạch giúp ${harvested} ô nhà ${ownerName}: ${desc}`);
+          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🧺 ${me.name} vừa thu hoạch giúp ${harvested} ô — ${descParts.length ? desc : ''}${riskyGold ? ` (+${riskyGold.toLocaleString('vi')} vàng cây đặc biệt)` : ''} đã vào kho bạn!`);
+        }
+        return { ...visitPayload(request, ownerId), harvested, items, gained };
       });
 
       // Tưới giúp hết: mọi ô đang lớn mà lượt 15 phút đã mở.
       api.post('/water-help-all', async (request, reply) => {
         const { ownerId } = request.body ?? {};
         const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(400).send({ error: 'no_farm' });
-        const now = Date.now();
-        const cooldown = scaleMs(WATER_HELP_COOLDOWN_MS, config.fast);
-        const boost = scaleMs(WATER_HELP_BOOST_MS, config.fast);
-        const plots = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ready_at > ? ORDER BY idx').all(ownerId, now)
-          .filter((p) => { const last = lastAction.get(ownerId, p.idx, p.planted_at, me.user_id, 'water'); return !last || now - last.at >= cooldown; });
-        if (!plots.length) return reply.code(400).send({ error: 'water_cooldown' });
-        db.transaction(() => {
+        const water = runJournaledMutation(request, 'water-help-all', () => {
+          if (ownerId === me.user_id) return { error: 'own_farm' };
+          const owner = getFarmer.get(ownerId);
+          if (!owner) return { error: 'no_farm' };
+          const now = Date.now();
+          const cooldown = scaleMs(WATER_HELP_COOLDOWN_MS, config.fast);
+          const boost = scaleMs(WATER_HELP_BOOST_MS, config.fast);
+          const plots = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ready_at > ? ORDER BY idx').all(ownerId, now)
+            .filter((p) => { const last = lastAction.get(ownerId, p.idx, p.planted_at, me.user_id, 'water'); return !last || now - last.at >= cooldown; });
+          if (!plots.length) return { error: 'water_cooldown' };
           const upd = db.prepare('UPDATE plots SET watered = 1, ready_at = MAX(?, ready_at - ?) WHERE owner_id = ? AND idx = ?');
           for (const p of plots) {
             upd.run(now, boost, ownerId, p.idx);
             touchAction.run(ownerId, p.idx, p.planted_at, me.user_id, 'water', now);
           }
-          grant(me.user_id, { gold: WATER_HELPER_GOLD * GOLD_MULT * plots.length, xp: WATER_HELPER_EXP * plots.length });
-        })();
-        logEvent(`💧 ${me.name} tưới giúp ${plots.length} ô nhà ${owner.name} — cây chín sớm 10 phút`);
-        return { ...visitPayload(request, ownerId), watered: plots.length, gained: WATER_HELPER_GOLD * GOLD_MULT * plots.length };
+          const gained = WATER_HELPER_GOLD * GOLD_MULT * plots.length;
+          grant(me.user_id, { gold: gained, xp: WATER_HELPER_EXP * plots.length });
+          return { watered: plots.length, gained, ownerName: owner.name };
+        });
+        if (water.error) return reply.code(water.error === 'idempotency_conflict' ? 409 : 400).send({ error: water.error });
+        if (!water.replay) logEvent(`💧 ${me.name} tưới giúp ${water.outcome.watered} ô nhà ${water.outcome.ownerName} — cây chín sớm 10 phút`);
+        return { ...visitPayload(request, ownerId), watered: water.outcome.watered, gained: water.outcome.gained };
       });
 
       // ---- Kho & cửa hàng ----
@@ -1250,19 +1378,26 @@ export function buildApp({ config, db, logger = true }) {
         const { item, qty } = request.body ?? {};
         const info = itemInfo(item);
         const me = request.farmer;
-        // Không giới hạn 999: nút "Hết" bán toàn bộ số đang có trong kho.
-        const n = Math.max(1, Math.floor(Number(qty) || 1));
-        if (!info || !info.sell) return reply.code(400).send({ error: 'bad_request' });
-        if (!invTake(me.user_id, item, n)) return reply.code(400).send({ error: 'not_enough_items' });
-        let mult = 1;
-        if (ANIMAL_PRODUCTS.has(item)) mult = 1 + 0.08 * skillRank(me, 'spcaocap');
-        if (MACHINE_PRODUCTS.has(item)) mult = 1 + 0.05 * skillRank(me, 'donggoidep');
-        const pm = priceMult(item);
-        const gained = Math.round(info.sell * n * GOLD_MULT * mult * pm);
-        grant(me.user_id, { gold: gained });
-        addSold.run(gained, me.user_id);
-        bumpSaturation(item, info.sell * n * GOLD_MULT);
-        bumpQuest(me.user_id, 'sell', n);
+        // Nút "Hết" có thể bán toàn bộ kho; số lượng vẫn phải là số nguyên dương.
+        if (!info || !info.sell || !Number.isSafeInteger(qty) || qty < 1) {
+          return reply.code(400).send({ error: 'bad_request' });
+        }
+        const n = qty;
+        const sale = runJournaledMutation(request, 'sell', () => {
+          if (!invTake(me.user_id, item, n)) return { error: 'not_enough_items' };
+          let mult = 1;
+          if (ANIMAL_PRODUCTS.has(item)) mult = 1 + 0.08 * skillRank(me, 'spcaocap');
+          if (MACHINE_PRODUCTS.has(item)) mult = 1 + 0.05 * skillRank(me, 'donggoidep');
+          const pm = priceMult(item);
+          const gained = Math.round(info.sell * n * GOLD_MULT * mult * pm);
+          grant(me.user_id, { gold: gained });
+          addSold.run(gained, me.user_id);
+          bumpSaturation(item, info.sell * n * GOLD_MULT);
+          bumpQuest(me.user_id, 'sell', n);
+          return { gained, pm };
+        });
+        if (sale.error) return reply.code(sale.error === 'idempotency_conflict' ? 409 : 400).send({ error: sale.error });
+        const { gained, pm } = sale.outcome;
         return { me: fresh(me.user_id), gained, priceMult: Math.round(pm * 100) / 100 };
       });
 
@@ -1279,132 +1414,157 @@ export function buildApp({ config, db, logger = true }) {
         const { item, qty } = request.body ?? {};
         const me = request.farmer;
         const info = itemInfo(item);
-        const n = Math.floor(Number(qty) || 0);
-        if (!info || !info.sell || n < 1 || n > WANT_MAX_QTY) return reply.code(400).send({ error: 'bad_request' });
-        const open = db.prepare('SELECT COUNT(*) c FROM wants WHERE owner_id = ?').get(me.user_id).c;
-        if (open >= WANT_MAX_OPEN) return reply.code(400).send({ error: 'too_many_wants' });
+        if (!info || !info.sell || !Number.isSafeInteger(qty) || qty < 1 || qty > WANT_MAX_QTY) {
+          return reply.code(400).send({ error: 'bad_request' });
+        }
+        const n = qty;
         const price = wantPrice(item);
-        if (me.gold < price * n) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const created = runJournaledMutation(request, 'want-create', () => {
+          const open = db.prepare('SELECT COUNT(*) c FROM wants WHERE owner_id = ?').get(me.user_id).c;
+          if (open >= WANT_MAX_OPEN) return { error: 'too_many_wants' };
+          if (getFarmer.get(me.user_id).gold < price * n) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -price * n });
-          db.prepare('INSERT INTO wants (owner_id, item, qty, filled, price, created_at) VALUES (?, ?, ?, 0, ?, ?)').run(me.user_id, item, n, price, Date.now());
-        })();
-        logEvent(`🤝 ${me.name} cần mua ${n} ${info.name} ${info.emoji} — trả ${price.toLocaleString('vi')} vàng/cái`);
-        const others = db.prepare('SELECT user_id FROM farmers WHERE user_id != ?').all(me.user_id).map((r) => r.user_id);
-        pushTo(others, 'Ăn trộm dzui dzẻ 😋', `🤝 ${me.name} cần mua ${n} ${info.name} ${info.emoji} — trả ${price.toLocaleString('vi')} vàng/cái (130% giá chợ). Có hàng thì vào Thu mua bán ngay!`);
+          const row = db.prepare('INSERT INTO wants (owner_id, item, qty, filled, price, created_at) VALUES (?, ?, ?, 0, ?, ?)').run(me.user_id, item, n, price, Date.now());
+          return { wantId: Number(row.lastInsertRowid) };
+        });
+        if (created.error) return reply.code(created.error === 'idempotency_conflict' ? 409 : 400).send({ error: created.error });
+        if (!created.replay) {
+          logEvent(`🤝 ${me.name} cần mua ${n} ${info.name} ${info.emoji} — trả ${price.toLocaleString('vi')} vàng/cái`);
+          const others = db.prepare('SELECT user_id FROM farmers WHERE user_id != ?').all(me.user_id).map((r) => r.user_id);
+          pushTo(others, 'Ăn trộm dzui dzẻ 😋', `🤝 ${me.name} cần mua ${n} ${info.name} ${info.emoji} — trả ${price.toLocaleString('vi')} vàng/cái (130% giá chợ). Có hàng thì vào Thu mua bán ngay!`);
+        }
         return { me: fresh(me.user_id), wants: wantsView(me.user_id) };
       });
 
       api.post('/want-cancel', async (request, reply) => {
         const me = request.farmer;
-        const w = db.prepare('SELECT * FROM wants WHERE id = ? AND owner_id = ?').get(Number(request.body?.id), me.user_id);
-        if (!w) return reply.code(400).send({ error: 'no_want' });
-        const refund = (w.qty - w.filled) * w.price;
-        db.transaction(() => {
+        const id = request.body?.id;
+        if (!Number.isSafeInteger(id) || id < 1) return reply.code(400).send({ error: 'bad_request' });
+        const cancelled = runJournaledMutation(request, 'want-cancel', () => {
+          const w = db.prepare('SELECT * FROM wants WHERE id = ? AND owner_id = ?').get(id, me.user_id);
+          if (!w) return { error: 'no_want' };
+          const refund = (w.qty - w.filled) * w.price;
           grant(me.user_id, { gold: refund });
           db.prepare('DELETE FROM wants WHERE id = ?').run(w.id);
-        })();
-        return { me: fresh(me.user_id), wants: wantsView(me.user_id), refund };
+          return { refund };
+        });
+        if (cancelled.error) return reply.code(cancelled.error === 'idempotency_conflict' ? 409 : 400).send({ error: cancelled.error });
+        return { me: fresh(me.user_id), wants: wantsView(me.user_id), refund: cancelled.outcome.refund };
       });
 
       api.post('/want-fill', async (request, reply) => {
         const { id, qty } = request.body ?? {};
         const me = request.farmer;
-        const w = db.prepare('SELECT * FROM wants WHERE id = ?').get(Number(id));
-        if (!w) return reply.code(400).send({ error: 'no_want' });
-        if (w.owner_id === me.user_id) return reply.code(400).send({ error: 'own_want' });
-        const remaining = w.qty - w.filled;
-        const n = Math.max(1, Math.min(remaining, Math.floor(Number(qty) || 1)));
-        if (invQty(me.user_id, w.item) < n) return reply.code(400).send({ error: 'not_enough_items' });
-        const info = itemInfo(w.item);
-        const owner = getFarmer.get(w.owner_id);
-        db.transaction(() => {
-          invTake(me.user_id, w.item, n);
+        if (!Number.isSafeInteger(id) || id < 1 || !Number.isSafeInteger(qty) || qty < 1) {
+          return reply.code(400).send({ error: 'bad_request' });
+        }
+        const fill = runJournaledMutation(request, 'want-fill', () => {
+          const w = db.prepare('SELECT * FROM wants WHERE id = ?').get(id);
+          if (!w) return { error: 'no_want' };
+          if (w.owner_id === me.user_id) return { error: 'own_want' };
+          const remaining = w.qty - w.filled;
+          const n = Math.min(remaining, qty);
+          if (!invTake(me.user_id, w.item, n)) return { error: 'not_enough_items' };
           invAdd(w.owner_id, w.item, n);
           grant(me.user_id, { gold: w.price * n });
           addSold.run(w.price * n, me.user_id);
           if (w.filled + n >= w.qty) db.prepare('DELETE FROM wants WHERE id = ?').run(w.id);
           else db.prepare('UPDATE wants SET filled = filled + ? WHERE id = ?').run(n, w.id);
           bumpQuest(me.user_id, 'sell', n);
-        })();
-        logEvent(`🤝 ${me.name} bán ${n} ${info.name} ${info.emoji} cho ${owner?.name || '?'} — ${(w.price * n).toLocaleString('vi')} vàng`);
-        pushTo([w.owner_id], 'Ăn trộm dzui dzẻ 😋', `🤝 ${me.name} vừa bán cho bạn ${n} ${info.name} ${info.emoji}${w.filled + n >= w.qty ? ' — đủ hàng rồi!' : ''}`);
-        return { me: fresh(me.user_id), wants: wantsView(me.user_id), gained: w.price * n, sold: n };
+          return { gained: w.price * n, sold: n, ownerId: w.owner_id, item: w.item, completed: w.filled + n >= w.qty };
+        });
+        if (fill.error) return reply.code(fill.error === 'idempotency_conflict' ? 409 : 400).send({ error: fill.error });
+        const { gained, sold, ownerId, item, completed } = fill.outcome;
+        if (!fill.replay) {
+          const info = itemInfo(item);
+          const owner = getFarmer.get(ownerId);
+          logEvent(`🤝 ${me.name} bán ${sold} ${info.name} ${info.emoji} cho ${owner?.name || '?'} — ${gained.toLocaleString('vi')} vàng`);
+          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🤝 ${me.name} vừa bán cho bạn ${sold} ${info.name} ${info.emoji}${completed ? ' — đủ hàng rồi!' : ''}`);
+        }
+        return { me: fresh(me.user_id), wants: wantsView(me.user_id), gained, sold };
       });
 
       api.post('/buy', async (request, reply) => {
         const { item, qty } = request.body ?? {};
         const info = GOODS[item];
         const me = request.farmer;
-        const rawQty = Number(qty);
-        const n = Math.max(1, Math.min(999, Math.floor(Number.isFinite(rawQty) ? rawQty : 1)));
-        if (!info || !info.buy) return reply.code(400).send({ error: 'bad_request' });
-        if (me.gold < info.buy * n) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        if (!info || !info.buy || !Number.isSafeInteger(qty) || qty < 1 || qty > 999) {
+          return reply.code(400).send({ error: 'bad_request' });
+        }
+        const n = qty;
+        const purchase = runJournaledMutation(request, 'buy', () => {
+          if (getFarmer.get(me.user_id).gold < info.buy * n) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -info.buy * n });
           invAdd(me.user_id, item, n);
-        })();
+          return { bought: n };
+        });
+        if (purchase.error) return reply.code(purchase.error === 'idempotency_conflict' ? 409 : 400).send({ error: purchase.error });
         return { me: fresh(me.user_id) };
       });
 
       // ---- Chuồng gà ----
       // want: số con muốn mua, hoặc 'max' = mua đầy chuồng (tới hết vàng).
-      async function buyAnimal(request, reply, kind, want = 1) {
+      async function buyAnimal(request, reply, kind, want = 1, route = 'buy-animal') {
         const a = ANIMALS[kind];
         const me = request.farmer;
-        if (!a) return reply.code(400).send({ error: 'bad_request' });
-        if (levelFor(me.xp) < a.level) return reply.code(400).send({ error: 'level_too_low' });
-        const count = db.prepare('SELECT COUNT(*) c FROM animals WHERE owner_id = ? AND kind = ?').get(me.user_id, kind).c;
-        const space = a.capacities[barnLevel(me, kind) - 1] - count;
-        if (space <= 0) return reply.code(400).send({ error: 'coop_full' });
-        if (me.gold < a.price) return reply.code(400).send({ error: 'not_enough_gold' });
-        const asked = want === 'max' ? space : Math.max(1, Math.floor(Number(want) || 1));
-        const n = Math.min(asked, space, Math.floor(me.gold / a.price));
-        db.transaction(() => {
+        if (!a || (want !== 'max' && (!Number.isSafeInteger(want) || want < 1))) return reply.code(400).send({ error: 'bad_request' });
+        const purchase = runJournaledMutation(request, route, () => {
+          if (levelFor(me.xp) < a.level) return { error: 'level_too_low' };
+          const count = db.prepare('SELECT COUNT(*) c FROM animals WHERE owner_id = ? AND kind = ?').get(me.user_id, kind).c;
+          const space = a.capacities[barnLevel(me, kind) - 1] - count;
+          if (space <= 0) return { error: 'coop_full' };
+          if (me.gold < a.price) return { error: 'not_enough_gold' };
+          const asked = want === 'max' ? space : want;
+          const n = Math.min(asked, space, Math.floor(me.gold / a.price));
           grant(me.user_id, { gold: -a.price * n });
           const ins = db.prepare('INSERT INTO animals (owner_id, kind) VALUES (?, ?)');
           for (let i = 0; i < n; i += 1) ins.run(me.user_id, kind);
-        })();
-        logEvent(n > 1 ? `${a.emoji} ${me.name} đón ${n} chú ${a.name} mới về chuồng` : `${a.emoji} ${me.name} đón một chú ${a.name} mới về chuồng`);
-        return { me: fresh(me.user_id), bought: n };
+          return { bought: n };
+        });
+        if (purchase.error) return reply.code(purchase.error === 'idempotency_conflict' ? 409 : 400).send({ error: purchase.error });
+        if (!purchase.replay) logEvent(purchase.outcome.bought > 1 ? `${a.emoji} ${me.name} đón ${purchase.outcome.bought} chú ${a.name} mới về chuồng` : `${a.emoji} ${me.name} đón một chú ${a.name} mới về chuồng`);
+        return { me: fresh(me.user_id), ...purchase.outcome };
       }
       api.post('/buy-animal', async (request, reply) => buyAnimal(request, reply, request.body?.kind, request.body?.count ?? 1));
-      api.post('/buy-chicken', async (request, reply) => buyAnimal(request, reply, 'ga'));
+      api.post('/buy-chicken', async (request, reply) => buyAnimal(request, reply, 'ga', 1, 'buy-chicken'));
 
       api.post('/feed', async (request, reply) => {
         const me = request.farmer;
         const kind = ANIMALS[request.body?.kind] ? request.body.kind : 'ga';
         const a = ANIMALS[kind];
-        const hungry = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND kind = ? AND ready_at IS NULL').all(me.user_id, kind);
-        if (hungry.length === 0) return reply.code(400).send({ error: 'no_hungry_animal' });
-        const canFeed = Math.min(hungry.length, Math.floor(invQty(me.user_id, FEED_ITEM) / a.feedQty));
-        if (canFeed === 0) return reply.code(400).send({ error: 'not_enough_feed' });
-        const readyAt = Date.now() + scaleMs(a.produceMs, config.fast);
-        db.transaction(() => {
+        const feed = runJournaledMutation(request, 'feed', () => {
+          const hungry = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND kind = ? AND ready_at IS NULL').all(me.user_id, kind);
+          if (hungry.length === 0) return { error: 'no_hungry_animal' };
+          const canFeed = Math.min(hungry.length, Math.floor(invQty(me.user_id, FEED_ITEM) / a.feedQty));
+          if (canFeed === 0) return { error: 'not_enough_feed' };
+          const readyAt = Date.now() + scaleMs(a.produceMs, config.fast);
           invTake(me.user_id, FEED_ITEM, canFeed * a.feedQty);
           const upd = db.prepare('UPDATE animals SET ready_at = ? WHERE id = ?');
           for (const row of hungry.slice(0, canFeed)) upd.run(readyAt, row.id);
           bumpQuest(me.user_id, 'feed', canFeed);
-        })();
-        return { me: fresh(me.user_id), fed: canFeed };
+          return { fed: canFeed };
+        });
+        if (feed.error) return reply.code(feed.error === 'idempotency_conflict' ? 409 : 400).send({ error: feed.error });
+        return { me: fresh(me.user_id), ...feed.outcome };
       });
 
       api.post('/collect', async (request, reply) => {
         const me = request.farmer;
         const kind = ANIMALS[request.body?.kind] ? request.body.kind : 'ga';
         const a = ANIMALS[kind];
-        const now = Date.now();
-        const ready = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND kind = ? AND ready_at IS NOT NULL AND ready_at <= ?')
-          .all(me.user_id, kind, now);
-        if (ready.length === 0) return reply.code(400).send({ error: 'nothing_ready' });
-        db.transaction(() => {
+        const collect = runJournaledMutation(request, 'collect', () => {
+          const ready = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND kind = ? AND ready_at IS NOT NULL AND ready_at <= ?')
+            .all(me.user_id, kind, Date.now());
+          if (ready.length === 0) return { error: 'nothing_ready' };
           for (const row of ready) {
             invAdd(me.user_id, a.product, 1);
             grant(me.user_id, { xp: a.expCollect });
             db.prepare('UPDATE animals SET ready_at = NULL WHERE id = ?').run(row.id);
           }
-        })();
-        return { me: fresh(me.user_id), collected: ready.length, product: a.product };
+          return { collected: ready.length, product: a.product };
+        });
+        if (collect.error) return reply.code(collect.error === 'idempotency_conflict' ? 409 : 400).send({ error: collect.error });
+        return { me: fresh(me.user_id), ...collect.outcome };
       });
 
       // ---- Cối xay ----
@@ -1434,29 +1594,34 @@ export function buildApp({ config, db, logger = true }) {
         })();
         return { n, total: queued + n };
       }
-      async function machineRun(request, reply, machineId, recipeId, count = 1) {
-        const r = queueRecipe(request.farmer, machineId, recipeId, count);
-        if (r.error) return reply.code(400).send({ error: r.error });
-        return { me: fresh(request.farmer.user_id), queued: r.n, total: r.total };
+      async function machineRun(request, reply, machineId, recipeId, count = 1, route = 'machine-run') {
+        if (!Number.isSafeInteger(count) || count < 1 || count > MACHINE_QUEUE_MAX) return reply.code(400).send({ error: 'bad_request' });
+        const run = runJournaledMutation(request, route, () => queueRecipe(request.farmer, machineId, recipeId, count));
+        if (run.error) return reply.code(run.error === 'idempotency_conflict' ? 409 : 400).send({ error: run.error });
+        return { me: fresh(request.farmer.user_id), queued: run.outcome.n, total: run.outcome.total };
       }
 
       // Chế biến hết: duyệt mọi máy đã mở, mọi công thức, xếp tối đa theo kho
       // (kho dùng chung nên công thức đứng trước được ưu tiên nguyên liệu).
       api.post('/machine-run-all', async (request, reply) => {
         const me = request.farmer;
-        const jobs = [];
-        let total = 0;
-        for (const machine of Object.values(MACHINES)) {
-          if (levelFor(me.xp) < machine.level) continue;
-          for (const recipe of Object.values(machine.recipes)) {
-            if (recipe.id === FEED_ITEM) continue; // thức ăn gia súc: tự chọn tay
-            const r = queueRecipe(me, machine.id, recipe.id, MACHINE_QUEUE_MAX);
-            if (!r.error) { jobs.push({ machine: machine.id, recipe: recipe.id, n: r.n }); total += r.n; }
+        const run = runJournaledMutation(request, 'machine-run-all', () => {
+          const jobs = [];
+          let total = 0;
+          for (const machine of Object.values(MACHINES)) {
+            if (levelFor(me.xp) < machine.level) continue;
+            for (const recipe of Object.values(machine.recipes)) {
+              if (recipe.id === FEED_ITEM) continue; // thức ăn gia súc: tự chọn tay
+              const r = queueRecipe(me, machine.id, recipe.id, MACHINE_QUEUE_MAX);
+              if (!r.error) { jobs.push({ machine: machine.id, recipe: recipe.id, n: r.n }); total += r.n; }
+            }
           }
-        }
-        if (!total) return reply.code(400).send({ error: 'not_enough_items' });
-        logEvent(`🏭 ${me.name} xếp một lượt ${total} mẻ vào ${new Set(jobs.map((j) => j.machine)).size} máy`);
-        return { me: fresh(me.user_id), queued: total, jobs };
+          if (!total) return { error: 'not_enough_items' };
+          return { queued: total, jobs };
+        });
+        if (run.error) return reply.code(run.error === 'idempotency_conflict' ? 409 : 400).send({ error: run.error });
+        if (!run.replay) logEvent(`🏭 ${me.name} xếp một lượt ${run.outcome.queued} mẻ vào ${new Set(run.outcome.jobs.map((j) => j.machine)).size} máy`);
+        return { me: fresh(me.user_id), ...run.outcome };
       });
 
       // Lấy một món (recipeId) hoặc mọi món đã chín của máy (recipeId bỏ trống).
@@ -1488,67 +1653,76 @@ export function buildApp({ config, db, logger = true }) {
           if (counter.n) { bumpQuest(me.user_id, 'process', counter.n); bumpFest(me.user_id, 'process', counter.n); }
         })();
       }
-      async function machineCollect(request, reply, machineId, recipeId) {
+      async function machineCollect(request, reply, machineId, recipeId, route = 'machine-collect') {
         const machine = MACHINES[machineId];
         const me = request.farmer;
         if (!machine) return reply.code(400).send({ error: 'bad_request' });
-        const now = Date.now();
-        const jobs = recipeId
-          ? db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').all(me.user_id, machineId, recipeId)
-          : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND ready_at <= ?').all(me.user_id, machineId, now);
-        if (!jobs.length) return reply.code(400).send({ error: recipeId ? 'mill_empty' : 'not_ready' });
-        if (recipeId && now < jobs[0].ready_at) return reply.code(400).send({ error: 'not_ready' });
-        const got = {}; const counter = { n: 0 };
-        collectJobs(me, jobs, now, got, counter);
-        return { me: fresh(me.user_id), product: Object.keys(got)[0], items: got, collected: counter.n };
+        const collect = runJournaledMutation(request, route, () => {
+          const now = Date.now();
+          const jobs = recipeId
+            ? db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').all(me.user_id, machineId, recipeId)
+            : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND ready_at <= ?').all(me.user_id, machineId, now);
+          if (!jobs.length) return { error: recipeId ? 'mill_empty' : 'not_ready' };
+          if (recipeId && now < jobs[0].ready_at) return { error: 'not_ready' };
+          const got = {}; const counter = { n: 0 };
+          collectJobs(me, jobs, now, got, counter);
+          return { product: Object.keys(got)[0], items: got, collected: counter.n };
+        });
+        if (collect.error) return reply.code(collect.error === 'idempotency_conflict' ? 409 : 400).send({ error: collect.error });
+        return { me: fresh(me.user_id), ...collect.outcome };
       }
       // Thu hết: mọi job đã chín ở mọi máy.
       api.post('/machine-collect-all', async (request, reply) => {
         const me = request.farmer;
-        const now = Date.now();
-        const jobs = db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
-        if (!jobs.length) return reply.code(400).send({ error: 'not_ready' });
-        const got = {}; const counter = { n: 0 };
-        collectJobs(me, jobs, now, got, counter);
-        return { me: fresh(me.user_id), product: Object.keys(got)[0], items: got, collected: counter.n };
+        const collect = runJournaledMutation(request, 'machine-collect-all', () => {
+          const now = Date.now();
+          const jobs = db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
+          if (!jobs.length) return { error: 'not_ready' };
+          const got = {}; const counter = { n: 0 };
+          collectJobs(me, jobs, now, got, counter);
+          return { product: Object.keys(got)[0], items: got, collected: counter.n };
+        });
+        if (collect.error) return reply.code(collect.error === 'idempotency_conflict' ? 409 : 400).send({ error: collect.error });
+        return { me: fresh(me.user_id), ...collect.outcome };
       });
 
       api.post('/machine-run', async (request, reply) => machineRun(request, reply, request.body?.machine, request.body?.recipe, request.body?.count));
       api.post('/machine-collect', async (request, reply) => machineCollect(request, reply, request.body?.machine, request.body?.recipe));
-      api.post('/mill', async (request, reply) => machineRun(request, reply, 'coixay', request.body?.recipe));
-      api.post('/mill-collect', async (request, reply) => machineCollect(request, reply, 'coixay'));
+      api.post('/mill', async (request, reply) => machineRun(request, reply, 'coixay', request.body?.recipe, 1, 'mill'));
+      api.post('/mill-collect', async (request, reply) => machineCollect(request, reply, 'coixay', undefined, 'mill-collect'));
 
       // ---- Con vật may mắn: bấm trúng ăn kim cương ----
       api.post('/critter-catch', async (request, reply) => {
         const me = request.farmer;
-        const now = Date.now();
-        const at = me.critter_next_at;
-        if (!at || now < at || now > at + CRITTER.windowMs + CRITTER.graceMs) {
-          return reply.code(400).send({ error: 'critter_gone' });
-        }
-        const gems = CRITTER.gemMin + Math.floor(Math.random() * (CRITTER.gemMax - CRITTER.gemMin + 1));
-        const gapMin = scaleMs(CRITTER.minGapMs, config.fast);
-        const gapMax = scaleMs(CRITTER.maxGapMs, config.fast);
-        const next = now + gapMin + Math.floor(Math.random() * (gapMax - gapMin));
-        db.transaction(() => {
+        const catchResult = runJournaledMutation(request, 'critter-catch', () => {
+          const current = getFarmer.get(me.user_id);
+          const now = Date.now();
+          const at = current.critter_next_at;
+          if (!at || now < at || now > at + CRITTER.windowMs + CRITTER.graceMs) return { error: 'critter_gone' };
+          const gems = CRITTER.gemMin + Math.floor(Math.random() * (CRITTER.gemMax - CRITTER.gemMin + 1));
+          const gapMin = scaleMs(CRITTER.minGapMs, config.fast);
+          const gapMax = scaleMs(CRITTER.maxGapMs, config.fast);
+          const next = now + gapMin + Math.floor(Math.random() * (gapMax - gapMin));
           grant(me.user_id, { gems });
           db.prepare('UPDATE farmers SET critter_next_at = ? WHERE user_id = ?').run(next, me.user_id);
-        })();
-        logEvent(`✨ ${me.name} tóm được ${critterKindFor(at)} may mắn — +${gems} kim cương!`);
-        return { me: fresh(me.user_id), gems, kind: critterKindFor(at) };
+          return { gems, kind: critterKindFor(at) };
+        });
+        if (catchResult.error) return reply.code(catchResult.error === 'idempotency_conflict' ? 409 : 400).send({ error: catchResult.error });
+        if (!catchResult.replay) logEvent(`✨ ${me.name} tóm được ${catchResult.outcome.kind} may mắn — +${catchResult.outcome.gems} kim cương!`);
+        return { me: fresh(me.user_id), ...catchResult.outcome };
       });
 
       // ---- Đơn hàng ----
       api.post('/order-deliver', async (request, reply) => {
         const { id } = request.body ?? {};
         const me = request.farmer;
-        const order = db.prepare('SELECT * FROM orders WHERE id = ? AND owner_id = ?').get(id, me.user_id);
-        if (!order) return reply.code(400).send({ error: 'no_order' });
-        const items = JSON.parse(order.items_json);
-        for (const [item, qty] of Object.entries(items)) {
-          if (invQty(me.user_id, item) < qty) return reply.code(400).send({ error: 'not_enough_items' });
-        }
-        db.transaction(() => {
+        const delivery = runJournaledMutation(request, 'order-deliver', () => {
+          const order = db.prepare('SELECT * FROM orders WHERE id = ? AND owner_id = ?').get(id, me.user_id);
+          if (!order) return { error: 'no_order' };
+          const items = JSON.parse(order.items_json);
+          for (const [item, qty] of Object.entries(items)) {
+            if (invQty(me.user_id, item) < qty) return { error: 'not_enough_items' };
+          }
           for (const [item, qty] of Object.entries(items)) invTake(me.user_id, item, qty);
           const orderGold = Math.round(order.gold * (1 + 0.05 * skillRank(me, 'nguoibankheo')));
           grant(me.user_id, { gold: orderGold, xp: order.exp, stars: order.stars });
@@ -1558,55 +1732,81 @@ export function buildApp({ config, db, logger = true }) {
             .run(Date.now() + scaleMs(ORDER_REFRESH_MS, config.fast), me.user_id);
           bumpQuest(me.user_id, 'deliver');
           bumpFest(me.user_id, 'deliver');
-        })();
-        logEvent(`🚚 ${me.name} giao một đơn hàng, nhận ${order.gold} vàng`);
-        return { me: fresh(me.user_id), gained: order.gold };
+          return { gained: orderGold };
+        });
+        if (delivery.error) return reply.code(delivery.error === 'idempotency_conflict' ? 409 : 400).send({ error: delivery.error });
+        if (!delivery.replay) logEvent(`🚚 ${me.name} giao một đơn hàng, nhận ${delivery.outcome.gained} vàng`);
+        return { me: fresh(me.user_id), ...delivery.outcome };
       });
 
       api.post('/order-discard', async (request, reply) => {
         const { id } = request.body ?? {};
         const me = request.farmer;
-        const order = db.prepare('SELECT * FROM orders WHERE id = ? AND owner_id = ?').get(id, me.user_id);
-        if (!order) return reply.code(400).send({ error: 'no_order' });
-        db.transaction(() => {
+        const discard = runJournaledMutation(request, 'order-discard', () => {
+          const order = db.prepare('SELECT * FROM orders WHERE id = ? AND owner_id = ?').get(id, me.user_id);
+          if (!order) return { error: 'no_order' };
           db.prepare('DELETE FROM orders WHERE id = ?').run(order.id);
           db.prepare('UPDATE farmers SET next_order_at = ? WHERE user_id = ?')
             .run(Date.now() + scaleMs(ORDER_REFRESH_MS, config.fast), me.user_id);
-        })();
+          return {};
+        });
+        if (discard.error) return reply.code(discard.error === 'idempotency_conflict' ? 409 : 400).send({ error: discard.error });
         return { me: fresh(me.user_id) };
       });
 
       // ---- Nhiệm vụ ngày: rương ----
       api.post('/quest-chest', async (request, reply) => {
         const me = request.farmer;
-        const d = getDaily(me.user_id);
-        if (d.chest_claimed) return reply.code(400).send({ error: 'already_claimed' });
-        const done = DAILY_QUESTS.filter((q) => (d.counters[q.id] || 0) >= q.target);
-        if (done.length < DAILY_CHEST.questsRequired) return reply.code(400).send({ error: 'not_enough_quests' });
-        const gem = Math.random() < DAILY_CHEST.gemChance ? 1 : 0;
-        db.transaction(() => {
+        const claim = runJournaledMutation(request, 'quest-chest', () => {
+          const d = getDaily(me.user_id);
+          if (d.chest_claimed) return { error: 'already_claimed' };
+          const done = DAILY_QUESTS.filter((q) => (d.counters[q.id] || 0) >= q.target);
+          if (done.length < DAILY_CHEST.questsRequired) return { error: 'not_enough_quests' };
+          const gem = Math.random() < DAILY_CHEST.gemChance ? 1 : 0;
           // Thưởng từng nhiệm vụ đã xong + rương tổng.
           for (const q of done) grant(me.user_id, { gold: q.gold * GOLD_MULT, xp: q.exp, stars: q.stars || 0 });
           grant(me.user_id, { gold: DAILY_CHEST.gold * GOLD_MULT, xp: DAILY_CHEST.exp, gems: gem });
           db.prepare('UPDATE daily SET chest_claimed = 1 WHERE owner_id = ? AND day = ?').run(me.user_id, d.day);
-        })();
-        logEvent(`🎁 ${me.name} mở rương nhiệm vụ ngày`);
-        return { me: fresh(me.user_id), gem };
+          return { gem };
+        });
+        if (claim.error) return reply.code(claim.error === 'idempotency_conflict' ? 409 : 400).send({ error: claim.error });
+        if (!claim.replay) logEvent(`🎁 ${me.name} mở rương nhiệm vụ ngày`);
+        return { me: fresh(me.user_id), ...claim.outcome };
+      });
+
+      api.post('/collection-claim', async (request, reply) => {
+        const { id } = request.body ?? {};
+        const collection = COLLECTIONS.find((entry) => entry.id === id);
+        if (!collection) return reply.code(400).send({ error: 'bad_request' });
+        const me = request.farmer;
+        const claim = runJournaledMutation(request, 'collection-claim', () => {
+          if (db.prepare('SELECT 1 FROM collection_claims WHERE owner_id = ? AND collection_id = ?').get(me.user_id, id)) return { error: 'already_claimed' };
+          const found = new Set(db.prepare('SELECT item FROM collection_discoveries WHERE owner_id = ?').all(me.user_id).map((row) => row.item));
+          if (!collection.items.every((item) => found.has(item))) return { error: 'collection_incomplete' };
+          grant(me.user_id, { gold: collection.gold * GOLD_MULT, gems: collection.gems });
+          db.prepare('INSERT INTO collection_claims (owner_id, collection_id, claimed_at) VALUES (?, ?, ?)').run(me.user_id, id, Date.now());
+          return { id, gold: collection.gold * GOLD_MULT, gems: collection.gems };
+        });
+        if (claim.error) return reply.code(claim.error === 'idempotency_conflict' ? 409 : 400).send({ error: claim.error });
+        if (!claim.replay) logEvent(`📒 ${me.name} hoàn thành bộ sưu tập ${collection.name}`);
+        return { me: fresh(me.user_id), ...claim.outcome };
       });
 
       // ---- Mốc sao ----
       api.post('/star-claim', async (request, reply) => {
         const me = request.farmer;
-        const next = STAR_MILESTONES.find(
-          (m) => !db.prepare('SELECT 1 FROM star_claims WHERE owner_id = ? AND milestone = ?').get(me.user_id, m.stars),
-        );
-        if (!next) return reply.code(400).send({ error: 'no_milestone' });
-        if (me.stars < next.stars) return reply.code(400).send({ error: 'not_enough_stars' });
-        db.transaction(() => {
+        const claim = runJournaledMutation(request, 'star-claim', () => {
+          const next = STAR_MILESTONES.find(
+            (m) => !db.prepare('SELECT 1 FROM star_claims WHERE owner_id = ? AND milestone = ?').get(me.user_id, m.stars),
+          );
+          if (!next) return { error: 'no_milestone' };
+          if (me.stars < next.stars) return { error: 'not_enough_stars' };
           grant(me.user_id, { gold: (next.gold || 0) * GOLD_MULT, gems: next.gems || 0 });
           db.prepare('INSERT INTO star_claims (owner_id, milestone) VALUES (?, ?)').run(me.user_id, next.stars);
-        })();
-        return { me: fresh(me.user_id), claimed: next };
+          return { claimed: next };
+        });
+        if (claim.error) return reply.code(claim.error === 'idempotency_conflict' ? 409 : 400).send({ error: claim.error });
+        return { me: fresh(me.user_id), ...claim.outcome };
       });
 
       // ---- Mở rộng đất ----
@@ -1621,25 +1821,36 @@ export function buildApp({ config, db, logger = true }) {
         const to = getFarmer.get(Number(toId));
         if (!to || to.user_id === me.user_id) return reply.code(400).send({ error: 'no_farm' });
         if (!n) return reply.code(400).send({ error: 'bad_amount' });
-        if (me.gold < n) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => { grant(me.user_id, { gold: -n }); grant(to.user_id, { gold: n }); })();
-        logEvent(`💝 ${me.name} tặng ${to.name} ${n.toLocaleString('vi')} vàng`);
-        pushTo([to.user_id], 'Ăn trộm dzui dzẻ 😋', `💝 ${me.name} vừa tặng bạn ${n.toLocaleString('vi')} vàng!`);
+        const transfer = runJournaledMutation(request, 'gold-give', () => {
+          if (getFarmer.get(me.user_id).gold < n) return { error: 'not_enough_gold' };
+          grant(me.user_id, { gold: -n });
+          grant(to.user_id, { gold: n });
+          return { given: n };
+        });
+        if (transfer.error) return reply.code(transfer.error === 'idempotency_conflict' ? 409 : 400).send({ error: transfer.error });
+        if (!transfer.replay) {
+          logEvent(`💝 ${me.name} tặng ${to.name} ${n.toLocaleString('vi')} vàng`);
+          pushTo([to.user_id], 'Ăn trộm dzui dzẻ 😋', `💝 ${me.name} vừa tặng bạn ${n.toLocaleString('vi')} vàng!`);
+        }
         return { me: fresh(me.user_id), given: n };
       });
       api.post('/gold-ask', async (request, reply) => {
         const { toId, amount, note } = request.body ?? {};
         const me = request.farmer;
         const n = parseAmount(amount);
-        const to = getFarmer.get(Number(toId));
-        if (!to || to.user_id === me.user_id) return reply.code(400).send({ error: 'no_farm' });
         if (!n) return reply.code(400).send({ error: 'bad_amount' });
-        const open = db.prepare("SELECT COUNT(*) n FROM gold_requests WHERE from_id = ? AND status = 'open'").get(me.user_id).n;
-        if (open >= GOLD_ASK_MAX_OPEN) return reply.code(400).send({ error: 'too_many_requests' });
-        const text = String(note || '').slice(0, 80);
-        db.prepare('INSERT INTO gold_requests (from_id, to_id, amount, note, status, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(me.user_id, to.user_id, n, text, 'open', Date.now());
-        pushTo([to.user_id], 'Ăn trộm dzui dzẻ 😋', `🙏 ${me.name} xin bạn ${n.toLocaleString('vi')} vàng${text ? `: “${text}”` : ''} — vào Xin/Cho để trả lời.`);
-        return { me: fresh(me.user_id), asked: n };
+        const ask = runJournaledMutation(request, 'gold-ask', () => {
+          const to = getFarmer.get(Number(toId));
+          if (!to || to.user_id === me.user_id) return { error: 'no_farm' };
+          const open = db.prepare("SELECT COUNT(*) n FROM gold_requests WHERE from_id = ? AND status = 'open'").get(me.user_id).n;
+          if (open >= GOLD_ASK_MAX_OPEN) return { error: 'too_many_requests' };
+          const text = String(note || '').slice(0, 80);
+          const inserted = db.prepare('INSERT INTO gold_requests (from_id, to_id, amount, note, status, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(me.user_id, to.user_id, n, text, 'open', Date.now());
+          return { asked: n, requestId: Number(inserted.lastInsertRowid), toId: to.user_id, note: text };
+        });
+        if (ask.error) return reply.code(ask.error === 'idempotency_conflict' ? 409 : 400).send({ error: ask.error });
+        if (!ask.replay) pushTo([ask.outcome.toId], 'Ăn trộm dzui dzẻ 😋', `🙏 ${me.name} xin bạn ${n.toLocaleString('vi')} vàng${ask.outcome.note ? `: “${ask.outcome.note}”` : ''} — vào Xin/Cho để trả lời.`);
+        return { me: fresh(me.user_id), asked: ask.outcome.asked };
       });
       function goldRequestsView(meId) {
         const q = (sql, ...a) => db.prepare(sql).all(...a).map((r) => ({ id: r.id, fromId: r.from_id, fromName: r.from_name, toId: r.to_id, toName: r.to_name, amount: r.amount, note: r.note, status: r.status, createdAt: r.created_at, resolvedAt: r.resolved_at }));
@@ -1653,33 +1864,40 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/gold-request-act', async (request, reply) => {
         const { id, action } = request.body ?? {};
         const me = request.farmer;
-        const row = db.prepare('SELECT * FROM gold_requests WHERE id = ?').get(Number(id));
-        if (!row || row.status !== 'open') return reply.code(400).send({ error: 'request_closed' });
-        const now = Date.now();
-        if (action === 'cancel') {
-          if (row.from_id !== me.user_id) return reply.code(403).send({ error: 'forbidden' });
-          db.prepare("UPDATE gold_requests SET status = 'cancelled', resolved_at = ? WHERE id = ?").run(now, row.id);
-        } else if (action === 'decline') {
-          if (row.to_id !== me.user_id) return reply.code(403).send({ error: 'forbidden' });
-          db.prepare("UPDATE gold_requests SET status = 'declined', resolved_at = ? WHERE id = ?").run(now, row.id);
-          pushTo([row.from_id], 'Ăn trộm dzui dzẻ 😋', `🙅 ${me.name} chưa cho được ${row.amount.toLocaleString('vi')} vàng bạn xin.`);
-        } else if (action === 'pay') {
-          if (row.to_id !== me.user_id) return reply.code(403).send({ error: 'forbidden' });
-          if (me.gold < row.amount) return reply.code(400).send({ error: 'not_enough_gold' });
-          db.transaction(() => {
+        const act = runJournaledMutation(request, 'gold-request-act', () => {
+          const row = db.prepare('SELECT * FROM gold_requests WHERE id = ?').get(Number(id));
+          if (!row || row.status !== 'open') return { error: 'request_closed' };
+          const now = Date.now();
+          if (action === 'cancel') {
+            if (row.from_id !== me.user_id) return { error: 'forbidden' };
+            db.prepare("UPDATE gold_requests SET status = 'cancelled', resolved_at = ? WHERE id = ?").run(now, row.id);
+          } else if (action === 'decline') {
+            if (row.to_id !== me.user_id) return { error: 'forbidden' };
+            db.prepare("UPDATE gold_requests SET status = 'declined', resolved_at = ? WHERE id = ?").run(now, row.id);
+          } else if (action === 'pay') {
+            if (row.to_id !== me.user_id) return { error: 'forbidden' };
+            if (getFarmer.get(me.user_id).gold < row.amount) return { error: 'not_enough_gold' };
             grant(me.user_id, { gold: -row.amount });
             grant(row.from_id, { gold: row.amount });
             db.prepare("UPDATE gold_requests SET status = 'paid', resolved_at = ? WHERE id = ?").run(now, row.id);
-          })();
-          const asker = getFarmer.get(row.from_id);
-          logEvent(`💝 ${me.name} cho ${asker?.name || '?'} ${row.amount.toLocaleString('vi')} vàng theo lời xin`);
-          pushTo([row.from_id], 'Ăn trộm dzui dzẻ 😋', `💝 ${me.name} đã cho bạn ${row.amount.toLocaleString('vi')} vàng như bạn xin!`);
-        } else return reply.code(400).send({ error: 'bad_request' });
+          } else return { error: 'bad_request' };
+          return { action, fromId: row.from_id, amount: row.amount, askerName: getFarmer.get(row.from_id)?.name || '?' };
+        });
+        if (act.error) return reply.code(act.error === 'idempotency_conflict' ? 409 : act.error === 'forbidden' ? 403 : 400).send({ error: act.error });
+        if (!act.replay && act.outcome.action === 'decline') pushTo([act.outcome.fromId], 'Ăn trộm dzui dzẻ 😋', `🙅 ${me.name} chưa cho được ${act.outcome.amount.toLocaleString('vi')} vàng bạn xin.`);
+        if (!act.replay && act.outcome.action === 'pay') {
+          logEvent(`💝 ${me.name} cho ${act.outcome.askerName} ${act.outcome.amount.toLocaleString('vi')} vàng theo lời xin`);
+          pushTo([act.outcome.fromId], 'Ăn trộm dzui dzẻ 😋', `💝 ${me.name} đã cho bạn ${act.outcome.amount.toLocaleString('vi')} vàng như bạn xin!`);
+        }
         return { me: fresh(me.user_id), requests: goldRequestsView(me.user_id) };
       });
 
-      api.post('/away-ack', async (request) => {
-        db.prepare('UPDATE farmers SET away_report_json = NULL WHERE user_id = ?').run(request.farmer.user_id);
+      api.post('/away-ack', async (request, reply) => {
+        const acknowledged = runJournaledMutation(request, 'away-ack', () => {
+          db.prepare('UPDATE farmers SET away_report_json = NULL WHERE user_id = ?').run(request.farmer.user_id);
+          return { acknowledged: true };
+        });
+        if (acknowledged.error) return reply.code(acknowledged.error === 'idempotency_conflict' ? 409 : 400).send({ error: acknowledged.error });
         return { me: fresh(request.farmer.user_id) };
       });
 
@@ -1687,16 +1905,19 @@ export function buildApp({ config, db, logger = true }) {
         const { machine } = request.body ?? {};
         const me = request.farmer;
         if (!MACHINES[machine]) return reply.code(400).send({ error: 'bad_request' });
-        const lv = machineLevel(me, machine);
-        if (lv >= MACHINE_UPGRADE_GOLD.length) return reply.code(400).send({ error: 'max_level' });
-        const cost = MACHINE_UPGRADE_GOLD[lv];
-        if (me.gold < cost) return reply.code(400).send({ error: 'not_enough_gold' });
-        const levels = { ...machineLevels(me), [machine]: lv + 1 };
-        db.transaction(() => {
+        const upgrade = runJournaledMutation(request, 'machine-upgrade', () => {
+          const current = getFarmer.get(me.user_id);
+          const lv = machineLevel(current, machine);
+          if (lv >= MACHINE_UPGRADE_GOLD.length) return { error: 'max_level' };
+          const cost = MACHINE_UPGRADE_GOLD[lv];
+          if (current.gold < cost) return { error: 'not_enough_gold' };
+          const levels = { ...machineLevels(current), [machine]: lv + 1 };
           grant(me.user_id, { gold: -cost });
           db.prepare('UPDATE farmers SET machine_levels_json = ?, sunk_gold = sunk_gold + ? WHERE user_id = ?').run(JSON.stringify(levels), cost, me.user_id);
-        })();
-        logEvent(`⚙️ ${me.name} nâng cấp ${MACHINES[machine].name} lên cấp ${lv + 1} (−${(lv + 1) * 10}% thời gian)`);
+          return { level: lv + 1 };
+        });
+        if (upgrade.error) return reply.code(upgrade.error === 'idempotency_conflict' ? 409 : 400).send({ error: upgrade.error });
+        if (!upgrade.replay) logEvent(`⚙️ ${me.name} nâng cấp ${MACHINES[machine].name} lên cấp ${upgrade.outcome.level}`);
         return { me: fresh(me.user_id) };
       });
 
@@ -1705,18 +1926,22 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         const lux = LUXURY[item];
         if (!lux) return reply.code(400).send({ error: 'bad_request' });
-        if (db.prepare('SELECT 1 FROM luxury WHERE owner_id = ? AND item = ?').get(me.user_id, item)) return reply.code(400).send({ error: 'already_owned' });
-        if (me.gold < lux.price) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const purchase = runJournaledMutation(request, 'luxury-buy', () => {
+          if (db.prepare('SELECT 1 FROM luxury WHERE owner_id = ? AND item = ?').get(me.user_id, item)) return { error: 'already_owned' };
+          if (getFarmer.get(me.user_id).gold < lux.price) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -lux.price });
           db.prepare('INSERT INTO luxury (owner_id, item, at) VALUES (?, ?, ?)').run(me.user_id, item, Date.now());
           db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(lux.price, me.user_id);
           if (lux.kind === 'title') db.prepare('UPDATE farmers SET title_id = ? WHERE user_id = ?').run(item, me.user_id);
           if (lux.kind === 'frame') db.prepare('UPDATE farmers SET frame_id = ? WHERE user_id = ?').run(item, me.user_id);
-        })();
-        logEvent(`💎 ${me.name} vung ${lux.price.toLocaleString('vi')} vàng tậu ${lux.emoji} ${lux.name}!`);
-        const others = db.prepare('SELECT user_id FROM farmers WHERE user_id != ?').all(me.user_id).map((r) => r.user_id);
-        pushTo(others, 'Ăn trộm dzui dzẻ 😋', `💎 ${me.name} vừa vung ${lux.price.toLocaleString('vi')} vàng tậu ${lux.emoji} ${lux.name}!`);
+          return { item };
+        });
+        if (purchase.error) return reply.code(purchase.error === 'idempotency_conflict' ? 409 : 400).send({ error: purchase.error });
+        if (!purchase.replay) {
+          logEvent(`💎 ${me.name} vung ${lux.price.toLocaleString('vi')} vàng tậu ${lux.emoji} ${lux.name}!`);
+          const others = db.prepare('SELECT user_id FROM farmers WHERE user_id != ?').all(me.user_id).map((r) => r.user_id);
+          pushTo(others, 'Ăn trộm dzui dzẻ 😋', `💎 ${me.name} vừa vung ${lux.price.toLocaleString('vi')} vàng tậu ${lux.emoji} ${lux.name}!`);
+        }
         return { me: fresh(me.user_id) };
       });
 
@@ -1725,8 +1950,12 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         const k = item ? LUXURY[item]?.kind : kind;
         if (!['title', 'frame'].includes(k)) return reply.code(400).send({ error: 'bad_request' });
-        if (item && !db.prepare('SELECT 1 FROM luxury WHERE owner_id = ? AND item = ?').get(me.user_id, item)) return reply.code(400).send({ error: 'not_owned' });
-        db.prepare(`UPDATE farmers SET ${k === 'title' ? 'title_id' : 'frame_id'} = ? WHERE user_id = ?`).run(item || '', me.user_id);
+        const equip = runJournaledMutation(request, 'luxury-equip', () => {
+          if (item && !db.prepare('SELECT 1 FROM luxury WHERE owner_id = ? AND item = ?').get(me.user_id, item)) return { error: 'not_owned' };
+          db.prepare(`UPDATE farmers SET ${k === 'title' ? 'title_id' : 'frame_id'} = ? WHERE user_id = ?`).run(item || '', me.user_id);
+          return { item: item || '', kind: k };
+        });
+        if (equip.error) return reply.code(equip.error === 'idempotency_conflict' ? 409 : 400).send({ error: equip.error });
         return { me: fresh(me.user_id) };
       });
 
@@ -1747,31 +1976,38 @@ export function buildApp({ config, db, logger = true }) {
       api.get('/lottery', async (request) => { settleThiefBoard(); return lotteryView(request.farmer); });
       api.post('/lottery-buy', async (request, reply) => {
         const me = request.farmer;
-        const n = Math.max(1, Math.min(LOTTERY.maxPerDay, Math.floor(Number(request.body?.qty) || 1)));
-        const day = thiefDayKey();
-        const mine = db.prepare('SELECT qty FROM lottery_tickets WHERE day = ? AND owner_id = ?').get(day, me.user_id)?.qty || 0;
-        if (mine + n > LOTTERY.maxPerDay) return reply.code(400).send({ error: 'lottery_max' });
-        const cost = n * LOTTERY.ticket;
-        if (me.gold < cost) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const qty = request.body?.qty ?? 1;
+        if (!Number.isSafeInteger(qty) || qty < 1 || qty > LOTTERY.maxPerDay) return reply.code(400).send({ error: 'bad_request' });
+        const purchase = runJournaledMutation(request, 'lottery-buy', () => {
+          const n = qty;
+          const day = thiefDayKey();
+          const mine = db.prepare('SELECT qty FROM lottery_tickets WHERE day = ? AND owner_id = ?').get(day, me.user_id)?.qty || 0;
+          if (mine + n > LOTTERY.maxPerDay) return { error: 'lottery_max' };
+          const cost = n * LOTTERY.ticket;
+          if (me.gold < cost) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -cost });
           db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(cost, me.user_id);
           db.prepare('INSERT INTO lottery_tickets (day, owner_id, qty) VALUES (?, ?, ?) ON CONFLICT(day, owner_id) DO UPDATE SET qty = qty + excluded.qty').run(day, me.user_id, n);
-        })();
+          return { bought: n };
+        });
+        if (purchase.error) return reply.code(purchase.error === 'idempotency_conflict' ? 409 : 400).send({ error: purchase.error });
         return { me: fresh(me.user_id), lottery: lotteryView(me) };
       });
 
       api.post('/expand', async (request, reply) => {
         const me = request.farmer;
-        if (me.plots_count >= MAX_PLOTS) return reply.code(400).send({ error: 'max_plots' });
-        const exp = EXPANSIONS[(me.plots_count - START_PLOTS) / 4];
-        if (levelFor(me.xp) < exp.level) return reply.code(400).send({ error: 'level_too_low' });
-        if (me.gold < exp.gold) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const expansion = runJournaledMutation(request, 'expand', () => {
+          const current = getFarmer.get(me.user_id);
+          if (current.plots_count >= MAX_PLOTS) return { error: 'max_plots' };
+          const exp = EXPANSIONS[(current.plots_count - START_PLOTS) / 4];
+          if (levelFor(current.xp) < exp.level) return { error: 'level_too_low' };
+          if (current.gold < exp.gold) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -exp.gold });
           db.prepare('UPDATE farmers SET plots_count = plots_count + 4 WHERE user_id = ?').run(me.user_id);
-        })();
-        logEvent(`🧱 ${me.name} mở rộng nông trại lên ${me.plots_count + 4} ô`);
+          return { plots: current.plots_count + 4 };
+        });
+        if (expansion.error) return reply.code(expansion.error === 'idempotency_conflict' ? 409 : 400).send({ error: expansion.error });
+        if (!expansion.replay) logEvent(`🧱 ${me.name} mở rộng nông trại lên ${expansion.outcome.plots} ô`);
         return { me: fresh(me.user_id) };
       });
 
@@ -1779,37 +2015,35 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/speedup', async (request, reply) => {
         const { target, idx } = request.body ?? {};
         const me = request.farmer;
-        const now = Date.now();
-        let remaining;
-        if (target === 'plot') {
-          const plot = getPlot.get(me.user_id, idx);
-          if (!plot || now >= plot.ready_at) return reply.code(400).send({ error: 'not_growing' });
-          remaining = plot.ready_at - now;
-          const cost = speedupCost(remaining);
-          if (me.gems < cost) return reply.code(400).send({ error: 'not_enough_gems' });
-          db.transaction(() => {
+        const speedup = runJournaledMutation(request, 'speedup', () => {
+          const now = Date.now();
+          if (target === 'plot') {
+            const plot = getPlot.get(me.user_id, idx);
+            if (!plot || now >= plot.ready_at) return { error: 'not_growing' };
+            const cost = speedupCost(plot.ready_at - now);
+            if (getFarmer.get(me.user_id).gems < cost) return { error: 'not_enough_gems' };
             grant(me.user_id, { gems: -cost });
             db.prepare('UPDATE plots SET ready_at = ? WHERE owner_id = ? AND idx = ?').run(now, me.user_id, idx);
-          })();
-          return { me: fresh(me.user_id), cost };
-        }
-        if (target === 'mill' || target === 'machine') {
-          const mk = target === 'machine' && MACHINES[request.body?.kind] ? request.body.kind : 'coixay';
-          const rc = request.body?.recipe;
-          const cur = rc
-            ? db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').get(me.user_id, mk, rc)
-            : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND ready_at > ? ORDER BY ready_at LIMIT 1').get(me.user_id, mk, now);
-          if (!cur || now >= cur.ready_at) return reply.code(400).send({ error: 'not_processing' });
-          remaining = cur.ready_at - now;
-          const cost = speedupCost(remaining);
-          if (me.gems < cost) return reply.code(400).send({ error: 'not_enough_gems' });
-          db.transaction(() => {
+            return { cost };
+          }
+          if (target === 'mill' || target === 'machine') {
+            if (target === 'machine' && !MACHINES[request.body?.kind]) return { error: 'bad_request' };
+            const mk = target === 'machine' ? request.body.kind : 'coixay';
+            const rc = request.body?.recipe;
+            const cur = rc
+              ? db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').get(me.user_id, mk, rc)
+              : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND ready_at > ? ORDER BY ready_at LIMIT 1').get(me.user_id, mk, now);
+            if (!cur || now >= cur.ready_at) return { error: 'not_processing' };
+            const cost = speedupCost(cur.ready_at - now);
+            if (getFarmer.get(me.user_id).gems < cost) return { error: 'not_enough_gems' };
             grant(me.user_id, { gems: -cost });
             db.prepare('UPDATE machine_jobs SET ready_at = ? WHERE owner_id = ? AND kind = ? AND recipe = ?').run(now, me.user_id, mk, cur.recipe);
-          })();
-          return { me: fresh(me.user_id), cost };
-        }
-        return reply.code(400).send({ error: 'bad_request' });
+            return { cost };
+          }
+          return { error: 'bad_request' };
+        });
+        if (speedup.error) return reply.code(speedup.error === 'idempotency_conflict' ? 409 : 400).send({ error: speedup.error });
+        return { me: fresh(me.user_id), cost: speedup.outcome.cost };
       });
 
       // ---- Kỹ năng ----
@@ -1818,27 +2052,35 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         const node = SKILL_NODES[id];
         if (!node) return reply.code(400).send({ error: 'bad_request' });
-        if (levelFor(me.xp) < SKILLS.unlockLevel) return reply.code(400).send({ error: 'level_too_low' });
-        const learned = skillsOf(me);
-        const rank = learned[id] || 0;
-        if (rank >= SKILL_MAX_RANK) return reply.code(400).send({ error: 'max_rank' });
-        const cost = skillCost(node, rank + 1);
-        if (skillPointsLeft(me) < cost) return reply.code(400).send({ error: 'no_skill_points' });
-        learned[id] = rank + 1;
-        db.prepare('UPDATE farmers SET skills_json = ? WHERE user_id = ?').run(JSON.stringify(learned), me.user_id);
-        logEvent(`🎓 ${me.name} nâng kỹ năng ${node.name} lên bậc ${rank + 1}`);
-        return { me: fresh(me.user_id), rank: rank + 1 };
+        const learn = runJournaledMutation(request, 'skill-learn', () => {
+          const current = getFarmer.get(me.user_id);
+          if (levelFor(current.xp) < SKILLS.unlockLevel) return { error: 'level_too_low' };
+          const learned = skillsOf(current);
+          const rank = learned[id] || 0;
+          if (rank >= SKILL_MAX_RANK) return { error: 'max_rank' };
+          const cost = skillCost(node, rank + 1);
+          if (skillPointsLeft(current) < cost) return { error: 'no_skill_points' };
+          learned[id] = rank + 1;
+          db.prepare('UPDATE farmers SET skills_json = ? WHERE user_id = ?').run(JSON.stringify(learned), me.user_id);
+          return { rank: rank + 1 };
+        });
+        if (learn.error) return reply.code(learn.error === 'idempotency_conflict' ? 409 : 400).send({ error: learn.error });
+        if (!learn.replay) logEvent(`🎓 ${me.name} nâng kỹ năng ${node.name} lên bậc ${learn.outcome.rank}`);
+        return { me: fresh(me.user_id), ...learn.outcome };
       });
 
       api.post('/skill-respec', async (request, reply) => {
         const me = request.farmer;
-        const now = Date.now();
-        if (now < (me.last_respec_at || 0) + SKILLS.respecCooldownMs) return reply.code(400).send({ error: 'respec_cooldown' });
-        if (me.gems < SKILLS.respecGems) return reply.code(400).send({ error: 'not_enough_gems' });
-        db.transaction(() => {
+        const respec = runJournaledMutation(request, 'skill-respec', () => {
+          const current = getFarmer.get(me.user_id);
+          const now = Date.now();
+          if (now < (current.last_respec_at || 0) + SKILLS.respecCooldownMs) return { error: 'respec_cooldown' };
+          if (current.gems < SKILLS.respecGems) return { error: 'not_enough_gems' };
           grant(me.user_id, { gems: -SKILLS.respecGems });
           db.prepare("UPDATE farmers SET skills_json = '{}', last_respec_at = ? WHERE user_id = ?").run(now, me.user_id);
-        })();
+          return { gems: SKILLS.respecGems };
+        });
+        if (respec.error) return reply.code(respec.error === 'idempotency_conflict' ? 409 : 400).send({ error: respec.error });
         return { me: fresh(me.user_id) };
       });
 
@@ -1870,10 +2112,10 @@ export function buildApp({ config, db, logger = true }) {
         }
         return { paid, nth, debt, message: `🐕 Gâu! Chó nhà ${owner.name} tóm được bạn — nộp phạt ${paid.toLocaleString('vi')} vàng${nth > 1 ? ` (bị tóm ${nth} lần liên tiếp)` : ''}${debtNote}. Trộm trót lọt một lần là phạt về lại ${DOG.fine}.` };
       }
-      function dogCheck(reply, owner, thief) {
-        const c = dogCatch(owner, thief);
-        if (!c) return null;
-        return reply.code(400).send({ error: 'caught_by_dog', fine: c.paid, streak: c.nth, message: c.message });
+      function notifyDogCatch(ownerId, ownerName, thief, caught) {
+        const debtNote = caught.debt > 0 ? ` — thiếu tiền, ghi nợ ${caught.debt.toLocaleString('vi')} vàng (+${DOG.debtPenalty} phạt), mỗi 10 phút +${Math.round(DOG.debtInterest * 100)}% lãi, có vàng là tự trừ` : '';
+        logEvent(`🐕 Chó nhà ${ownerName} tóm được ${thief.name}${caught.nth > 1 ? ` (lần ${caught.nth} liên tiếp)` : ''} — nộp phạt ${caught.paid.toLocaleString('vi')} vàng cho chủ vườn${debtNote}`);
+        pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🐕 Chó nhà bạn vừa tóm được ${thief.name} — thu ${caught.paid.toLocaleString('vi')} vàng tiền phạt${caught.debt > 0 ? `, còn ghi nợ ${caught.debt.toLocaleString('vi')} (tự thu khi họ có vàng, lãi 5%/10 phút)` : ''}!`);
       }
       // Trộm trót lọt: chuỗi bị tóm về 0.
       const thiefEscaped = db.prepare('UPDATE farmers SET caught_streak = 0 WHERE user_id = ? AND caught_streak > 0');
@@ -1898,14 +2140,17 @@ export function buildApp({ config, db, logger = true }) {
         const hours = Number(request.body?.hours);
         if (!DOG.hoursOptions.includes(hours)) return reply.code(400).send({ error: 'bad_request' });
         const cost = DOG.pricePerHour * hours;
-        if (me.gold < cost) return reply.code(400).send({ error: 'not_enough_gold' });
-        const now = Date.now();
-        const until = Math.max(now, me.dog_until || 0) + scaleMs(hours * 60 * 60 * 1000, config.fast);
-        db.transaction(() => {
+        const hire = runJournaledMutation(request, 'dog-hire', () => {
+          const current = getFarmer.get(me.user_id);
+          if (current.gold < cost) return { error: 'not_enough_gold' };
+          const now = Date.now();
+          const until = Math.max(now, current.dog_until || 0) + scaleMs(hours * 60 * 60 * 1000, config.fast);
           grant(me.user_id, { gold: -cost });
           db.prepare('UPDATE farmers SET dog_until = ? WHERE user_id = ?').run(until, me.user_id);
-        })();
-        logEvent(`🐕 ${me.name} thuê chó canh vườn ${hours} giờ`);
+          return { until };
+        });
+        if (hire.error) return reply.code(hire.error === 'idempotency_conflict' ? 409 : 400).send({ error: hire.error });
+        if (!hire.replay) logEvent(`🐕 ${me.name} thuê chó canh vườn ${hours} giờ`);
         return { me: fresh(me.user_id) };
       });
 
@@ -1919,63 +2164,62 @@ export function buildApp({ config, db, logger = true }) {
       const markLootGuard = db.prepare(`INSERT INTO poach_guard (owner_id, kind, at) VALUES (?, ?, ?)
         ON CONFLICT(owner_id, kind) DO UPDATE SET at = excluded.at`);
 
-      api.post('/poach-animal', async (request, reply) => {
-        const { ownerId } = request.body ?? {};
-        const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(400).send({ error: 'no_farm' });
-        const now = Date.now();
-        if (now < lootGuardAt(ownerId, 'animal')) return reply.code(400).send({ error: 'poach_cooldown' });
-        const row = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND ready_at IS NOT NULL AND ready_at <= ? ORDER BY ready_at LIMIT 1')
-          .get(ownerId, now);
-        if (!row) return reply.code(400).send({ error: 'nothing_to_poach' });
-        if (dogCheck(reply, owner, me)) return reply;
-        const a = ANIMALS[row.kind];
-        const got = 2 + Math.round(Math.random()); // khách nhận 2-3, chủ chỉ mất 1
-        db.transaction(() => {
-          invAdd(me.user_id, a.product, got);
-          recordTheft(owner.user_id, me.user_id, a.product, got);
-          grant(me.user_id, { xp: POACH_EXP * got });
-          db.prepare('UPDATE animals SET ready_at = NULL WHERE id = ?').run(row.id);
-          markLootGuard.run(ownerId, 'animal', now);
-          bumpPoached(me.user_id, got);
-        })();
-        const info = GOODS[a.product];
-        thiefEscaped.run(me.user_id);
-        logEvent(`😋 ${me.name} cuỗm ${got} ${info.name} ${info.emoji} trong chuồng nhà ${owner.name}`);
-        pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa cuỗm ${info.name} ${info.emoji} trong chuồng nhà bạn — thu hoạch nhanh kẻo mất!`);
-        return { ...visitPayload(request, ownerId), got };
-      });
-
-      api.post('/poach-machine', async (request, reply) => {
-        const { ownerId } = request.body ?? {};
-        const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(400).send({ error: 'no_farm' });
-        const now = Date.now();
-        if (now < lootGuardAt(ownerId, 'machine')) return reply.code(400).send({ error: 'poach_cooldown' });
-        const row = db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND ready_at <= ? AND poached = 0 ORDER BY ready_at LIMIT 1')
-          .get(ownerId, now);
-        if (!row || !MACHINES[row.kind]?.recipes[row.recipe]) return reply.code(400).send({ error: 'nothing_to_poach' });
-        if (dogCheck(reply, owner, me)) return reply;
-        const recipe = MACHINES[row.kind].recipes[row.recipe];
-        const product = Object.keys(recipe.out)[0];
-        const got = 2 + Math.round(Math.random()); // khách nhận 2-3, chủ chỉ mất 1 mẻ
-        db.transaction(() => {
+      function poachLoot(request, ownerId, kind) {
+        return runJournaledMutation(request, `poach-${kind}`, () => {
+          const me = getFarmer.get(request.farmer.user_id);
+          if (ownerId === me.user_id) return { error: 'own_farm' };
+          const owner = getFarmer.get(ownerId);
+          if (!owner) return { error: 'no_farm' };
+          const now = Date.now();
+          if (now < lootGuardAt(ownerId, kind)) return { error: 'poach_cooldown' };
+          const row = kind === 'animal'
+            ? db.prepare('SELECT * FROM animals WHERE owner_id = ? AND ready_at IS NOT NULL AND ready_at <= ? ORDER BY ready_at LIMIT 1').get(ownerId, now)
+            : db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND ready_at <= ? AND poached = 0 ORDER BY ready_at LIMIT 1').get(ownerId, now);
+          if (!row || (kind === 'machine' && !MACHINES[row.kind]?.recipes[row.recipe])) return { error: 'nothing_to_poach' };
+          const caught = dogCatch(owner, me, { quiet: true });
+          if (caught) return { caught, ownerName: owner.name };
+          const product = kind === 'animal' ? ANIMALS[row.kind].product : Object.keys(MACHINES[row.kind].recipes[row.recipe].out)[0];
+          const got = 2 + Math.round(Math.random());
           invAdd(me.user_id, product, got);
           recordTheft(owner.user_id, me.user_id, product, got);
           grant(me.user_id, { xp: POACH_EXP * got });
-          db.prepare('UPDATE machine_jobs SET poached = 1 WHERE owner_id = ? AND kind = ? AND recipe = ?').run(ownerId, row.kind, row.recipe);
-          markLootGuard.run(ownerId, 'machine', now);
+          if (kind === 'animal') db.prepare('UPDATE animals SET ready_at = NULL WHERE id = ?').run(row.id);
+          else db.prepare('UPDATE machine_jobs SET poached = 1 WHERE owner_id = ? AND kind = ? AND recipe = ?').run(ownerId, row.kind, row.recipe);
+          markLootGuard.run(ownerId, kind, now);
           bumpPoached(me.user_id, got);
-        })();
-        const info = itemInfo(product);
-        thiefEscaped.run(me.user_id);
-        logEvent(`😋 ${me.name} cuỗm ${got} ${info.name} ${info.emoji} từ ${MACHINES[row.kind].name} nhà ${owner.name}`);
-        pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa cuỗm ${info.name} ${info.emoji} từ máy nhà bạn — thu vào kho kẻo mất!`);
+          thiefEscaped.run(me.user_id);
+          return { got, product, machine: row.kind, ownerName: owner.name };
+        });
+      }
+
+      function poachLootReply(request, reply, ownerId, kind) {
+        const result = poachLoot(request, ownerId, kind);
+        if (result.error) return reply.code(result.error === 'idempotency_conflict' ? 409 : 400).send({ error: result.error });
+        const { caught, got, product, machine, ownerName } = result.outcome;
+        const me = request.farmer;
+        if (caught) {
+          if (!result.replay) notifyDogCatch(ownerId, ownerName, me, caught);
+          return reply.code(400).send({ error: 'caught_by_dog', fine: caught.paid, streak: caught.nth, message: caught.message });
+        }
+        if (!result.replay) {
+          const info = itemInfo(product);
+          if (kind === 'animal') {
+            logEvent(`😋 ${me.name} cuỗm ${got} ${info.name} ${info.emoji} trong chuồng nhà ${ownerName}`);
+            pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa cuỗm ${info.name} ${info.emoji} trong chuồng nhà bạn — thu hoạch nhanh kẻo mất!`);
+          } else {
+            logEvent(`😋 ${me.name} cuỗm ${got} ${info.name} ${info.emoji} từ ${MACHINES[machine].name} nhà ${ownerName}`);
+            pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `😋 ${me.name} vừa cuỗm ${info.name} ${info.emoji} từ máy nhà bạn — thu vào kho kẻo mất!`);
+          }
+        }
         return { ...visitPayload(request, ownerId), got };
+      }
+
+      api.post('/poach-animal', async (request, reply) => {
+        return poachLootReply(request, reply, request.body?.ownerId, 'animal');
+      });
+
+      api.post('/poach-machine', async (request, reply) => {
+        return poachLootReply(request, reply, request.body?.ownerId, 'machine');
       });
 
       // ---- Cây ăn quả ----
@@ -1984,90 +2228,106 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/plant-help', async (request, reply) => {
         const { ownerId } = request.body ?? {};
         const me = request.farmer;
-        if (ownerId === me.user_id) return reply.code(400).send({ error: 'own_farm' });
-        const owner = getFarmer.get(ownerId);
-        if (!owner) return reply.code(400).send({ error: 'no_farm' });
-        const occupied = new Set(db.prepare('SELECT idx FROM plots WHERE owner_id = ?').all(ownerId).map((r) => r.idx));
-        const empty = [];
-        for (let i = 0; i < owner.plots_count; i += 1) if (!occupied.has(i)) empty.push(i);
-        if (!empty.length) return reply.code(400).send({ error: 'no_empty_plot' });
-        const pool = Object.values(CROPS).filter((c) => c.level <= levelFor(owner.xp));
-        let gold = me.gold;
-        const plan = [];
-        for (const i of empty) {
-          const c = pool[Math.floor(Math.random() * pool.length)];
-          if (gold < c.seed) continue;
-          gold -= c.seed;
-          plan.push({ idx: i, crop: c });
-        }
-        if (!plan.length) return reply.code(400).send({ error: 'not_enough_gold' });
-        const now = Date.now();
-        const cost = plan.reduce((a, x) => a + x.crop.seed, 0);
-        db.transaction(() => {
+        const plant = runJournaledMutation(request, 'plant-help', () => {
+          if (ownerId === me.user_id) return { error: 'own_farm' };
+          const owner = getFarmer.get(ownerId);
+          if (!owner) return { error: 'no_farm' };
+          const occupied = new Set(db.prepare('SELECT idx FROM plots WHERE owner_id = ?').all(ownerId).map((r) => r.idx));
+          const empty = [];
+          for (let i = 0; i < owner.plots_count; i += 1) if (!occupied.has(i)) empty.push(i);
+          if (!empty.length) return { error: 'no_empty_plot' };
+          const pool = Object.values(CROPS).filter((c) => !c.risky && c.level <= levelFor(owner.xp));
+          let gold = getFarmer.get(me.user_id).gold;
+          const plan = [];
+          for (const i of empty) {
+            const c = pool[Math.floor(Math.random() * pool.length)];
+            if (gold < c.seed) continue;
+            gold -= c.seed;
+            plan.push({ idx: i, crop: c });
+          }
+          if (!plan.length) return { error: 'not_enough_gold' };
+          const now = Date.now();
+          const cost = plan.reduce((a, x) => a + x.crop.seed, 0);
           const ins = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (?, ?, ?, ?, ?, 0)');
           for (const x of plan) ins.run(ownerId, x.idx, x.crop.id, now, now + cropTime(owner, scaleMs(x.crop.growMs, config.fast)));
           grant(me.user_id, { gold: -cost, xp: PLANT_HELP_EXP * plan.length });
-        })();
-        logEvent(`🌱 ${me.name} trồng giúp ${plan.length} ô nhà ${owner.name}`);
-        pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🌱 ${me.name} vừa trồng giúp bạn ${plan.length} ô đó!`);
-        return { ...visitPayload(request, ownerId), helped: plan.length, cost };
+          return { helped: plan.length, cost, ownerName: owner.name };
+        });
+        if (plant.error) return reply.code(plant.error === 'idempotency_conflict' ? 409 : 400).send({ error: plant.error });
+        if (!plant.replay) {
+          logEvent(`🌱 ${me.name} trồng giúp ${plant.outcome.helped} ô nhà ${plant.outcome.ownerName}`);
+          pushTo([ownerId], 'Ăn trộm dzui dzẻ 😋', `🌱 ${me.name} vừa trồng giúp bạn ${plant.outcome.helped} ô đó!`);
+        }
+        return { ...visitPayload(request, ownerId), helped: plant.outcome.helped, cost: plant.outcome.cost };
       });
 
       api.post('/plant-tree', async (request, reply) => {
-        if (request.farmer.tax_owed > 0) return reply.code(400).send({ error: 'tax_due' });
         const { idx, tree: treeId } = request.body ?? {};
-        const tree = TREES[treeId];
         const me = request.farmer;
-        if (!tree || !Number.isInteger(idx) || idx < 0 || idx >= me.plots_count) {
-          return reply.code(400).send({ error: 'bad_request' });
-        }
-        if (levelFor(me.xp) < tree.level) return reply.code(400).send({ error: 'level_too_low' });
-        if (me.gold < tree.price) return reply.code(400).send({ error: 'not_enough_gold' });
-        if (getPlot.get(me.user_id, idx)) return reply.code(400).send({ error: 'plot_busy' });
-        const now = Date.now();
-        db.transaction(() => {
+        const planted = runJournaledMutation(request, 'plant-tree', () => {
+          const tree = TREES[treeId];
+          const current = getFarmer.get(me.user_id);
+          if (current.tax_owed > 0) return { error: 'tax_due' };
+          if (!tree || !Number.isInteger(idx) || idx < 0 || idx >= current.plots_count) return { error: 'bad_request' };
+          if (levelFor(current.xp) < tree.level) return { error: 'level_too_low' };
+          if (current.gold < tree.price) return { error: 'not_enough_gold' };
+          if (getPlot.get(me.user_id, idx)) return { error: 'plot_busy' };
+          const now = Date.now();
           grant(me.user_id, { gold: -tree.price });
           db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, tree, tree_at) VALUES (?, ?, ?, ?, ?, 1, ?)')
-            .run(me.user_id, idx, tree.id, now, now + cropTime(me, scaleMs(tree.growMs, config.fast)), now);
-        })();
-        logEvent(`${tree.emoji} ${me.name} trồng một cây ${tree.name}`);
+            .run(me.user_id, idx, tree.id, now, now + cropTime(current, scaleMs(tree.growMs, config.fast)), now);
+          return { treeId };
+        });
+        if (planted.error) return reply.code(planted.error === 'idempotency_conflict' ? 409 : 400).send({ error: planted.error });
+        if (!planted.replay) {
+          const tree = TREES[planted.outcome.treeId];
+          logEvent(`${tree.emoji} ${me.name} trồng một cây ${tree.name}`);
+        }
         return { me: fresh(me.user_id) };
       });
 
       api.post('/remove-tree', async (request, reply) => {
         const { idx } = request.body ?? {};
         const me = request.farmer;
-        const plot = getPlot.get(me.user_id, idx);
-        if (!plot || !plot.tree) return reply.code(400).send({ error: 'no_plot' });
-        db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, idx);
+        const removed = runJournaledMutation(request, 'remove-tree', () => {
+          const plot = getPlot.get(me.user_id, idx);
+          if (!plot || !plot.tree) return { error: 'no_plot' };
+          db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, idx);
+          return { idx };
+        });
+        if (removed.error) return reply.code(removed.error === 'idempotency_conflict' ? 409 : 400).send({ error: removed.error });
         return { me: fresh(me.user_id) };
       });
 
       // ---- Hồ câu cá ----
       api.post('/fish', async (request, reply) => {
         const me = request.farmer;
-        if (levelFor(me.xp) < FISHING.level) return reply.code(400).send({ error: 'level_too_low' });
-        const now = Date.now();
-        const cur = currentEnergy(me, now);
-        if (cur < FISHING.energyCost) return reply.code(400).send({ error: 'not_enough_energy' });
-        const casts = POND_LEVELS[me.pond_level - 1];
-        const caught = [];
-        let exp = 0;
-        for (let i = 0; i < casts; i += 1) {
-          const id = rollFish(Math.random);
-          caught.push(id);
-          exp += GOODS[id].expCatch;
-        }
-        db.transaction(() => {
-          setEnergy(me.user_id, me, cur - FISHING.energyCost, now);
+        const cast = runJournaledMutation(request, 'fish', () => {
+          const current = getFarmer.get(me.user_id);
+          if (levelFor(current.xp) < FISHING.level) return { error: 'level_too_low' };
+          const now = Date.now();
+          const cur = currentEnergy(current, now);
+          if (cur < FISHING.energyCost) return { error: 'not_enough_energy' };
+          const caught = [];
+          let exp = 0;
+          for (let i = 0; i < POND_LEVELS[current.pond_level - 1]; i += 1) {
+            const id = rollFish(Math.random);
+            caught.push(id);
+            exp += GOODS[id].expCatch;
+          }
+          setEnergy(me.user_id, current, cur - FISHING.energyCost, now);
           for (const id of caught) invAdd(me.user_id, id, 1);
           grant(me.user_id, { xp: exp });
           bumpQuest(me.user_id, 'fish');
-        })();
-        for (const id of caught) {
-          if (id === 'cakoi' || id === 'cachep') logEvent(`🎣 ${me.name} câu được ${GOODS[id].name} ${GOODS[id].emoji}!`);
+          return { caught, exp };
+        });
+        if (cast.error) return reply.code(cast.error === 'idempotency_conflict' ? 409 : 400).send({ error: cast.error });
+        if (!cast.replay) {
+          for (const id of cast.outcome.caught) {
+            if (id === 'cakoi' || id === 'cachep') logEvent(`🎣 ${me.name} câu được ${GOODS[id].name} ${GOODS[id].emoji}!`);
+          }
         }
-        return { me: fresh(me.user_id), caught, exp };
+        return { me: fresh(me.user_id), ...cast.outcome };
       });
 
       // Mua kim cương bằng vàng (vàng đốt khỏi kinh tế).
@@ -2075,104 +2335,121 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         const pack = GEM_PACKS.find((p) => p.id === request.body?.pack);
         if (!pack) return reply.code(400).send({ error: 'bad_request' });
-        if (me.gold < pack.gold) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const purchase = runJournaledMutation(request, 'buy-gems', () => {
+          if (getFarmer.get(me.user_id).gold < pack.gold) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -pack.gold, gems: pack.gems });
           db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(pack.gold, me.user_id);
-        })();
-        return { me: fresh(me.user_id), gems: pack.gems };
+          return { gems: pack.gems };
+        });
+        if (purchase.error) return reply.code(purchase.error === 'idempotency_conflict' ? 409 : 400).send({ error: purchase.error });
+        return { me: fresh(me.user_id), ...purchase.outcome };
       });
 
       api.post('/buy-energy', async (request, reply) => {
         const me = request.farmer;
-        if (me.gems < ENERGY.buyGems) return reply.code(400).send({ error: 'not_enough_gems' });
-        const now = Date.now();
-        const cur = currentEnergy(me, now);
-        if (cur >= ENERGY.buyCap) return reply.code(400).send({ error: 'energy_full' });
-        db.transaction(() => {
+        const purchase = runJournaledMutation(request, 'buy-energy', () => {
+          const current = getFarmer.get(me.user_id);
+          if (current.gems < ENERGY.buyGems) return { error: 'not_enough_gems' };
+          const now = Date.now();
+          const cur = currentEnergy(current, now);
+          if (cur >= ENERGY.buyCap) return { error: 'energy_full' };
           grant(me.user_id, { gems: -ENERGY.buyGems });
-          setEnergy(me.user_id, me, Math.min(ENERGY.buyCap, cur + ENERGY.buyAmount), now);
-        })();
+          setEnergy(me.user_id, current, Math.min(ENERGY.buyCap, cur + ENERGY.buyAmount), now);
+          return { energy: Math.min(ENERGY.buyCap, cur + ENERGY.buyAmount) };
+        });
+        if (purchase.error) return reply.code(purchase.error === 'idempotency_conflict' ? 409 : 400).send({ error: purchase.error });
         return { me: fresh(me.user_id) };
       });
 
       // ---- Nâng cấp chuồng gà / ao cá ----
-      async function upgradeBarn(request, reply, kind) {
+      async function upgradeBarn(request, reply, kind, route = 'upgrade-barn') {
         const a = ANIMALS[kind];
         const me = request.farmer;
         if (!a) return reply.code(400).send({ error: 'bad_request' });
-        const lv = barnLevel(me, kind);
-        if (lv >= a.capacities.length) return reply.code(400).send({ error: 'max_level' });
-        const gold = BARN_UPGRADE_GOLD[lv - 1];
-        if (me.gold < gold) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const upgrade = runJournaledMutation(request, route, () => {
+          const current = getFarmer.get(me.user_id);
+          const lv = barnLevel(current, kind);
+          if (lv >= a.capacities.length) return { error: 'max_level' };
+          const gold = BARN_UPGRADE_GOLD[lv - 1];
+          if (current.gold < gold) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -gold });
-          bumpBarnLevel(me, kind);
-        })();
-        logEvent(`${a.emoji} ${me.name} nâng chuồng ${a.name} lên cấp ${lv + 1}`);
+          bumpBarnLevel(current, kind);
+          return { level: lv + 1 };
+        });
+        if (upgrade.error) return reply.code(upgrade.error === 'idempotency_conflict' ? 409 : 400).send({ error: upgrade.error });
+        if (!upgrade.replay) logEvent(`${a.emoji} ${me.name} nâng chuồng ${a.name} lên cấp ${upgrade.outcome.level}`);
         return { me: fresh(me.user_id) };
       }
       api.post('/upgrade-barn', async (request, reply) => upgradeBarn(request, reply, request.body?.kind));
-      api.post('/upgrade-coop', async (request, reply) => upgradeBarn(request, reply, 'ga'));
+      api.post('/upgrade-coop', async (request, reply) => upgradeBarn(request, reply, 'ga', 'upgrade-coop'));
 
       // ---- Ao nuôi: thả giống (tiêu hao) → thu hoạch cả mẻ ----
       api.post('/fish-stock', async (request, reply) => {
         const { species, qty } = request.body ?? {};
         const me = request.farmer;
         const sp = FISH_FARM[species];
-        if (!sp) return reply.code(400).send({ error: 'bad_request' });
-        if (levelFor(me.xp) < sp.level) return reply.code(400).send({ error: 'level_too_low' });
-        const capacity = FISH_STOCK_BY_LEVEL[Math.min(me.pond_level, FISH_STOCK_BY_LEVEL.length) - 1];
-        const used = db.prepare('SELECT COALESCE(SUM(qty), 0) s FROM fish_batches WHERE owner_id = ?').get(me.user_id).s;
-        const room = capacity - used;
-        if (room <= 0) return reply.code(400).send({ error: 'pond_full' });
-        const asked = qty === 'max' ? room : Math.max(1, Math.floor(Number(qty) || 1));
-        const n = Math.min(asked, room, Math.floor(me.gold / sp.fry));
-        if (n < 1) return reply.code(400).send({ error: 'not_enough_gold' });
-        const now = Date.now();
-        db.transaction(() => {
+        const requested = qty ?? 1;
+        if (!sp || (requested !== 'max' && (!Number.isSafeInteger(requested) || requested < 1))) return reply.code(400).send({ error: 'bad_request' });
+        const stock = runJournaledMutation(request, 'fish-stock', () => {
+          const current = getFarmer.get(me.user_id);
+          if (levelFor(current.xp) < sp.level) return { error: 'level_too_low' };
+          const capacity = FISH_STOCK_BY_LEVEL[Math.min(current.pond_level, FISH_STOCK_BY_LEVEL.length) - 1];
+          const used = db.prepare('SELECT COALESCE(SUM(qty), 0) s FROM fish_batches WHERE owner_id = ?').get(me.user_id).s;
+          const room = capacity - used;
+          if (room <= 0) return { error: 'pond_full' };
+          const asked = requested === 'max' ? room : requested;
+          const n = Math.min(asked, room, Math.floor(current.gold / sp.fry));
+          if (n < 1) return { error: 'not_enough_gold' };
+          const now = Date.now();
           grant(me.user_id, { gold: -sp.fry * n });
           db.prepare('INSERT INTO fish_batches (owner_id, species, qty, planted_at, ready_at) VALUES (?, ?, ?, ?, ?)')
-            .run(me.user_id, sp.id, n, now, now + animalTime(me, scaleMs(sp.growMs, config.fast)));
-        })();
-        logEvent(`${sp.emoji} ${me.name} thả ${n} con ${sp.name} xuống ao`);
-        return { me: fresh(me.user_id), stocked: n, cost: sp.fry * n };
+            .run(me.user_id, sp.id, n, now, now + animalTime(current, scaleMs(sp.growMs, config.fast)));
+          return { stocked: n, cost: sp.fry * n };
+        });
+        if (stock.error) return reply.code(stock.error === 'idempotency_conflict' ? 409 : 400).send({ error: stock.error });
+        if (!stock.replay) logEvent(`${sp.emoji} ${me.name} thả ${stock.outcome.stocked} con ${sp.name} xuống ao`);
+        return { me: fresh(me.user_id), ...stock.outcome };
       });
 
       api.post('/fish-harvest', async (request, reply) => {
         const me = request.farmer;
-        const now = Date.now();
-        const id = Number(request.body?.id);
-        const batches = id
-          ? db.prepare('SELECT * FROM fish_batches WHERE owner_id = ? AND id = ?').all(me.user_id, id)
-          : db.prepare('SELECT * FROM fish_batches WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
-        if (!batches.length) return reply.code(400).send({ error: 'not_ready' });
-        if (id && now < batches[0].ready_at) return reply.code(400).send({ error: 'not_ready' });
-        const got = {};
-        let xp = 0;
-        db.transaction(() => {
+        const id = request.body?.id;
+        if (id !== undefined && (!Number.isSafeInteger(id) || id < 1)) return reply.code(400).send({ error: 'bad_request' });
+        const harvest = runJournaledMutation(request, 'fish-harvest', () => {
+          const now = Date.now();
+          const batches = id !== undefined
+            ? db.prepare('SELECT * FROM fish_batches WHERE owner_id = ? AND id = ?').all(me.user_id, id)
+            : db.prepare('SELECT * FROM fish_batches WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
+          if (!batches.length || (id && now < batches[0].ready_at)) return { error: 'not_ready' };
+          const items = {};
+          let xp = 0;
           for (const b of batches) {
             const sp = FISH_FARM[b.species];
-            if (sp) { invAdd(me.user_id, sp.product, b.qty); got[sp.product] = (got[sp.product] || 0) + b.qty; xp += sp.exp * b.qty; }
+            if (sp) { invAdd(me.user_id, sp.product, b.qty); items[sp.product] = (items[sp.product] || 0) + b.qty; xp += sp.exp * b.qty; }
             db.prepare('DELETE FROM fish_batches WHERE id = ?').run(b.id);
           }
           grant(me.user_id, { xp });
           bumpQuest(me.user_id, 'harvest', batches.length);
-        })();
-        return { me: fresh(me.user_id), items: got, xp };
+          return { items, xp };
+        });
+        if (harvest.error) return reply.code(harvest.error === 'idempotency_conflict' ? 409 : 400).send({ error: harvest.error });
+        return { me: fresh(me.user_id), ...harvest.outcome };
       });
 
       api.post('/upgrade-pond', async (request, reply) => {
         const me = request.farmer;
-        if (levelFor(me.xp) < FISHING.level) return reply.code(400).send({ error: 'level_too_low' });
-        if (me.pond_level >= POND_LEVELS.length) return reply.code(400).send({ error: 'max_level' });
-        const gold = POND_UPGRADE_GOLD[me.pond_level - 1];
-        if (me.gold < gold) return reply.code(400).send({ error: 'not_enough_gold' });
-        db.transaction(() => {
+        const upgrade = runJournaledMutation(request, 'upgrade-pond', () => {
+          const current = getFarmer.get(me.user_id);
+          if (levelFor(current.xp) < FISHING.level) return { error: 'level_too_low' };
+          if (current.pond_level >= POND_LEVELS.length) return { error: 'max_level' };
+          const gold = POND_UPGRADE_GOLD[current.pond_level - 1];
+          if (current.gold < gold) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -gold });
           db.prepare('UPDATE farmers SET pond_level = pond_level + 1 WHERE user_id = ?').run(me.user_id);
-        })();
-        logEvent(`🎣 ${me.name} nâng ao cá lên cấp ${me.pond_level + 1}`);
+          return { level: current.pond_level + 1 };
+        });
+        if (upgrade.error) return reply.code(upgrade.error === 'idempotency_conflict' ? 409 : 400).send({ error: upgrade.error });
+        if (!upgrade.replay) logEvent(`🎣 ${me.name} nâng ao cá lên cấp ${upgrade.outcome.level}`);
         return { me: fresh(me.user_id) };
       });
 
@@ -2182,34 +2459,38 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         const ms = FESTIVAL.milestones.find((x) => x.id === Number(id));
         if (!ms) return reply.code(400).send({ error: 'bad_request' });
-        const f = getFest(me.user_id);
-        if (f.claims.includes(ms.id)) return reply.code(400).send({ error: 'already_claimed' });
-        if ((f.counters[ms.type] || 0) < ms.target) return reply.code(400).send({ error: 'not_enough_progress' });
-        db.transaction(() => {
+        const claim = runJournaledMutation(request, 'fest-claim', () => {
+          const f = getFest(me.user_id);
+          if (f.claims.includes(ms.id)) return { error: 'already_claimed' };
+          if ((f.counters[ms.type] || 0) < ms.target) return { error: 'not_enough_progress' };
           grant(me.user_id, { gold: (ms.gold || 0) * GOLD_MULT, gems: ms.gems || 0 });
           f.claims.push(ms.id);
           db.prepare('UPDATE festival SET claims_json = ? WHERE owner_id = ? AND cycle = ?')
             .run(JSON.stringify(f.claims), me.user_id, f.cycle);
-        })();
-        logEvent(`🎪 ${me.name} nhận thưởng Lễ Hội Thu Hoạch: ${ms.label}`);
-        return { me: fresh(me.user_id), claimed: ms };
+          return { claimed: ms };
+        });
+        if (claim.error) return reply.code(claim.error === 'idempotency_conflict' ? 409 : 400).send({ error: claim.error });
+        if (!claim.replay) logEvent(`🎪 ${me.name} nhận thưởng Lễ Hội Thu Hoạch: ${ms.label}`);
+        return { me: fresh(me.user_id), ...claim.outcome };
       });
 
       // ---- Tưới toàn bộ ruộng mình ----
       api.post('/water-all', async (request, reply) => {
         const me = request.farmer;
-        const now = Date.now();
-        const dry = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND watered = 0 AND ready_at > ?')
-          .all(me.user_id, now);
-        if (dry.length === 0) return reply.code(400).send({ error: 'nothing_to_water' });
-        db.transaction(() => {
+        const water = runJournaledMutation(request, 'water-all', () => {
+          const now = Date.now();
+          const dry = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND watered = 0 AND ready_at > ?')
+            .all(me.user_id, now);
+          if (dry.length === 0) return { error: 'nothing_to_water' };
           const upd = db.prepare('UPDATE plots SET watered = 1 WHERE owner_id = ? AND idx = ?');
           for (const plot of dry) {
             upd.run(me.user_id, plot.idx);
             markAction.run(me.user_id, plot.idx, plot.planted_at, me.user_id, 'water', now);
           }
-        })();
-        return { me: fresh(me.user_id), watered: dry.length };
+          return { watered: dry.length };
+        });
+        if (water.error) return reply.code(water.error === 'idempotency_conflict' ? 409 : 400).send({ error: water.error });
+        return { me: fresh(me.user_id), ...water.outcome };
       });
 
       // ---- Thăm ruộng ----
@@ -2299,7 +2580,10 @@ export function buildApp({ config, db, logger = true }) {
     const url = request.raw.url || '';
     // Mọi phản hồi API mang phiên bản boot — client lệch bản là tự tải lại
     // ngay ở thao tác kế tiếp, kể cả khi tab đang ẩn không chạy vòng refresh.
-    if (url.startsWith('/farm/api/')) reply.header('x-farm-boot', BOOT_VERSION);
+    if (url.startsWith('/farm/api/')) {
+      reply.header('x-farm-boot', BOOT_VERSION);
+      reply.header('x-request-id', request.id);
+    }
     reply.header('x-content-type-options', 'nosniff');
     reply.header('referrer-policy', 'same-origin');
     reply.header('x-frame-options', 'SAMEORIGIN');
@@ -2319,6 +2603,21 @@ export function buildApp({ config, db, logger = true }) {
   app.get('/farm', async (request, reply) => reply.redirect('/farm/'));
   app.get('/', async (request, reply) => reply.redirect('/farm/'));
   app.get('/healthz', async () => ({ ok: true }));
+  app.get('/internal/farm/metrics', async (request, reply) => {
+    const supplied = request.headers['x-farm-secret'];
+    if (!config.internalSecret || typeof supplied !== 'string') return reply.code(404).send({ error: 'not_found' });
+    const expected = Buffer.from(config.internalSecret);
+    const actual = Buffer.from(supplied);
+    if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+      return reply.code(403).send({ error: 'forbidden' });
+    }
+    return {
+      startedAt,
+      uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
+      ...apiMetrics,
+      latencyMs: { ...apiMetrics.latencyMs },
+    };
+  });
 
   return app;
 }

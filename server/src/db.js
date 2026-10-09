@@ -204,6 +204,30 @@ CREATE TABLE IF NOT EXISTS events (
   text TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_events_at ON events(at DESC);
+
+CREATE TABLE IF NOT EXISTS mutation_results (
+  owner_id INTEGER NOT NULL,
+  request_key TEXT NOT NULL,
+  route TEXT NOT NULL,
+  body_hash TEXT NOT NULL,
+  outcome_json TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (owner_id, request_key)
+);
+CREATE INDEX IF NOT EXISTS idx_mutation_results_created ON mutation_results(created_at);
+
+CREATE TABLE IF NOT EXISTS collection_discoveries (
+  owner_id INTEGER NOT NULL,
+  item TEXT NOT NULL,
+  first_at INTEGER NOT NULL,
+  PRIMARY KEY (owner_id, item)
+);
+CREATE TABLE IF NOT EXISTS collection_claims (
+  owner_id INTEGER NOT NULL,
+  collection_id TEXT NOT NULL,
+  claimed_at INTEGER NOT NULL,
+  PRIMARY KEY (owner_id, collection_id)
+);
 `;
 
 export function openDb(dataDir) {
@@ -212,6 +236,7 @@ export function openDb(dataDir) {
   }
   const db = new Database(dataDir === ':memory:' ? ':memory:' : join(dataDir, 'farm2.sqlite3'));
   db.pragma('journal_mode = WAL');
+  const migrate = db.transaction(() => {
   db.exec(SCHEMA);
   // Cột thêm sau khi farm2 đã chạy thật — ALTER có guard, idempotent.
   const cols = db.prepare('PRAGMA table_info(farmers)').all().map((c) => c.name);
@@ -273,6 +298,13 @@ export function openDb(dataDir) {
   if (!pcols.includes('fruit_stock')) db.exec('ALTER TABLE plots ADD COLUMN fruit_stock INTEGER NOT NULL DEFAULT 0');
   // Cây trồng trước khi có tuổi thọ: tính tuổi từ lúc nâng cấp.
   db.prepare('UPDATE plots SET tree_at = ? WHERE tree = 1 AND tree_at IS NULL').run(Date.now());
+  });
+  try {
+    migrate();
+  } catch (error) {
+    db.close();
+    throw error;
+  }
   return db;
 }
 

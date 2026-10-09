@@ -472,7 +472,7 @@ export const MILL = MACHINES.coixay;
 
 // ---- Đất ------------------------------------------------------------------
 export const START_PLOTS = 12;
-// Mở rộng theo bảng mục 9.2 (MVP: 5 lần đầu, mỗi lần +4 ô → tối đa 32).
+// Mở rộng theo bảng mục 9.2; mỗi lần thêm 4 ô, từ 12 ô đến MAX_PLOTS.
 export const EXPANSIONS = [
   { level: 2,  gold: 500 },
   { level: 4,  gold: 1200 },
@@ -642,13 +642,19 @@ export const DOG = {
 };
 
 // Sinh một đơn từ các sản phẩm đã mở khóa. rng: () => [0,1).
-export function generateOrder(level, rng) {
-  const pool = Object.values(CROPS).filter((c) => c.level <= level && !c.risky).map((c) => c.id);
-  for (const a of Object.values(ANIMALS)) if (level >= a.level) pool.push(a.product);
-  for (const t of Object.values(TREES)) if (level >= t.level) pool.push(t.id);
-  if (level >= FISHING.level) pool.push('canho', 'caro');
-  if (level >= MILL.level) pool.push('botmi');
-  const kinds = 1 + Math.floor(rng() * Math.min(3, Math.max(1, Math.floor(level / 4) + 1)));
+export function generateOrder(level, rng, { quick = false } = {}) {
+  const eligibleCrops = Object.values(CROPS).filter((c) => c.level <= level && !c.risky);
+  const pool = quick
+    ? eligibleCrops.filter((c) => c.growMs <= ORDER_BOARD_REFRESH_MS)
+      .sort((a, b) => b.level - a.level || a.id.localeCompare(b.id)).slice(0, 5).map((c) => c.id)
+    : eligibleCrops.map((c) => c.id);
+  if (!quick) {
+    for (const a of Object.values(ANIMALS)) if (level >= a.level) pool.push(a.product);
+    for (const t of Object.values(TREES)) if (level >= t.level) pool.push(t.id);
+    if (level >= FISHING.level) pool.push('canho', 'caro');
+    if (level >= MILL.level) pool.push('botmi');
+  }
+  const kinds = quick ? 1 : 1 + Math.floor(rng() * Math.min(3, Math.max(1, Math.floor(level / 4) + 1)));
   const chosen = new Set();
   while (chosen.size < kinds) chosen.add(pool[Math.floor(rng() * pool.length)]);
   const items = {};
@@ -901,6 +907,7 @@ export const thiefEconomyMult = (villageGold) => 1 + Math.floor(villageGold / TH
 
 // ---- Bể hút vàng (chống lạm phát) -----------------------------------------
 export const TAX_PER_PLOT = 2000; // thuế đất: vàng/ô/ngày (mốc 9h sáng LA), vàng bị đốt
+export const LAND_TAX_UNLOCK_LEVEL = 20; // bảo vệ vòng chơi đầu: thuế chỉ bắt đầu từ cấp 20
 export const MACHINE_UPGRADE_GOLD = [1_000_000, 2_500_000, 5_000_000, 10_000_000, 20_000_000]; // nhà máy cấp 1..5, mỗi cấp −10% thời gian
 export const LOTTERY = { ticket: 100_000, base: 1_000_000, perTicket: 500_000, maxPerDay: 100, shares: [0.7, 0.2, 0.1] }; // hũ = 1 triệu + 500k mỗi vé; 3 người may mắn chia 70/20/10 (thiếu người thì phần dư dồn về giải 1)
 // Giá bão hoà: bán dồn 1 món thì giá tụt (mỗi 10 triệu vàng bán ra trong khoảng ngắn = −100%, sàn 40%),

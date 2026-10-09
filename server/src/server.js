@@ -2,7 +2,9 @@ import { buildApp } from './app.js';
 import { importLegacyLevels, openDb } from './db.js';
 import { xpNeedFor } from './game.js';
 
+const bootStartedNs = process.hrtime.bigint();
 const config = {
+  bootStartedNs,
   port: process.env.PORT ? Number(process.env.PORT) : 8090,
   dataDir: process.env.DATA_DIR || '/data',
   // Chat vừa là auth oracle (/api/me) vừa là ngõ push (/internal/farm/notify).
