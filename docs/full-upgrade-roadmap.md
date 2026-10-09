@@ -48,7 +48,7 @@ This is the project plan for the farm game, separate from the older stability au
 
 - Make visiting, helping, trading, gifting, and the trade board understandable from both players' perspectives.
 - Define limits and feedback for contested actions, failed trades, and inventory changes; verify two-client synchronization.
-- **Gate:** gifts and trades cannot transfer value twice when requests are retried; two-player walkthrough passes. **Status:** journal protection added for gifts, gold requests and payments, trade board actions, friend watering, help planting/harvesting, and inspection. Two-farmer integration tests cover duplicate and concurrent retries. CI now opens two browser accounts, visits a friend's farm, waters a plot, confirms the owner sees it ready, gifts gold, and checks both balances. Trade-board and broader two-player browser walkthroughs remain pending.
+- **Gate:** gifts and trades cannot transfer value twice when requests are retried; two-player walkthrough passes. **Status:** journal protection added for gifts, gold requests and payments, trade board actions, friend watering, help planting/harvesting, and inspection. Two-farmer integration tests cover duplicate and concurrent retries. CI opens two browser accounts, visits a friend's farm, waters a plot, confirms the owner sees it ready, gifts gold, then completes a trade-board buy request with escrow, inventory transfer, and both balances checked. Broader two-player browser walkthroughs and observed-player validation remain pending.
 
 ## 8. Add durable long-term goals
 
