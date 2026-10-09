@@ -76,14 +76,21 @@ try {
   assert.ok(startup.imageTransferBytes <= 900_000, `320px image transfer exceeds 900 KB: ${startup.imageTransferBytes}`);
   assert.ok(startup.localTransferBytes <= 1_200_000, `320px local transfer exceeds 1.2 MB: ${startup.localTransferBytes}`);
   await checkNoOverflow(page, '320px farm');
+  const emptyPlotNames = await page.locator('.plot[data-kind="empty"]').evaluateAll((plots) => plots.map((plot) => plot.getAttribute('aria-label')));
+  assert.equal(emptyPlotNames.length, 12);
+  assert.equal(new Set(emptyPlotNames).size, 12, 'Each empty plot needs a distinct accessible name');
+  assert.match(emptyPlotNames[0], /Ô đất 1: trống, chọn hạt để gieo/);
+  assert.match(emptyPlotNames[11], /Ô đất 12: trống, chọn hạt để gieo/);
   await page.screenshot({ path: resolve(outputDir, 'farm-320.png') });
 
   const startingGold = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').click();
   await page.locator('.seed-card[data-crop="luami"]').click();
   await page.locator('.plot[data-idx="0"][data-kind="waterplot"]').waitFor();
+  assert.match(await page.locator('.plot[data-idx="0"]').getAttribute('aria-label'), /Ô đất 1, .*: tưới cây, còn/);
   await page.locator('.plot[data-idx="0"][data-kind="waterplot"]').click();
   await page.locator('.plot[data-idx="0"][data-kind="plotmenu"]').waitFor();
+  assert.match(await page.locator('.plot[data-idx="0"]').getAttribute('aria-label'), /Ô đất 1, .*: đã tưới, mở tùy chọn, còn/);
   assert.equal(db.prepare('SELECT watered FROM plots WHERE owner_id = 1 AND idx = 0').get().watered, 1);
   await page.screenshot({ path: resolve(outputDir, 'planted-320.png'), style: '.float-gain { visibility: hidden !important; }' });
   await page.close();
@@ -92,6 +99,7 @@ try {
   db.prepare('UPDATE plots SET ready_at = ? WHERE owner_id = 1 AND idx = 0').run(Date.now() - 1);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.plot[data-idx="0"][data-kind="harvest"]').waitFor();
+  assert.match(await page.locator('.plot[data-idx="0"]').getAttribute('aria-label'), /Ô đất 1, .*: thu hoạch/);
   await page.screenshot({ path: resolve(outputDir, 'ready-320.png') });
   await page.locator('.plot[data-idx="0"][data-kind="harvest"]').click();
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
