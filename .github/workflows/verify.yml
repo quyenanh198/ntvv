@@ -1,0 +1,39 @@
+name: Verify farm upgrade
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master, upgrade/farm-v3]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Check browser scripts
+        run: |
+          node --check public/app.js
+          node --check public/audio.js
+      - name: Run automated tests
+        run: npm test
+      - name: Verify generated reports
+        run: |
+          npm run art:inventory
+          npm run balance:report
+          git diff --check
+          git diff --exit-code -- docs/art-inventory.md docs/balance-report.md
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - name: Build production image
+        run: docker build -t ntvv-verify .
