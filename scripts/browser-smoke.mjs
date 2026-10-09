@@ -53,6 +53,10 @@ try {
   assert.match(await cards.nth(1).innerText(), /Còn thiếu 4 sản phẩm/);
   await checkNoOverflow(page, '320px order sheet');
   await page.screenshot({ path: resolve(outputDir, 'orders-320.png') });
+  for (const width of [390, 768, 1180]) {
+    await page.setViewportSize({ width, height: 900 });
+    await checkNoOverflow(page, `${width}px order sheet`);
+  }
   await page.keyboard.press('Escape');
   await page.locator('.sheet').waitFor({ state: 'detached' });
 
@@ -60,7 +64,7 @@ try {
   await checkNoOverflow(page, '1280px farm');
   await page.screenshot({ path: resolve(outputDir, 'farm-1280.png') });
   assert.deepEqual(pageErrors, []);
-  console.log('Browser smoke passed at 320px and 1280px; screenshots saved in artifacts/browser.');
+  console.log('Browser smoke passed at 320px, 390px, 768px, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
   await browser?.close();
   await app.close();

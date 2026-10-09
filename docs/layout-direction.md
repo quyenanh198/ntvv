@@ -20,6 +20,7 @@ The bottom dock remains the main route to management sheets. The scene is decora
 - At 1280px the action dock is centered under the 720px farm canvas. A one-member family panel fits its content; a 51-member panel stays within the viewport and scrolls internally.
 - Family markup follows the field in document order, matching mobile keyboard focus order.
 - A compact collection goal now sits under the immediate-action toolbar. At 320px the first plot starts at y=364, the goal opens its sheet by touch, and the page has no horizontal overflow.
+- The CI browser smoke check renders the farm at 320px and 1280px and tests the order sheet at 320px, 390px, 768px, and 1180px. It checks horizontal overflow, usable plot rendering, ready-order priority, product labels, missing counts, Escape dismissal, and browser script errors. Screenshots are attached to each CI run for visual review; the first reviewed capture showed no clipped controls or text in the visible order cards.
 
 ## Remaining review
 
