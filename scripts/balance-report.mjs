@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { CROPS, EXPANSIONS, GOLD_MULT, HARVEST_YIELD, LAND_TAX_UNLOCK_LEVEL, MACHINES, MAX_PLOTS, START_GOLD, START_PLOTS, TAX_PER_PLOT, itemInfo, xpNeedFor } from '../server/src/game.js';
+import { ANIMALS, CROPS, EXPANSIONS, FEED_ITEM, GOLD_MULT, HARVEST_YIELD, LAND_TAX_UNLOCK_LEVEL, MACHINES, MAX_PLOTS, START_GOLD, START_PLOTS, TAX_PER_PLOT, itemInfo, xpNeedFor } from '../server/src/game.js';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const crops = Object.values(CROPS).filter((crop) => !crop.risky && crop.sell > 0).map((crop) => ({
@@ -65,6 +65,19 @@ const machineModels = Object.values(MACHINES).sort((a, b) => a.level - b.level).
 const machineRows = machineModels.map((machine) => `| ${machine.name} | ${machine.level} | ${machine.recipes.length} | ${machine.best.name} | ${fmt(machine.best.margin)} | ${fmt(machine.best.perHour)} |`);
 const nonpositiveCrafts = machineModels.flatMap((machine) => machine.recipes.filter((recipe) => recipe.sellable && recipe.margin <= 0).map((recipe) => `${machine.id}/${recipe.id}`));
 const utilityCrafts = machineModels.flatMap((machine) => machine.recipes.filter((recipe) => !recipe.sellable).map((recipe) => `${machine.id}/${recipe.id}`));
+const feedPrice = itemInfo(FEED_ITEM).buy;
+const animalModels = Object.values(ANIMALS).sort((a, b) => a.level - b.level).map((animal) => {
+  const sale = itemInfo(animal.product).sell * GOLD_MULT;
+  const feedCost = animal.feedQty * feedPrice;
+  const margin = sale - feedCost;
+  const dailyOne = margin;
+  const dailyThree = margin * 3;
+  return { ...animal, sale, feedCost, margin, dailyOne, dailyThree,
+    paybackDays: dailyThree > 0 ? animal.price / dailyThree : Infinity };
+});
+const animalRows = animalModels.map((animal) =>
+  `| ${animal.name} | ${animal.level} | ${fmt(animal.price)} | ${fmt(animal.produceMs / 60_000)} | ${fmt(animal.feedCost)} | ${fmt(animal.sale)} | ${fmt(animal.dailyOne)} | ${fmt(animal.dailyThree)} | ${Number.isFinite(animal.paybackDays) ? animal.paybackDays.toFixed(1) : 'never'} |`);
+const nonpositiveAnimals = animalModels.filter((animal) => animal.margin <= 0);
 const lines = [
   '# Farm progression balance report', '',
   'Generated from the live rules in `server/src/game.js` by `npm run balance:report`. This is a deterministic crop, expansion, and recipe opportunity-cost model, not observed player behavior or a complete economy forecast.', '',
@@ -88,6 +101,11 @@ const lines = [
   '| --- | ---: | ---: | --- | ---: | ---: |', ...machineRows, '',
   `- Sellable recipes with nonpositive opportunity margin: ${nonpositiveCrafts.length ? nonpositiveCrafts.join(', ') : 'none'}.`,
   `- Utility recipes without a sale price excluded from the ranking: ${utilityCrafts.length ? utilityCrafts.join(', ') : 'none'}.`, '',
+  '## Animal feed and sale model', '',
+  `Each animal is fed with shop-bought ${FEED_ITEM} at ${fmt(feedPrice)} gold per unit, then produces one item after its live timer. Sale values use the ${GOLD_MULT}× gold multiplier. A visit collects one ready product and feeds the animal for its next cycle. The one-visit and three-visit cases therefore allow at most one or three sales per day per animal, even when the timer is shorter. The model excludes barn construction, capacity upgrades, order premiums, and time spent acquiring an animal; payback covers only its purchase price.`, '',
+  '| Animal | Unlock | Purchase | Produce min | Feed/cycle | Sale/cycle | Net, 1 visit/day | Net, 3 visits/day | Purchase payback, 3 visits (days) |',
+  '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |', ...animalRows, '',
+  `- Animals with nonpositive feed-adjusted sale margin: ${nonpositiveAnimals.length ? nonpositiveAnimals.map((animal) => animal.id).join(', ') : 'none'}.`, '',
   '## Automated viability checks', '',
   `- Nonprofitable regular crops: ${unprofitable.length ? unprofitable.map(name).join(', ') : 'none'}.`,
   `- Starter seeds above starting gold: ${unaffordable.length ? unaffordable.map(name).join(', ') : 'none'}.`,
@@ -95,7 +113,7 @@ const lines = [
   '## Next balance decisions', '',
   '1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.',
   '2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.',
-  '3. Add ingredient supply, animals, and orders to the machine model; compare achievable income with the late-expansion payback warning before tuning land prices.', '',
+  '3. Add ingredient supply and orders to the machine model; combine crop and animal income with the late-expansion payback warning before tuning land prices.', '',
 ];
 const report = `${lines.join('\n')}\n`;
 if (process.argv.includes('--write')) writeFileSync(resolve(root, 'docs/balance-report.md'), report);

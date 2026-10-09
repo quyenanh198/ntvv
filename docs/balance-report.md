@@ -97,6 +97,30 @@ For each sellable recipe, output sale value minus the sale value forgone by usin
 - Sellable recipes with nonpositive opportunity margin: none.
 - Utility recipes without a sale price excluded from the ranking: coixay/thucan.
 
+## Animal feed and sale model
+
+Each animal is fed with shop-bought thucan at 12 gold per unit, then produces one item after its live timer. Sale values use the 4× gold multiplier. A visit collects one ready product and feeds the animal for its next cycle. The one-visit and three-visit cases therefore allow at most one or three sales per day per animal, even when the timer is shorter. The model excludes barn construction, capacity upgrades, order premiums, and time spent acquiring an animal; payback covers only its purchase price.
+
+| Animal | Unlock | Purchase | Produce min | Feed/cycle | Sale/cycle | Net, 1 visit/day | Net, 3 visits/day | Purchase payback, 3 visits (days) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Gà | 3 | 250 | 15 | 12 | 192 | 180 | 540 | 0.5 |
+| Chim cút | 4 | 350 | 15 | 12 | 120 | 108 | 324 | 1.1 |
+| Vịt | 6 | 500 | 25 | 12 | 280 | 268 | 804 | 0.6 |
+| Bò | 8 | 850 | 30 | 24 | 560 | 536 | 1,608 | 0.5 |
+| Ngỗng | 9 | 700 | 35 | 24 | 480 | 456 | 1,368 | 0.5 |
+| Thỏ | 10 | 800 | 30 | 12 | 520 | 508 | 1,524 | 0.5 |
+| Ong | 12 | 1,100 | 40 | 12 | 720 | 708 | 2,124 | 0.5 |
+| Cừu | 14 | 1,400 | 40 | 36 | 1,000 | 964 | 2,892 | 0.5 |
+| Gà tây | 15 | 1,500 | 55 | 24 | 880 | 856 | 2,568 | 0.6 |
+| Dê | 17 | 1,800 | 50 | 24 | 1,200 | 1,176 | 3,528 | 0.5 |
+| Tằm | 18 | 2,000 | 60 | 12 | 1,400 | 1,388 | 4,164 | 0.5 |
+| Lợn | 20 | 2,500 | 70 | 36 | 1,920 | 1,884 | 5,652 | 0.4 |
+| Trâu | 22 | 3,000 | 80 | 36 | 2,240 | 2,204 | 6,612 | 0.5 |
+| Alpaca | 25 | 3,800 | 90 | 36 | 2,800 | 2,764 | 8,292 | 0.5 |
+| Hươu | 28 | 5,000 | 120 | 36 | 3,600 | 3,564 | 10,692 | 0.5 |
+
+- Animals with nonpositive feed-adjusted sale margin: none.
+
 ## Automated viability checks
 
 - Nonprofitable regular crops: none.
@@ -107,5 +131,5 @@ For each sellable recipe, output sale value minus the sale value forgone by usin
 
 1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.
 2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.
-3. Add ingredient supply, animals, and orders to the machine model; compare achievable income with the late-expansion payback warning before tuning land prices.
+3. Add ingredient supply and orders to the machine model; combine crop and animal income with the late-expansion payback warning before tuning land prices.
 
