@@ -27,6 +27,17 @@ jobs:
           node --check public/audio.js
       - name: Run automated tests
         run: npm test
+      - name: Install headless Chromium
+        run: npx playwright install --with-deps --only-shell chromium
+      - name: Check responsive farm and order sheet
+        run: npm run browser:smoke
+      - name: Save browser screenshots
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: farm-browser-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/browser/
+          if-no-files-found: ignore
       - name: Verify generated reports
         run: |
           npm run art:inventory
