@@ -26,11 +26,15 @@ try {
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 320, height: 800 }, reducedMotion: 'reduce' });
   await context.addCookies([{ name: 'lb_session', value: 'browser-smoke', url: base }]);
-  const page = await context.newPage();
   const pageErrors = [];
-  page.on('pageerror', (error) => pageErrors.push(error.message));
-  await page.goto(`${base}/farm/`, { waitUntil: 'domcontentloaded' });
-  await page.locator('.plot').first().waitFor();
+  const openFarm = async () => {
+    const farmPage = await context.newPage();
+    farmPage.on('pageerror', (error) => pageErrors.push(error.message));
+    await farmPage.goto(`${base}/farm/`, { waitUntil: 'domcontentloaded' });
+    await farmPage.locator('.plot').first().waitFor();
+    return farmPage;
+  };
+  let page = await openFarm();
   await page.waitForLoadState('load');
   const startup = await page.evaluate(() => {
     const resources = performance.getEntriesByType('resource').filter((entry) => new URL(entry.name).origin === location.origin);
@@ -60,6 +64,9 @@ try {
   await page.locator('.plot[data-idx="0"][data-kind="plotmenu"]').waitFor();
   assert.equal(db.prepare('SELECT watered FROM plots WHERE owner_id = 1 AND idx = 0').get().watered, 1);
   await page.screenshot({ path: resolve(outputDir, 'planted-320.png'), style: '.float-gain { visibility: hidden !important; }' });
+  await page.close();
+  page = await openFarm();
+  await page.locator('.plot[data-idx="0"][data-kind="plotmenu"]').waitFor();
   db.prepare('UPDATE plots SET ready_at = ? WHERE owner_id = 1 AND idx = 0').run(Date.now() - 1);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.plot[data-idx="0"][data-kind="harvest"]').waitFor();
@@ -70,9 +77,14 @@ try {
   await page.locator('.dock-btn[data-sheet="inventory"]').click();
   await page.locator('.inv-row[data-item="luami"] [data-sell="luami"][data-qty]').click();
   await page.locator('.inv-row[data-item="luami"]').waitFor({ state: 'detached' });
-  assert.ok(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold > startingGold);
+  const goldAfterSale = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
+  assert.ok(goldAfterSale > startingGold);
   await page.keyboard.press('Escape');
   await page.locator('.sheet').waitFor({ state: 'detached' });
+  await page.close();
+  page = await openFarm();
+  assert.match(await page.locator('.coin-pill').first().innerText(), new RegExp(String(goldAfterSale)));
+  await page.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
 
   const xp = [1, 2, 3, 4].reduce((sum, level) => sum + xpNeedFor(level), 0);
   db.prepare('DELETE FROM plots WHERE owner_id = 1').run();
