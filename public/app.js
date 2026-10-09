@@ -651,7 +651,7 @@
     const hint = missing
       ? me().level < crop.level ? `${crop.name} mở ở cấp ${crop.level}` : `Thu hoạch ${crop.name} để ghi sổ`
       : `Đã đủ giống · nhận ${collection.gold.toLocaleString('vi')} vàng`;
-    return `<button class="collection-goal" type="button" data-sheet="collections" aria-label="Sổ mùa vụ: ${esc(collection.name)}, ${found} trên ${collection.items.length}. ${esc(hint)}">
+    return `<button class="collection-goal" type="button" data-sheet="collections">
       <span aria-hidden="true">📒</span><span><b>${esc(collection.name)} · ${found}/${collection.items.length}</b><small>${esc(hint)}</small></span><span aria-hidden="true">›</span>
     </button>`;
   }
@@ -673,7 +673,7 @@
         : empty
           ? { kind: 'seed', icon: '🌱', title: `${empty} ô đang trống`, detail: 'Chạm để chọn hạt giống.' }
           : { kind: 'orders', icon: '🏡', title: 'Nông trại đang lớn lên', detail: 'Chạm để xem mục tiêu tiếp theo.' };
-    return `<button class="farm-next-step" type="button" data-next-step="${step.kind}" aria-label="${step.title}. ${step.detail}"><span aria-hidden="true">${step.icon}</span><span><b>${step.title}</b><small>${step.detail}</small></span></button>`;
+    return `<button class="farm-next-step" type="button" data-next-step="${step.kind}"><span aria-hidden="true">${step.icon}</span><span><b>${step.title}</b><small>${step.detail}</small></span></button>`;
   }
 
   function renderUpcomingUnlocks(level) {
@@ -700,7 +700,7 @@
     const cells = farm.plots.map((p) => {
       const plotName = `Ô đất ${p.idx + 1}`;
       if (!p.crop) {
-        return `<button class="plot plot--empty" data-idx="${p.idx}" data-kind="empty" aria-label="${plotName}: ${mine ? 'trống, chọn hạt để gieo' : 'trống'}" ${mine ? '' : 'disabled'}>
+        return `<button class="plot plot--empty" data-idx="${p.idx}" data-kind="empty" aria-label="${mine ? 'Gieo hạt, ' : ''}${plotName}: ${mine ? 'trống, chọn hạt để gieo' : 'trống'}" ${mine ? '' : 'disabled'}>
           <span class="plot-main">${mine ? `<img class="plot-empty-sprout" src="${A('assets/crops/seed-1.svg')}" alt="" />` : ''}</span>
           ${mine ? '<span class="plot-note">Gieo hạt</span>' : ''}
         </button>`;
@@ -745,7 +745,7 @@
     if (mine && farm.expandNext) {
       const e = farm.expandNext;
       const can = me().level >= e.level && me().gold >= e.gold;
-      cells.push(`<button class="plot plot--locked${can ? ' plot--buyable' : ''}" data-kind="expand" aria-label="Mở rộng thêm 4 ô đất: cần cấp ${e.level} và ${e.gold.toLocaleString('vi')} vàng">
+      cells.push(`<button class="plot plot--locked${can ? ' plot--buyable' : ''}" data-kind="expand">
         <span class="plot-main">🔒</span>
         <span class="plot-note">+4 ô · ${e.gold.toLocaleString('vi')} ${COIN}</span>
         <span class="plot-note">Cần Lv ${e.level}</span>
@@ -1021,7 +1021,7 @@
                 <span class="btn-group">
                   <span class="qty-ctl">
                     <button type="button" data-qstep="-1">−</button>
-                    <input class="qty-input" type="number" inputmode="numeric" min="1" max="${q}" value="1" />
+                    <input class="qty-input" type="number" inputmode="numeric" aria-label="Số lượng ${esc(info?.name || id)} muốn bán" min="1" max="${q}" value="1" />
                     <button type="button" data-qstep="1">＋</button>
                   </span>
                   <button class="gbtn gbtn--gold btn-mini" data-sell="${id}">Bán 1</button>
@@ -1177,7 +1177,7 @@
             <div class="seed-meta">còn ${rem}/${w.qty} · trả <b>${w.price.toLocaleString('vi')}</b> ${COIN}/cái · bạn có ${have}</div></span>
           ${can > 0 ? `<span class="btn-group"><span class="qty-ctl">
               <button type="button" data-qstep="-1">−</button>
-              <input class="qty-input" type="number" inputmode="numeric" min="1" max="${can}" value="${can}" />
+              <input class="qty-input" type="number" inputmode="numeric" aria-label="Số lượng ${esc(itemInfo(w.item)?.name || w.item)} muốn bán cho ${esc(w.ownerName)}" min="1" max="${can}" value="${can}" />
               <button type="button" data-qstep="1">＋</button>
             </span>
             <button class="gbtn gbtn--green btn-mini" data-want-fill="${w.id}">Bán</button></span>` : '<span class="seed-lock">Không có hàng</span>'}

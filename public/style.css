@@ -1293,11 +1293,11 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   border-radius: 10px;
   border: 1.5px solid #ddc49b;
   background: #f3e7d1;
-  color: #826e57;
+  color: #5b4832;
   font-size: .76rem;
   font-weight: 800;
 }
-.o-item--ok { border-color: #a8cf79; background: #ecf8df; color: #527d32; }
+.o-item--ok { border-color: #a8cf79; background: #ecf8df; color: #365d23; }
 .o-item img { width: 25px; height: 25px; object-fit: contain; }
 .o-item-name { max-width: 8rem; line-height: 1.1; }
 .o-item-count { margin-left: .15rem; padding: .1rem .3rem; border-radius: 6px; background: rgba(255,255,255,.7); font-variant-numeric: tabular-nums; white-space: nowrap; }
