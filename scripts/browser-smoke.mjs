@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
@@ -31,6 +31,20 @@ try {
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.goto(`${base}/farm/`, { waitUntil: 'domcontentloaded' });
   await page.locator('.plot').first().waitFor();
+  await page.waitForLoadState('load');
+  const startup = await page.evaluate(() => {
+    const resources = performance.getEntriesByType('resource').filter((entry) => new URL(entry.name).origin === location.origin);
+    const images = resources.filter((entry) => /\.(?:png|svg|webp)(?:\?|$)/i.test(entry.name));
+    return {
+      plotVisibleMs: Math.round(performance.now()),
+      localRequests: resources.length,
+      localTransferBytes: resources.reduce((sum, entry) => sum + entry.transferSize, 0),
+      imageRequests: images.length,
+      imageTransferBytes: images.reduce((sum, entry) => sum + entry.transferSize, 0),
+    };
+  });
+  writeFileSync(resolve(outputDir, 'startup-320.json'), `${JSON.stringify(startup, null, 2)}\n`);
+  console.log(`320px startup sample: ${JSON.stringify(startup)}`);
   await checkNoOverflow(page, '320px farm');
   await page.screenshot({ path: resolve(outputDir, 'farm-320.png') });
 
