@@ -14,7 +14,7 @@ This is the project plan for the farm game, separate from the older stability au
 - Set a shared camera angle, outline weight, lighting direction, palette, shadow, and sprite scale. Draw a reference farm scene. The working standard and inventory are in [art-direction.md](art-direction.md).
 - Inventory every crop growth state, tree, animal, building, machine, product, UI icon, and background; label missing assets and inconsistent styles.
 - Set export rules: transparent PNG/WebP, predictable names, size variants, and a source file for every new sprite.
-- **Gate:** a single screen using the new art feels coherent at phone and desktop sizes. **Status:** first coherent building set, farmer, shared hand-painted seedling, all thirty-six matched crop pairs, individual art for all fifteen animal and thirteen fruit-tree species, and all twelve factory machine sprites added to a working art guide and generated catalog/static-asset inventory; reference scene and remaining families pending.
+- **Gate:** a single screen using the new art feels coherent at phone and desktop sizes. **Status:** farmhouse, red barn, greenhouse, coop, windmill, market, farmer, shared hand-painted seedling, all thirty-six matched crop pairs, individual art for all fifteen animal and thirteen fruit-tree species, and all twelve factory machine sprites added to a working art guide and generated catalog/static-asset inventory; reference scene and remaining families pending.
 
 ## 3. Upgrade the farm scene and graphics
 
@@ -85,6 +85,6 @@ This is the project plan for the farm game, separate from the older stability au
 ### Current acceptance record
 
 - 67 automated tests pass on the upgrade branch.
-- New assets: coop, windmill, market, farmer, a shared seedling, individual art for all fifteen animal species and thirteen fruit-tree species, growing and ripe art for all thirty-six crops, all twelve factory machine sprites, and twelve hand-painted processed goods across the kitchen, juice press, jam kettle, dairy, bakery, and weaving workshop. Five tree and fruit pairs from the source pack now have individual game assets. The generated art inventory shows 36/36 crops, 13/13 trees, 15/15 animals, and 12/12 machines with individual PNG art; 21/186 products have PNG or SVG icons.
+- New assets: farmhouse, red barn, greenhouse, coop, windmill, market, farmer, a shared seedling, individual art for all fifteen animal species and thirteen fruit-tree species, growing and ripe art for all thirty-six crops, all twelve factory machine sprites, and twelve hand-painted processed goods across the kitchen, juice press, jam kettle, dairy, bakery, and weaving workshop. Five tree and fruit pairs from the source pack now have individual game assets. The generated art inventory shows 36/36 crops, 13/13 trees, 15/15 animals, and 12/12 machines with individual PNG art; 21/186 products have PNG or SVG icons.
 - First-session guidance, mobile HUD, starter tax grace, persistent harvest collections, and fifty-nine replay-safe gameplay/economy routes are implemented.
 - Player research, remaining interface and product art, ingredient-supply and achievable-order-rate modeling, route-level mutation test coverage, accessibility audit, staged release, and merge remain open. The client and server currently list the same 59 replay-safe POST routes.

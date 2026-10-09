@@ -108,7 +108,7 @@ Vanilla source images are `asset/source_crops/v3/vanilla-growing.png` and `asset
 
 | Family | Current state | Next deliverable |
 | --- | --- | --- |
-| Farm buildings | New coop, windmill, and market sprites; other buildings use mixed existing art | Replace visible outliers and align scale/shadow |
+| Farm buildings | New coop, windmill, market, farmhouse, red barn, and greenhouse sprites; remaining accents use mixed existing art | Replace visible outliers and align scale/shadow |
 | Farmer | New character sprite | Review size and silhouette against buildings at mobile width |
 | Fruit trees | All thirteen species have individual PNGs | Review scale and ready-state contrast together at phone width |
 | Animals | All fifteen species have individual PNGs | Review scale and shadow together at phone width |
@@ -118,6 +118,7 @@ Vanilla source images are `asset/source_crops/v3/vanilla-growing.png` and `asset
 ## Review checklist for each new sprite
 
 The original coop, windmill, market, and farmer scene images are in `asset/source_scene/v3/`. Their 256px transparent browser exports are in `public/assets/scene-v3/`; the scene displays them at about 115–135 CSS pixels on desktop. These four exports total about 331 KB, down from about 1,237 KB for the 500–512px originals.
+The farmhouse, red barn, and greenhouse sources are also in `asset/source_scene/v3/`. Their 224px transparent browser exports are in `public/assets/scene-v3/`; this size keeps the three central buildings readable in the scene while respecting the first-load image budget.
 
 Machine sources are in `asset/source_machines/v3/`; the 144×144 transparent game exports are in `public/assets/machines-v3/`. The set includes unique art for all twelve machines. The exports serve 44px card icons at up to roughly 3× display density; keep the full-resolution sources for larger future uses.
 

@@ -495,10 +495,10 @@
         <div class="stage-center">
           <div class="scene-banner">
             <div class="sb-hills"></div>
-            <img class="sb sb-house" src="${A('assets/pack/farm_house.png')}" alt="" />
+            <img class="sb sb-house" src="${A('assets/scene-v3/farmhouse_v3.png')}" alt="" />
             <img class="sb sb-tree1" src="${A('assets/pack/tree_01.png')}" alt="" />
-            <img class="sb sb-barn" src="${A('assets/pack/red_barn.png')}" alt="" />
-            <img class="sb sb-green" src="${A('assets/pack/greenhouse.png')}" alt="" />
+            <img class="sb sb-barn" src="${A('assets/scene-v3/red_barn_v3.png')}" alt="" />
+            <img class="sb sb-green" src="${A('assets/scene-v3/greenhouse_v3.png')}" alt="" />
             <img class="sb sb-tree2" src="${A('assets/pack/tree_02.png')}" alt="" />
             <span class="sb sb-pen" aria-hidden="true"></span>
             ${m.level >= DATA.config.animals.cuu.level ? `
