@@ -1134,6 +1134,7 @@
         : [...m.orders].sort((a, b) => Number(canDeliver(b)) - Number(canDeliver(a)) || a.slot - b.slot).map((o) => {
             const ok = canDeliver(o);
             const missing = Object.entries(o.items).reduce((sum, [id, q]) => sum + Math.max(0, q - (m.inventory[id] || 0)), 0);
+            const quick = o.slot === 0 && Object.keys(o.items).length === 1 && Boolean(crops()[Object.keys(o.items)[0]]);
             const items = Object.entries(o.items).map(([id, q]) => {
               const have = m.inventory[id] || 0;
               const itemName = esc(itemInfo(id)?.name || id);
@@ -1141,6 +1142,7 @@
             }).join('');
             return `<div class="order-card${ok ? ' order-card--ready' : ''}">
               <div class="o-status">${ok ? '✓ Sẵn sàng giao' : `Còn thiếu ${missing} sản phẩm`}</div>
+              ${quick ? '<div class="o-fast">🌱 Đơn cây trồng nhanh</div>' : ''}
               <div class="o-items">${items}</div>
               <div class="o-reward">${o.gold.toLocaleString('vi')} ${COIN} · +${o.exp}EXP · ${o.stars}${STAR}</div>
               <div class="sheet-actions">

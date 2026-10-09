@@ -1282,6 +1282,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .order-card--ready { border-color: #8dbd62; background: #f3f9e9; }
 .o-status { margin-bottom: .4rem; color: #765937; font-size: .8rem; font-weight: 850; }
 .order-card--ready .o-status { color: #3b702a; }
+.o-fast { display: inline-block; margin: 0 0 .4rem; padding: .2rem .45rem; border-radius: 8px; background: #e4f3d2; color: #315e25; font-size: .72rem; font-weight: 800; }
 .o-items { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .4rem; }
 .o-item {
   min-height: 42px;

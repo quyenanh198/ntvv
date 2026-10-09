@@ -182,8 +182,16 @@ try {
   const xp = [1, 2, 3, 4].reduce((sum, level) => sum + xpNeedFor(level), 0);
   db.prepare('DELETE FROM plots WHERE owner_id = 1').run();
   db.prepare('DELETE FROM inventory WHERE owner_id = 1').run();
-  db.prepare('UPDATE farmers SET xp = ?, gold = 500, orders_refresh_at = ? WHERE user_id = 1').run(xp, Date.now() + 60_000);
+  db.prepare('UPDATE farmers SET xp = ?, gold = 500, orders_refresh_at = 0 WHERE user_id = 1').run(xp);
   db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, ?)').run('luami', 1);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-sheet="more"]').first().click();
+  await page.locator('[data-sheet="orders"]').click();
+  await page.locator('.o-fast').waitFor();
+  await page.screenshot({ path: resolve(outputDir, 'quick-order-320.png') });
+  await page.keyboard.press('Escape');
+  db.prepare('DELETE FROM orders WHERE owner_id = 1').run();
+  db.prepare('UPDATE farmers SET orders_refresh_at = ? WHERE user_id = 1').run(Date.now() + 60_000);
   const insertOrder = db.prepare('INSERT INTO orders (owner_id, slot, items_json, gold, exp, stars) VALUES (1, ?, ?, ?, 40, 1)');
   insertOrder.run(0, JSON.stringify({ luami: 3, carot: 2 }), 500);
   insertOrder.run(1, JSON.stringify({ luami: 1 }), 150);
