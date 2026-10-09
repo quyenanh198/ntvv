@@ -47,7 +47,10 @@ async function checkNoOverflow(page, label) {
 }
 
 async function auditAccessibility(page, label) {
-  await page.addScriptTag({ path: axePath });
+  if (!await page.evaluate(() => !!window.axe)) {
+    await page.route('**/farm/axe.min.js', (route) => route.fulfill({ path: axePath, contentType: 'application/javascript' }));
+    await page.addScriptTag({ url: new URL('/farm/axe.min.js', page.url()).href });
+  }
   const results = await page.evaluate(() => window.axe.run(document, {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
   }));
