@@ -1,8 +1,8 @@
-# Crop progression balance report
+# Farm progression balance report
 
-Generated from the live rules in `server/src/game.js` by `npm run balance:report`. This is a deterministic crop-only baseline, not observed player behavior or a complete economy forecast.
+Generated from the live rules in `server/src/game.js` by `npm run balance:report`. This is a deterministic crop, expansion, and recipe opportunity-cost model, not observed player behavior or a complete economy forecast.
 
-Assumptions: 12 starting plots; 500 starting gold; 4 items from an untouched plot; 4× sale-gold multiplier; one seed purchase, harvest, and sale per cycle. A cycle takes the longer of crop growth time or the visit interval. This excludes action time, saturation, skills, quests, orders, taxes, gifts, upgrades, and offline effects.
+Crop assumptions: 12 starting plots; 500 starting gold; 4 items from an untouched plot; 4× sale-gold multiplier; one seed purchase, harvest, and sale per cycle. A cycle takes the longer of crop growth time or the visit interval. Crop cadence figures exclude action time, saturation, skills, quests, orders, taxes, gifts, upgrades, and offline effects. The expansion section adds land tax explicitly.
 
 ## Visit-cadence comparison
 
@@ -75,6 +75,28 @@ The 97 live expansions add four plots each, from 12 to 400. Rows below sample ea
 - Expansions with nonpositive new-plot income at either cadence: none.
 - Longest modeled three-visit payback: expansion 97, 138.2 days. This is a crop-only warning, not a forecast of total late-game income.
 
+## Processing opportunity cost
+
+For each sellable recipe, output sale value minus the sale value forgone by using its inputs gives a per-batch margin. Both sale values use the live gold multiplier; inputs bought from the shop use their purchase price. The table shows the highest margin per machine-hour from the full recipe catalog. It assumes unlimited inputs, no queue gaps, no sale-price saturation, and no prerequisite timing; some recipes need ingredients unlocked later than the machine. It is an upper-bound comparison, not achievable daily income.
+
+| Machine | Machine unlock | Recipes | Best catalog recipe | Margin/batch | Margin/machine-hour |
+| --- | ---: | ---: | --- | ---: | ---: |
+| Lò nướng cá | 8 | 14 | Cá tra kho tộ | 24,448 | 32,597 |
+| Quán ốc | 8 | 42 | Ốc len xào bơ | 46,500 | 107,308 |
+| Bếp gia đình | 9 | 11 | Bánh xèo | 36,968 | 44,362 |
+| Cối xay bột | 10 | 5 | Bột gạo | 4,400 | 10,560 |
+| Quán ăn vặt | 11 | 14 | Bắp xào bơ | 43,000 | 129,000 |
+| Máy ép nước | 12 | 8 | Nước chanh | 6,300 | 12,600 |
+| Nồi mứt | 13 | 6 | Mứt sầu riêng | 18,860 | 18,860 |
+| Nhà máy sữa | 15 | 8 | Kem dưa hấu | 71,600 | 53,700 |
+| Lò bánh | 17 | 9 | Bánh dứa | 85,600 | 64,200 |
+| Máy rang cà phê | 23 | 5 | Cà phê sữa | 110,800 | 110,800 |
+| Xưởng dệt | 25 | 7 | Khăn alpaca | 78,000 | 39,000 |
+| Xưởng cao cấp | 26 | 8 | Tiệc gia đình | 760,400 | 380,200 |
+
+- Sellable recipes with nonpositive opportunity margin: none.
+- Utility recipes without a sale price excluded from the ranking: coixay/thucan.
+
 ## Automated viability checks
 
 - Nonprofitable regular crops: none.
@@ -85,5 +107,5 @@ The 97 live expansions add four plots each, from 12 to 400. Rows below sample ea
 
 1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.
 2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.
-3. Extend the model to animals, machines, and orders; compare their income with the late-expansion payback warning before tuning land prices.
+3. Add ingredient supply, animals, and orders to the machine model; compare achievable income with the late-expansion payback warning before tuning land prices.
 

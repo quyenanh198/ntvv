@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { CROPS, EXPANSIONS, GOLD_MULT, HARVEST_YIELD, LAND_TAX_UNLOCK_LEVEL, MAX_PLOTS, START_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
+import { CROPS, EXPANSIONS, GOLD_MULT, HARVEST_YIELD, LAND_TAX_UNLOCK_LEVEL, MACHINES, MAX_PLOTS, START_GOLD, START_PLOTS, TAX_PER_PLOT, itemInfo, xpNeedFor } from '../server/src/game.js';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const crops = Object.values(CROPS).filter((crop) => !crop.risky && crop.sell > 0).map((crop) => ({
@@ -50,10 +50,25 @@ const expansionRows = sampledExpansionIndexes.map((index) => {
 });
 const nonpositiveExpansionIncome = expansionModel.filter((row) => row.dailyOne <= 0 || row.dailyThree <= 0);
 const longestPayback = [...expansionModel].sort((a, b) => b.paybackDays - a.paybackDays)[0];
+const machineModels = Object.values(MACHINES).sort((a, b) => a.level - b.level).map((machine) => {
+  const recipes = Object.values(machine.recipes).map((recipe) => {
+    const inputValue = Object.entries(recipe.in).reduce((sum, [id, qty]) => {
+      const item = itemInfo(id);
+      return sum + qty * (item?.sell > 0 ? item.sell * GOLD_MULT : item?.buy || 0);
+    }, 0);
+    const outputValue = Object.entries(recipe.out).reduce((sum, [id, qty]) => sum + qty * (itemInfo(id)?.sell || 0) * GOLD_MULT, 0);
+    const margin = outputValue - inputValue;
+    return { ...recipe, margin, perHour: margin * 3_600_000 / recipe.ms, sellable: outputValue > 0 };
+  });
+  return { ...machine, recipes, best: rank(recipes.filter((recipe) => recipe.sellable), (recipe) => recipe.perHour) };
+});
+const machineRows = machineModels.map((machine) => `| ${machine.name} | ${machine.level} | ${machine.recipes.length} | ${machine.best.name} | ${fmt(machine.best.margin)} | ${fmt(machine.best.perHour)} |`);
+const nonpositiveCrafts = machineModels.flatMap((machine) => machine.recipes.filter((recipe) => recipe.sellable && recipe.margin <= 0).map((recipe) => `${machine.id}/${recipe.id}`));
+const utilityCrafts = machineModels.flatMap((machine) => machine.recipes.filter((recipe) => !recipe.sellable).map((recipe) => `${machine.id}/${recipe.id}`));
 const lines = [
-  '# Crop progression balance report', '',
-  'Generated from the live rules in `server/src/game.js` by `npm run balance:report`. This is a deterministic crop-only baseline, not observed player behavior or a complete economy forecast.', '',
-  `Assumptions: ${START_PLOTS} starting plots; ${START_GOLD} starting gold; ${HARVEST_YIELD} items from an untouched plot; ${GOLD_MULT}× sale-gold multiplier; one seed purchase, harvest, and sale per cycle. A cycle takes the longer of crop growth time or the visit interval. This excludes action time, saturation, skills, quests, orders, taxes, gifts, upgrades, and offline effects.`, '',
+  '# Farm progression balance report', '',
+  'Generated from the live rules in `server/src/game.js` by `npm run balance:report`. This is a deterministic crop, expansion, and recipe opportunity-cost model, not observed player behavior or a complete economy forecast.', '',
+  `Crop assumptions: ${START_PLOTS} starting plots; ${START_GOLD} starting gold; ${HARVEST_YIELD} items from an untouched plot; ${GOLD_MULT}× sale-gold multiplier; one seed purchase, harvest, and sale per cycle. A cycle takes the longer of crop growth time or the visit interval. Crop cadence figures exclude action time, saturation, skills, quests, orders, taxes, gifts, upgrades, and offline effects. The expansion section adds land tax explicitly.`, '',
   '## Visit-cadence comparison', '',
   '| Level | XP to next | Best profit at 10-min visits | Best profit at 60-min visits | Best profit at 8-hour visits | Fastest XP at 60-min visits (all starting plots) |',
   '| ---: | ---: | --- | --- | --- | --- |', ...levelRows, '',
@@ -67,6 +82,12 @@ const lines = [
   '| ---: | ---: | ---: | ---: | ---: | --- | --- | ---: |', ...expansionRows, '',
   `- Expansions with nonpositive new-plot income at either cadence: ${nonpositiveExpansionIncome.length ? nonpositiveExpansionIncome.map((row) => row.index + 1).join(', ') : 'none'}.`,
   `- Longest modeled three-visit payback: expansion ${longestPayback.index + 1}, ${longestPayback.paybackDays.toFixed(1)} days. This is a crop-only warning, not a forecast of total late-game income.`, '',
+  '## Processing opportunity cost', '',
+  'For each sellable recipe, output sale value minus the sale value forgone by using its inputs gives a per-batch margin. Both sale values use the live gold multiplier; inputs bought from the shop use their purchase price. The table shows the highest margin per machine-hour from the full recipe catalog. It assumes unlimited inputs, no queue gaps, no sale-price saturation, and no prerequisite timing; some recipes need ingredients unlocked later than the machine. It is an upper-bound comparison, not achievable daily income.', '',
+  '| Machine | Machine unlock | Recipes | Best catalog recipe | Margin/batch | Margin/machine-hour |',
+  '| --- | ---: | ---: | --- | ---: | ---: |', ...machineRows, '',
+  `- Sellable recipes with nonpositive opportunity margin: ${nonpositiveCrafts.length ? nonpositiveCrafts.join(', ') : 'none'}.`,
+  `- Utility recipes without a sale price excluded from the ranking: ${utilityCrafts.length ? utilityCrafts.join(', ') : 'none'}.`, '',
   '## Automated viability checks', '',
   `- Nonprofitable regular crops: ${unprofitable.length ? unprofitable.map(name).join(', ') : 'none'}.`,
   `- Starter seeds above starting gold: ${unaffordable.length ? unaffordable.map(name).join(', ') : 'none'}.`,
@@ -74,7 +95,7 @@ const lines = [
   '## Next balance decisions', '',
   '1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.',
   '2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.',
-  '3. Extend the model to animals, machines, and orders; compare their income with the late-expansion payback warning before tuning land prices.', '',
+  '3. Add ingredient supply, animals, and orders to the machine model; compare achievable income with the late-expansion payback warning before tuning land prices.', '',
 ];
 const report = `${lines.join('\n')}\n`;
 if (process.argv.includes('--write')) writeFileSync(resolve(root, 'docs/balance-report.md'), report);
