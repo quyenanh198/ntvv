@@ -78,6 +78,69 @@ const supplyRows = machineModels.map((machine) => {
   const best = rank(ranked, (recipe) => recipe.marginPerDay);
   return `| ${machine.name} | ${machine.level} | ${cropRecipes.length} | ${best ? best.name : 'none'} | ${best ? best.plotDaysPerBatch.toFixed(2) : '—'} | ${best ? best.batches.toFixed(1) : '—'} | ${best ? fmt(best.marginPerDay) : '—'} | ${best ? (best.cropBatches < best.machineBatches ? 'crops' : 'machine') : '—'} |`;
 });
+const producers = new Map();
+for (const machine of Object.values(MACHINES)) {
+  for (const recipe of Object.values(machine.recipes)) {
+    for (const [id, outputQty] of Object.entries(recipe.out)) {
+      if (!producers.has(id)) producers.set(id, []);
+      producers.get(id).push({ machine, recipe, outputQty });
+    }
+  }
+}
+const mergeRequirements = (target, source, scale = 1) => {
+  target.plotDays += source.plotDays * scale;
+  target.cropValue += source.cropValue * scale;
+  target.steps += source.steps * scale;
+  for (const [id, ms] of Object.entries(source.machineMs)) target.machineMs[id] = (target.machineMs[id] || 0) + ms * scale;
+};
+function expandCropItem(id, level, path = new Set()) {
+  const crop = CROPS[id];
+  if (crop && !crop.risky && crop.level <= level) {
+    const cyclesPerDay = 1440 / Math.max(crop.growMs / 60_000, 480);
+    return { plotDays: 1 / (HARVEST_YIELD * cyclesPerDay), cropValue: crop.sell * GOLD_MULT, machineMs: {}, steps: 0 };
+  }
+  if (path.has(id)) return null;
+  const nextPath = new Set(path).add(id);
+  const choices = (producers.get(id) || []).filter(({ machine }) => machine.level <= level).map(({ machine, recipe, outputQty }) => {
+    const chain = expandCropRecipe(recipe, machine, level, nextPath);
+    if (!chain) return null;
+    const perItem = { plotDays: 0, cropValue: 0, machineMs: {}, steps: 0 };
+    mergeRequirements(perItem, chain, 1 / outputQty);
+    return perItem;
+  }).filter(Boolean);
+  return choices.sort((a, b) => a.plotDays - b.plotDays || Math.max(...Object.values(a.machineMs)) - Math.max(...Object.values(b.machineMs)))[0] || null;
+}
+function expandCropRecipe(recipe, machine, level, path = new Set()) {
+  const result = { plotDays: 0, cropValue: 0, machineMs: { [machine.id]: recipe.ms }, steps: 1 };
+  for (const [id, qty] of Object.entries(recipe.in)) {
+    const input = expandCropItem(id, level, path);
+    if (!input) return null;
+    mergeRequirements(result, input, qty);
+  }
+  return result;
+}
+const chainLevel = maxLevel;
+let cropOriginRecipes = 0;
+let multiMachineRecipes = 0;
+const chainRows = machineModels.map((machine) => {
+  const eligible = machine.recipes.map((recipe) => {
+    const requirement = expandCropRecipe(recipe, machine, chainLevel);
+    if (!requirement) return null;
+    const outputValue = Object.entries(recipe.out).reduce((sum, [id, qty]) => sum + (itemInfo(id)?.sell || 0) * qty * GOLD_MULT, 0);
+    if (outputValue <= 0 || requirement.plotDays <= 0) return null;
+    const cropBatches = START_PLOTS / requirement.plotDays;
+    const machineLimits = Object.entries(requirement.machineMs).map(([id, ms]) => ({ id, batches: 86_400_000 / ms }));
+    const tightestMachine = machineLimits.sort((a, b) => a.batches - b.batches)[0];
+    const batches = Math.min(cropBatches, tightestMachine.batches);
+    const margin = outputValue - requirement.cropValue;
+    return { ...recipe, requirement, batches, marginPerDay: batches * margin,
+      bottleneck: cropBatches < tightestMachine.batches ? 'crops' : tightestMachine.id };
+  }).filter(Boolean);
+  cropOriginRecipes += eligible.length;
+  multiMachineRecipes += eligible.filter((recipe) => recipe.requirement.steps > 1).length;
+  const best = rank(eligible, (recipe) => recipe.marginPerDay);
+  return `| ${machine.name} | ${eligible.length} | ${best ? best.name : 'none'} | ${best ? best.requirement.steps.toFixed(1) : '—'} | ${best ? best.requirement.plotDays.toFixed(2) : '—'} | ${best ? best.batches.toFixed(1) : '—'} | ${best ? fmt(best.marginPerDay) : '—'} | ${best ? best.bottleneck : '—'} |`;
+});
 const nonpositiveCrafts = machineModels.flatMap((machine) => machine.recipes.filter((recipe) => recipe.sellable && recipe.margin <= 0).map((recipe) => `${machine.id}/${recipe.id}`));
 const utilityCrafts = machineModels.flatMap((machine) => machine.recipes.filter((recipe) => !recipe.sellable).map((recipe) => `${machine.id}/${recipe.id}`));
 const feedPrice = itemInfo(FEED_ITEM).buy;
@@ -152,6 +215,10 @@ const lines = [
   `This narrower model includes only sellable recipes whose ingredients are all field crops already unlocked when the machine opens. It assigns the ${START_PLOTS} starting plots across those crops, assumes three evenly spaced visits per day, ${HARVEST_YIELD} items per harvest, and continuous machine operation. Fractional plot allocation gives an upper bound. It ignores inventory carried in, expansion plots, growth bonuses, sale saturation, queue gaps, and time or gold to acquire ingredients from animals, trees, fish, or earlier machines. The last column identifies the tighter of crop supply and machine time for the best daily-margin recipe in this narrow set.`, '',
   '| Machine | Unlock | Eligible direct recipes | Best crop-only recipe | Plot-days/batch | Upper-bound batches/day | Margin/day | Tightest limit |',
   '| --- | ---: | ---: | --- | ---: | ---: | ---: | --- |', ...supplyRows, '',
+  '## Crop-to-machine recipe chains', '',
+  `This second supply model recursively expands crop-origin ingredients through unlocked machines at level ${chainLevel}. It finds ${cropOriginRecipes} sellable crop-origin recipes, including ${multiMachineRecipes} that use more than one machine step. For ingredients with multiple possible recipes, it chooses the chain needing the fewest plot-days. Each prerequisite machine is assumed owned once, and its processing time is added to that machine's daily capacity; a machine used twice in a chain shares its capacity. The ${START_PLOTS} starting plots are split fractionally across all leaf crops with three visits per day. The margin compares the final product's sale value with selling those leaf crops directly. Fractional batches, uninterrupted queues, no sale saturation, and no acquisition costs make this an upper bound. Animal, tree, fish, bought ingredients, inventory carried in, and byproduct sales are excluded.`, '',
+  '| Final machine | Crop-origin recipes | Best daily-margin recipe | Machine steps/batch | Plot-days/batch | Upper-bound batches/day | Margin/day | Tightest limit |',
+  '| --- | ---: | --- | ---: | ---: | ---: | ---: | --- |', ...chainRows, '',
   '## Animal feed and sale model', '',
   `Each animal is fed with shop-bought ${FEED_ITEM} at ${fmt(feedPrice)} gold per unit, then produces one item after its live timer. Sale values use the ${GOLD_MULT}× gold multiplier. A visit collects one ready product and feeds the animal for its next cycle. The one-visit and three-visit cases therefore allow at most one or three sales per day per animal, even when the timer is shorter. The model excludes barn construction, capacity upgrades, order premiums, and time spent acquiring an animal; payback covers only its purchase price.`, '',
   '| Animal | Unlock | Purchase | Produce min | Feed/cycle | Sale/cycle | Net, 1 visit/day | Net, 3 visits/day | Purchase payback, 3 visits (days) |',
@@ -172,7 +239,7 @@ const lines = [
   '## Next balance decisions', '',
   '1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.',
   '2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.',
-  '3. Extend the supply model to owned animals, trees, fish, and chained recipes; measure actual order completion before tuning land prices or order generation.', '',
+  '3. Extend the supply model to owned animals, trees, fish, inventory, and sale-price saturation; measure actual order completion and late-game income before tuning land prices or order generation.', '',
 ];
 const report = `${lines.join('\n')}\n`;
 if (process.argv.includes('--write')) writeFileSync(resolve(root, 'docs/balance-report.md'), report);

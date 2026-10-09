@@ -116,6 +116,25 @@ This narrower model includes only sellable recipes whose ingredients are all fie
 | Xưởng dệt | 25 | 1 | Vải bông | 0.25 | 24.0 | 230,400 | machine |
 | Xưởng cao cấp | 26 | 1 | Rượu nho ủ | 0.50 | 8.0 | 260,800 | machine |
 
+## Crop-to-machine recipe chains
+
+This second supply model recursively expands crop-origin ingredients through unlocked machines at level 29. It finds 22 sellable crop-origin recipes, including 3 that use more than one machine step. For ingredients with multiple possible recipes, it chooses the chain needing the fewest plot-days. Each prerequisite machine is assumed owned once, and its processing time is added to that machine's daily capacity; a machine used twice in a chain shares its capacity. The 12 starting plots are split fractionally across all leaf crops with three visits per day. The margin compares the final product's sale value with selling those leaf crops directly. Fractional batches, uninterrupted queues, no sale saturation, and no acquisition costs make this an upper bound. Animal, tree, fish, bought ingredients, inventory carried in, and byproduct sales are excluded.
+
+| Final machine | Crop-origin recipes | Best daily-margin recipe | Machine steps/batch | Plot-days/batch | Upper-bound batches/day | Margin/day | Tightest limit |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | --- |
+| Lò nướng cá | 0 | none | — | — | — | — | — |
+| Quán ốc | 0 | none | — | — | — | — | — |
+| Bếp gia đình | 3 | Khoai lang nướng | 1.0 | 0.17 | 72.0 | 103,680 | bepan |
+| Cối xay bột | 4 | Bột gạo | 1.0 | 0.17 | 57.6 | 253,440 | coixay |
+| Quán ăn vặt | 1 | Kẹo đậu phộng | 2.0 | 0.42 | 28.8 | 805,478 | crops |
+| Máy ép nước | 4 | Nước dứa | 1.0 | 0.17 | 41.1 | 288,000 | mayep |
+| Nồi mứt | 3 | Mứt gừng | 1.0 | 0.17 | 32.0 | 117,760 | noimut |
+| Nhà máy sữa | 0 | none | — | — | — | — | — |
+| Lò bánh | 1 | Bánh bí ngô | 2.0 | 0.25 | 16.0 | 87,552 | lobanh |
+| Máy rang cà phê | 3 | Bột ca cao | 1.0 | 0.17 | 16.0 | 374,400 | mayrang |
+| Xưởng dệt | 1 | Vải bông | 1.0 | 0.25 | 24.0 | 230,400 | xuongdet |
+| Xưởng cao cấp | 2 | Nước hoa hoa hồng | 2.0 | 0.58 | 16.0 | 1,638,400 | xuongcaocap |
+
 ## Animal feed and sale model
 
 Each animal is fed with shop-bought thucan at 12 gold per unit, then produces one item after its live timer. Sale values use the 4× gold multiplier. A visit collects one ready product and feeds the animal for its next cycle. The one-visit and three-visit cases therefore allow at most one or three sales per day per animal, even when the timer is shorter. The model excludes barn construction, capacity upgrades, order premiums, and time spent acquiring an animal; payback covers only its purchase price.
@@ -174,5 +193,5 @@ The order board refreshes every 120 minutes. These same deterministic samples co
 
 1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.
 2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.
-3. Extend the supply model to owned animals, trees, fish, and chained recipes; measure actual order completion before tuning land prices or order generation.
+3. Extend the supply model to owned animals, trees, fish, inventory, and sale-price saturation; measure actual order completion and late-game income before tuning land prices or order generation.
 
