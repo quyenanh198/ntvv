@@ -76,12 +76,21 @@ try {
   assert.ok(startup.imageTransferBytes <= 900_000, `320px image transfer exceeds 900 KB: ${startup.imageTransferBytes}`);
   assert.ok(startup.localTransferBytes <= 1_200_000, `320px local transfer exceeds 1.2 MB: ${startup.localTransferBytes}`);
   await checkNoOverflow(page, '320px farm');
+  assert.equal(await page.locator('.hud-right').getAttribute('tabindex'), null, 'Resource group should not add an empty tab stop');
+  const resourceNames = await page.locator('.hud-right button').evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label')));
+  assert.ok(resourceNames.every((name) => name && name.length > 5), 'Header controls need descriptive screen-reader names');
+  assert.match(resourceNames[0], /vàng, mở kho đồ/);
+  assert.match(await page.locator('.coin-pill--star').getAttribute('aria-label'), /sao nông trại, mở mốc sao/);
   const emptyPlotNames = await page.locator('.plot[data-kind="empty"]').evaluateAll((plots) => plots.map((plot) => plot.getAttribute('aria-label')));
   assert.equal(emptyPlotNames.length, 12);
   assert.equal(new Set(emptyPlotNames).size, 12, 'Each empty plot needs a distinct accessible name');
   assert.match(emptyPlotNames[0], /Ô đất 1: trống, chọn hạt để gieo/);
   assert.match(emptyPlotNames[11], /Ô đất 12: trống, chọn hạt để gieo/);
   await page.screenshot({ path: resolve(outputDir, 'farm-320.png') });
+  const audioButton = page.locator('#btn-audio-toggle');
+  const audioNameBefore = await audioButton.getAttribute('aria-label');
+  await audioButton.click();
+  assert.notEqual(await audioButton.getAttribute('aria-label'), audioNameBefore, 'Audio control should announce its next action after toggling');
 
   const startingGold = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').click();
