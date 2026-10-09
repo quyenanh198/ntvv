@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { ANIMALS, CROPS, EXPANSIONS, FEED_ITEM, GOLD_MULT, HARVEST_YIELD, LAND_TAX_UNLOCK_LEVEL, MACHINES, MAX_PLOTS, START_GOLD, START_PLOTS, TAX_PER_PLOT, itemInfo, xpNeedFor } from '../server/src/game.js';
+import { ANIMALS, CROPS, EXPANSIONS, FEED_ITEM, GOLD_MULT, HARVEST_YIELD, LAND_TAX_UNLOCK_LEVEL, MACHINES, MAX_PLOTS, ORDER_UNLOCK_LEVEL, START_GOLD, START_PLOTS, TAX_PER_PLOT, generateOrder, itemInfo, xpNeedFor } from '../server/src/game.js';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const crops = Object.values(CROPS).filter((crop) => !crop.risky && crop.sell > 0).map((crop) => ({
@@ -78,6 +78,30 @@ const animalModels = Object.values(ANIMALS).sort((a, b) => a.level - b.level).ma
 const animalRows = animalModels.map((animal) =>
   `| ${animal.name} | ${animal.level} | ${fmt(animal.price)} | ${fmt(animal.produceMs / 60_000)} | ${fmt(animal.feedCost)} | ${fmt(animal.sale)} | ${fmt(animal.dailyOne)} | ${fmt(animal.dailyThree)} | ${Number.isFinite(animal.paybackDays) ? animal.paybackDays.toFixed(1) : 'never'} |`);
 const nonpositiveAnimals = animalModels.filter((animal) => animal.margin <= 0);
+let orderSeed = 0x4e545656;
+const orderRng = () => {
+  orderSeed = (Math.imul(orderSeed, 1664525) + 1013904223) >>> 0;
+  return orderSeed / 0x100000000;
+};
+const orderLevels = [...new Set([ORDER_UNLOCK_LEVEL, 10, 20, 40, maxLevel])].sort((a, b) => a - b);
+const orderSamples = 1000;
+const orderRows = orderLevels.map((level) => {
+  let baseSale = 0;
+  let rewards = 0;
+  let itemCount = 0;
+  let zeroValue = 0;
+  for (let i = 0; i < orderSamples; i++) {
+    const order = generateOrder(level, orderRng);
+    const sale = Object.entries(order.items).reduce((sum, [id, qty]) => sum + (itemInfo(id)?.sell || 0) * qty * GOLD_MULT, 0);
+    baseSale += sale;
+    rewards += order.gold;
+    itemCount += Object.keys(order.items).length;
+    if (sale <= 0) zeroValue++;
+  }
+  const premium = rewards - baseSale;
+  return { level, baseSale, rewards, itemCount, zeroValue, premium,
+    row: `| ${level} | ${fmt(baseSale / orderSamples)} | ${fmt(rewards / orderSamples)} | ${fmt(premium / orderSamples)} | ${(premium / baseSale * 100).toFixed(1)}% | ${(itemCount / orderSamples).toFixed(2)} | ${zeroValue} |` };
+});
 const lines = [
   '# Farm progression balance report', '',
   'Generated from the live rules in `server/src/game.js` by `npm run balance:report`. This is a deterministic crop, expansion, and recipe opportunity-cost model, not observed player behavior or a complete economy forecast.', '',
@@ -106,6 +130,10 @@ const lines = [
   '| Animal | Unlock | Purchase | Produce min | Feed/cycle | Sale/cycle | Net, 1 visit/day | Net, 3 visits/day | Purchase payback, 3 visits (days) |',
   '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |', ...animalRows, '',
   `- Animals with nonpositive feed-adjusted sale margin: ${nonpositiveAnimals.length ? nonpositiveAnimals.map((animal) => animal.id).join(', ') : 'none'}.`, '',
+  '## Order sale premium', '',
+  `The live order generator was sampled ${fmt(orderSamples)} times at each listed level with a fixed random seed. The premium compares the order reward with selling the identical requested items directly, using the live sale multiplier. These figures describe generated offers, not completed orders or daily income: ingredient availability, production time, board refreshes, and player choice are excluded.`, '',
+  '| Level | Mean direct sale | Mean order gold | Mean extra gold/order | Extra % | Mean item kinds | Zero-value offers |',
+  '| ---: | ---: | ---: | ---: | ---: | ---: | ---: |', ...orderRows.map((row) => row.row), '',
   '## Automated viability checks', '',
   `- Nonprofitable regular crops: ${unprofitable.length ? unprofitable.map(name).join(', ') : 'none'}.`,
   `- Starter seeds above starting gold: ${unaffordable.length ? unaffordable.map(name).join(', ') : 'none'}.`,
@@ -113,7 +141,7 @@ const lines = [
   '## Next balance decisions', '',
   '1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.',
   '2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.',
-  '3. Add ingredient supply and orders to the machine model; combine crop and animal income with the late-expansion payback warning before tuning land prices.', '',
+  '3. Add ingredient supply and achievable order completion rates; combine crop, animal, and order income with the late-expansion payback warning before tuning land prices.', '',
 ];
 const report = `${lines.join('\n')}\n`;
 if (process.argv.includes('--write')) writeFileSync(resolve(root, 'docs/balance-report.md'), report);

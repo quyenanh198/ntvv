@@ -121,6 +121,18 @@ Each animal is fed with shop-bought thucan at 12 gold per unit, then produces on
 
 - Animals with nonpositive feed-adjusted sale margin: none.
 
+## Order sale premium
+
+The live order generator was sampled 1,000 times at each listed level with a fixed random seed. The premium compares the order reward with selling the identical requested items directly, using the live sale multiplier. These figures describe generated offers, not completed orders or daily income: ingredient availability, production time, board refreshes, and player choice are excluded.
+
+| Level | Mean direct sale | Mean order gold | Mean extra gold/order | Extra % | Mean item kinds | Zero-value offers |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 5 | 344 | 406 | 62 | 18.1% | 1.51 | 0 |
+| 10 | 1,079 | 1,268 | 189 | 17.5% | 2.00 | 0 |
+| 20 | 2,144 | 2,526 | 382 | 17.8% | 2.03 | 0 |
+| 29 | 3,600 | 4,238 | 638 | 17.7% | 2.00 | 0 |
+| 40 | 3,683 | 4,317 | 634 | 17.2% | 2.00 | 0 |
+
 ## Automated viability checks
 
 - Nonprofitable regular crops: none.
@@ -131,5 +143,5 @@ Each animal is fed with shop-bought thucan at 12 gold per unit, then produces on
 
 1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.
 2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.
-3. Add ingredient supply and orders to the machine model; combine crop and animal income with the late-expansion payback warning before tuning land prices.
+3. Add ingredient supply and achievable order completion rates; combine crop, animal, and order income with the late-expansion payback warning before tuning land prices.
 
