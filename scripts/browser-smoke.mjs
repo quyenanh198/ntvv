@@ -130,6 +130,7 @@ try {
   }));
   assert.ok(visitLayout.ownerWidth >= visitLayout.barWidth - 30, 'Visit owner should span the mobile bar');
   assert.ok(visitLayout.buttons.every(({ width, height }) => width >= 120 && height >= 44), 'Visit actions need readable touch targets');
+  await page.locator('.visit-bar').screenshot({ path: resolve(outputDir, 'visit-actions-320.png') });
   await page.screenshot({ path: resolve(outputDir, 'visit-friend-320.png') });
   await page.locator('.plot[data-idx="0"][data-kind="water"]').click();
   await page.locator('.plot[data-idx="0"].plot--ready').waitFor();
