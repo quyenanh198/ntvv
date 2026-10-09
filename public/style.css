@@ -1254,7 +1254,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 .order-card { padding: .65rem; }
 .order-card--ready { border-color: #8dbd62; background: #f3f9e9; }
-.o-status { margin-bottom: .4rem; color: #765937; font-size: .75rem; font-weight: 850; }
+.o-status { margin-bottom: .4rem; color: #765937; font-size: .8rem; font-weight: 850; }
 .order-card--ready .o-status { color: #3b702a; }
 .o-items { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .4rem; }
 .o-item {
@@ -1267,14 +1267,15 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   border: 1.5px solid #ddc49b;
   background: #f3e7d1;
   color: #826e57;
-  font-size: .68rem;
+  font-size: .76rem;
   font-weight: 800;
 }
 .o-item--ok { border-color: #a8cf79; background: #ecf8df; color: #527d32; }
 .o-item img { width: 25px; height: 25px; object-fit: contain; }
 .o-item-name { max-width: 8rem; line-height: 1.1; }
 .o-item-count { margin-left: .15rem; padding: .1rem .3rem; border-radius: 6px; background: rgba(255,255,255,.7); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.o-reward { margin-bottom: .35rem; color: #735630; font-size: .72rem; font-weight: 800; }
+.o-reward { margin-bottom: .35rem; color: #735630; font-size: .8rem; font-weight: 800; }
+.order-card .sheet-actions .btn-mini { min-height: 44px; font-size: .82rem; }
 
 .hen-row {
   display: grid;

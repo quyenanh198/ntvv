@@ -51,6 +51,10 @@ try {
   assert.match(await cards.first().getAttribute('class'), /order-card--ready/);
   assert.match(await cards.first().innerText(), /Lúa mì/);
   assert.match(await cards.nth(1).innerText(), /Còn thiếu 4 sản phẩm/);
+  const touchHeights = await page.locator('.order-card .sheet-actions button').evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height));
+  assert.ok(touchHeights.every((height) => height >= 44), `Order actions are too short: ${touchHeights.join(', ')}`);
+  const itemFontPx = await page.locator('.o-item').first().evaluate((item) => Number.parseFloat(getComputedStyle(item).fontSize));
+  assert.ok(itemFontPx >= 12, `Order item text is too small: ${itemFontPx}px`);
   await checkNoOverflow(page, '320px order sheet');
   await page.screenshot({ path: resolve(outputDir, 'orders-320.png') });
   for (const width of [390, 768, 1180]) {
