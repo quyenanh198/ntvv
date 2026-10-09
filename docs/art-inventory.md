@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 15/186 products have PNG or SVG icons. 148 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 17/186 products have PNG or SVG icons. 150 static asset paths appear in the client.
 
 ## Crops
 
@@ -255,7 +255,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Ốc vú nàng | ocvunang | ocvunang | emoji |
 | Ốc vú nàng nướng phô mai | ocvunangnuongphomai | quanoc | emoji |
 | Ốc vú nàng xào me | ocvunangxaome | quanoc | emoji |
-| Phô mai | phomai | nhamaysua | emoji |
+| Phô mai | phomai | nhamaysua | PNG art |
 | Phô mai dê | phomaide | nhamaysua | emoji |
 | Phô mai trâu | phomaitrau | nhamaysua | emoji |
 | Pizza | pizza | lobanh | emoji |
@@ -265,7 +265,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Sinh tố xoài | sinhtoxoai | mayep | emoji |
 | Siro thanh long | siro | noimut | emoji |
 | Sô-cô-la | socola | mayrang | emoji |
-| Sốt cà chua | sotcachua | noimut | emoji |
+| Sốt cà chua | sotcachua | noimut | PNG art |
 | Súp bí đỏ | supbi | bepan | PNG art |
 | Sushi | sushi | lonuong | emoji |
 | Sữa | sua | bo | SVG icon |
@@ -423,11 +423,13 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/tree_02.png` | 14 KB |
 | `assets/pack/well.png` | 17 KB |
 | `assets/products-v3/carrot-juice.png` | 13 KB |
+| `assets/products-v3/farm-cheese.png` | 16 KB |
 | `assets/products-v3/fried-rice.png` | 23 KB |
 | `assets/products-v3/garden-salad.png` | 22 KB |
 | `assets/products-v3/potato-fries.png` | 23 KB |
 | `assets/products-v3/pumpkin-soup.png` | 25 KB |
 | `assets/products-v3/strawberry-jam.png` | 18 KB |
+| `assets/products-v3/tomato-sauce.png` | 20 KB |
 | `assets/scene-v3/chicken_coop_v3.png` | 66 KB |
 | `assets/scene-v3/farmer_v3.png` | 63 KB |
 | `assets/scene-v3/market_shop_v3.png` | 114 KB |

@@ -56,6 +56,7 @@
     khoaichien: 'assets/products-v3/potato-fries.png', salad: 'assets/products-v3/garden-salad.png',
     comchien: 'assets/products-v3/fried-rice.png', supbi: 'assets/products-v3/pumpkin-soup.png',
     nuoccarot: 'assets/products-v3/carrot-juice.png', mutdau: 'assets/products-v3/strawberry-jam.png',
+    sotcachua: 'assets/products-v3/tomato-sauce.png', phomai: 'assets/products-v3/farm-cheese.png',
     cam: 'assets/art/trees/cam-qua.png', tao: 'assets/art/trees/tao-qua.png', xoai: 'assets/art/trees/xoai-qua.png', thanhlong: 'assets/art/trees/thanhlong-qua.png',
     chuoi: 'assets/art/trees/chuoi-qua.png', chanh: 'assets/art/trees/chanh-qua.png', dua: 'assets/art/trees/dua-qua.png', dao: 'assets/art/trees/dao-qua.png', anhdao: 'assets/art/trees/anhdao-qua.png',
     canho: 'assets/ui/fish-canho.svg', caro: 'assets/ui/fish-caro.svg', cachep: 'assets/ui/fish-cachep.svg', cakoi: 'assets/ui/fish-cakoi.svg',

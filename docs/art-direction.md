@@ -113,7 +113,7 @@ Vanilla source images are `asset/source_crops/v3/vanilla-growing.png` and `asset
 | Fruit trees | All thirteen species have individual PNGs | Review scale and ready-state contrast together at phone width |
 | Animals | All fifteen species have individual PNGs | Review scale and shadow together at phone width |
 | Machines | All twelve machines have unique PNGs in factory cards | Standardize footprint and active/ready feedback |
-| Products and UI icons | Fries, garden salad, fried rice, pumpkin soup, carrot juice, and strawberry jam have hand-painted PNGs; most other products use emoji | Extend the product set in recipe and unlock order, then standardize UI icons |
+| Products and UI icons | Fries, garden salad, fried rice, pumpkin soup, carrot juice, strawberry jam, tomato sauce, and farm cheese have hand-painted PNGs; most other products use emoji | Extend the product set in recipe and unlock order, then standardize UI icons |
 
 ## Review checklist for each new sprite
 
@@ -123,6 +123,7 @@ Machine sources are in `asset/source_machines/v3/`; the 144×144 transparent gam
 
 Product sources are in `asset/source_products/v3/`; the 128×128 transparent game exports are in `public/assets/products-v3/`. Potato fries (`khoaichien`), garden salad (`salad`), fried rice (`comchien`), and pumpkin soup (`supbi`) use the shared item-icon renderer in factory, inventory, market, and order views. Keep the full-resolution transparent sources for future larger uses.
 Carrot juice (`nuoccarot`) and strawberry jam (`mutdau`) now use the same renderer. Their full-resolution transparent sources are `asset/source_products/v3/carrot-juice.png` and `asset/source_products/v3/strawberry-jam.png`.
+Tomato sauce (`sotcachua`) and farm cheese (`phomai`) also use that renderer. Their full-resolution transparent sources are `asset/source_products/v3/tomato-sauce.png` and `asset/source_products/v3/farm-cheese.png`.
 
 1. Open original image and confirm real alpha transparency and complete silhouette.
 2. Resize to the export dimension and inspect that exact file.
