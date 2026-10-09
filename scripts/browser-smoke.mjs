@@ -59,7 +59,7 @@ try {
   await page.locator('.plot[data-idx="0"][data-kind="waterplot"]').click();
   await page.locator('.plot[data-idx="0"][data-kind="plotmenu"]').waitFor();
   assert.equal(db.prepare('SELECT watered FROM plots WHERE owner_id = 1 AND idx = 0').get().watered, 1);
-  await page.screenshot({ path: resolve(outputDir, 'planted-320.png') });
+  await page.screenshot({ path: resolve(outputDir, 'planted-320.png'), style: '.float-gain { visibility: hidden !important; }' });
   db.prepare('UPDATE plots SET ready_at = ? WHERE owner_id = 1 AND idx = 0').run(Date.now() - 1);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.plot[data-idx="0"][data-kind="harvest"]').waitFor();
