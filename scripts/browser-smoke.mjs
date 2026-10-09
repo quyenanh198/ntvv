@@ -120,11 +120,13 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.family-member[data-visit="2"]').click();
   await page.locator('.visit-bar').waitFor();
+  await page.screenshot({ path: resolve(outputDir, 'visit-friend-320.png') });
   await page.locator('.plot[data-idx="0"][data-kind="water"]').click();
   await page.locator('.plot[data-idx="0"].plot--ready').waitFor();
   assert.equal(db.prepare('SELECT watered FROM plots WHERE owner_id = 2 AND idx = 0').get().watered, 1);
   await friendPage.reload({ waitUntil: 'domcontentloaded' });
   await friendPage.locator('.plot[data-idx="0"][data-kind="harvest"]').waitFor();
+  await friendPage.screenshot({ path: resolve(outputDir, 'friend-helped-390.png') });
 
   const beforeGift = db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all();
   page.once('dialog', (dialog) => dialog.accept('10'));
