@@ -148,10 +148,41 @@ try {
   assert.equal(afterGift[1].gold, beforeGift[1].gold + 10);
   await friendPage.reload({ waitUntil: 'domcontentloaded' });
   assert.match(await friendPage.locator('.coin-pill').first().innerText(), new RegExp(String(afterGift[1].gold)));
+
+  await friendPage.locator('.plot[data-idx="0"][data-kind="harvest"]').click();
+  await friendPage.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
+  const friendWheatBeforeTrade = db.prepare("SELECT qty FROM inventory WHERE owner_id = 2 AND item = 'luami'").get().qty;
+  await page.locator('#btn-home').click();
+  await page.locator('[data-sheet="more"]').first().click();
+  await page.locator('[data-sheet="market"]').click();
+  await page.locator('#want-item').selectOption('luami');
+  await page.locator('#want-qty').fill('1');
+  await page.locator('#btn-want-create').click();
+  await page.locator('[data-want-cancel]').waitFor();
+  const want = db.prepare("SELECT id, price FROM wants WHERE owner_id = 1 AND item = 'luami'").get();
+  assert.ok(want);
+  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, afterGift[0].gold - want.price);
+  await page.screenshot({ path: resolve(outputDir, 'trade-buyer-320.png') });
+
+  await friendPage.locator('[data-sheet="more"]').first().click();
+  await friendPage.locator('[data-sheet="market"]').click();
+  await friendPage.locator(`[data-want="${want.id}"] [data-want-fill]`).click();
+  await friendPage.locator(`[data-want="${want.id}"]`).waitFor({ state: 'detached' });
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM wants WHERE id = ?').get(want.id).n, 0);
+  assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 2 AND item = 'luami'").get().qty, friendWheatBeforeTrade - 1);
+  assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty, 1);
+  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 2').get().gold, afterGift[1].gold + want.price);
+  await friendPage.screenshot({ path: resolve(outputDir, 'trade-seller-390.png') });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-sheet="more"]').first().click();
+  await page.locator('[data-sheet="inventory"]').click();
+  await page.locator('.inv-row[data-item="luami"]').waitFor();
+  await page.keyboard.press('Escape');
   await friendContext.close();
 
   const xp = [1, 2, 3, 4].reduce((sum, level) => sum + xpNeedFor(level), 0);
   db.prepare('DELETE FROM plots WHERE owner_id = 1').run();
+  db.prepare('DELETE FROM inventory WHERE owner_id = 1').run();
   db.prepare('UPDATE farmers SET xp = ?, gold = 500, orders_refresh_at = ? WHERE user_id = 1').run(xp, Date.now() + 60_000);
   db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, ?)').run('luami', 1);
   const insertOrder = db.prepare('INSERT INTO orders (owner_id, slot, items_json, gold, exp, stars) VALUES (1, ?, ?, ?, 40, 1)');
