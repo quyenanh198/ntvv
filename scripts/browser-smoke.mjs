@@ -47,6 +47,8 @@ try {
   });
   writeFileSync(resolve(outputDir, 'startup-320.json'), `${JSON.stringify(startup, null, 2)}\n`);
   console.log(`320px startup sample: ${JSON.stringify(startup)}`);
+  assert.ok(startup.imageTransferBytes <= 900_000, `320px image transfer exceeds 900 KB: ${startup.imageTransferBytes}`);
+  assert.ok(startup.localTransferBytes <= 1_200_000, `320px local transfer exceeds 1.2 MB: ${startup.localTransferBytes}`);
   await checkNoOverflow(page, '320px farm');
   await page.screenshot({ path: resolve(outputDir, 'farm-320.png') });
 
