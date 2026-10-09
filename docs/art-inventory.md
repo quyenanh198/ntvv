@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 13/186 products have PNG or SVG icons. 146 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 15/186 products have PNG or SVG icons. 148 static asset paths appear in the client.
 
 ## Crops
 
@@ -179,7 +179,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Mực | muc | muc | emoji |
 | Mực nướng sa tế | mucnuong | lonuong | emoji |
 | Mứt cam | mutcam | noimut | emoji |
-| Mứt dâu | mutdau | noimut | emoji |
+| Mứt dâu | mutdau | noimut | PNG art |
 | Mứt gừng | mutgung | noimut | emoji |
 | Mứt sầu riêng | mutsaurieng | noimut | emoji |
 | Nem chua | nemchua | quanvat | emoji |
@@ -187,7 +187,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Nước cam | nuoccam | mayep | emoji |
 | Nước chanh | nuocchanh | mayep | emoji |
 | Nước dứa | nuocthom | mayep | emoji |
-| Nước ép cà rốt | nuoccarot | mayep | emoji |
+| Nước ép cà rốt | nuoccarot | mayep | PNG art |
 | Nước ép cóc | nuoccoc | mayep | emoji |
 | Nước ép dưa hấu | nuocduahau | mayep | emoji |
 | Nước hoa hoa hồng | nuochoa | xuongcaocap | emoji |
@@ -422,10 +422,12 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/tree_01.png` | 10 KB |
 | `assets/pack/tree_02.png` | 14 KB |
 | `assets/pack/well.png` | 17 KB |
+| `assets/products-v3/carrot-juice.png` | 13 KB |
 | `assets/products-v3/fried-rice.png` | 23 KB |
 | `assets/products-v3/garden-salad.png` | 22 KB |
 | `assets/products-v3/potato-fries.png` | 23 KB |
 | `assets/products-v3/pumpkin-soup.png` | 25 KB |
+| `assets/products-v3/strawberry-jam.png` | 18 KB |
 | `assets/scene-v3/chicken_coop_v3.png` | 66 KB |
 | `assets/scene-v3/farmer_v3.png` | 63 KB |
 | `assets/scene-v3/market_shop_v3.png` | 114 KB |
