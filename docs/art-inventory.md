@@ -433,10 +433,10 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/wool-roll.png` | 19 KB |
 | `assets/scene-v3/chicken_coop_v3.png` | 66 KB |
 | `assets/scene-v3/farmer_v3.png` | 63 KB |
-| `assets/scene-v3/farmhouse_v3.png` | 85 KB |
-| `assets/scene-v3/greenhouse_v3.png` | 90 KB |
+| `assets/scene-v3/farmhouse_v3.png` | 63 KB |
+| `assets/scene-v3/greenhouse_v3.png` | 67 KB |
 | `assets/scene-v3/market_shop_v3.png` | 114 KB |
-| `assets/scene-v3/red_barn_v3.png` | 85 KB |
+| `assets/scene-v3/red_barn_v3.png` | 63 KB |
 | `assets/scene-v3/windmill_v3.png` | 88 KB |
 | `assets/ui/coin.svg` | <1 KB |
 | `assets/ui/egg.svg` | <1 KB |
