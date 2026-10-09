@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 11/186 products have PNG or SVG icons. 144 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 13/186 products have PNG or SVG icons. 146 static asset paths appear in the client.
 
 ## Crops
 
@@ -146,7 +146,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Chè đậu xanh | chedauxanh | quanvat | emoji |
 | Chuối chiên | chuoichien | quanvat | emoji |
 | Cóc dầm muối ớt | cocdam | bepan | emoji |
-| Cơm chiên trứng | comchien | bepan | emoji |
+| Cơm chiên trứng | comchien | bepan | PNG art |
 | Cua | cua | cua | emoji |
 | Cua hấp sả | cuahap | lonuong | emoji |
 | Cuộn len | cuonlen | xuongdet | emoji |
@@ -266,7 +266,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Siro thanh long | siro | noimut | emoji |
 | Sô-cô-la | socola | mayrang | emoji |
 | Sốt cà chua | sotcachua | noimut | emoji |
-| Súp bí đỏ | supbi | bepan | emoji |
+| Súp bí đỏ | supbi | bepan | PNG art |
 | Sushi | sushi | lonuong | emoji |
 | Sữa | sua | bo | SVG icon |
 | Sữa chua dâu | suachua | nhamaysua | emoji |
@@ -426,8 +426,10 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/tree_02.png` | 14 KB |
 | `assets/pack/well.png` | 17 KB |
 | `assets/pack/windmill_v3.png` | 327 KB |
+| `assets/products-v3/fried-rice.png` | 23 KB |
 | `assets/products-v3/garden-salad.png` | 22 KB |
 | `assets/products-v3/potato-fries.png` | 23 KB |
+| `assets/products-v3/pumpkin-soup.png` | 25 KB |
 | `assets/ui/coin.svg` | <1 KB |
 | `assets/ui/egg.svg` | <1 KB |
 | `assets/ui/feed.svg` | <1 KB |
