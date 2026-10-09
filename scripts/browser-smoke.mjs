@@ -199,6 +199,8 @@ try {
   await page.locator('[data-sheet="market"]').click();
   await auditAccessibility(page, 'market-320');
   await checkNoOverflow(page, '320px trade board');
+  const tradeFormHeights = await page.locator('.want-form select, .want-form input, .want-form button').evaluateAll((controls) => controls.map((control) => control.getBoundingClientRect().height));
+  assert.ok(tradeFormHeights.every((height) => height >= 44), `Trade form touch targets are too short: ${tradeFormHeights.join(', ')}`);
   await page.screenshot({ path: resolve(outputDir, 'market-320.png') });
   await page.locator('#want-item').selectOption('luami');
   await page.locator('#want-qty').fill('1');

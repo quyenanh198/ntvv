@@ -1898,9 +1898,9 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .want-field { display: flex; flex-direction: column; gap: .2rem; color: #5b3e1d; font-size: .8rem; font-weight: 800; }
 .want-field--item { flex: 1 1 180px; min-width: 0; }
 .want-field--qty { flex: 0 0 84px; }
-.want-form select { width: 100%; min-width: 0; padding: .45rem .5rem; border-radius: 10px; border: 2px solid #b4814a; background: #fff8e6; font: inherit; font-weight: 700; color: #4a2e0a; }
-.want-form input { width: 100%; padding: .45rem .5rem; border-radius: 10px; border: 2px solid #b4814a; background: #fff8e6; font: inherit; font-weight: 700; color: #4a2e0a; }
-.want-form > button { align-self: flex-end; }
+.want-form select { width: 100%; min-width: 0; min-height: 44px; padding: .45rem .5rem; border-radius: 10px; border: 2px solid #b4814a; background: #fff8e6; font: inherit; font-weight: 700; color: #4a2e0a; }
+.want-form input { width: 100%; min-height: 44px; padding: .45rem .5rem; border-radius: 10px; border: 2px solid #b4814a; background: #fff8e6; font: inherit; font-weight: 700; color: #4a2e0a; }
+.want-form > button { align-self: flex-end; min-height: 44px; }
 
 /* ---- Nhóm nút số lượng trên một hàng ---- */
 .btn-group { display: inline-flex; gap: .3rem; flex-wrap: nowrap; grid-column: span 2; justify-self: end; }
