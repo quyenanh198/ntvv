@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
+import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
@@ -35,12 +36,29 @@ const app = buildApp({
   logger: false,
 });
 const outputDir = resolve('artifacts/browser');
+const require = createRequire(import.meta.url);
+const axePath = require.resolve('axe-core/axe.min.js');
 mkdirSync(outputDir, { recursive: true });
 let browser;
 
 async function checkNoOverflow(page, label) {
   const sizes = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));
   assert.ok(sizes.document <= sizes.viewport + 1, `${label} overflows horizontally: ${JSON.stringify(sizes)}`);
+}
+
+async function auditAccessibility(page, label) {
+  await page.addScriptTag({ path: axePath });
+  const results = await page.evaluate(() => window.axe.run(document, {
+    runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
+  }));
+  const violations = results.violations.map(({ id, impact, nodes }) => ({
+    id,
+    impact,
+    targets: nodes.map(({ target }) => target),
+  }));
+  writeFileSync(resolve(outputDir, `accessibility-${label}.json`), `${JSON.stringify(violations, null, 2)}\n`);
+  console.log(`${label} accessibility scan: ${violations.length} rule violations`);
+  return violations;
 }
 
 try {
@@ -87,6 +105,7 @@ try {
   assert.match(emptyPlotNames[0], /Ô đất 1: trống, chọn hạt để gieo/);
   assert.match(emptyPlotNames[11], /Ô đất 12: trống, chọn hạt để gieo/);
   await page.screenshot({ path: resolve(outputDir, 'farm-320.png') });
+  await auditAccessibility(page, 'farm-320');
   const audioButton = page.locator('#btn-audio-toggle');
   const audioNameBefore = await audioButton.getAttribute('aria-label');
   await audioButton.click();
@@ -114,6 +133,7 @@ try {
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
   assert.ok(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty > 0);
   await page.locator('.dock-btn[data-sheet="inventory"]').click();
+  await auditAccessibility(page, 'inventory-320');
   await page.locator('.inv-row[data-item="luami"] [data-sell="luami"][data-qty]').click();
   await page.locator('.inv-row[data-item="luami"]').waitFor({ state: 'detached' });
   const goldAfterSale = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
@@ -219,6 +239,7 @@ try {
   await page.locator('[data-sheet="more"]').first().click();
   await page.locator('[data-sheet="orders"]').click();
   assert.equal(await page.evaluate(() => document.activeElement?.classList.contains('sheet-close')), true);
+  await auditAccessibility(page, 'orders-320');
   await page.keyboard.press('Shift+Tab');
   assert.equal(await page.evaluate(() => document.activeElement?.hasAttribute('data-discard')), true);
   await page.keyboard.press('Tab');
