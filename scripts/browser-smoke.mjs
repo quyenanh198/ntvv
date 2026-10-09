@@ -46,6 +46,11 @@ try {
   await page.locator('.plot').first().waitFor();
   await page.locator('[data-sheet="more"]').first().click();
   await page.locator('[data-sheet="orders"]').click();
+  assert.equal(await page.evaluate(() => document.activeElement?.classList.contains('sheet-close')), true);
+  await page.keyboard.press('Shift+Tab');
+  assert.equal(await page.evaluate(() => document.activeElement?.hasAttribute('data-discard')), true);
+  await page.keyboard.press('Tab');
+  assert.equal(await page.evaluate(() => document.activeElement?.classList.contains('sheet-close')), true);
   const cards = page.locator('.order-card');
   assert.equal(await cards.count(), 4);
   assert.match(await cards.first().getAttribute('class'), /order-card--ready/);
@@ -63,6 +68,7 @@ try {
   }
   await page.keyboard.press('Escape');
   await page.locator('.sheet').waitFor({ state: 'detached' });
+  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-sheet')), 'more');
 
   await page.setViewportSize({ width: 1280, height: 900 });
   await checkNoOverflow(page, '1280px farm');
