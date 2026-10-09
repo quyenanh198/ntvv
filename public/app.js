@@ -1188,8 +1188,8 @@
         `<div class="machine-block"><h4>📣 Đăng tin cần mua</h4>
           <p class="sheet-note">Giá thu mua = <b>130%</b> giá bán cho hệ thống. Vàng ký quỹ lúc đăng; huỷ thì hoàn phần chưa nhận. Tối đa 5 tin.</p>
           <div class="want-form">
-            <select id="want-item">${options}</select>
-            <input id="want-qty" type="number" inputmode="numeric" min="1" max="999" value="10" />
+            <label class="want-field want-field--item">Mặt hàng<select id="want-item">${options}</select></label>
+            <label class="want-field want-field--qty">Số lượng<input id="want-qty" type="number" inputmode="numeric" min="1" max="999" value="10" /></label>
             <button class="gbtn gbtn--gold btn-mini" id="btn-want-create">Đăng tin</button>
           </div>
           <p class="sheet-note" id="want-preview"></p>

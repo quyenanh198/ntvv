@@ -46,7 +46,7 @@ async function checkNoOverflow(page, label) {
   assert.ok(sizes.document <= sizes.viewport + 1, `${label} overflows horizontally: ${JSON.stringify(sizes)}`);
 }
 
-async function auditAccessibility(page, label, enforce = true) {
+async function auditAccessibility(page, label) {
   if (!await page.evaluate(() => !!window.axe)) {
     await page.route('**/farm/axe.min.js', (route) => route.fulfill({ path: axePath, contentType: 'application/javascript' }));
     await page.addScriptTag({ url: new URL('/farm/axe.min.js', page.url()).href });
@@ -61,7 +61,7 @@ async function auditAccessibility(page, label, enforce = true) {
   }));
   writeFileSync(resolve(outputDir, `accessibility-${label}.json`), `${JSON.stringify(violations, null, 2)}\n`);
   console.log(`${label} accessibility scan: ${violations.length} rule violations`);
-  if (enforce) assert.deepEqual(violations, [], `${label} has automated WCAG A/AA violations`);
+  assert.deepEqual(violations, [], `${label} has automated WCAG A/AA violations`);
   return violations;
 }
 
@@ -117,7 +117,7 @@ try {
 
   const startingGold = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').click();
-  await auditAccessibility(page, 'seed-320', false);
+  await auditAccessibility(page, 'seed-320');
   await page.locator('.seed-card[data-crop="luami"]').click();
   await page.locator('.plot[data-idx="0"][data-kind="waterplot"]').waitFor();
   assert.match(await page.locator('.plot[data-idx="0"]').getAttribute('aria-label'), /Ô đất 1, .*: tưới cây, còn/);
@@ -197,7 +197,9 @@ try {
   await page.locator('#btn-home').click();
   await page.locator('[data-sheet="more"]').first().click();
   await page.locator('[data-sheet="market"]').click();
-  await auditAccessibility(page, 'market-320', false);
+  await auditAccessibility(page, 'market-320');
+  await checkNoOverflow(page, '320px trade board');
+  await page.screenshot({ path: resolve(outputDir, 'market-320.png') });
   await page.locator('#want-item').selectOption('luami');
   await page.locator('#want-qty').fill('1');
   await page.locator('#btn-want-create').click();
@@ -273,7 +275,7 @@ try {
   await checkNoOverflow(page, '1280px farm');
   await page.screenshot({ path: resolve(outputDir, 'farm-1280.png') });
   await page.locator('.dock-btn[data-sheet="shop"]').click();
-  await auditAccessibility(page, 'shop-1280', false);
+  await auditAccessibility(page, 'shop-1280');
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
