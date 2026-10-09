@@ -74,7 +74,7 @@ This is the project plan for the farm game, separate from the older stability au
 - Run unit, integration, two-player, migration, and manual browser checks on a release candidate.
 - Review content, art rights, economy changes, and rollback/backup steps. Deploy to a small group first and watch the metrics from step 1.
 - Merge the tested branch into `master`, publish release notes, and monitor first-session and day-2 results.
-- **Gate:** no open release-blocking defects; metrics are observable; rollback rehearsed. **Status:** a pinned GitHub Actions workflow now checks clean install, tests, generated reports, production dependency audit, and Docker build on pushes and pull requests. Branch work remains in progress, not ready to merge.
+- **Gate:** no open release-blocking defects; metrics are observable; rollback rehearsed. **Status:** a pinned GitHub Actions workflow now checks clean install, tests, generated reports, production dependency audit, and Docker build on pushes and pull requests. It also boots the production image, probes health, protected metrics, the farm page and a sprite, then restarts with a disposable volume and checks SQLite persistence. Production-data restore, staged release, observed players, and post-release metrics remain pending; branch work is not ready to merge.
 
 ## 12. Iterate from actual player behavior
 

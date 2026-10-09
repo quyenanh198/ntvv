@@ -48,3 +48,5 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
       - name: Build production image
         run: docker build -t ntvv-verify .
+      - name: Boot production image and verify persistence
+        run: bash scripts/container-smoke.sh

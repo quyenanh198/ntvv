@@ -16,6 +16,8 @@ curl -H "x-farm-secret: $FARM_INTERNAL_SECRET" http://localhost:8090/internal/fa
 
 This is a first operational baseline. Persisted metrics, alerts, external request cold-start timing, and a restore rehearsal still need release work.
 
+CI also starts the built production image with a disposable Docker volume. It checks `/healthz`, the protected metrics endpoint, the farm page, and a scene asset, then inserts a synthetic farmer, restarts the container, and confirms that SQLite row survives. This checks the packaged runtime and volume behavior; it does not replace a rehearsal against a copy of live data.
+
 ## Backup and migration rehearsal
 
 Before deploying a schema change, run this against the live data directory from a trusted host. Choose a new backup filename outside the data directory:
