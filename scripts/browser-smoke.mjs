@@ -61,6 +61,7 @@ async function auditAccessibility(page, label) {
   }));
   writeFileSync(resolve(outputDir, `accessibility-${label}.json`), `${JSON.stringify(violations, null, 2)}\n`);
   console.log(`${label} accessibility scan: ${violations.length} rule violations`);
+  assert.deepEqual(violations, [], `${label} has automated WCAG A/AA violations`);
   return violations;
 }
 
