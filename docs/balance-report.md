@@ -97,6 +97,25 @@ For each sellable recipe, output sale value minus the sale value forgone by usin
 - Sellable recipes with nonpositive opportunity margin: none.
 - Utility recipes without a sale price excluded from the ranking: coixay/thucan.
 
+## Field-crop supply for direct recipes
+
+This narrower model includes only sellable recipes whose ingredients are all field crops already unlocked when the machine opens. It assigns the 12 starting plots across those crops, assumes three evenly spaced visits per day, 4 items per harvest, and continuous machine operation. Fractional plot allocation gives an upper bound. It ignores inventory carried in, expansion plots, growth bonuses, sale saturation, queue gaps, and time or gold to acquire ingredients from animals, trees, fish, or earlier machines. The last column identifies the tighter of crop supply and machine time for the best daily-margin recipe in this narrow set.
+
+| Machine | Unlock | Eligible direct recipes | Best crop-only recipe | Plot-days/batch | Upper-bound batches/day | Margin/day | Tightest limit |
+| --- | ---: | ---: | --- | ---: | ---: | ---: | --- |
+| Lò nướng cá | 8 | 0 | none | — | — | — | — |
+| Quán ốc | 8 | 0 | none | — | — | — | — |
+| Bếp gia đình | 9 | 3 | Khoai lang nướng | 0.17 | 72.0 | 103,680 | machine |
+| Cối xay bột | 10 | 2 | Bột bắp | 0.25 | 48.0 | 41,472 | crops |
+| Quán ăn vặt | 11 | 0 | none | — | — | — | — |
+| Máy ép nước | 12 | 1 | Nước ép cà rốt | 0.17 | 72.0 | 25,344 | machine |
+| Nồi mứt | 13 | 3 | Mứt gừng | 0.17 | 32.0 | 117,760 | machine |
+| Nhà máy sữa | 15 | 0 | none | — | — | — | — |
+| Lò bánh | 17 | 0 | none | — | — | — | — |
+| Máy rang cà phê | 23 | 2 | Cà phê rang | 0.17 | 12.0 | 216,000 | machine |
+| Xưởng dệt | 25 | 1 | Vải bông | 0.25 | 24.0 | 230,400 | machine |
+| Xưởng cao cấp | 26 | 1 | Rượu nho ủ | 0.50 | 8.0 | 260,800 | machine |
+
 ## Animal feed and sale model
 
 Each animal is fed with shop-bought thucan at 12 gold per unit, then produces one item after its live timer. Sale values use the 4× gold multiplier. A visit collects one ready product and feeds the animal for its next cycle. The one-visit and three-visit cases therefore allow at most one or three sales per day per animal, even when the timer is shorter. The model excludes barn construction, capacity upgrades, order premiums, and time spent acquiring an animal; payback covers only its purchase price.
@@ -133,6 +152,18 @@ The live order generator was sampled 1,000 times at each listed level with a fix
 | 29 | 3,600 | 4,238 | 638 | 17.7% | 2.00 | 0 |
 | 40 | 3,683 | 4,317 | 634 | 17.2% | 2.00 | 0 |
 
+## Fresh-field order availability
+
+The order board refreshes every 120 minutes. These same deterministic samples count orders composed only of field crops and the subset whose crops can grow from seed before that refresh on the 12-plot starter farm. Each requested quantity is at most one plot's 4-item harvest. This is a strict no-stock, crop-only scenario, not an actual completion rate: existing inventory, animals, trees, fish, flour, expansions, watering, and player choice can improve it. It does show how often a newly generated order can be completed using only fresh field crops within its board window.
+
+| Level | Crop-only offers / 1,000 | Fresh crop offers within board window / 1,000 |
+| ---: | ---: | ---: |
+| 5 | 643 (64.3%) | 643 (64.3%) |
+| 10 | 386 (38.6%) | 386 (38.6%) |
+| 20 | 315 (31.5%) | 286 (28.6%) |
+| 29 | 320 (32.0%) | 210 (21.0%) |
+| 40 | 307 (30.7%) | 183 (18.3%) |
+
 ## Automated viability checks
 
 - Nonprofitable regular crops: none.
@@ -143,5 +174,5 @@ The live order generator was sampled 1,000 times at each listed level with a fix
 
 1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.
 2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.
-3. Add ingredient supply and achievable order completion rates; combine crop, animal, and order income with the late-expansion payback warning before tuning land prices.
+3. Extend the supply model to owned animals, trees, fish, and chained recipes; measure actual order completion before tuning land prices or order generation.
 

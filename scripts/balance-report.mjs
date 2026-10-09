@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { ANIMALS, CROPS, EXPANSIONS, FEED_ITEM, GOLD_MULT, HARVEST_YIELD, LAND_TAX_UNLOCK_LEVEL, MACHINES, MAX_PLOTS, ORDER_UNLOCK_LEVEL, START_GOLD, START_PLOTS, TAX_PER_PLOT, generateOrder, itemInfo, xpNeedFor } from '../server/src/game.js';
+import { ANIMALS, CROPS, EXPANSIONS, FEED_ITEM, GOLD_MULT, HARVEST_YIELD, LAND_TAX_UNLOCK_LEVEL, MACHINES, MAX_PLOTS, ORDER_BOARD_REFRESH_MS, ORDER_UNLOCK_LEVEL, START_GOLD, START_PLOTS, TAX_PER_PLOT, generateOrder, itemInfo, xpNeedFor } from '../server/src/game.js';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const crops = Object.values(CROPS).filter((crop) => !crop.risky && crop.sell > 0).map((crop) => ({
@@ -63,6 +63,21 @@ const machineModels = Object.values(MACHINES).sort((a, b) => a.level - b.level).
   return { ...machine, recipes, best: rank(recipes.filter((recipe) => recipe.sellable), (recipe) => recipe.perHour) };
 });
 const machineRows = machineModels.map((machine) => `| ${machine.name} | ${machine.level} | ${machine.recipes.length} | ${machine.best.name} | ${fmt(machine.best.margin)} | ${fmt(machine.best.perHour)} |`);
+const supplyRows = machineModels.map((machine) => {
+  const cropRecipes = machine.recipes.filter((recipe) => recipe.sellable && Object.keys(recipe.in).every((id) => CROPS[id]?.level <= machine.level));
+  const ranked = cropRecipes.map((recipe) => {
+    const plotDaysPerBatch = Object.entries(recipe.in).reduce((sum, [id, qty]) => {
+      const cropCyclesPerDay = 1440 / Math.max(CROPS[id].growMs / 60_000, 480);
+      return sum + qty / (HARVEST_YIELD * cropCyclesPerDay);
+    }, 0);
+    const machineBatches = 86_400_000 / recipe.ms;
+    const cropBatches = START_PLOTS / plotDaysPerBatch;
+    const batches = Math.min(machineBatches, cropBatches);
+    return { ...recipe, plotDaysPerBatch, machineBatches, cropBatches, batches, marginPerDay: batches * recipe.margin };
+  });
+  const best = rank(ranked, (recipe) => recipe.marginPerDay);
+  return `| ${machine.name} | ${machine.level} | ${cropRecipes.length} | ${best ? best.name : 'none'} | ${best ? best.plotDaysPerBatch.toFixed(2) : '—'} | ${best ? best.batches.toFixed(1) : '—'} | ${best ? fmt(best.marginPerDay) : '—'} | ${best ? (best.cropBatches < best.machineBatches ? 'crops' : 'machine') : '—'} |`;
+});
 const nonpositiveCrafts = machineModels.flatMap((machine) => machine.recipes.filter((recipe) => recipe.sellable && recipe.margin <= 0).map((recipe) => `${machine.id}/${recipe.id}`));
 const utilityCrafts = machineModels.flatMap((machine) => machine.recipes.filter((recipe) => !recipe.sellable).map((recipe) => `${machine.id}/${recipe.id}`));
 const feedPrice = itemInfo(FEED_ITEM).buy;
@@ -90,18 +105,26 @@ const orderRows = orderLevels.map((level) => {
   let rewards = 0;
   let itemCount = 0;
   let zeroValue = 0;
+  let cropOnly = 0;
+  let freshCropReady = 0;
   for (let i = 0; i < orderSamples; i++) {
     const order = generateOrder(level, orderRng);
+    const entries = Object.entries(order.items);
     const sale = Object.entries(order.items).reduce((sum, [id, qty]) => sum + (itemInfo(id)?.sell || 0) * qty * GOLD_MULT, 0);
     baseSale += sale;
     rewards += order.gold;
     itemCount += Object.keys(order.items).length;
     if (sale <= 0) zeroValue++;
+    if (entries.every(([id]) => CROPS[id])) {
+      cropOnly++;
+      if (entries.every(([id, qty]) => CROPS[id].growMs <= ORDER_BOARD_REFRESH_MS && Math.ceil(qty / HARVEST_YIELD) <= START_PLOTS)) freshCropReady++;
+    }
   }
   const premium = rewards - baseSale;
-  return { level, baseSale, rewards, itemCount, zeroValue, premium,
+  return { level, baseSale, rewards, itemCount, zeroValue, premium, cropOnly, freshCropReady,
     row: `| ${level} | ${fmt(baseSale / orderSamples)} | ${fmt(rewards / orderSamples)} | ${fmt(premium / orderSamples)} | ${(premium / baseSale * 100).toFixed(1)}% | ${(itemCount / orderSamples).toFixed(2)} | ${zeroValue} |` };
 });
+const orderSupplyRows = orderRows.map((row) => `| ${row.level} | ${fmt(row.cropOnly)} (${(row.cropOnly / orderSamples * 100).toFixed(1)}%) | ${fmt(row.freshCropReady)} (${(row.freshCropReady / orderSamples * 100).toFixed(1)}%) |`);
 const lines = [
   '# Farm progression balance report', '',
   'Generated from the live rules in `server/src/game.js` by `npm run balance:report`. This is a deterministic crop, expansion, and recipe opportunity-cost model, not observed player behavior or a complete economy forecast.', '',
@@ -125,6 +148,10 @@ const lines = [
   '| --- | ---: | ---: | --- | ---: | ---: |', ...machineRows, '',
   `- Sellable recipes with nonpositive opportunity margin: ${nonpositiveCrafts.length ? nonpositiveCrafts.join(', ') : 'none'}.`,
   `- Utility recipes without a sale price excluded from the ranking: ${utilityCrafts.length ? utilityCrafts.join(', ') : 'none'}.`, '',
+  '## Field-crop supply for direct recipes', '',
+  `This narrower model includes only sellable recipes whose ingredients are all field crops already unlocked when the machine opens. It assigns the ${START_PLOTS} starting plots across those crops, assumes three evenly spaced visits per day, ${HARVEST_YIELD} items per harvest, and continuous machine operation. Fractional plot allocation gives an upper bound. It ignores inventory carried in, expansion plots, growth bonuses, sale saturation, queue gaps, and time or gold to acquire ingredients from animals, trees, fish, or earlier machines. The last column identifies the tighter of crop supply and machine time for the best daily-margin recipe in this narrow set.`, '',
+  '| Machine | Unlock | Eligible direct recipes | Best crop-only recipe | Plot-days/batch | Upper-bound batches/day | Margin/day | Tightest limit |',
+  '| --- | ---: | ---: | --- | ---: | ---: | ---: | --- |', ...supplyRows, '',
   '## Animal feed and sale model', '',
   `Each animal is fed with shop-bought ${FEED_ITEM} at ${fmt(feedPrice)} gold per unit, then produces one item after its live timer. Sale values use the ${GOLD_MULT}× gold multiplier. A visit collects one ready product and feeds the animal for its next cycle. The one-visit and three-visit cases therefore allow at most one or three sales per day per animal, even when the timer is shorter. The model excludes barn construction, capacity upgrades, order premiums, and time spent acquiring an animal; payback covers only its purchase price.`, '',
   '| Animal | Unlock | Purchase | Produce min | Feed/cycle | Sale/cycle | Net, 1 visit/day | Net, 3 visits/day | Purchase payback, 3 visits (days) |',
@@ -134,6 +161,10 @@ const lines = [
   `The live order generator was sampled ${fmt(orderSamples)} times at each listed level with a fixed random seed. The premium compares the order reward with selling the identical requested items directly, using the live sale multiplier. These figures describe generated offers, not completed orders or daily income: ingredient availability, production time, board refreshes, and player choice are excluded.`, '',
   '| Level | Mean direct sale | Mean order gold | Mean extra gold/order | Extra % | Mean item kinds | Zero-value offers |',
   '| ---: | ---: | ---: | ---: | ---: | ---: | ---: |', ...orderRows.map((row) => row.row), '',
+  '## Fresh-field order availability', '',
+  `The order board refreshes every ${ORDER_BOARD_REFRESH_MS / 60_000} minutes. These same deterministic samples count orders composed only of field crops and the subset whose crops can grow from seed before that refresh on the ${START_PLOTS}-plot starter farm. Each requested quantity is at most one plot's ${HARVEST_YIELD}-item harvest. This is a strict no-stock, crop-only scenario, not an actual completion rate: existing inventory, animals, trees, fish, flour, expansions, watering, and player choice can improve it. It does show how often a newly generated order can be completed using only fresh field crops within its board window.`, '',
+  '| Level | Crop-only offers / 1,000 | Fresh crop offers within board window / 1,000 |',
+  '| ---: | ---: | ---: |', ...orderSupplyRows, '',
   '## Automated viability checks', '',
   `- Nonprofitable regular crops: ${unprofitable.length ? unprofitable.map(name).join(', ') : 'none'}.`,
   `- Starter seeds above starting gold: ${unaffordable.length ? unaffordable.map(name).join(', ') : 'none'}.`,
@@ -141,7 +172,7 @@ const lines = [
   '## Next balance decisions', '',
   '1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.',
   '2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.',
-  '3. Add ingredient supply and achievable order completion rates; combine crop, animal, and order income with the late-expansion payback warning before tuning land prices.', '',
+  '3. Extend the supply model to owned animals, trees, fish, and chained recipes; measure actual order completion before tuning land prices or order generation.', '',
 ];
 const report = `${lines.join('\n')}\n`;
 if (process.argv.includes('--write')) writeFileSync(resolve(root, 'docs/balance-report.md'), report);
