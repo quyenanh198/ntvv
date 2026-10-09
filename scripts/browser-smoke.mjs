@@ -52,8 +52,31 @@ try {
   await checkNoOverflow(page, '320px farm');
   await page.screenshot({ path: resolve(outputDir, 'farm-320.png') });
 
+  const startingGold = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
+  await page.locator('.plot[data-idx="0"][data-kind="empty"]').click();
+  await page.locator('.seed-card[data-crop="luami"]').click();
+  await page.locator('.plot[data-idx="0"][data-kind="waterplot"]').waitFor();
+  await page.locator('.plot[data-idx="0"][data-kind="waterplot"]').click();
+  await page.locator('.plot[data-idx="0"][data-kind="plotmenu"]').waitFor();
+  assert.equal(db.prepare('SELECT watered FROM plots WHERE owner_id = 1 AND idx = 0').get().watered, 1);
+  await page.screenshot({ path: resolve(outputDir, 'planted-320.png') });
+  db.prepare('UPDATE plots SET ready_at = ? WHERE owner_id = 1 AND idx = 0').run(Date.now() - 1);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.plot[data-idx="0"][data-kind="harvest"]').waitFor();
+  await page.screenshot({ path: resolve(outputDir, 'ready-320.png') });
+  await page.locator('.plot[data-idx="0"][data-kind="harvest"]').click();
+  await page.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
+  assert.ok(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty > 0);
+  await page.locator('.dock-btn[data-sheet="inventory"]').click();
+  await page.locator('.inv-row[data-item="luami"] [data-sell="luami"][data-qty]').click();
+  await page.locator('.inv-row[data-item="luami"]').waitFor({ state: 'detached' });
+  assert.ok(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold > startingGold);
+  await page.keyboard.press('Escape');
+  await page.locator('.sheet').waitFor({ state: 'detached' });
+
   const xp = [1, 2, 3, 4].reduce((sum, level) => sum + xpNeedFor(level), 0);
-  db.prepare('UPDATE farmers SET xp = ?, orders_refresh_at = ? WHERE user_id = 1').run(xp, Date.now() + 60_000);
+  db.prepare('DELETE FROM plots WHERE owner_id = 1').run();
+  db.prepare('UPDATE farmers SET xp = ?, gold = 500, orders_refresh_at = ? WHERE user_id = 1').run(xp, Date.now() + 60_000);
   db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, ?)').run('luami', 1);
   const insertOrder = db.prepare('INSERT INTO orders (owner_id, slot, items_json, gold, exp, stars) VALUES (1, ?, ?, ?, 40, 1)');
   insertOrder.run(0, JSON.stringify({ luami: 3, carot: 2 }), 500);
