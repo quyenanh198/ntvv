@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 21/186 products have PNG or SVG icons. 154 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 23/186 products have PNG or SVG icons. 156 static asset paths appear in the client.
 
 ## Crops
 
@@ -121,7 +121,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Bột bắp | botbap | coixay | emoji |
 | Bột ca cao | botcacao | mayrang | emoji |
 | Bột chiên | botchien | quanvat | emoji |
-| Bột gạo | botgao | coixay | emoji |
+| Bột gạo | botgao | coixay | PNG art |
 | Bột mì | botmi | coixay | SVG icon |
 | Bơ | bo | nhamaysua | emoji |
 | Cá chép | cachep | ho | SVG icon |
@@ -151,7 +151,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cua hấp sả | cuahap | lonuong | emoji |
 | Cuộn len | cuonlen | xuongdet | PNG art |
 | Dầu ô liu | dauoliu | mayep | emoji |
-| Đường mía | duongmia | coixay | emoji |
+| Đường mía | duongmia | coixay | PNG art |
 | Ếch | ech | ech | emoji |
 | Gỏi cuốn cá | goicuon | lonuong | emoji |
 | Hộp phô mai thượng hạng | hopphomai | xuongcaocap | emoji |
@@ -418,6 +418,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/tree_01.png` | 10 KB |
 | `assets/pack/tree_02.png` | 14 KB |
 | `assets/pack/well.png` | 17 KB |
+| `assets/products-v3/cane-sugar.png` | 18 KB |
 | `assets/products-v3/carrot-juice.png` | 13 KB |
 | `assets/products-v3/egg-bread.png` | 24 KB |
 | `assets/products-v3/farm-cheese.png` | 16 KB |
@@ -427,6 +428,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/potato-fries.png` | 23 KB |
 | `assets/products-v3/pumpkin-pie.png` | 29 KB |
 | `assets/products-v3/pumpkin-soup.png` | 25 KB |
+| `assets/products-v3/rice-flour.png` | 18 KB |
 | `assets/products-v3/strawberry-jam.png` | 18 KB |
 | `assets/products-v3/tomato-sauce.png` | 20 KB |
 | `assets/products-v3/wool-roll.png` | 19 KB |
