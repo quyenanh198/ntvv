@@ -5,6 +5,27 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
+import { CROPS, ORDER_BOARD_REFRESH_MS, xpNeedFor } from '../server/src/game.js';
+
+test('a refreshed order board includes one crop order fillable before refresh', async () => {
+  const db = openDb(':memory:');
+  const app = buildApp({ db, logger: false, config: { mockChatUser: { id: 1, username: 'orders', display_name: 'Orders' } } });
+  try {
+    assert.equal((await app.inject({ method: 'GET', url: '/farm/api/state' })).statusCode, 200);
+    const levelFiveXp = [1, 2, 3, 4].reduce((sum, level) => sum + xpNeedFor(level), 0);
+    db.prepare('UPDATE farmers SET xp = ? WHERE user_id = 1').run(levelFiveXp);
+    const state = await app.inject({ method: 'GET', url: '/farm/api/state' });
+    assert.equal(state.statusCode, 200, state.body);
+    const quick = state.json().me.orders.find((order) => order.slot === 0);
+    assert.ok(quick);
+    const [id] = Object.keys(quick.items);
+    assert.equal(Object.keys(quick.items).length, 1);
+    assert.ok(CROPS[id].growMs <= ORDER_BOARD_REFRESH_MS);
+  } finally {
+    await app.close();
+    db.close();
+  }
+});
 
 test('order delivery and discard survive a lost response without repeating effects', async () => {
   const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-order-replay-'));

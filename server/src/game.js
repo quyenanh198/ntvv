@@ -642,13 +642,19 @@ export const DOG = {
 };
 
 // Sinh một đơn từ các sản phẩm đã mở khóa. rng: () => [0,1).
-export function generateOrder(level, rng) {
-  const pool = Object.values(CROPS).filter((c) => c.level <= level && !c.risky).map((c) => c.id);
-  for (const a of Object.values(ANIMALS)) if (level >= a.level) pool.push(a.product);
-  for (const t of Object.values(TREES)) if (level >= t.level) pool.push(t.id);
-  if (level >= FISHING.level) pool.push('canho', 'caro');
-  if (level >= MILL.level) pool.push('botmi');
-  const kinds = 1 + Math.floor(rng() * Math.min(3, Math.max(1, Math.floor(level / 4) + 1)));
+export function generateOrder(level, rng, { quick = false } = {}) {
+  const eligibleCrops = Object.values(CROPS).filter((c) => c.level <= level && !c.risky);
+  const pool = quick
+    ? eligibleCrops.filter((c) => c.growMs <= ORDER_BOARD_REFRESH_MS)
+      .sort((a, b) => b.level - a.level || a.id.localeCompare(b.id)).slice(0, 5).map((c) => c.id)
+    : eligibleCrops.map((c) => c.id);
+  if (!quick) {
+    for (const a of Object.values(ANIMALS)) if (level >= a.level) pool.push(a.product);
+    for (const t of Object.values(TREES)) if (level >= t.level) pool.push(t.id);
+    if (level >= FISHING.level) pool.push('canho', 'caro');
+    if (level >= MILL.level) pool.push('botmi');
+  }
+  const kinds = quick ? 1 : 1 + Math.floor(rng() * Math.min(3, Math.max(1, Math.floor(level / 4) + 1)));
   const chosen = new Set();
   while (chosen.size < kinds) chosen.add(pool[Math.floor(rng() * pool.length)]);
   const items = {};

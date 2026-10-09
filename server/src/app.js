@@ -590,7 +590,7 @@ export function buildApp({ config, db, logger = true }) {
     const level = levelFor(farmer.xp);
     for (let slot = 0; slot < slots; slot += 1) {
       if (have.includes(slot)) continue;
-      const o = generateOrder(level, rng);
+      const o = generateOrder(level, rng, { quick: slot === 0 });
       db.prepare('INSERT INTO orders (owner_id, slot, items_json, gold, exp, stars) VALUES (?, ?, ?, ?, ?, ?)')
         .run(farmer.user_id, slot, JSON.stringify(o.items), o.gold, o.exp, o.stars);
     }

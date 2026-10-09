@@ -142,7 +142,7 @@ Each animal is fed with shop-bought thucan at 12 gold per unit, then produces on
 
 ## Order sale premium
 
-The live order generator was sampled 1,000 times at each listed level with a fixed random seed. The premium compares the order reward with selling the identical requested items directly, using the live sale multiplier. These figures describe generated offers, not completed orders or daily income: ingredient availability, production time, board refreshes, and player choice are excluded.
+The regular order generator used for slots 1–3 was sampled 1,000 times at each listed level with a fixed random seed. Slot 0 now guarantees one fast field-crop order. The premium compares the regular order reward with selling the identical requested items directly, using the live sale multiplier. These figures describe generated offers, not completed orders or daily income: ingredient availability, production time, board refreshes, and player choice are excluded.
 
 | Level | Mean direct sale | Mean order gold | Mean extra gold/order | Extra % | Mean item kinds | Zero-value offers |
 | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -154,7 +154,7 @@ The live order generator was sampled 1,000 times at each listed level with a fix
 
 ## Fresh-field order availability
 
-The order board refreshes every 120 minutes. These same deterministic samples count orders composed only of field crops and the subset whose crops can grow from seed before that refresh on the 12-plot starter farm. Each requested quantity is at most one plot's 4-item harvest. This is a strict no-stock, crop-only scenario, not an actual completion rate: existing inventory, animals, trees, fish, flour, expansions, watering, and player choice can improve it. It does show how often a newly generated order can be completed using only fresh field crops within its board window.
+The order board refreshes every 120 minutes. These same deterministic samples count regular orders composed only of field crops and the subset whose crops can grow from seed before that refresh on the 12-plot starter farm. Slot 0 is deliberately generated as a single fast-crop order and is always feasible under these crop assumptions. Each requested quantity is at most one plot's 4-item harvest. This is a strict no-stock, crop-only scenario, not an actual completion rate: existing inventory, animals, trees, fish, flour, expansions, watering, and player choice can improve it.
 
 | Level | Crop-only offers / 1,000 | Fresh crop offers within board window / 1,000 |
 | ---: | ---: | ---: |
