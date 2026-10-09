@@ -1,14 +1,36 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
 import { xpNeedFor } from '../server/src/game.js';
 
+const players = [
+  { id: 1, username: 'browser', display_name: 'Browser Farmer' },
+  { id: 2, username: 'friend', display_name: 'Friend Farmer' },
+];
+const isFriend = (cookie) => String(cookie || '').includes('friend-smoke');
+const chatServer = createServer((request, response) => {
+  if (request.url !== '/api/users') {
+    response.writeHead(404).end('{}');
+    return;
+  }
+  response.writeHead(200, { 'content-type': 'application/json' });
+  response.end(JSON.stringify([players[isFriend(request.headers.cookie) ? 0 : 1]]));
+});
+await new Promise((resolve, reject) => {
+  chatServer.once('error', reject);
+  chatServer.listen(0, '127.0.0.1', resolve);
+});
 const db = openDb(':memory:');
 const app = buildApp({
-  config: { mockChatUser: { id: 1, username: 'browser', display_name: 'Browser Farmer' }, chatApiUrl: 'http://127.0.0.1:1', fast: false },
+  config: {
+    mockChatUser: (request) => players[isFriend(request.headers.cookie) ? 1 : 0],
+    chatApiUrl: `http://127.0.0.1:${chatServer.address().port}`,
+    fast: false,
+  },
   db,
   logger: false,
 });
@@ -86,6 +108,35 @@ try {
   assert.match(await page.locator('.coin-pill').first().innerText(), new RegExp(String(goldAfterSale)));
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
 
+  const friendContext = await browser.newContext({ viewport: { width: 390, height: 800 }, reducedMotion: 'reduce' });
+  await friendContext.addCookies([{ name: 'lb_session', value: 'friend-smoke', url: base }]);
+  const friendPage = await friendContext.newPage();
+  friendPage.on('pageerror', (error) => pageErrors.push(error.message));
+  await friendPage.goto(`${base}/farm/`, { waitUntil: 'domcontentloaded' });
+  await friendPage.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
+  await friendPage.locator('.plot[data-idx="0"][data-kind="empty"]').click();
+  await friendPage.locator('.seed-card[data-crop="luami"]').click();
+  await friendPage.locator('.plot[data-idx="0"][data-kind="waterplot"]').waitFor();
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.family-member[data-visit="2"]').click();
+  await page.locator('.visit-bar').waitFor();
+  await page.locator('.plot[data-idx="0"][data-kind="water"]').click();
+  await page.locator('.plot[data-idx="0"].plot--ready').waitFor();
+  assert.equal(db.prepare('SELECT watered FROM plots WHERE owner_id = 2 AND idx = 0').get().watered, 1);
+  await friendPage.reload({ waitUntil: 'domcontentloaded' });
+  await friendPage.locator('.plot[data-idx="0"][data-kind="harvest"]').waitFor();
+
+  const beforeGift = db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all();
+  page.once('dialog', (dialog) => dialog.accept('10'));
+  await page.locator('#btn-gold-give').click();
+  await page.waitForFunction((expected) => document.querySelector('.coin-pill b')?.textContent.replaceAll('.', '') === String(expected), beforeGift[0].gold - 10);
+  const afterGift = db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all();
+  assert.equal(afterGift[0].gold, beforeGift[0].gold - 10);
+  assert.equal(afterGift[1].gold, beforeGift[1].gold + 10);
+  await friendPage.reload({ waitUntil: 'domcontentloaded' });
+  assert.match(await friendPage.locator('.coin-pill').first().innerText(), new RegExp(String(afterGift[1].gold)));
+  await friendContext.close();
+
   const xp = [1, 2, 3, 4].reduce((sum, level) => sum + xpNeedFor(level), 0);
   db.prepare('DELETE FROM plots WHERE owner_id = 1').run();
   db.prepare('UPDATE farmers SET xp = ?, gold = 500, orders_refresh_at = ? WHERE user_id = 1').run(xp, Date.now() + 60_000);
@@ -132,4 +183,5 @@ try {
   await browser?.close();
   await app.close();
   db.close();
+  await new Promise((resolve) => chatServer.close(resolve));
 }
