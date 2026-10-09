@@ -513,7 +513,7 @@
             : `<img class="sb sb-cowbarn sb--locked" src="${A('assets/art/cow.png')}" alt="" title="Chuồng bò — cần Lv ${DATA.config.animals.bo.level}" />`}
             <img class="sb sb-pig" src="${A('assets/pack/pig_adult.png')}" alt="" />
             <img class="sb sb-well" src="${A('assets/pack/well.png')}" alt="" />
-            <img class="sb sb-farmer" src="${A('assets/pack/farmer_v3.png')}" alt="" />
+            <img class="sb sb-farmer" src="${A('assets/scene-v3/farmer_v3.png')}" alt="" />
             <img class="sb sb-dog" src="${A('assets/pack/pet_dogs.png')}" alt="" />
             ${renderSceneButtons(visiting)}
             <img class="sb sb-logo" src="${A('assets/pack/farm_logo.png')}" alt="Nông Trại Vui Vẻ" />
@@ -759,29 +759,29 @@
     const millDone = m.mill && m.mill.ready;
     if (visiting) {
       return `
-        <img class="sb sb-coop" src="${A('assets/pack/chicken_coop_v3.png')}" alt="" />
+        <img class="sb sb-coop" src="${A('assets/scene-v3/chicken_coop_v3.png')}" alt="" />
         <img class="sb sb-hen2" src="${A('assets/art/chicken_v3.png')}" alt="" />
-        <img class="sb sb-mill" src="${A('assets/pack/windmill_v3.png')}" alt="" />
-        <img class="sb sb-shop" src="${A('assets/pack/market_shop_v3.png')}" alt="" />`;
+        <img class="sb sb-mill" src="${A('assets/scene-v3/windmill_v3.png')}" alt="" />
+        <img class="sb sb-shop" src="${A('assets/scene-v3/market_shop_v3.png')}" alt="" />`;
     }
     return `
       ${coopUnlocked ? `
         <button class="sb sb-btn sb-coop" data-sheet="coop" title="Chuồng gà">
-          <img src="${A('assets/pack/chicken_coop_v3.png')}" alt="Chuồng gà" />
+          <img src="${A('assets/scene-v3/chicken_coop_v3.png')}" alt="Chuồng gà" />
           ${eggReady ? '<i class="dot"></i>' : ''}
           <span class="sb-tag">${eggReady ? '🥚 Trứng!' : hungry ? 'Gà đói' : 'Chuồng gà'}</span>
         </button>
         <img class="sb sb-hen2" src="${A('assets/art/chicken_v3.png')}" alt="" />`
-      : `<img class="sb sb-coop sb--locked" src="${A('assets/pack/chicken_coop_v3.png')}" alt="" title="Chuồng gà — cần Lv ${DATA.config.chicken.level}" />`}
+      : `<img class="sb sb-coop sb--locked" src="${A('assets/scene-v3/chicken_coop_v3.png')}" alt="" title="Chuồng gà — cần Lv ${DATA.config.chicken.level}" />`}
       ${millUnlocked ? `
         <button class="sb sb-btn sb-mill" data-sheet="mill" title="Cối xay">
-          <img src="${A('assets/pack/windmill_v3.png')}" alt="Cối xay" />
+          <img src="${A('assets/scene-v3/windmill_v3.png')}" alt="Cối xay" />
           ${millDone ? '<i class="dot"></i>' : ''}
           <span class="sb-tag">${millDone ? '✅ Xong!' : m.mill ? 'Đang xay…' : 'Cối xay'}</span>
         </button>`
-      : `<img class="sb sb-mill sb--locked" src="${A('assets/pack/windmill_v3.png')}" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
+      : `<img class="sb sb-mill sb--locked" src="${A('assets/scene-v3/windmill_v3.png')}" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
       <button class="sb sb-btn sb-shop" data-sheet="shop" title="Cửa hàng">
-        <img src="${A('assets/pack/market_shop_v3.png')}" alt="Cửa hàng" />
+          <img src="${A('assets/scene-v3/market_shop_v3.png')}" alt="Cửa hàng" />
         <span class="sb-tag">Cửa hàng</span>
       </button>`;
   }

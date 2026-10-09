@@ -117,6 +117,8 @@ Vanilla source images are `asset/source_crops/v3/vanilla-growing.png` and `asset
 
 ## Review checklist for each new sprite
 
+The original coop, windmill, market, and farmer scene images are in `asset/source_scene/v3/`. Their 256px transparent browser exports are in `public/assets/scene-v3/`; the scene displays them at about 115–135 CSS pixels on desktop. These four exports total about 331 KB, down from about 1,237 KB for the 500–512px originals.
+
 Machine sources are in `asset/source_machines/v3/`; the 144×144 transparent game exports are in `public/assets/machines-v3/`. The set includes unique art for all twelve machines. The exports serve 44px card icons at up to roughly 3× display density; keep the full-resolution sources for larger future uses.
 
 Product sources are in `asset/source_products/v3/`; the 128×128 transparent game exports are in `public/assets/products-v3/`. Potato fries (`khoaichien`), garden salad (`salad`), fried rice (`comchien`), and pumpkin soup (`supbi`) use the shared item-icon renderer in factory, inventory, market, and order views. Keep the full-resolution transparent sources for future larger uses.

@@ -41,6 +41,8 @@ try {
       localTransferBytes: resources.reduce((sum, entry) => sum + entry.transferSize, 0),
       imageRequests: images.length,
       imageTransferBytes: images.reduce((sum, entry) => sum + entry.transferSize, 0),
+      largestImages: images.map((entry) => ({ path: new URL(entry.name).pathname, bytes: entry.transferSize }))
+        .sort((a, b) => b.bytes - a.bytes).slice(0, 12),
     };
   });
   writeFileSync(resolve(outputDir, 'startup-320.json'), `${JSON.stringify(startup, null, 2)}\n`);
