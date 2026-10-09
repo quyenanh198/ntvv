@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 17/186 products have PNG or SVG icons. 150 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 21/186 products have PNG or SVG icons. 154 static asset paths appear in the client.
 
 ## Crops
 
@@ -106,13 +106,13 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | --- | --- | --- | --- |
 | Áo dài lụa | aodai | xuongcaocap | emoji |
 | Áo len | aolen | xuongdet | emoji |
-| Bánh bí ngô | banhbi | lobanh | emoji |
+| Bánh bí ngô | banhbi | lobanh | PNG art |
 | Bánh cà rốt | banhcarot | lobanh | emoji |
 | Bánh dứa | banhdua | lobanh | emoji |
 | Bánh gừng | banhgung | lobanh | emoji |
 | Bánh kem dâu | banhkem | lobanh | emoji |
 | Bánh mật ong | banhmatong | lobanh | emoji |
-| Bánh mì trứng | banhmi | lobanh | emoji |
+| Bánh mì trứng | banhmi | lobanh | PNG art |
 | Bánh táo | banhtao | lobanh | emoji |
 | Bánh tôm | banhtom | quanvat | emoji |
 | Bánh tráng trộn | banhtrangtron | quanvat | emoji |
@@ -149,7 +149,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cơm chiên trứng | comchien | bepan | PNG art |
 | Cua | cua | cua | emoji |
 | Cua hấp sả | cuahap | lonuong | emoji |
-| Cuộn len | cuonlen | xuongdet | emoji |
+| Cuộn len | cuonlen | xuongdet | PNG art |
 | Dầu ô liu | dauoliu | mayep | emoji |
 | Đường mía | duongmia | coixay | emoji |
 | Ếch | ech | ech | emoji |
@@ -184,7 +184,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Mứt sầu riêng | mutsaurieng | noimut | emoji |
 | Nem chua | nemchua | quanvat | emoji |
 | Nhung hươu | nhunghuou | huou | emoji |
-| Nước cam | nuoccam | mayep | emoji |
+| Nước cam | nuoccam | mayep | PNG art |
 | Nước chanh | nuocchanh | mayep | emoji |
 | Nước dứa | nuocthom | mayep | emoji |
 | Nước ép cà rốt | nuoccarot | mayep | PNG art |
@@ -423,13 +423,17 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/tree_02.png` | 14 KB |
 | `assets/pack/well.png` | 17 KB |
 | `assets/products-v3/carrot-juice.png` | 13 KB |
+| `assets/products-v3/egg-bread.png` | 24 KB |
 | `assets/products-v3/farm-cheese.png` | 16 KB |
 | `assets/products-v3/fried-rice.png` | 23 KB |
 | `assets/products-v3/garden-salad.png` | 22 KB |
+| `assets/products-v3/orange-juice.png` | 21 KB |
 | `assets/products-v3/potato-fries.png` | 23 KB |
+| `assets/products-v3/pumpkin-pie.png` | 29 KB |
 | `assets/products-v3/pumpkin-soup.png` | 25 KB |
 | `assets/products-v3/strawberry-jam.png` | 18 KB |
 | `assets/products-v3/tomato-sauce.png` | 20 KB |
+| `assets/products-v3/wool-roll.png` | 19 KB |
 | `assets/scene-v3/chicken_coop_v3.png` | 66 KB |
 | `assets/scene-v3/farmer_v3.png` | 63 KB |
 | `assets/scene-v3/market_shop_v3.png` | 114 KB |
