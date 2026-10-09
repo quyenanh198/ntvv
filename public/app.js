@@ -1128,18 +1128,21 @@
     if (t === 'orders') {
       const rows = m.orders.length === 0
         ? '<p class="sheet-note">Đơn mới đang trên đường tới…</p>'
-        : m.orders.map((o) => {
+        : [...m.orders].sort((a, b) => Number(canDeliver(b)) - Number(canDeliver(a)) || a.slot - b.slot).map((o) => {
             const ok = canDeliver(o);
+            const missing = Object.entries(o.items).reduce((sum, [id, q]) => sum + Math.max(0, q - (m.inventory[id] || 0)), 0);
             const items = Object.entries(o.items).map(([id, q]) => {
               const have = m.inventory[id] || 0;
-              return `<span class="o-item${have >= q ? ' o-item--ok' : ''}">${itemImg(id)}${Math.min(have, q)}/${q}</span>`;
+              const itemName = esc(itemInfo(id)?.name || id);
+              return `<span class="o-item${have >= q ? ' o-item--ok' : ''}">${itemImg(id)}<span class="o-item-name">${itemName}</span><span class="o-item-count">${Math.min(have, q)}/${q}</span></span>`;
             }).join('');
-            return `<div class="order-card">
+            return `<div class="order-card${ok ? ' order-card--ready' : ''}">
+              <div class="o-status">${ok ? '✓ Sẵn sàng giao' : `Còn thiếu ${missing} sản phẩm`}</div>
               <div class="o-items">${items}</div>
               <div class="o-reward">${o.gold.toLocaleString('vi')} ${COIN} · +${o.exp}EXP · ${o.stars}${STAR}</div>
               <div class="sheet-actions">
-                <button class="btn-mini gbtn gbtn--green" data-deliver="${o.id}" ${ok ? '' : 'disabled'}>🚚 Giao</button>
-                <button class="btn-mini btn-ghost" data-discard="${o.id}">Bỏ</button>
+                <button class="btn-mini gbtn gbtn--green" data-deliver="${o.id}" aria-label="Giao đơn hàng ${o.slot + 1}" ${ok ? '' : 'disabled'}>🚚 Giao</button>
+                <button class="btn-mini btn-ghost" data-discard="${o.id}" aria-label="Bỏ đơn hàng ${o.slot + 1}">Bỏ</button>
               </div>
             </div>`;
           }).join('');

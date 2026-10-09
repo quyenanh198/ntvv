@@ -35,7 +35,7 @@ This is the project plan for the farm game, separate from the older stability au
 - Show the next three unlock levels and the current short-term goal. Simplify seed and inventory choices so usable items appear first.
 - Review crop timings, waiting periods, orders, animals, and processing queues as one daily play loop.
 - Make ready states, costs, rewards, and failure reasons clear before an action is committed.
-- **Gate:** a returning player can find a productive action within 10 seconds. **Status:** upcoming unlocks and early seed choice shipped on branch; the farm-first responsive layout now puts next action and plots before family search on phones and gives the family a separate desktop sidebar. Layout direction and measured checks are in [layout-direction.md](layout-direction.md); timing and player validation pending.
+- **Gate:** a returning player can find a productive action within 10 seconds. **Status:** upcoming unlocks and early seed choice shipped on branch; the farm-first responsive layout now puts next action and plots before family search on phones and gives the family a separate desktop sidebar. The order sheet now puts deliverable orders first and names each requested product, held quantity, missing count, and reward. Layout direction and measured checks are in [layout-direction.md](layout-direction.md); timing and player validation pending.
 
 ## 6. Rebalance progression and economy
 
