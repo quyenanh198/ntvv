@@ -28,7 +28,7 @@ This is the project plan for the farm game, separate from the older stability au
 - Guide one plot through seed choice, planting, watering, harvest, inventory, and first sale. Make every prompt lead to the right action.
 - Reveal new systems only when unlocked. Put accessible next actions above the plots on phones.
 - Test with a fresh account, a returning low-level account, and an interrupted session.
-- **Gate:** five new players complete the first sale without help; no starter can be blocked by tax or unaffordable seed. **Status:** guided path implemented; CI now drives a fresh player through seed selection, planting, watering, ready-state harvest, inventory, and first sale at 320px, checking that the sale leaves more gold than the starter balance. Growing and ready screenshots were reviewed. The five-player observed gate remains pending.
+- **Gate:** five new players complete the first sale without help; no starter can be blocked by tax or unaffordable seed. **Status:** guided path implemented; CI drives a fresh player through seed selection, planting, watering, ready-state harvest, inventory, and first sale at 320px, checking that the sale leaves more gold than the starter balance. The browser closes and reopens after watering to verify the crop persists, then returns after the sale to verify gold and the empty plot persist. Growing and ready screenshots were reviewed. The five-player observed gate remains pending.
 
 ## 5. Make everyday play easy to read
 
