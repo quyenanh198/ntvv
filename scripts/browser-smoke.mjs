@@ -174,8 +174,7 @@ try {
   assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 2').get().gold, afterGift[1].gold + want.price);
   await friendPage.screenshot({ path: resolve(outputDir, 'trade-seller-390.png') });
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.locator('[data-sheet="more"]').first().click();
-  await page.locator('[data-sheet="inventory"]').click();
+  await page.locator('.dock-btn[data-sheet="inventory"]').click();
   await page.locator('.inv-row[data-item="luami"]').waitFor();
   await page.keyboard.press('Escape');
   await friendContext.close();
