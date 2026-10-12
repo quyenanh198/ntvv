@@ -135,27 +135,46 @@ This second supply model recursively expands crop-origin ingredients through unl
 | Xưởng dệt | 1 | Vải bông | 1.0 | 0.25 | 24.0 | 230,400 | xuongdet |
 | Xưởng cao cấp | 2 | Nước hoa hoa hồng | 2.0 | 0.58 | 16.0 | 1,638,400 | xuongcaocap |
 
+## Mixed raw-ingredient recipe supply
+
+At level 36, 86 sellable direct recipes use only raw field crops, fruit, animal products, or farmed fish. This scenario assigns 12 starting plots across crops and trees, owns one of each required animal species, and shares one base pond of 20 fish slots across all fish inputs. It assumes three evenly spaced visits daily, immediate replanting and restocking at visits, sufficient animal feed, no skill or upgrade bonuses, no poaching, no queue gaps, and fractional allocation of land and pond slots. Tree output counts all cycles from first fruit through the live lifespan, then rounds occupancy up to the next visit before replanting. Animal output accrues automatically between visits, capped at 24 cycles per species per server action as in the live code; this scenario assumes one such action per visit. Recipe margin is the value above selling raw ingredients directly, so seed, tree, feed, and fry costs cancel in that comparison. The result is modeled capacity under these ownership and visit assumptions, not observed daily income. Machine-made ingredients, inventory carried in, fishing catches, barn or pond purchase costs, and byproduct sales are excluded.
+
+| Machine | Eligible raw recipes | Best daily-margin recipe | Land plot-days/batch | Pond-days/batch | Batches/day | Margin/day | Tightest limit |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Lò nướng cá | 6 | Mực nướng sa tế | 0.17 | 0.02 | 32.0 | 492,800 | machine |
+| Quán ốc | 34 | Ốc tù và rang muối ớt | 0.08 | 0.05 | 20.0 | 835,200 | pond |
+| Bếp gia đình | 8 | Trà sữa | 0.25 | 0.00 | 36.0 | 414,000 | machine |
+| Cối xay bột | 4 | Bột gạo | 0.17 | 0.00 | 57.6 | 253,440 | machine |
+| Quán ăn vặt | 4 | Xôi đậu phộng | 0.26 | 0.00 | 46.8 | 439,481 | land |
+| Máy ép nước | 8 | Nước chanh | 0.09 | 0.00 | 48.0 | 302,400 | machine |
+| Nồi mứt | 6 | Mứt sầu riêng | 0.10 | 0.00 | 24.0 | 452,640 | machine |
+| Nhà máy sữa | 6 | Kem sầu riêng | 0.01 | 0.00 | 20.6 | 459,154 | machine |
+| Lò bánh | 0 | none | — | — | — | — | — |
+| Máy rang cà phê | 4 | Sô-cô-la | 0.25 | 0.00 | 14.4 | 416,160 | machine |
+| Xưởng dệt | 4 | Vải bông | 0.25 | 0.00 | 24.0 | 230,400 | machine |
+| Xưởng cao cấp | 2 | Rượu nho ủ | 0.50 | 0.00 | 8.0 | 260,800 | machine |
+
 ## Animal feed and sale model
 
-Each animal is fed with shop-bought thucan at 12 gold per unit, then produces one item after its live timer. Sale values use the 4× gold multiplier. A visit collects one ready product and feeds the animal for its next cycle. The one-visit and three-visit cases therefore allow at most one or three sales per day per animal, even when the timer is shorter. The model excludes barn construction, capacity upgrades, order premiums, and time spent acquiring an animal; payback covers only its purchase price.
+Each animal is fed with shop-bought thucan at 12 gold per unit, then produces one item after its live timer. Sale values use the 4× gold multiplier. The server automatically settles elapsed production cycles when the owner acts, capped at 24 cycles per animal per action. This model assumes one such action per visit, sufficient feed, and one or three evenly spaced visits daily; fractional cycles estimate a long-run average. Extra actions can settle further backlog, so these are scenarios rather than hard production caps. The model excludes barn construction, capacity upgrades, order premiums, and time spent acquiring an animal; payback covers only its purchase price.
 
-| Animal | Unlock | Purchase | Produce min | Feed/cycle | Sale/cycle | Net, 1 visit/day | Net, 3 visits/day | Purchase payback, 3 visits (days) |
+| Animal | Unlock | Purchase | Produce min | Feed/cycle | Sale/cycle | Net, 1 visit/day | Net, 3 visits/day | Purchase payback, 3 visits |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Gà | 3 | 250 | 15 | 12 | 192 | 180 | 540 | 0.5 |
-| Chim cút | 4 | 350 | 15 | 12 | 120 | 108 | 324 | 1.1 |
-| Vịt | 6 | 500 | 25 | 12 | 280 | 268 | 804 | 0.6 |
-| Bò | 8 | 850 | 30 | 24 | 560 | 536 | 1,608 | 0.5 |
-| Ngỗng | 9 | 700 | 35 | 24 | 480 | 456 | 1,368 | 0.5 |
-| Thỏ | 10 | 800 | 30 | 12 | 520 | 508 | 1,524 | 0.5 |
-| Ong | 12 | 1,100 | 40 | 12 | 720 | 708 | 2,124 | 0.5 |
-| Cừu | 14 | 1,400 | 40 | 36 | 1,000 | 964 | 2,892 | 0.5 |
-| Gà tây | 15 | 1,500 | 55 | 24 | 880 | 856 | 2,568 | 0.6 |
-| Dê | 17 | 1,800 | 50 | 24 | 1,200 | 1,176 | 3,528 | 0.5 |
-| Tằm | 18 | 2,000 | 60 | 12 | 1,400 | 1,388 | 4,164 | 0.5 |
-| Lợn | 20 | 2,500 | 70 | 36 | 1,920 | 1,884 | 5,652 | 0.4 |
-| Trâu | 22 | 3,000 | 80 | 36 | 2,240 | 2,204 | 6,612 | 0.5 |
-| Alpaca | 25 | 3,800 | 90 | 36 | 2,800 | 2,764 | 8,292 | 0.5 |
-| Hươu | 28 | 5,000 | 120 | 36 | 3,600 | 3,564 | 10,692 | 0.5 |
+| Gà | 3 | 250 | 15 | 12 | 192 | 4,320 | 12,960 | 0.5 h |
+| Chim cút | 4 | 350 | 15 | 12 | 120 | 2,592 | 7,776 | 1.1 h |
+| Vịt | 6 | 500 | 25 | 12 | 280 | 6,432 | 15,437 | 0.8 h |
+| Bò | 8 | 850 | 30 | 24 | 560 | 12,864 | 25,728 | 0.8 h |
+| Ngỗng | 9 | 700 | 35 | 24 | 480 | 10,944 | 18,761 | 0.9 h |
+| Thỏ | 10 | 800 | 30 | 12 | 520 | 12,192 | 24,384 | 0.8 h |
+| Ong | 12 | 1,100 | 40 | 12 | 720 | 16,992 | 25,488 | 1.0 h |
+| Cừu | 14 | 1,400 | 40 | 36 | 1,000 | 23,136 | 34,704 | 1.0 h |
+| Gà tây | 15 | 1,500 | 55 | 24 | 880 | 20,544 | 22,412 | 1.6 h |
+| Dê | 17 | 1,800 | 50 | 24 | 1,200 | 28,224 | 33,869 | 1.3 h |
+| Tằm | 18 | 2,000 | 60 | 12 | 1,400 | 33,312 | 33,312 | 1.4 h |
+| Lợn | 20 | 2,500 | 70 | 36 | 1,920 | 38,757 | 38,757 | 1.5 h |
+| Trâu | 22 | 3,000 | 80 | 36 | 2,240 | 39,672 | 39,672 | 1.8 h |
+| Alpaca | 25 | 3,800 | 90 | 36 | 2,800 | 44,224 | 44,224 | 2.1 h |
+| Hươu | 28 | 5,000 | 120 | 36 | 3,600 | 42,768 | 42,768 | 2.8 h |
 
 - Animals with nonpositive feed-adjusted sale margin: none.
 
@@ -193,5 +212,5 @@ The order board refreshes every 120 minutes. These same deterministic samples co
 
 1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.
 2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.
-3. Extend the supply model to owned animals, trees, fish, inventory, and sale-price saturation; measure actual order completion and late-game income before tuning land prices or order generation.
+3. Add actual ownership, feed stocks, pond upgrades, inventory, and sale-price saturation to the mixed-source model; measure actual order completion and late-game income before tuning land prices or order generation.
 

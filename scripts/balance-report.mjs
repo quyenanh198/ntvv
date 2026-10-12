@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
-import { ANIMALS, CROPS, EXPANSIONS, FEED_ITEM, GOLD_MULT, HARVEST_YIELD, LAND_TAX_UNLOCK_LEVEL, MACHINES, MAX_PLOTS, ORDER_BOARD_REFRESH_MS, ORDER_UNLOCK_LEVEL, START_GOLD, START_PLOTS, TAX_PER_PLOT, generateOrder, itemInfo, xpNeedFor } from '../server/src/game.js';
+import { ANIMALS, CROPS, EXPANSIONS, FEED_ITEM, FISH_FARM, FISH_STOCK_BY_LEVEL, GOLD_MULT, HARVEST_YIELD, LAND_TAX_UNLOCK_LEVEL, MACHINES, MAX_PLOTS, ORDER_BOARD_REFRESH_MS, ORDER_UNLOCK_LEVEL, START_GOLD, START_PLOTS, TAX_PER_PLOT, TREES, generateOrder, itemInfo, xpNeedFor } from '../server/src/game.js';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const crops = Object.values(CROPS).filter((crop) => !crop.risky && crop.sell > 0).map((crop) => ({
@@ -141,6 +141,57 @@ const chainRows = machineModels.map((machine) => {
   const best = rank(eligible, (recipe) => recipe.marginPerDay);
   return `| ${machine.name} | ${eligible.length} | ${best ? best.name : 'none'} | ${best ? best.requirement.steps.toFixed(1) : '—'} | ${best ? best.requirement.plotDays.toFixed(2) : '—'} | ${best ? best.batches.toFixed(1) : '—'} | ${best ? fmt(best.marginPerDay) : '—'} | ${best ? best.bottleneck : '—'} |`;
 });
+const visitMinutes = 480;
+const pondCapacity = FISH_STOCK_BY_LEVEL[0];
+const animalItemsPerDay = (animal, visits) => visits * Math.min(24, (1440 / visits) / (animal.produceMs / 60_000));
+const directSources = new Map();
+for (const crop of Object.values(CROPS).filter((entry) => !entry.risky && entry.sell > 0)) {
+  directSources.set(crop.id, { kind: 'land', level: crop.level,
+    plotDays: Math.max(crop.growMs / 60_000, visitMinutes) / (1440 * HARVEST_YIELD) });
+}
+for (const tree of Object.values(TREES)) {
+  const cycles = Math.floor((tree.lifeMs - tree.growMs) / tree.cycleMs) + 1;
+  const occupiedMinutes = Math.ceil(tree.lifeMs / (visitMinutes * 60_000)) * visitMinutes;
+  directSources.set(tree.id, { kind: 'land', level: tree.level,
+    plotDays: occupiedMinutes / (1440 * cycles * tree.yield) });
+}
+for (const animal of Object.values(ANIMALS)) {
+  directSources.set(animal.product, { kind: 'animal', id: animal.id, level: animal.level,
+    dailyItems: animalItemsPerDay(animal, 3) });
+}
+for (const fish of Object.values(FISH_FARM)) {
+  directSources.set(fish.product, { kind: 'pond', level: fish.level,
+    pondDays: Math.max(fish.growMs / 60_000, visitMinutes) / (1440 * pondCapacity) });
+}
+const directLevel = Math.max(...Object.values(CROPS).map((entry) => entry.level),
+  ...Object.values(TREES).map((entry) => entry.level),
+  ...Object.values(ANIMALS).map((entry) => entry.level),
+  ...Object.values(FISH_FARM).map((entry) => entry.level),
+  ...Object.values(MACHINES).map((entry) => entry.level));
+let mixedDirectRecipes = 0;
+const mixedDirectRows = machineModels.map((machine) => {
+  const eligible = machine.recipes.map((recipe) => {
+    const inputs = Object.entries(recipe.in).map(([id, qty]) => ({ id, qty, source: directSources.get(id) }));
+    if (inputs.some(({ source }) => !source || source.level > directLevel)) return null;
+    const outputValue = Object.entries(recipe.out).reduce((sum, [id, qty]) => sum + (itemInfo(id)?.sell || 0) * qty * GOLD_MULT, 0);
+    if (outputValue <= 0) return null;
+    const landDays = inputs.filter(({ source }) => source.kind === 'land').reduce((sum, { qty, source }) => sum + qty * source.plotDays, 0);
+    const pondDays = inputs.filter(({ source }) => source.kind === 'pond').reduce((sum, { qty, source }) => sum + qty * source.pondDays, 0);
+    const limits = [{ name: 'machine', batches: 86_400_000 / recipe.ms }];
+    if (landDays) limits.push({ name: 'land', batches: START_PLOTS / landDays });
+    if (pondDays) limits.push({ name: 'pond', batches: 1 / pondDays });
+    for (const { qty, source } of inputs.filter(({ source }) => source.kind === 'animal')) {
+      limits.push({ name: `animal:${source.id}`, batches: source.dailyItems / qty });
+    }
+    const tightest = limits.sort((a, b) => a.batches - b.batches)[0];
+    const inputValue = inputs.reduce((sum, { id, qty }) => sum + (itemInfo(id)?.sell || 0) * qty * GOLD_MULT, 0);
+    return { ...recipe, landDays, pondDays, batches: tightest.batches, bottleneck: tightest.name,
+      marginPerDay: (outputValue - inputValue) * tightest.batches };
+  }).filter(Boolean);
+  mixedDirectRecipes += eligible.length;
+  const best = rank(eligible, (recipe) => recipe.marginPerDay);
+  return `| ${machine.name} | ${eligible.length} | ${best ? best.name : 'none'} | ${best ? best.landDays.toFixed(2) : '—'} | ${best ? best.pondDays.toFixed(2) : '—'} | ${best ? best.batches.toFixed(1) : '—'} | ${best ? fmt(best.marginPerDay) : '—'} | ${best ? best.bottleneck : '—'} |`;
+});
 const nonpositiveCrafts = machineModels.flatMap((machine) => machine.recipes.filter((recipe) => recipe.sellable && recipe.margin <= 0).map((recipe) => `${machine.id}/${recipe.id}`));
 const utilityCrafts = machineModels.flatMap((machine) => machine.recipes.filter((recipe) => !recipe.sellable).map((recipe) => `${machine.id}/${recipe.id}`));
 const feedPrice = itemInfo(FEED_ITEM).buy;
@@ -148,13 +199,13 @@ const animalModels = Object.values(ANIMALS).sort((a, b) => a.level - b.level).ma
   const sale = itemInfo(animal.product).sell * GOLD_MULT;
   const feedCost = animal.feedQty * feedPrice;
   const margin = sale - feedCost;
-  const dailyOne = margin;
-  const dailyThree = margin * 3;
+  const dailyOne = margin * animalItemsPerDay(animal, 1);
+  const dailyThree = margin * animalItemsPerDay(animal, 3);
   return { ...animal, sale, feedCost, margin, dailyOne, dailyThree,
     paybackDays: dailyThree > 0 ? animal.price / dailyThree : Infinity };
 });
 const animalRows = animalModels.map((animal) =>
-  `| ${animal.name} | ${animal.level} | ${fmt(animal.price)} | ${fmt(animal.produceMs / 60_000)} | ${fmt(animal.feedCost)} | ${fmt(animal.sale)} | ${fmt(animal.dailyOne)} | ${fmt(animal.dailyThree)} | ${Number.isFinite(animal.paybackDays) ? animal.paybackDays.toFixed(1) : 'never'} |`);
+  `| ${animal.name} | ${animal.level} | ${fmt(animal.price)} | ${fmt(animal.produceMs / 60_000)} | ${fmt(animal.feedCost)} | ${fmt(animal.sale)} | ${fmt(animal.dailyOne)} | ${fmt(animal.dailyThree)} | ${Number.isFinite(animal.paybackDays) ? `${(animal.paybackDays * 24).toFixed(1)} h` : 'never'} |`);
 const nonpositiveAnimals = animalModels.filter((animal) => animal.margin <= 0);
 let orderSeed = 0x4e545656;
 const orderRng = () => {
@@ -219,9 +270,13 @@ const lines = [
   `This second supply model recursively expands crop-origin ingredients through unlocked machines at level ${chainLevel}. It finds ${cropOriginRecipes} sellable crop-origin recipes, including ${multiMachineRecipes} that use more than one machine step. For ingredients with multiple possible recipes, it chooses the chain needing the fewest plot-days. Each prerequisite machine is assumed owned once, and its processing time is added to that machine's daily capacity; a machine used twice in a chain shares its capacity. The ${START_PLOTS} starting plots are split fractionally across all leaf crops with three visits per day. The margin compares the final product's sale value with selling those leaf crops directly. Fractional batches, uninterrupted queues, no sale saturation, and no acquisition costs make this an upper bound. Animal, tree, fish, bought ingredients, inventory carried in, and byproduct sales are excluded.`, '',
   '| Final machine | Crop-origin recipes | Best daily-margin recipe | Machine steps/batch | Plot-days/batch | Upper-bound batches/day | Margin/day | Tightest limit |',
   '| --- | ---: | --- | ---: | ---: | ---: | ---: | --- |', ...chainRows, '',
+  '## Mixed raw-ingredient recipe supply', '',
+  `At level ${directLevel}, ${mixedDirectRecipes} sellable direct recipes use only raw field crops, fruit, animal products, or farmed fish. This scenario assigns ${START_PLOTS} starting plots across crops and trees, owns one of each required animal species, and shares one base pond of ${pondCapacity} fish slots across all fish inputs. It assumes three evenly spaced visits daily, immediate replanting and restocking at visits, sufficient animal feed, no skill or upgrade bonuses, no poaching, no queue gaps, and fractional allocation of land and pond slots. Tree output counts all cycles from first fruit through the live lifespan, then rounds occupancy up to the next visit before replanting. Animal output accrues automatically between visits, capped at 24 cycles per species per server action as in the live code; this scenario assumes one such action per visit. Recipe margin is the value above selling raw ingredients directly, so seed, tree, feed, and fry costs cancel in that comparison. The result is modeled capacity under these ownership and visit assumptions, not observed daily income. Machine-made ingredients, inventory carried in, fishing catches, barn or pond purchase costs, and byproduct sales are excluded.`, '',
+  '| Machine | Eligible raw recipes | Best daily-margin recipe | Land plot-days/batch | Pond-days/batch | Batches/day | Margin/day | Tightest limit |',
+  '| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |', ...mixedDirectRows, '',
   '## Animal feed and sale model', '',
-  `Each animal is fed with shop-bought ${FEED_ITEM} at ${fmt(feedPrice)} gold per unit, then produces one item after its live timer. Sale values use the ${GOLD_MULT}× gold multiplier. A visit collects one ready product and feeds the animal for its next cycle. The one-visit and three-visit cases therefore allow at most one or three sales per day per animal, even when the timer is shorter. The model excludes barn construction, capacity upgrades, order premiums, and time spent acquiring an animal; payback covers only its purchase price.`, '',
-  '| Animal | Unlock | Purchase | Produce min | Feed/cycle | Sale/cycle | Net, 1 visit/day | Net, 3 visits/day | Purchase payback, 3 visits (days) |',
+  `Each animal is fed with shop-bought ${FEED_ITEM} at ${fmt(feedPrice)} gold per unit, then produces one item after its live timer. Sale values use the ${GOLD_MULT}× gold multiplier. The server automatically settles elapsed production cycles when the owner acts, capped at 24 cycles per animal per action. This model assumes one such action per visit, sufficient feed, and one or three evenly spaced visits daily; fractional cycles estimate a long-run average. Extra actions can settle further backlog, so these are scenarios rather than hard production caps. The model excludes barn construction, capacity upgrades, order premiums, and time spent acquiring an animal; payback covers only its purchase price.`, '',
+  '| Animal | Unlock | Purchase | Produce min | Feed/cycle | Sale/cycle | Net, 1 visit/day | Net, 3 visits/day | Purchase payback, 3 visits |',
   '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |', ...animalRows, '',
   `- Animals with nonpositive feed-adjusted sale margin: ${nonpositiveAnimals.length ? nonpositiveAnimals.map((animal) => animal.id).join(', ') : 'none'}.`, '',
   '## Order sale premium', '',
@@ -239,7 +294,7 @@ const lines = [
   '## Next balance decisions', '',
   '1. Record actual visit intervals, crop selections, sales, and time to each level before changing constants.',
   '2. Choose target session lengths and daily gold ranges for early, middle, and late play; compare measured results with the cadence rows.',
-  '3. Extend the supply model to owned animals, trees, fish, inventory, and sale-price saturation; measure actual order completion and late-game income before tuning land prices or order generation.', '',
+  '3. Add actual ownership, feed stocks, pond upgrades, inventory, and sale-price saturation to the mixed-source model; measure actual order completion and late-game income before tuning land prices or order generation.', '',
 ];
 const report = `${lines.join('\n')}\n`;
 if (process.argv.includes('--write')) writeFileSync(resolve(root, 'docs/balance-report.md'), report);
