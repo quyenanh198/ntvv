@@ -22,6 +22,7 @@ The bottom dock remains the main route to management sheets. The scene is decora
 - When an order can be delivered, the farm's next-action prompt names the ready order count and opens the order sheet before suggesting more planting; the first-sale guidance still takes priority for new players.
 - A compact collection goal now sits under the immediate-action toolbar. At 320px the goal opens its sheet by touch, and the page has no horizontal overflow.
 - The 320px farm now uses 14px next-action titles, 12px guidance, 13px collection titles, at least 11px collection details and plot labels, and 11px dock labels. The CI browser check enforces these sizes. The new mobile and desktop captures show the larger text without clipped controls or horizontal overflow.
+- The quail barn at level 6 now shows the matching egg product sprite in its production description. CI checks that the versioned image loads at 320px and saves a screenshot; the reviewed capture shows the description and purchase controls without horizontal clipping.
 - The CI browser smoke check renders the farm at 320px and 1280px and tests the order sheet at 320px, 390px, 768px, and 1180px. It checks horizontal overflow, usable plot rendering, ready-order priority, product labels, missing counts, Escape dismissal, and browser script errors. Screenshots are attached to each CI run for visual review; the first reviewed capture showed no clipped controls or text in the visible order cards.
 
 ## Remaining review
