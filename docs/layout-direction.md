@@ -14,7 +14,7 @@ The bottom dock remains the main route to management sheets. The scene is decora
 
 ## Current checks
 
-- Browser widths checked: 320, 390, 768, 1180, 1280, and 1920px.
+- Browser widths checked: 320, 390, 768, 844px landscape at 390px tall, 1180, 1280, and 1920px.
 - At 320px the plots follow the next-action and collection prompts; family search can be scrolled above the bottom dock.
 - At 1180 and 1280px the farm and family panel are separated by 24px, and the last plot receives pointer input.
 - At 1280px the action dock is centered under the 720px farm canvas. A one-member family panel fits its content; a 51-member panel stays within the viewport and scrolls internally.
@@ -26,6 +26,7 @@ The bottom dock remains the main route to management sheets. The scene is decora
 - The quail barn at level 6 now shows the matching egg product sprite in its production description. CI checks that the versioned image loads at 320px and saves a screenshot; the reviewed capture shows the description and purchase controls without horizontal clipping.
 - The level-20 browser check also opens the goat and pig barns at 320px, verifies their new product sprites load, and saves screenshots for review.
 - Inventory quantity buttons and the numeric field have 44px targets. Sell controls wrap onto a second row on narrow phones; CI checks their dimensions and horizontal overflow at 320px.
+- Sheet and modal close buttons now have 44px targets. The browser check opens a plot's seed sheet at 844×390, checks its viewport bounds and horizontal overflow, and saves landscape screenshots.
 - The CI browser smoke check renders the farm at 320px and 1280px and tests the order sheet at 320px, 390px, 768px, and 1180px. It checks horizontal overflow, usable plot rendering, ready-order priority, product labels, missing counts, Escape dismissal, and browser script errors. Screenshots are attached to each CI run for visual review; the first reviewed capture showed no clipped controls or text in the visible order cards.
 
 ## Remaining review

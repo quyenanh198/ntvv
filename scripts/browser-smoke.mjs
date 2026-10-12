@@ -383,13 +383,31 @@ try {
     await page.keyboard.press('Escape');
   }
 
+  await page.setViewportSize({ width: 844, height: 390 });
+  await checkNoOverflow(page, '844px landscape farm');
+  await page.locator('.plot[data-kind="empty"]').first().click();
+  await page.locator('.sheet-close').waitFor();
+  const landscapeSheet = await page.locator('.sheet').evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const close = element.querySelector('.sheet-close').getBoundingClientRect();
+    return { top: rect.top, bottom: rect.bottom, viewport: innerHeight, closeWidth: close.width, closeHeight: close.height };
+  });
+  assert.ok(landscapeSheet.top >= -1 && landscapeSheet.bottom <= landscapeSheet.viewport + 1,
+    `Landscape sheet should fit the viewport: ${JSON.stringify(landscapeSheet)}`);
+  assert.ok(landscapeSheet.closeWidth >= 44 && landscapeSheet.closeHeight >= 44,
+    `Landscape sheet close target is too small: ${JSON.stringify(landscapeSheet)}`);
+  await checkNoOverflow(page, '844px landscape seed sheet');
+  await page.screenshot({ path: resolve(outputDir, 'seed-landscape-844.png') });
+  await page.keyboard.press('Escape');
+  await page.screenshot({ path: resolve(outputDir, 'farm-landscape-844.png') });
+
   await page.setViewportSize({ width: 1280, height: 900 });
   await checkNoOverflow(page, '1280px farm');
   await page.screenshot({ path: resolve(outputDir, 'farm-1280.png') });
   await page.locator('.dock-btn[data-sheet="shop"]').click();
   await auditAccessibility(page, 'shop-1280');
   assert.deepEqual(pageErrors, []);
-  console.log('Browser smoke passed at 320px, 390px, 768px, 1180px, and 1280px; screenshots saved in artifacts/browser.');
+  console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
   await browser?.close();
   await app.close();
