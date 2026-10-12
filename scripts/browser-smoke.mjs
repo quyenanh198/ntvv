@@ -426,6 +426,39 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'farm-1280.png') });
   await page.locator('.dock-btn[data-sheet="shop"]').click();
   await auditAccessibility(page, 'shop-1280');
+  await page.keyboard.press('Escape');
+
+  await page.setViewportSize({ width: 320, height: 800 });
+  let releaseFirstPlant;
+  let firstPlantCaptured;
+  const firstPlantReady = new Promise((resolve) => { firstPlantCaptured = resolve; });
+  let plantRequests = 0;
+  await page.route('**/farm/api/plant', async (route) => {
+    plantRequests += 1;
+    if (plantRequests !== 1) return route.continue();
+    const response = await route.fetch();
+    firstPlantCaptured();
+    await new Promise((resolve) => { releaseFirstPlant = resolve; });
+    await route.fulfill({ response });
+  });
+  await page.locator('.plot[data-idx="0"][data-kind="empty"]').click();
+  await page.locator('.seed-card[data-crop="luami"]').click();
+  await firstPlantReady;
+  await page.keyboard.press('Escape');
+  await page.locator('.plot[data-idx="1"][data-kind="empty"]').click();
+  await page.locator('.seed-card[data-crop="carot"]').click();
+  await page.locator('.plot[data-idx="1"][data-kind="waterplot"]').waitFor();
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM plots WHERE owner_id = 1').get().n, 2);
+  const goldAfterBothPlants = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
+  const delayedPlant = page.waitForResponse((response) => response.url().endsWith('/farm/api/plant') && response.status() === 200);
+  releaseFirstPlant();
+  await delayedPlant;
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.match(await page.locator('.coin-pill').first().innerText(), new RegExp(goldAfterBothPlants.toLocaleString('vi')),
+    'The older planting response must not restore an older gold balance');
+  assert.equal(await page.locator('.plot[data-idx="1"][data-kind="waterplot"]').count(), 1,
+    'The older planting response must not remove the second crop');
+  await page.unroute('**/farm/api/plant');
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

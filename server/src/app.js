@@ -151,6 +151,7 @@ export function buildApp({ config, db, logger = true }) {
       }
       const outcome = work();
       if (outcome?.error) return outcome;
+      db.prepare('UPDATE farmers SET mutation_version = mutation_version + 1 WHERE user_id = ?').run(request.farmer.user_id);
       if (key) insertMutationRecord.run(request.farmer.user_id, key, route, bodyHash, JSON.stringify(outcome), Date.now());
       return { outcome, replay: false };
     })();
@@ -681,6 +682,7 @@ export function buildApp({ config, db, logger = true }) {
       soldGold: f.sold_gold || 0,
       gems: f.gems,
       xp: f.xp,
+      mutationVersion: f.mutation_version,
       level: li.level,
       levelInto: li.into,
       levelNeed: li.need,
