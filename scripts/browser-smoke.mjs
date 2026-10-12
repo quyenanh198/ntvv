@@ -123,6 +123,33 @@ try {
   await audioButton.click();
   assert.notEqual(await audioButton.getAttribute('aria-label'), audioNameBefore, 'Audio control should announce its next action after toggling');
 
+  // A delayed older poll must not replace a newer farm state.
+  let releaseOldState;
+  let oldStateCaptured;
+  const oldStateReady = new Promise((resolve) => { oldStateCaptured = resolve; });
+  let stateRequests = 0;
+  await page.route('**/farm/api/state', async (route) => {
+    stateRequests += 1;
+    if (stateRequests !== 1) return route.continue();
+    const oldResponse = await route.fetch();
+    oldStateCaptured();
+    await new Promise((resolve) => { releaseOldState = resolve; });
+    await route.fulfill({ response: oldResponse });
+  });
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await oldStateReady;
+  db.prepare('UPDATE farmers SET gold = gold + 7 WHERE user_id = 1').run();
+  const currentGold = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await page.waitForFunction((gold) => document.querySelector('.coin-pill')?.getAttribute('aria-label')?.includes(gold.toLocaleString('vi')), currentGold);
+  const delayedPoll = page.waitForResponse((response) => response.url().endsWith('/farm/api/state') && response.status() === 200);
+  releaseOldState();
+  await delayedPoll;
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.match(await page.locator('.coin-pill').first().getAttribute('aria-label'), new RegExp(currentGold.toLocaleString('vi')),
+    'An older poll must not roll back a newer balance');
+  await page.unroute('**/farm/api/state');
+
   const startingGold = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').click();
   await auditAccessibility(page, 'seed-320');
