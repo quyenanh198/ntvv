@@ -61,7 +61,7 @@ const lines = [
   '',
   'Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.',
   '',
-  `**Coverage:** ${completeCrops}/${cropRows.length} crops have matching growing and ripe v3 art; ${treePng.size}/${treeRows.length} trees and ${picturedFruit}/${treeRows.length} fruit items have individual PNG art; ${Object.keys(animalPng).length}/${animalRows.length} animals have individual PNG art. ${Object.keys(machinePng).length}/${machineRows.length} machines have individual PNG art. ${picturedProducts}/${productRows.length} processed products have PNG or SVG icons. ${staticPaths.length} static asset paths appear in the client.`,
+  `**Coverage:** ${completeCrops}/${cropRows.length} crops have matching growing and ripe v3 art; ${treePng.size}/${treeRows.length} trees and ${picturedFruit}/${treeRows.length} fruit items have individual PNG art; ${Object.keys(animalPng).length}/${animalRows.length} animals have individual PNG art. ${Object.keys(machinePng).length}/${machineRows.length} machines have individual PNG art. ${picturedProducts}/${productRows.length} catalog products have PNG or SVG icons. ${staticPaths.length} static asset paths appear in the client.`,
   '',
   '## Crops', '',
   '| Crop | ID | Unlock | Growing | Ripe |', '| --- | --- | ---: | --- | --- |', ...cropRows,

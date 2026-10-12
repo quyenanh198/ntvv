@@ -113,7 +113,7 @@ Vanilla source images are `asset/source_crops/v3/vanilla-growing.png` and `asset
 | Fruit trees and items | All thirteen species have individual tree and fruit-item PNGs | Review scale and ready-state contrast together at phone width |
 | Animals | All fifteen species have individual PNGs | Review scale and shadow together at phone width |
 | Machines | All twelve machines have unique PNGs in factory cards | Standardize footprint and active/ready feedback |
-| Products and UI icons | Fourteen early and midgame processed goods now have hand-painted PNGs; most other products use emoji | Extend the product set in recipe and unlock order, then standardize UI icons |
+| Products and UI icons | Fourteen processed goods and four early animal products have hand-painted PNGs; most other products use emoji | Extend the product set in recipe and unlock order, then standardize UI icons |
 
 The fishing pond source is `asset/source_scene/v3/fishing_pond_v3.png`; its 256×256 transparent game export is `public/assets/scene-v3/fishing_pond_v3.png`. It was generated with the built-in image tool using the coop and farmhouse as style references: a three-quarter hand-painted oval freshwater pond, grassy stone rim, reeds, lily pads, a small wooden dock, warm upper-left light, and transparent background. The source is retained for future size or color adjustments.
 
@@ -131,6 +131,8 @@ Rice flour (`botgao`) and cane sugar (`duongmia`) use the same renderer for mill
 Orange juice (`nuoccam`), egg bread (`banhmi`), pumpkin pie (`banhbi`), and wool roll (`cuonlen`) have matching source files and 128px exports with the same names in those directories.
 
 The four late fruit item sprites complete the fruit-tree item set: tamarind (`quame`), ambarella (`coc`), avocado (`quabo`), and durian (`saurieng`). Full-resolution transparent sources are `asset/source_trees/v3/<id>-fruit.png`; 128px exports are `public/assets/art/trees/<id>-qua.png`. The built-in image tool used the existing orange item icon and each species' tree sprite as references. The sprites appear through the shared item renderer in inventory, orders, and trade views.
+
+Quail eggs (`trungcut`), duck eggs (`trungvit`), goose egg (`trungngong`), and rabbit fur (`longtho`) now have matching transparent product art. Full-resolution sources are `asset/source_products/v3/quail-eggs.png`, `duck-eggs.png`, `goose-egg.png`, and `rabbit-fur.png`; 128px browser exports use the same filenames in `public/assets/products-v3/`. The built-in image tool used the farm-cheese product icon and each animal sprite as style/species references. Quail eggs are small and speckled, duck eggs blue-green, the goose egg large and ivory, and rabbit fur is tied raw fiber. These appear in the shared inventory, order, trade, and factory item renderer.
 
 1. Open original image and confirm real alpha transparency and complete silhouette.
 2. Resize to the export dimension and inspect that exact file.

@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 23/186 processed products have PNG or SVG icons. 160 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 27/186 catalog products have PNG or SVG icons. 164 static asset paths appear in the client.
 
 ## Crops
 
@@ -169,7 +169,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Lẩu ếch | lauech | lonuong | emoji |
 | Len | len | cuu | SVG icon |
 | Lông alpaca | longalpaca | alpaca | emoji |
-| Lông thỏ | longtho | tho | emoji |
+| Lông thỏ | longtho | tho | PNG art |
 | Lụa | lua | xuongdet | emoji |
 | Lươn | luon | luon | emoji |
 | Lươn xào sả ớt | luonxao | lonuong | emoji |
@@ -282,11 +282,11 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Trà sữa | trasua | bepan | emoji |
 | Trà túi lọc | tratui | mayrang | emoji |
 | Trứng | trung | ga | SVG icon |
-| Trứng cút | trungcut | cut | emoji |
+| Trứng cút | trungcut | cut | PNG art |
 | Trứng gà tây | trunggatay | gatay | emoji |
 | Trứng muối | trungmuoi | bepan | emoji |
-| Trứng ngỗng | trungngong | ngong | emoji |
-| Trứng vịt | trungvit | vit | emoji |
+| Trứng ngỗng | trungngong | ngong | PNG art |
+| Trứng vịt | trungvit | vit | PNG art |
 | Vải bông | vai | xuongdet | emoji |
 | Xôi đậu phộng | xoidauphong | quanvat | emoji |
 | Xúc xích | xucxich | bepan | emoji |
@@ -424,14 +424,18 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/well.png` | 17 KB |
 | `assets/products-v3/cane-sugar.png` | 18 KB |
 | `assets/products-v3/carrot-juice.png` | 13 KB |
+| `assets/products-v3/duck-eggs.png` | 18 KB |
 | `assets/products-v3/egg-bread.png` | 24 KB |
 | `assets/products-v3/farm-cheese.png` | 16 KB |
 | `assets/products-v3/fried-rice.png` | 23 KB |
 | `assets/products-v3/garden-salad.png` | 22 KB |
+| `assets/products-v3/goose-egg.png` | 19 KB |
 | `assets/products-v3/orange-juice.png` | 21 KB |
 | `assets/products-v3/potato-fries.png` | 23 KB |
 | `assets/products-v3/pumpkin-pie.png` | 29 KB |
 | `assets/products-v3/pumpkin-soup.png` | 25 KB |
+| `assets/products-v3/quail-eggs.png` | 15 KB |
+| `assets/products-v3/rabbit-fur.png` | 20 KB |
 | `assets/products-v3/rice-flour.png` | 18 KB |
 | `assets/products-v3/strawberry-jam.png` | 18 KB |
 | `assets/products-v3/tomato-sauce.png` | 20 KB |
