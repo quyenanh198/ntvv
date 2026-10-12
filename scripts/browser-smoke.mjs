@@ -367,8 +367,8 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'quail-barn-320.png') });
   await page.keyboard.press('Escape');
 
-  const levelEighteenXp = Array.from({ length: 17 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, xp) => sum + xp, 0);
-  db.prepare('UPDATE farmers SET xp = ? WHERE user_id = 1').run(levelEighteenXp);
+  const levelTwentyXp = Array.from({ length: 19 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, xp) => sum + xp, 0);
+  db.prepare('UPDATE farmers SET xp = ? WHERE user_id = 1').run(levelTwentyXp);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.plot').first().waitFor();
   for (const [animal, product] of [['de', 'goat-milk'], ['heo', 'pork']]) {
