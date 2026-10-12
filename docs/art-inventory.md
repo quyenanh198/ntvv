@@ -268,7 +268,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Sốt cà chua | sotcachua | noimut | PNG art |
 | Súp bí đỏ | supbi | bepan | PNG art |
 | Sushi | sushi | lonuong | emoji |
-| Sữa | sua | bo | SVG icon |
+| Sữa | sua | bo | PNG art |
 | Sữa chua dâu | suachua | nhamaysua | emoji |
 | Sữa dê | suade | de | emoji |
 | Sữa trâu | suatrau | trau | emoji |
@@ -424,6 +424,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/well.png` | 17 KB |
 | `assets/products-v3/cane-sugar.png` | 18 KB |
 | `assets/products-v3/carrot-juice.png` | 13 KB |
+| `assets/products-v3/cow-milk.png` | 59 KB |
 | `assets/products-v3/duck-eggs.png` | 18 KB |
 | `assets/products-v3/egg-bread.png` | 24 KB |
 | `assets/products-v3/farm-cheese.png` | 16 KB |
@@ -457,7 +458,6 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/ui/fish-caro.svg` | <1 KB |
 | `assets/ui/flour.svg` | <1 KB |
 | `assets/ui/gem.svg` | <1 KB |
-| `assets/ui/milk.svg` | <1 KB |
 | `assets/ui/scarecrow.svg` | <1 KB |
 | `assets/ui/star.svg` | <1 KB |
 | `assets/ui/wool.svg` | <1 KB |

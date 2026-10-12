@@ -1,6 +1,6 @@
 # NTVV full upgrade: step-by-step delivery plan
 
-This is the project plan for the farm game, separate from the older stability audit. Work proceeds on `upgrade/farm-v3`; release to `master` only after the acceptance gates below pass. The existing gameplay spec describes current rules, not a locked design for this upgrade.
+This is the project plan for the farm game, separate from the older stability audit. The first upgrade increment merged into `master` through [PR #1](https://github.com/quyenanh198/ntvv/pull/1) on 2026-10-12. The acceptance gates below remain the plan for staged deployment and subsequent iterations. The existing gameplay spec describes current rules, not a locked design for this upgrade.
 
 ## 1. Establish the player baseline
 
@@ -76,7 +76,7 @@ This is the project plan for the farm game, separate from the older stability au
 - Run unit, integration, two-player, migration, and manual browser checks on a release candidate.
 - Review content, art rights, economy changes, and rollback/backup steps. Deploy to a small group first and watch the metrics from step 1.
 - Merge the tested branch into `master`, publish release notes, and monitor first-session and day-2 results.
-- **Gate:** no open release-blocking defects; metrics are observable; rollback rehearsed. **Status:** a pinned GitHub Actions workflow now checks clean install, tests, generated reports, production dependency audit, and Docker build on pushes and pull requests. It also boots the production image, probes health, protected metrics, the farm page and a sprite, then restarts with a disposable volume and checks SQLite persistence. Production-data restore, staged release, observed players, and post-release metrics remain pending; branch work is not ready to merge.
+- **Gate:** no open release-blocking defects; metrics are observable; rollback rehearsed. **Status:** a pinned GitHub Actions workflow now checks clean install, tests, generated reports, production dependency audit, and Docker build on pushes and pull requests. It also boots the production image, probes health, protected metrics, the farm page and a sprite, then restarts with a disposable volume and checks SQLite persistence. PR #1 passed both required verification checks and merged as `5783e7d`. Production-data restore, staged release, observed players, and post-release metrics remain pending.
 
 ## 12. Iterate from actual player behavior
 
@@ -86,7 +86,7 @@ This is the project plan for the farm game, separate from the older stability au
 
 ### Current acceptance record
 
-- 67 automated tests pass on the upgrade branch.
+- The upgrade branch passed CI and merged into `master` as `5783e7d` on 2026-10-12.
 - New assets: farmhouse, red barn, greenhouse, coop, windmill, market, fishing pond, farmer, a shared seedling, individual art for all fifteen animal species and thirteen fruit-tree species, growing and ripe art for all thirty-six crops, all twelve factory machine sprites, fourteen hand-painted processed goods across the mill, kitchen, juice press, jam kettle, dairy, bakery, and weaving workshop, four early animal product icons, and fruit item art for all thirteen tree species. The generated art inventory shows 36/36 crops, 13/13 trees, 13/13 fruit items, 15/15 animals, and 12/12 machines with individual PNG art; 27/186 products have PNG or SVG icons.
 - First-session guidance, mobile HUD, starter tax grace, persistent harvest collections, and fifty-nine replay-safe gameplay/economy routes are implemented.
-- Player research, remaining interface and product art, ingredient-supply and achievable-order-rate modeling, route-level mutation test coverage, accessibility audit, staged release, and merge remain open. The client and server currently list the same 59 replay-safe POST routes.
+- Player research, remaining interface and product art, ingredient-supply and achievable-order-rate modeling, route-level mutation test coverage, accessibility audit, and staged release remain open. The client and server currently list the same 59 replay-safe POST routes.
