@@ -459,6 +459,31 @@ try {
   assert.equal(await page.locator('.plot[data-idx="1"][data-kind="waterplot"]').count(), 1,
     'The older planting response must not remove the second crop');
   await page.unroute('**/farm/api/plant');
+
+  let releaseThirdPlant;
+  let thirdPlantCaptured;
+  const thirdPlantReady = new Promise((resolve) => { thirdPlantCaptured = resolve; });
+  await page.route('**/farm/api/plant', async (route) => {
+    const response = await route.fetch();
+    thirdPlantCaptured();
+    await new Promise((resolve) => { releaseThirdPlant = resolve; });
+    await route.fulfill({ response });
+  });
+  await page.locator('.plot[data-idx="2"][data-kind="empty"]').click();
+  await page.locator('.seed-card[data-crop="luami"]').click();
+  await thirdPlantReady;
+  await page.keyboard.press('Escape');
+  await page.locator('.plot[data-idx="3"][data-kind="empty"]').click();
+  const delayedThirdPlant = page.waitForResponse((response) => response.url().endsWith('/farm/api/plant') && response.status() === 200);
+  releaseThirdPlant();
+  await delayedThirdPlant;
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal(await page.locator('.sheet .seed-card[data-crop="carot"]').count(), 1,
+    'A completed plot action must keep a newer seed chooser open');
+  await page.unroute('**/farm/api/plant');
+  await page.locator('.sheet .seed-card[data-crop="carot"]').click();
+  await page.locator('.plot[data-idx="3"][data-kind="waterplot"]').waitFor();
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM plots WHERE owner_id = 1').get().n, 4);
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

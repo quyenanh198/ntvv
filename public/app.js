@@ -325,6 +325,7 @@
     }
   }
   const plotResource = (ownerId, idx) => `plot:${ownerId}:${idx}`;
+  const closeSheetAfterAction = (startedSheet) => { if (sheet === startedSheet) sheet = null; };
 
   // ---------- màn chờ ----------
   function renderGate() {
@@ -1937,21 +1938,24 @@
     document.querySelectorAll('[data-tree]').forEach((el) =>
       el.addEventListener('click', async () => {
         if (!el.dataset.tree) return;
+        const startedSheet = sheet;
         const wasAll = sheet.all;
         const r = await run(() => wasAll ? api('/plant-all', { crop: el.dataset.tree }) : api('/plant-tree', { idx: sheet.idx, tree: el.dataset.tree }), wasAll ? 'global' : plotResource(me().id, sheet.idx));
-        if (r) { updateMe(r); sheet = null; toast(wasAll ? `🌳 Đã trồng ${r.planted} cây!` : '🌳 Cây đã bén rễ!'); render(); }
+        if (r) { updateMe(r); closeSheetAfterAction(startedSheet); toast(wasAll ? `🌳 Đã trồng ${r.planted} cây!` : '🌳 Cây đã bén rễ!'); render(); }
       }));
     document.getElementById('btn-remove-tree')?.addEventListener('click', async () => {
+      const startedSheet = sheet;
       const r = await run(() => api('/remove-tree', { idx: sheet.idx }), plotResource(me().id, sheet.idx));
-      if (r) { updateMe(r); sheet = null; toast('🪓 Đã nhổ cây.'); render(); }
+      if (r) { updateMe(r); closeSheetAfterAction(startedSheet); toast('🪓 Đã nhổ cây.'); render(); }
     });
     document.querySelectorAll('[data-crop]').forEach((el) =>
       el.addEventListener('click', async () => {
         const cropId = el.dataset.crop;
         if (!cropId) return;
+        const startedSheet = sheet;
         const wasAll = sheet.all;
         const r = await run(() => wasAll ? api('/plant-all', { crop: cropId }) : api('/plant', { idx: sheet.idx, crop: cropId }), wasAll ? 'global' : plotResource(me().id, sheet.idx));
-        if (r) { updateMe(r); sheet = null; if (wasAll) toast(`🌱 Đã gieo ${r.planted} ô!`); render(); }
+        if (r) { updateMe(r); closeSheetAfterAction(startedSheet); if (wasAll) toast(`🌱 Đã gieo ${r.planted} ô!`); render(); }
       }));
 
     document.querySelectorAll('[data-machine-run]').forEach((el) =>
@@ -2160,12 +2164,14 @@
       }));
 
     document.getElementById('btn-water-own')?.addEventListener('click', async (e) => {
+      const startedSheet = sheet;
       const r = await run(() => api('/water', { idx: sheet.idx }), plotResource(me().id, sheet.idx));
-      if (r) { updateMe(r); sheet = null; floatGain(e.clientX || 200, e.clientY || 300, '💧'); render(); }
+      if (r) { updateMe(r); closeSheetAfterAction(startedSheet); floatGain(e.clientX || 200, e.clientY || 300, '💧'); render(); }
     });
     document.getElementById('btn-speedup-plot')?.addEventListener('click', async () => {
+      const startedSheet = sheet;
       const r = await run(() => api('/speedup', { target: 'plot', idx: sheet.idx }), plotResource(me().id, sheet.idx));
-      if (r) { updateMe(r); sheet = null; toast(`💎 -${r.cost} kim cương — chín ngay!`); render(); }
+      if (r) { updateMe(r); closeSheetAfterAction(startedSheet); toast(`💎 -${r.cost} kim cương — chín ngay!`); render(); }
     });
     document.getElementById('btn-speedup-mill')?.addEventListener('click', async () => {
       const r = await run(() => api('/speedup', { target: 'mill' }));
