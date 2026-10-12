@@ -54,6 +54,7 @@
   const ITEM_ICON = {
     trung: 'assets/ui/egg.svg', botmi: 'assets/ui/flour.svg', thucan: 'assets/art/feed.png',
     sua: 'assets/products-v3/cow-milk.png', len: 'assets/ui/wool.svg', matong: 'assets/products-v3/honey.png',
+    suade: 'assets/products-v3/goat-milk.png', thit: 'assets/products-v3/pork.png',
     khoaichien: 'assets/products-v3/potato-fries.png', salad: 'assets/products-v3/garden-salad.png',
     comchien: 'assets/products-v3/fried-rice.png', supbi: 'assets/products-v3/pumpkin-soup.png',
     nuoccarot: 'assets/products-v3/carrot-juice.png', mutdau: 'assets/products-v3/strawberry-jam.png',

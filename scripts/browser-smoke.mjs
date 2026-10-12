@@ -367,6 +367,22 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'quail-barn-320.png') });
   await page.keyboard.press('Escape');
 
+  const levelTwentyXp = Array.from({ length: 19 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, xp) => sum + xp, 0);
+  db.prepare('UPDATE farmers SET xp = ? WHERE user_id = 1').run(levelTwentyXp);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.plot').first().waitFor();
+  for (const [animal, product] of [['de', 'goat-milk'], ['heo', 'pork']]) {
+    await page.locator('[data-sheet="more"]').first().click();
+    await page.locator('[data-sheet="barns"]').click();
+    await page.locator(`[data-barn="${animal}"]`).click();
+    const productSprite = page.locator(`.sheet img[src*="products-v3/${product}.png"]`).first();
+    await productSprite.waitFor();
+    assert.ok(await productSprite.evaluate((image) => image.complete && image.naturalWidth > 0), `${product} sprite should load in the barn`);
+    await checkNoOverflow(page, `320px ${animal} barn`);
+    await page.screenshot({ path: resolve(outputDir, `${animal}-barn-320.png`) });
+    await page.keyboard.press('Escape');
+  }
+
   await page.setViewportSize({ width: 1280, height: 900 });
   await checkNoOverflow(page, '1280px farm');
   await page.screenshot({ path: resolve(outputDir, 'farm-1280.png') });
