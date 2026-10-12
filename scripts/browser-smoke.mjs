@@ -500,7 +500,8 @@ try {
   await page.locator('.plot[data-idx="3"][data-kind="waterplot"]').waitFor();
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM plots WHERE owner_id = 1').get().n, 4);
   // A returning farmer should see finished production without opening More first.
-  db.prepare('UPDATE farmers SET level = 10 WHERE user_id = 1').run();
+  const levelTenXp = Array.from({ length: 9 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, xp) => sum + xp, 0);
+  db.prepare('UPDATE farmers SET xp = ? WHERE user_id = 1').run(levelTenXp);
   db.prepare('UPDATE plots SET ready_at = ?, watered = 1 WHERE owner_id = 1').run(Date.now() + 60 * 60 * 1000);
   db.prepare('DELETE FROM orders WHERE owner_id = 1').run();
   db.prepare('INSERT INTO animals (owner_id, kind, ready_at) VALUES (1, ?, ?)').run('ga', Date.now() - 1000);
