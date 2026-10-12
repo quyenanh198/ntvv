@@ -264,6 +264,8 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'quick-order-delivered-320.png') });
   await page.keyboard.press('Escape');
   db.prepare('DELETE FROM orders WHERE owner_id = 1').run();
+  db.prepare('DELETE FROM inventory WHERE owner_id = 1').run();
+  db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, ?)').run('luami', 1);
   db.prepare('UPDATE farmers SET orders_refresh_at = ? WHERE user_id = 1').run(Date.now() + 60_000);
   const insertOrder = db.prepare('INSERT INTO orders (owner_id, slot, items_json, gold, exp, stars) VALUES (1, ?, ?, ?, 40, 1)');
   insertOrder.run(0, JSON.stringify({ luami: 3, carot: 2 }), 500);
