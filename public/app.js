@@ -691,6 +691,9 @@
     const empty = plots.filter((plot) => !plot.crop).length;
     const dry = plots.filter((plot) => plot.crop && !plot.ready && !plot.watered).length;
     const deliverableOrders = farm.orders.filter(canDeliver).length;
+    const finishedJobs = Object.values(farm.machines).reduce((total, jobs) => total
+      + Object.values(jobs || {}).reduce((count, job) => count + (job.completed || 0), 0), 0);
+    const hungryAnimals = farm.animals.filter((animal) => animal.ready_at == null).length;
     const firstSaleReady = farm.level <= 2 && !farm.soldGold
       && Object.entries(farm.inventory).some(([id, qty]) => qty > 0 && crops()[id]);
     const step = ready
@@ -699,6 +702,10 @@
         ? { kind: 'inventory', icon: '🎒', title: 'Bán vụ đầu tiên', detail: 'Chạm để mở kho và bán nông sản.' }
       : deliverableOrders
         ? { kind: 'orders', icon: '🚚', title: `${deliverableOrders} đơn sẵn sàng giao`, detail: 'Chạm để giao hàng và nhận vàng, EXP, sao.' }
+      : finishedJobs
+        ? { kind: 'mill', icon: '🏭', title: `${finishedJobs} mẻ đã chế biến xong`, detail: 'Chạm để nhận sản phẩm từ nhà máy.' }
+      : hungryAnimals
+        ? { kind: 'feed', icon: '🌰', title: `${hungryAnimals} vật nuôi đang đói`, detail: 'Chạm để mua thức ăn và tiếp tục nuôi.' }
       : dry
         ? { kind: 'water', icon: '💧', title: `${dry} ô cần tưới`, detail: 'Chạm để tưới ô đầu tiên và nhận EXP.' }
         : empty
@@ -1790,6 +1797,11 @@
       }
       if (kind === 'orders' || kind === 'inventory') {
         sheet = { type: kind === 'inventory' ? 'inventory' : me().level >= DATA.config.orderUnlockLevel ? 'orders' : 'quests' };
+        render();
+        return;
+      }
+      if (kind === 'mill' || kind === 'feed') {
+        sheet = { type: kind === 'mill' ? 'mill' : 'shop' };
         render();
         return;
       }

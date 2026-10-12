@@ -499,6 +499,25 @@ try {
   await page.locator('.sheet .seed-card[data-crop="carot"]').click();
   await page.locator('.plot[data-idx="3"][data-kind="waterplot"]').waitFor();
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM plots WHERE owner_id = 1').get().n, 4);
+  // A returning farmer should see finished production without opening More first.
+  const levelTenXp = Array.from({ length: 9 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, xp) => sum + xp, 0);
+  db.prepare('UPDATE farmers SET xp = ? WHERE user_id = 1').run(levelTenXp);
+  db.prepare('UPDATE plots SET ready_at = ?, watered = 1 WHERE owner_id = 1').run(Date.now() + 60 * 60 * 1000);
+  db.prepare('DELETE FROM orders WHERE owner_id = 1').run();
+  db.prepare('INSERT INTO animals (owner_id, kind, ready_at) VALUES (1, ?, ?)').run('ga', Date.now() - 1000);
+  db.prepare('INSERT INTO machine_jobs (owner_id, kind, recipe, ready_at) VALUES (1, ?, ?, ?)').run('coixay', 'botmi', Date.now() - 1000);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.farm-next-step[data-next-step="mill"]').click();
+  assert.equal(await page.locator('.sheet--factory #btn-collect-all').count(), 1,
+    'factory next action should open the collection controls');
+  await page.keyboard.press('Escape');
+  db.prepare('DELETE FROM machine_jobs WHERE owner_id = 1').run();
+  db.prepare('UPDATE animals SET ready_at = NULL WHERE owner_id = 1').run();
+  db.prepare("DELETE FROM inventory WHERE owner_id = 1 AND item = 'thucan'").run();
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.farm-next-step[data-next-step="feed"]').click();
+  assert.equal(await page.locator('.sheet [data-buy="thucan"]').count(), 3,
+    'hungry animal next action should open feed purchase controls');
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
