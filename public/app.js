@@ -693,7 +693,7 @@
     const deliverableOrders = farm.orders.filter(canDeliver).length;
     const finishedJobs = Object.values(farm.machines).reduce((total, jobs) => total
       + Object.values(jobs || {}).reduce((count, job) => count + (job.completed || 0), 0), 0);
-    const readyAnimals = farm.animals.filter((animal) => animal.ready);
+    const hungryAnimals = farm.animals.filter((animal) => animal.ready_at == null).length;
     const firstSaleReady = farm.level <= 2 && !farm.soldGold
       && Object.entries(farm.inventory).some(([id, qty]) => qty > 0 && crops()[id]);
     const step = ready
@@ -704,8 +704,8 @@
         ? { kind: 'orders', icon: '🚚', title: `${deliverableOrders} đơn sẵn sàng giao`, detail: 'Chạm để giao hàng và nhận vàng, EXP, sao.' }
       : finishedJobs
         ? { kind: 'mill', icon: '🏭', title: `${finishedJobs} mẻ đã chế biến xong`, detail: 'Chạm để nhận sản phẩm từ nhà máy.' }
-      : readyAnimals.length
-        ? { kind: 'barn', icon: '🐾', title: `${readyAnimals.length} vật nuôi có sản phẩm`, detail: 'Chạm để vào chuồng và nhận sản phẩm.' }
+      : hungryAnimals
+        ? { kind: 'feed', icon: '🌰', title: `${hungryAnimals} vật nuôi đang đói`, detail: 'Chạm để mua thức ăn và tiếp tục nuôi.' }
       : dry
         ? { kind: 'water', icon: '💧', title: `${dry} ô cần tưới`, detail: 'Chạm để tưới ô đầu tiên và nhận EXP.' }
         : empty
@@ -1800,8 +1800,8 @@
         render();
         return;
       }
-      if (kind === 'mill' || kind === 'barn') {
-        sheet = kind === 'mill' ? { type: 'mill' } : { type: 'barn', kind: me().animals.find((animal) => animal.ready)?.kind };
+      if (kind === 'mill' || kind === 'feed') {
+        sheet = { type: kind === 'mill' ? 'mill' : 'shop' };
         render();
         return;
       }

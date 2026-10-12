@@ -512,10 +512,12 @@ try {
     'factory next action should open the collection controls');
   await page.keyboard.press('Escape');
   db.prepare('DELETE FROM machine_jobs WHERE owner_id = 1').run();
+  db.prepare('UPDATE animals SET ready_at = NULL WHERE owner_id = 1').run();
+  db.prepare("DELETE FROM inventory WHERE owner_id = 1 AND item = 'thucan'").run();
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.locator('.farm-next-step[data-next-step="barn"]').click();
-  assert.equal(await page.locator('.sheet [data-collect-kind="ga"]').count(), 1,
-    'animal next action should open the ready animal pen');
+  await page.locator('.farm-next-step[data-next-step="feed"]').click();
+  assert.equal(await page.locator('.sheet [data-buy="thucan"]').count(), 3,
+    'hungry animal next action should open feed purchase controls');
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
