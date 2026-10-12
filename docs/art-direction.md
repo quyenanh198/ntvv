@@ -4,6 +4,8 @@ The crop, tree, animal, and machine catalog and static client asset references a
 
 The cow milk inventory sprite uses `asset/source_products/v3/cow-milk.png` as its 1254px source and `public/assets/products-v3/cow-milk.png` as its 256px game export. It was generated with the built-in imagegen tool using the prompt: "A single small-game inventory sprite of fresh cow milk in a clear squat glass bottle with a cream-colored cap and a tiny blank paper label. Hand-painted cozy farm game style matching soft watercolor/gouache produce icons; three-quarter view, warm light from upper left, subtle dark outline, clean silhouette, centered with generous padding. Transparent background, no scene, no text, no extra objects. Square composition, high resolution."
 
+The honey inventory sprite uses `asset/source_products/v3/honey.png` as its 1254px source and `public/assets/products-v3/honey.png` as its 256px game export. It was generated with the built-in imagegen tool using the prompt: "Single inventory sprite: one clear glass jar filled with golden honey, topped by a cream cloth lid tied with twine. Cozy hand-painted watercolor/gouache art for a farm game, matching the existing product inventory icon style. Three-quarter view, warm upper-left light, subtle dark contour, strong silhouette at 80 pixels, centered with generous clear padding. True transparent background, no scene, no text, no extra objects. Square PNG."
+
 ## Scene standard
 
 - **View:** compact three-quarter view, with the soil or floor visible below the object. Keep the object upright so its silhouette reads in a square plot.
