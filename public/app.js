@@ -62,6 +62,8 @@
     botgao: 'assets/products-v3/rice-flour.png', duongmia: 'assets/products-v3/cane-sugar.png',
     cam: 'assets/art/trees/cam-qua.png', tao: 'assets/art/trees/tao-qua.png', xoai: 'assets/art/trees/xoai-qua.png', thanhlong: 'assets/art/trees/thanhlong-qua.png',
     chuoi: 'assets/art/trees/chuoi-qua.png', chanh: 'assets/art/trees/chanh-qua.png', dua: 'assets/art/trees/dua-qua.png', dao: 'assets/art/trees/dao-qua.png', anhdao: 'assets/art/trees/anhdao-qua.png',
+    quame: 'assets/art/trees/quame-qua.png', coc: 'assets/art/trees/coc-qua.png',
+    quabo: 'assets/art/trees/quabo-qua.png', saurieng: 'assets/art/trees/saurieng-qua.png',
     canho: 'assets/ui/fish-canho.svg', caro: 'assets/ui/fish-caro.svg', cachep: 'assets/ui/fish-cachep.svg', cakoi: 'assets/ui/fish-cakoi.svg',
   };
   const itemIcon = (id) => ITEM_ICON[id] || (DATA?.config.crops[id] ? cropSprite(id, 3) : null);

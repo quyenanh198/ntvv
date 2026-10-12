@@ -25,7 +25,8 @@ const cropRows = Object.values(CROPS).sort((a, b) => a.level - b.level || a.name
 
 const treeRows = Object.values(TREES).sort((a, b) => a.level - b.level).map((tree) => {
   const path = treePng.has(tree.id) ? `assets/art/trees/${tree.id}.png` : 'assets/art/tree.png';
-  return `| ${tree.name} | ${tree.id} | ${tree.level} | ${status(path, treePng.has(tree.id) ? 'unique PNG' : 'shared PNG + emoji')} |`;
+  const fruitPath = `assets/art/trees/${tree.id}-qua.png`;
+  return `| ${tree.name} | ${tree.id} | ${tree.level} | ${status(path, treePng.has(tree.id) ? 'unique PNG' : 'shared PNG + emoji')} | ${status(fruitPath, 'unique PNG')} |`;
 });
 
 const animalRows = Object.values(ANIMALS).sort((a, b) => a.level - b.level).map((animal) => {
@@ -53,18 +54,19 @@ const staticRows = staticPaths.map((path) => {
 });
 
 const completeCrops = cropRows.filter((row) => row.includes('| v3 PNG | v3 PNG |')).length;
+const picturedFruit = Object.values(TREES).filter((tree) => asset(`assets/art/trees/${tree.id}-qua.png`)).length;
 const picturedProducts = Object.values(GOODS).filter((good) => productPaths[good.id] && asset(productPaths[good.id])).length;
 const lines = [
   '# Farm art inventory',
   '',
   'Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.',
   '',
-  `**Coverage:** ${completeCrops}/${cropRows.length} crops have matching growing and ripe v3 art; ${treePng.size}/${treeRows.length} trees and ${Object.keys(animalPng).length}/${animalRows.length} animals have individual PNG art. ${Object.keys(machinePng).length}/${machineRows.length} machines have individual PNG art. ${picturedProducts}/${productRows.length} products have PNG or SVG icons. ${staticPaths.length} static asset paths appear in the client.`,
+  `**Coverage:** ${completeCrops}/${cropRows.length} crops have matching growing and ripe v3 art; ${treePng.size}/${treeRows.length} trees and ${picturedFruit}/${treeRows.length} fruit items have individual PNG art; ${Object.keys(animalPng).length}/${animalRows.length} animals have individual PNG art. ${Object.keys(machinePng).length}/${machineRows.length} machines have individual PNG art. ${picturedProducts}/${productRows.length} processed products have PNG or SVG icons. ${staticPaths.length} static asset paths appear in the client.`,
   '',
   '## Crops', '',
   '| Crop | ID | Unlock | Growing | Ripe |', '| --- | --- | ---: | --- | --- |', ...cropRows,
   '', '## Fruit trees', '',
-  '| Tree | ID | Unlock | Current art |', '| --- | --- | ---: | --- |', ...treeRows,
+  '| Tree | ID | Unlock | Tree art | Fruit item art |', '| --- | --- | ---: | --- | --- |', ...treeRows,
   '', '## Animals', '',
   '| Animal | ID | Unlock | Current art |', '| --- | --- | ---: | --- |', ...animalRows,
   '', '## Machines', '',

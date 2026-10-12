@@ -110,7 +110,7 @@ Vanilla source images are `asset/source_crops/v3/vanilla-growing.png` and `asset
 | --- | --- | --- |
 | Farm buildings | New coop, windmill, market, farmhouse, red barn, greenhouse, and fishing pond sprites; remaining accents use mixed existing art | Replace visible outliers and align scale/shadow |
 | Farmer | New character sprite | Review size and silhouette against buildings at mobile width |
-| Fruit trees | All thirteen species have individual PNGs | Review scale and ready-state contrast together at phone width |
+| Fruit trees and items | All thirteen species have individual tree and fruit-item PNGs | Review scale and ready-state contrast together at phone width |
 | Animals | All fifteen species have individual PNGs | Review scale and shadow together at phone width |
 | Machines | All twelve machines have unique PNGs in factory cards | Standardize footprint and active/ready feedback |
 | Products and UI icons | Fourteen early and midgame processed goods now have hand-painted PNGs; most other products use emoji | Extend the product set in recipe and unlock order, then standardize UI icons |
@@ -129,6 +129,8 @@ Carrot juice (`nuoccarot`) and strawberry jam (`mutdau`) now use the same render
 Tomato sauce (`sotcachua`) and farm cheese (`phomai`) also use that renderer. Their full-resolution transparent sources are `asset/source_products/v3/tomato-sauce.png` and `asset/source_products/v3/farm-cheese.png`.
 Rice flour (`botgao`) and cane sugar (`duongmia`) use the same renderer for mill and recipe-chain inputs. Their source files are `asset/source_products/v3/rice-flour.png` and `asset/source_products/v3/cane-sugar.png`, with 128×128 game exports in `public/assets/products-v3/`. They were created with the built-in image tool using the carrot juice and egg bread icons as style references: a white rice-flour bowl with grains, and an amber raw-sugar bowl with cut sugarcane, each isolated on transparency.
 Orange juice (`nuoccam`), egg bread (`banhmi`), pumpkin pie (`banhbi`), and wool roll (`cuonlen`) have matching source files and 128px exports with the same names in those directories.
+
+The four late fruit item sprites complete the fruit-tree item set: tamarind (`quame`), ambarella (`coc`), avocado (`quabo`), and durian (`saurieng`). Full-resolution transparent sources are `asset/source_trees/v3/<id>-fruit.png`; 128px exports are `public/assets/art/trees/<id>-qua.png`. The built-in image tool used the existing orange item icon and each species' tree sprite as references. The sprites appear through the shared item renderer in inventory, orders, and trade views.
 
 1. Open original image and confirm real alpha transparency and complete silhouette.
 2. Resize to the export dimension and inspect that exact file.

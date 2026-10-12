@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 23/186 products have PNG or SVG icons. 156 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 23/186 processed products have PNG or SVG icons. 160 static asset paths appear in the client.
 
 ## Crops
 
@@ -47,21 +47,21 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 
 ## Fruit trees
 
-| Tree | ID | Unlock | Current art |
-| --- | --- | ---: | --- |
-| Chuối | chuoi | 8 | unique PNG |
-| Cam | cam | 12 | unique PNG |
-| Táo | tao | 14 | unique PNG |
-| Me | quame | 15 | unique PNG |
-| Xoài | xoai | 16 | unique PNG |
-| Thanh long | thanhlong | 18 | unique PNG |
-| Chanh | chanh | 20 | unique PNG |
-| Cóc | coc | 21 | unique PNG |
-| Bơ trái | quabo | 22 | unique PNG |
-| Dừa | dua | 24 | unique PNG |
-| Đào | dao | 26 | unique PNG |
-| Sầu riêng | saurieng | 30 | unique PNG |
-| Anh đào | anhdao | 32 | unique PNG |
+| Tree | ID | Unlock | Tree art | Fruit item art |
+| --- | --- | ---: | --- | --- |
+| Chuối | chuoi | 8 | unique PNG | unique PNG |
+| Cam | cam | 12 | unique PNG | unique PNG |
+| Táo | tao | 14 | unique PNG | unique PNG |
+| Me | quame | 15 | unique PNG | unique PNG |
+| Xoài | xoai | 16 | unique PNG | unique PNG |
+| Thanh long | thanhlong | 18 | unique PNG | unique PNG |
+| Chanh | chanh | 20 | unique PNG | unique PNG |
+| Cóc | coc | 21 | unique PNG | unique PNG |
+| Bơ trái | quabo | 22 | unique PNG | unique PNG |
+| Dừa | dua | 24 | unique PNG | unique PNG |
+| Đào | dao | 26 | unique PNG | unique PNG |
+| Sầu riêng | saurieng | 30 | unique PNG | unique PNG |
+| Anh đào | anhdao | 32 | unique PNG | unique PNG |
 
 ## Animals
 
@@ -319,8 +319,12 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/art/trees/cam-qua.png` | 3 KB |
 | `assets/art/trees/chanh-qua.png` | 3 KB |
 | `assets/art/trees/chuoi-qua.png` | 6 KB |
+| `assets/art/trees/coc-qua.png` | 14 KB |
 | `assets/art/trees/dao-qua.png` | 5 KB |
 | `assets/art/trees/dua-qua.png` | 7 KB |
+| `assets/art/trees/quabo-qua.png` | 19 KB |
+| `assets/art/trees/quame-qua.png` | 18 KB |
+| `assets/art/trees/saurieng-qua.png` | 27 KB |
 | `assets/art/trees/tao-qua.png` | 3 KB |
 | `assets/art/trees/thanhlong-qua.png` | 4 KB |
 | `assets/art/trees/xoai-qua.png` | 4 KB |
