@@ -92,6 +92,7 @@ const PUBLIC_DIR = resolve(__dirname, '../../public');
 
 const ME_CACHE_TTL_MS = 30_000;
 const ME_CACHE_MAX = 300;
+const FUNNEL_DAY_MS = 86_400_000;
 const COLLECTIONS = [
   { id: 'first_harvests', name: 'Vụ mùa đầu tiên', items: ['luami', 'carot', 'ngo'], gold: 400, gems: 0 },
   { id: 'village_flavors', name: 'Hương vị làng quê', items: ['rauthom', 'toi', 'sa', 'cachua', 'ot'], gold: 2000, gems: 2 },
@@ -99,6 +100,7 @@ const COLLECTIONS = [
 
 export function buildApp({ config, db, logger = true }) {
   const app = Fastify({ logger, trustProxy: true });
+  const clockNow = () => config.now?.() ?? Date.now();
   const startedAt = Date.now();
   const bootStartedNs = config.bootStartedNs ?? process.hrtime.bigint();
   const apiMetrics = {
@@ -196,8 +198,8 @@ export function buildApp({ config, db, logger = true }) {
   }
 
   const upsertFarmer = db.prepare(`
-    INSERT INTO farmers (user_id, name, gold, gems, plots_count, created_at)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO farmers (user_id, name, gold, gems, plots_count, created_at, funnel_enrolled_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(user_id) DO UPDATE SET name = excluded.name
   `);
   const getFarmer = db.prepare('SELECT * FROM farmers WHERE user_id = ?');
@@ -232,7 +234,8 @@ export function buildApp({ config, db, logger = true }) {
       return reply.code(429).header('retry-after', '60').send({ error: 'rate_limited' });
     }
     const existed = !!getFarmer.get(user.id);
-    upsertFarmer.run(user.id, user.display_name || user.username, START_GOLD, START_GEMS, START_PLOTS, Date.now());
+    const firstSeenAt = clockNow();
+    upsertFarmer.run(user.id, user.display_name || user.username, START_GOLD, START_GEMS, START_PLOTS, firstSeenAt, firstSeenAt);
     const legacy = db.prepare('SELECT xp FROM legacy_levels WHERE user_id = ?').get(user.id);
     if (legacy) db.prepare('UPDATE farmers SET xp = ? WHERE user_id = ? AND xp < ?').run(legacy.xp, user.id, legacy.xp);
     {
@@ -391,8 +394,11 @@ export function buildApp({ config, db, logger = true }) {
   }
   // Mỗi request cập nhật last_seen_at; nếu vắng lâu thì chốt "sổ mất trộm" của
   // khoảng vắng để client hiện một lần (xoá khi bấm Đã biết).
-  function touchSeen(userId, now = Date.now()) {
-    const f = db.prepare('SELECT last_seen_at FROM farmers WHERE user_id = ?').get(userId);
+  function touchSeen(userId, now = clockNow()) {
+    const f = db.prepare('SELECT last_seen_at, funnel_enrolled_at, day2_return_at FROM farmers WHERE user_id = ?').get(userId);
+    if (f?.funnel_enrolled_at && !f.day2_return_at && now - f.funnel_enrolled_at >= FUNNEL_DAY_MS && now - f.funnel_enrolled_at < 2 * FUNNEL_DAY_MS) {
+      db.prepare('UPDATE farmers SET day2_return_at = ? WHERE user_id = ? AND day2_return_at = 0').run(now, userId);
+    }
     if (f && f.last_seen_at && now - f.last_seen_at > AWAY_GAP_MS) {
       const report = buildAwayReport(userId, f.last_seen_at, now);
       if (report) db.prepare('UPDATE farmers SET away_report_json = ? WHERE user_id = ?').run(JSON.stringify(report), userId);
@@ -797,6 +803,9 @@ export function buildApp({ config, db, logger = true }) {
   // Kinh tế làng = tổng vàng cả làng đã thu từ bán hàng (không tính vàng tặng, trộm, thưởng).
   const villageGold = () => db.prepare('SELECT COALESCE(SUM(sold_gold), 0) g FROM farmers').get().g;
   const addSold = db.prepare('UPDATE farmers SET sold_gold = sold_gold + ? WHERE user_id = ?');
+  const markFirstPlant = db.prepare('UPDATE farmers SET first_plant_at = ? WHERE user_id = ? AND funnel_enrolled_at > 0 AND first_plant_at = 0');
+  const markFirstHarvest = db.prepare('UPDATE farmers SET first_harvest_at = ? WHERE user_id = ? AND funnel_enrolled_at > 0 AND first_harvest_at = 0');
+  const markFirstSale = db.prepare('UPDATE farmers SET first_sale_at = ? WHERE user_id = ? AND funnel_enrolled_at > 0 AND first_sale_at = 0');
 
   // ---- Bể hút vàng: thuế, xa xỉ phẩm, nâng cấp nhà máy, giá bão hoà -------
   const taxView = (f) => ({
@@ -1023,6 +1032,7 @@ export function buildApp({ config, db, logger = true }) {
           const fresh0 = Math.random() < 0.05 * skillRank(me, 'datmaumo') ? 1 : 0;
           db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (?, ?, ?, ?, ?, ?)')
             .run(me.user_id, idx, crop.id, now, now + cropTime(me, scaleMs(crop.growMs, config.fast)), fresh0);
+          markFirstPlant.run(now, me.user_id);
           bumpQuest(me.user_id, 'sow');
           return {};
         });
@@ -1060,6 +1070,7 @@ export function buildApp({ config, db, logger = true }) {
           grant(me.user_id, { gold: -crop.seed * count, xp: crop.expSow * count });
           const ins = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (?, ?, ?, ?, ?, ?)');
           for (const i of empty.slice(0, count)) ins.run(me.user_id, i, crop.id, now, readyAt, Math.random() < 0.05 * skillRank(me, 'datmaumo') ? 1 : 0);
+          markFirstPlant.run(now, me.user_id);
           bumpQuest(me.user_id, 'sow', count);
           return { planted: count };
         });
@@ -1071,6 +1082,7 @@ export function buildApp({ config, db, logger = true }) {
       });
 
       function harvestPlot(me, plot) {
+        markFirstHarvest.run(Date.now(), me.user_id);
         if (plot.tree) {
           const tree = TREES[plot.crop];
           const now = Date.now();
@@ -1392,6 +1404,7 @@ export function buildApp({ config, db, logger = true }) {
           const gained = Math.round(info.sell * n * GOLD_MULT * mult * pm);
           grant(me.user_id, { gold: gained });
           addSold.run(gained, me.user_id);
+          markFirstSale.run(Date.now(), me.user_id);
           bumpSaturation(item, info.sell * n * GOLD_MULT);
           bumpQuest(me.user_id, 'sell', n);
           return { gained, pm };
@@ -2603,19 +2616,52 @@ export function buildApp({ config, db, logger = true }) {
   app.get('/farm', async (request, reply) => reply.redirect('/farm/'));
   app.get('/', async (request, reply) => reply.redirect('/farm/'));
   app.get('/healthz', async () => ({ ok: true }));
-  app.get('/internal/farm/metrics', async (request, reply) => {
+  function authorizeInternal(request, reply) {
     const supplied = request.headers['x-farm-secret'];
-    if (!config.internalSecret || typeof supplied !== 'string') return reply.code(404).send({ error: 'not_found' });
+    if (!config.internalSecret || typeof supplied !== 'string') {
+      reply.code(404).send({ error: 'not_found' });
+      return false;
+    }
     const expected = Buffer.from(config.internalSecret);
     const actual = Buffer.from(supplied);
     if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
-      return reply.code(403).send({ error: 'forbidden' });
+      reply.code(403).send({ error: 'forbidden' });
+      return false;
     }
+    return true;
+  }
+  app.get('/internal/farm/metrics', async (request, reply) => {
+    if (!authorizeInternal(request, reply)) return reply;
     return {
       startedAt,
       uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
       ...apiMetrics,
       latencyMs: { ...apiMetrics.latencyMs },
+    };
+  });
+  const funnelTotals = db.prepare(`SELECT COUNT(*) players,
+    COALESCE(SUM(first_plant_at > 0), 0) firstPlant,
+    COALESCE(SUM(first_harvest_at > 0), 0) firstHarvest,
+    COALESCE(SUM(first_sale_at > 0), 0) firstSale
+    FROM farmers WHERE funnel_enrolled_at BETWEEN ? AND ?`);
+  const funnelTenMinutes = db.prepare(`SELECT COUNT(*) eligible,
+    COALESCE(SUM(first_plant_at BETWEEN funnel_enrolled_at AND funnel_enrolled_at + 600000), 0) planted,
+    COALESCE(SUM(first_harvest_at BETWEEN funnel_enrolled_at AND funnel_enrolled_at + 600000), 0) harvested,
+    COALESCE(SUM(first_sale_at BETWEEN funnel_enrolled_at AND funnel_enrolled_at + 600000), 0) sold
+    FROM farmers WHERE funnel_enrolled_at BETWEEN ? AND ?`);
+  const funnelDayTwo = db.prepare(`SELECT COUNT(*) eligible,
+    COALESCE(SUM(day2_return_at > 0), 0) returned
+    FROM farmers WHERE funnel_enrolled_at BETWEEN ? AND ?`);
+  app.get('/internal/farm/funnel', async (request, reply) => {
+    if (!authorizeInternal(request, reply)) return reply;
+    const now = clockNow();
+    const from = now - 30 * FUNNEL_DAY_MS;
+    return {
+      sampledAt: now,
+      windowDays: 30,
+      players: funnelTotals.get(from, now),
+      firstTenMinutes: funnelTenMinutes.get(from, now - 600_000),
+      dayTwo: funnelDayTwo.get(from, now - 2 * FUNNEL_DAY_MS),
     };
   });
 

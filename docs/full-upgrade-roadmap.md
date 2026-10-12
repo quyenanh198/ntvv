@@ -7,7 +7,7 @@ This is the project plan for the farm game, separate from the older stability au
 - Capture the current farm at 320, 390, 768, and desktop widths; record the first 10 minutes and a returning-player session.
 - Gather player feedback or analytics for first crop planted, first harvest, first sale, day-2 return, and errors. If none exist, run 5 observed play sessions before final balance decisions.
 - Deliver a one-page product brief: audience, core feeling, session lengths, and three measurable goals.
-- **Gate:** the team can name the top three points where players stop or become confused. **Status:** pending external player evidence; code inspection and local browser walkthrough completed.
+- **Gate:** the team can name the top three points where players stop or become confused. **Status:** the server now records first plant, harvest, direct sale, and 24–48 hour return for new farmers and exposes aggregate ten-minute and day-two counts through a protected endpoint. These measurements begin only after deployment; external player evidence and five observed sessions remain pending. Code inspection and local browser walkthroughs are complete.
 
 ## 2. Define the visual language and asset inventory
 

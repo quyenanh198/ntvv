@@ -14,7 +14,12 @@ CREATE TABLE IF NOT EXISTS farmers (
   stars INTEGER NOT NULL DEFAULT 0,
   plots_count INTEGER NOT NULL,
   next_order_at INTEGER NOT NULL DEFAULT 0,
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  funnel_enrolled_at INTEGER NOT NULL DEFAULT 0,
+  first_plant_at INTEGER NOT NULL DEFAULT 0,
+  first_harvest_at INTEGER NOT NULL DEFAULT 0,
+  first_sale_at INTEGER NOT NULL DEFAULT 0,
+  day2_return_at INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS plots (
@@ -270,6 +275,9 @@ export function openDb(dataDir) {
   if (!cols.includes('machine_levels_json')) db.exec("ALTER TABLE farmers ADD COLUMN machine_levels_json TEXT NOT NULL DEFAULT '{}'");
   if (!cols.includes('support_paid')) db.exec('ALTER TABLE farmers ADD COLUMN support_paid INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('last_seen_at')) db.exec('ALTER TABLE farmers ADD COLUMN last_seen_at INTEGER NOT NULL DEFAULT 0');
+  for (const milestone of ['funnel_enrolled_at', 'first_plant_at', 'first_harvest_at', 'first_sale_at', 'day2_return_at']) {
+    if (!cols.includes(milestone)) db.exec(`ALTER TABLE farmers ADD COLUMN ${milestone} INTEGER NOT NULL DEFAULT 0`);
+  }
   const lcols = db.prepare('PRAGMA table_info(lottery_draws)').all().map((c) => c.name);
   if (lcols.length && !lcols.includes('winners_json')) db.exec('ALTER TABLE lottery_draws ADD COLUMN winners_json TEXT');
   if (!cols.includes('away_report_json')) db.exec('ALTER TABLE farmers ADD COLUMN away_report_json TEXT');

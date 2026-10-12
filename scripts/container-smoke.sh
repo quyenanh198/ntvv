@@ -30,7 +30,10 @@ check_endpoints() {
   curl --fail --silent "$base/healthz" | node -e 'let s=""; process.stdin.on("data", x => s += x).on("end", () => { if (JSON.parse(s).ok !== true) process.exit(1); })'
   curl --fail --silent -H "x-farm-secret: $secret" "$base/internal/farm/metrics" |
     node -e 'let s=""; process.stdin.on("data", x => s += x).on("end", () => { const m=JSON.parse(s); if (!Number.isFinite(m.startupReadyMs) || m.startupReadyMs < 0) process.exit(1); })'
+  curl --fail --silent -H "x-farm-secret: $secret" "$base/internal/farm/funnel" |
+    node -e 'let s=""; process.stdin.on("data", x => s += x).on("end", () => { const f=JSON.parse(s); if (f.windowDays !== 30 || !Number.isInteger(f.players?.players)) process.exit(1); })'
   test "$(curl --silent --output /dev/null --write-out '%{http_code}' -H 'x-farm-secret: wrong' "$base/internal/farm/metrics")" = 403
+  test "$(curl --silent --output /dev/null --write-out '%{http_code}' -H 'x-farm-secret: wrong' "$base/internal/farm/funnel")" = 403
   curl --fail --silent "$base/farm/" >/dev/null
   curl --fail --silent "$base/farm/assets/scene-v3/fishing_pond_v3.png" >/dev/null
 }
