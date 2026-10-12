@@ -957,7 +957,7 @@
         const locked = lockLevel || m.gold < c.seed;
         const baseProfit = c.sell * DATA.config.harvestYield - c.seed;
         const cycleXp = c.expSow + c.expHarvest;
-        return `<button class="seed-card${locked ? ' seed-card--locked' : ''}" data-crop="${locked ? '' : c.id}" title="${c.name}" ${locked ? 'disabled' : ''}>
+        return `<button class="seed-card${locked ? ' seed-card--locked' : ''}${sheet.preferredCrop === c.id ? ' seed-card--recommended' : ''}" data-crop="${locked ? '' : c.id}" title="${c.name}" ${locked ? 'disabled' : ''}>
           <img class="seed-sprite" src="${cropSprite(c.id, 3)}" alt="" />
           <span class="seed-name">${c.name}</span>
           <span class="seed-meta">⏱ ${fmtDuration(c.growMs)} · ${c.risky ? `${(DATA.config.cansa?.reward || 1000000).toLocaleString('vi')} ${COIN}/cây · bị khám xét = mất trắng` : `~${baseProfit.toLocaleString('vi')} ${COIN}/ô · ${cycleXp} EXP`}</span>
@@ -965,7 +965,8 @@
         </button>`;
       };
       const allCrops = sortBy(Object.values(crops()), 'growMs', 'sell');
-      const availableCrops = allCrops.filter((c) => c.level <= m.level);
+      const availableCrops = allCrops.filter((c) => c.level <= m.level)
+        .sort((a, b) => Number(b.id === sheet.preferredCrop) - Number(a.id === sheet.preferredCrop));
       const futureCrops = allCrops.filter((c) => c.level > m.level);
       const treeCard = (t) => {
         const lockLevel = m.level < t.level;
@@ -984,6 +985,7 @@
         sheet.all ? `🧺 Gieo hết ô trống <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`
           : `🌱 Chọn hạt giống <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
         `${sheet.all ? '<p class="sheet-note">Chọn một giống — gieo kín mọi ô trống theo số vàng đang có.</p>' : ''}
+         ${sheet.preferredCrop ? `<p class="sheet-note seed-tip">🌱 Đơn hàng cần ${esc(crops()[sheet.preferredCrop]?.name || sheet.preferredCrop)}. Chọn giống được đánh dấu để gieo vào ô trống.</p>` : ''}
          ${m.level === 1 ? '<p class="sheet-note seed-tip">🌾 Bắt đầu với Lúa mì: thu sau 1 phút. Cà rốt cho nhiều vàng hơn nếu bạn có thời gian chờ.</p>' : ''}
          <p class="sheet-note">Lãi ước tính cho một ô sau khi bán đủ ${DATA.config.harvestYield} nông sản; giá chợ có thể thay đổi.</p>
          ${sortBar}
@@ -1147,6 +1149,9 @@
             const ok = canDeliver(o);
             const missing = Object.entries(o.items).reduce((sum, [id, q]) => sum + Math.max(0, q - (m.inventory[id] || 0)), 0);
             const quick = o.slot === 0 && Object.keys(o.items).length === 1 && Boolean(crops()[Object.keys(o.items)[0]]);
+            const quickCropId = quick ? Object.keys(o.items)[0] : null;
+            const emptyPlot = m.plots.find((plot) => !plot.crop);
+            const canGrowQuick = quickCropId && !ok && emptyPlot && m.gold >= crops()[quickCropId].seed;
             const items = Object.entries(o.items).map(([id, q]) => {
               const have = m.inventory[id] || 0;
               const itemName = esc(itemInfo(id)?.name || id);
@@ -1158,6 +1163,7 @@
               <div class="o-items">${items}</div>
               <div class="o-reward">${o.gold.toLocaleString('vi')} ${COIN} · +${o.exp}EXP · ${o.stars}${STAR}</div>
               <div class="sheet-actions">
+                ${quickCropId && !ok ? `<button class="btn-mini gbtn gbtn--gold" data-grow-order="${quickCropId}" ${canGrowQuick ? '' : 'disabled'}>${!emptyPlot ? 'Chờ ô trống' : m.gold < crops()[quickCropId].seed ? 'Thiếu vàng mua hạt' : `🌱 Gieo ${esc(crops()[quickCropId].name)}`}</button>` : ''}
                 <button class="btn-mini gbtn gbtn--green" data-deliver="${o.id}" aria-label="Giao đơn hàng ${o.slot + 1}" ${ok ? '' : 'disabled'}>🚚 Giao</button>
                 <button class="btn-mini btn-ghost" data-discard="${o.id}" aria-label="Bỏ đơn hàng ${o.slot + 1}">Bỏ</button>
               </div>
@@ -2184,6 +2190,13 @@
       el.addEventListener('click', async () => {
         const r = await run(() => api('/buy', { item: el.dataset.buy, qty: Number(el.dataset.qty) }));
         if (r) { sfx('playCoin'); updateMe(r); render(); }
+      }));
+    document.querySelectorAll('[data-grow-order]').forEach((el) =>
+      el.addEventListener('click', () => {
+        const firstEmpty = me().plots.find((plot) => !plot.crop);
+        if (!firstEmpty) return;
+        sheet = { type: 'seed', idx: firstEmpty.idx, preferredCrop: el.dataset.growOrder };
+        render();
       }));
     document.querySelectorAll('[data-deliver]').forEach((el) =>
       el.addEventListener('click', async (e) => {

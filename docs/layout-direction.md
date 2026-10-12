@@ -20,6 +20,7 @@ The bottom dock remains the main route to management sheets. The scene is decora
 - At 1280px the action dock is centered under the 720px farm canvas. A one-member family panel fits its content; a 51-member panel stays within the viewport and scrolls internally.
 - Family markup follows the field in document order, matching mobile keyboard focus order.
 - When an order can be delivered, the farm's next-action prompt names the ready order count and opens the order sheet before suggesting more planting; the first-sale guidance still takes priority for new players.
+- A missing quick crop order now offers a direct planting action. It opens the first empty plot's seed chooser with the requested crop first and highlighted; the action names a full field or insufficient seed money when planting is unavailable.
 - A compact collection goal now sits under the immediate-action toolbar. At 320px the goal opens its sheet by touch, and the page has no horizontal overflow.
 - The 320px farm now uses 14px next-action titles, 12px guidance, 13px collection titles, at least 11px collection details and plot labels, and 11px dock labels. The CI browser check enforces these sizes. The new mobile and desktop captures show the larger text without clipped controls or horizontal overflow.
 - The quail barn at level 6 now shows the matching egg product sprite in its production description. CI checks that the versioned image loads at 320px and saves a screenshot; the reviewed capture shows the description and purchase controls without horizontal clipping.

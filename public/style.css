@@ -1975,6 +1975,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .seed-card .seed-cost, .seed-card .seed-lock { font-size: .66rem; padding: .1rem .4rem; margin-top: .1rem; }
 .seed-card--locked { opacity: .55; filter: grayscale(.3); cursor: default; }
 .seed-card--tree { background: rgba(232, 246, 222, .85); border-color: #b8d59a; }
+.seed-card--recommended { border-color: #5d9a37; background: #f0f9df; box-shadow: 0 0 0 2px #c8e69f inset; }
 .seed-card:not(.seed-card--locked):active { transform: translateY(1px); }
 @media (max-width: 480px) { .seed-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
