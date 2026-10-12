@@ -273,7 +273,6 @@ try {
   db.prepare('DELETE FROM plots WHERE owner_id = 1').run();
   db.prepare('DELETE FROM inventory WHERE owner_id = 1').run();
   db.prepare('UPDATE farmers SET xp = ?, gold = 500, orders_refresh_at = 0 WHERE user_id = 1').run(xp);
-  db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, ?)').run('luami', 1);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('[data-sheet="more"]').first().click();
   await page.locator('[data-sheet="orders"]').click();
@@ -282,9 +281,14 @@ try {
   assert.ok(quickOrder, 'The board should contain a quick crop order');
   const [[quickCrop, quickQty]] = Object.entries(JSON.parse(quickOrder.items_json));
   assert.ok(quickQty >= 1 && quickQty <= 4);
+  const growOrder = page.locator(`[data-grow-order="${quickCrop}"]`);
+  assert.equal(await growOrder.isEnabled(), true, 'A missing quick crop should lead directly to planting');
   await page.screenshot({ path: resolve(outputDir, 'quick-order-320.png') });
-  await page.keyboard.press('Escape');
-  await page.locator('.plot[data-idx="0"][data-kind="empty"]').click();
+  await growOrder.click();
+  assert.equal(await page.locator('.seed-card').first().getAttribute('data-crop'), quickCrop,
+    'The requested crop should appear first in the seed chooser');
+  assert.match(await page.locator(`.seed-card[data-crop="${quickCrop}"]`).getAttribute('class'), /seed-card--recommended/);
+  await checkNoOverflow(page, '320px order seed chooser');
   await page.locator(`.seed-card[data-crop="${quickCrop}"]`).click();
   await page.locator('.plot[data-idx="0"][data-kind="waterplot"]').waitFor();
   db.prepare('UPDATE plots SET ready_at = ? WHERE owner_id = 1 AND idx = 0').run(Date.now() - 1);
