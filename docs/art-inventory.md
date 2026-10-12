@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 27/186 catalog products have PNG or SVG icons. 164 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 28/186 catalog products have PNG or SVG icons. 165 static asset paths appear in the client.
 
 ## Crops
 
@@ -173,7 +173,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Lụa | lua | xuongdet | emoji |
 | Lươn | luon | luon | emoji |
 | Lươn xào sả ớt | luonxao | lonuong | emoji |
-| Mật ong | matong | ong | emoji |
+| Mật ong | matong | ong | PNG art |
 | Me rim ớt | merim | quanvat | emoji |
 | Mũ len thỏ | mulen | xuongdet | emoji |
 | Mực | muc | muc | emoji |
@@ -431,6 +431,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/fried-rice.png` | 23 KB |
 | `assets/products-v3/garden-salad.png` | 22 KB |
 | `assets/products-v3/goose-egg.png` | 19 KB |
+| `assets/products-v3/honey.png` | 86 KB |
 | `assets/products-v3/orange-juice.png` | 21 KB |
 | `assets/products-v3/potato-fries.png` | 23 KB |
 | `assets/products-v3/pumpkin-pie.png` | 29 KB |
