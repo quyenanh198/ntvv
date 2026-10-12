@@ -108,6 +108,14 @@ try {
   assert.equal(new Set(emptyPlotNames).size, 12, 'Each empty plot needs a distinct accessible name');
   assert.match(emptyPlotNames[0], /Gieo hạt, Ô đất 1: trống, chọn hạt để gieo/);
   assert.match(emptyPlotNames[11], /Gieo hạt, Ô đất 12: trống, chọn hạt để gieo/);
+  for (const [selector, minimum] of [
+    ['.farm-next-step b', 14], ['.farm-next-step small', 12],
+    ['.collection-goal b', 13], ['.collection-goal small', 11],
+    ['.plot-note', 11], ['.dock-label', 11],
+  ]) {
+    const size = await page.locator(selector).first().evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+    assert.ok(size >= minimum, `${selector} is too small at 320px: ${size}px`);
+  }
   await page.screenshot({ path: resolve(outputDir, 'farm-320.png') });
   await auditAccessibility(page, 'farm-320');
   const audioButton = page.locator('#btn-audio-toggle');

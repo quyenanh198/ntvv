@@ -689,7 +689,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   align-items: center;
   flex: 1 1 170px;
   min-width: 0;
-  min-height: 43px;
+  min-height: 48px;
   gap: .4rem;
   padding: .3rem .55rem;
   border: 2px solid #9a622d;
@@ -702,14 +702,14 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .farm-next-step:hover { background: #fff8de; }
 .farm-next-step:focus-visible { outline: 3px solid #376f41; outline-offset: 2px; }
 .farm-next-step > span:first-child { font-size: 1.2rem; }
-.farm-next-step b { display: block; font-size: .76rem; }
-.farm-next-step small { display: block; font-size: .62rem; line-height: 1.2; font-weight: 600; }
-.collection-goal { display: flex; align-items: center; flex: 1 0 100%; min-height: 38px; gap: .5rem; padding: .3rem .55rem; border: 1px solid #a4b990; border-radius: 10px; background: #f4f7e8; color: #345130; text-align: left; cursor: pointer; }
+.farm-next-step b { display: block; font-size: .875rem; }
+.farm-next-step small { display: block; font-size: .75rem; line-height: 1.25; font-weight: 600; }
+.collection-goal { display: flex; align-items: center; flex: 1 0 100%; min-height: 46px; gap: .5rem; padding: .3rem .55rem; border: 1px solid #a4b990; border-radius: 10px; background: #f4f7e8; color: #345130; text-align: left; cursor: pointer; }
 .collection-goal:hover { background: #eaf2d9; }
 .collection-goal:focus-visible { outline: 3px solid #376f41; outline-offset: 2px; }
 .collection-goal > span:nth-child(2) { min-width: 0; flex: 1; }
-.collection-goal b { display: block; font-size: .7rem; }
-.collection-goal small { display: block; font-size: .62rem; line-height: 1.2; }
+.collection-goal b { display: block; font-size: .8125rem; }
+.collection-goal small { display: block; font-size: .7rem; line-height: 1.25; }
 .collection-goal > span:last-child { font-size: 1.25rem; }
 .pond-img {
   position: absolute;
@@ -1610,8 +1610,8 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .field-wrap { padding: .8rem; border-width: 3px; border-radius: 22px; }
   .farm-grid { grid-template-columns: repeat(4, minmax(58px, 1fr)); gap: .5rem; }
   .plot { border-width: 2.5px; border-radius: 13px; }
-  .plot-note { font-size: .5rem; bottom: 4px; }
-  .plot-timer { font-size: .48rem; right: 4px; top: 4px; }
+  .plot-note { font-size: .7rem; bottom: 4px; }
+  .plot-timer { font-size: .69rem; right: 4px; top: 4px; }
   .plot-progress { left: 5px; right: 5px; bottom: 5px; height: 6px; }
   .plot-badge, .plot-act { width: 21px; height: 21px; border-radius: 7px; font-size: .65rem; }
   .scarecrow-img { width: 42px; }
@@ -2096,7 +2096,7 @@ button, a, .plot, .side-btn, .gbtn, .hud-round, .coin-pill, .seed-card, .inv-row
   object-fit: contain;
 }
 .dock-label {
-  font-size: 0.62rem;
+  font-size: 0.6875rem;
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
