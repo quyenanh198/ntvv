@@ -15,6 +15,8 @@
   let MARKET = null; // { mine, others } — tin thu mua, nạp khi mở sheet
   let sheet = null;  // { type: 'seed'|'plotmenu'|'shop'|'inventory'|'quests'|'orders'|'coop'|'mill'|'expand'|'stars', ... }
   let lastRenderedSheetType = null;
+  let sheetNavigationEpoch = 0;
+  let sheetLoadSequence = 0;
   let sheetReturnFocus = null;
   let showLb = null;
   let lastRenderedModalType = null;
@@ -586,6 +588,7 @@
     restoreScroll(savedScroll);
     if (DATA.me?.awayReport && !VISIT && !sheet && !showLb) app.insertAdjacentHTML('beforeend', renderAway(DATA.me.awayReport));
     bind();
+    if ((sheet?.type || null) !== lastRenderedSheetType) sheetNavigationEpoch += 1;
     lastRenderedSheetType = sheet?.type || null;
     lastRenderedModalType = modalType;
     if (openingSheet) document.querySelector('.sheet-close')?.focus({ preventScroll: true });
@@ -1667,29 +1670,31 @@
   }
 
   let MONEY = null;
+  async function loadReadOnlySheet(path, type, save) {
+    const sequence = ++sheetLoadSequence;
+    const navigationEpoch = sheetNavigationEpoch;
+    const startedAtMutationEpoch = mutationEpoch;
+    const visitOwnerId = VISIT?.ownerId;
+    try {
+      const data = await api(path);
+      if (sequence !== sheetLoadSequence || navigationEpoch !== sheetNavigationEpoch
+        || startedAtMutationEpoch !== mutationEpoch || visitOwnerId !== VISIT?.ownerId) return;
+      save(data);
+      sheet = { type };
+      render();
+    } catch { /* api() has already shown the request error */ }
+  }
   async function openMoney() {
-    const r = await run(() => api('/gold-requests'));
-    if (!r) return;
-    MONEY = r;
-    sheet = { type: 'money' };
-    render();
+    await loadReadOnlySheet('/gold-requests', 'money', (data) => { MONEY = data; });
   }
 
   let LOTTERY_DATA = null;
   async function openLuxury() {
-    const r = await run(() => api('/lottery'));
-    if (!r) return;
-    LOTTERY_DATA = r;
-    sheet = { type: 'luxury' };
-    render();
+    await loadReadOnlySheet('/lottery', 'luxury', (data) => { LOTTERY_DATA = data; });
   }
 
   async function openMarket() {
-    const r = await run(() => api('/wants'));
-    if (!r) return;
-    MARKET = r;
-    sheet = { type: 'market' };
-    render();
+    await loadReadOnlySheet('/wants', 'market', (data) => { MARKET = data; });
   }
 
   // ---------- events ----------
