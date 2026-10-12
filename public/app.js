@@ -1022,7 +1022,7 @@
         ? '<p class="sheet-note">Kho trống — thu hoạch gì đó đi!</p>'
         : entries.map(([id, q]) => {
             const info = itemInfo(id);
-            return `<div class="inv-row" data-item="${id}">
+            return `<div class="inv-row${info?.sell ? ' inv-row--sell' : ''}" data-item="${id}">
               ${itemImg(id)}
               <span class="seed-info"><span class="seed-name">${info?.name || id}</span>
                 <div class="seed-meta">x${q}${info?.sell ? ` · ${Math.round(info.sell * (m.market?.[id]?.mult || 1)).toLocaleString('vi')} ${COIN}/cái${m.market?.[id] ? ` <i class="sat">📉 −${Math.round((1 - m.market[id].mult) * 100)}% bão hoà · hồi ~${m.market[id].hours}h</i>` : ''}` : ' · không bán được'}</div></span>

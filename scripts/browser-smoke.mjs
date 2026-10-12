@@ -174,6 +174,14 @@ try {
   assert.ok(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty > 0);
   await page.locator('.dock-btn[data-sheet="inventory"]').click();
   await auditAccessibility(page, 'inventory-320');
+  await checkNoOverflow(page, '320px inventory controls');
+  const inventoryControls = await page.locator('.inv-row[data-item="luami"] .qty-ctl > *').evaluateAll((items) => items.map((item) => ({
+    width: item.getBoundingClientRect().width,
+    height: item.getBoundingClientRect().height,
+  })));
+  assert.ok(inventoryControls.every(({ width, height }) => width >= 44 && height >= 44),
+    `Inventory quantity controls need 44px targets: ${JSON.stringify(inventoryControls)}`);
+  await page.screenshot({ path: resolve(outputDir, 'inventory-320.png') });
   await page.locator('.inv-row[data-item="luami"] [data-sell="luami"][data-qty]').click();
   await page.locator('.inv-row[data-item="luami"]').waitFor({ state: 'detached' });
   const goldAfterSale = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
