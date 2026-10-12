@@ -25,6 +25,7 @@
   let lastLevel = null;
   let critterTimer = null;
   let mutationEpoch = 0;
+  let refreshSequence = 0;
   let machineRefreshPending = false;
 
   // ---------- sprite ----------
@@ -2261,21 +2262,23 @@
   // (vẽ lại toàn trang tốn kém trên điện thoại).
   let lastStateSig = null;
   async function refresh() {
+    const sequence = ++refreshSequence;
     const startedAtEpoch = mutationEpoch;
+    const visitOwnerId = VISIT?.ownerId;
     try {
       const next = await api('/state');
-      if (startedAtEpoch !== mutationEpoch) return;
+      if (sequence !== refreshSequence || startedAtEpoch !== mutationEpoch || visitOwnerId !== VISIT?.ownerId) return;
       if (checkServerBoot(next)) return;
+      let visitedFarm = null;
+      if (visitOwnerId) visitedFarm = await api(`/farm/${visitOwnerId}`);
+      if (sequence !== refreshSequence || startedAtEpoch !== mutationEpoch || visitOwnerId !== VISIT?.ownerId) return;
       const sig = JSON.stringify([next.me, next.family, next.events?.[0]?.at, next.wants]);
       const changed = sig !== lastStateSig;
       lastStateSig = sig;
       DATA = next;
       if (lastLevel && DATA.me.level > lastLevel) toast(`🎉 Lên cấp ${DATA.me.level}!`);
       lastLevel = DATA.me.level;
-      if (VISIT) {
-        const r = await api(`/farm/${VISIT.ownerId}`);
-        VISIT = { ownerId: VISIT.ownerId, farm: r.farm, myActs: r.myActs };
-      }
+      if (visitedFarm) VISIT = { ownerId: visitOwnerId, farm: visitedFarm.farm, myActs: visitedFarm.myActs };
       if (changed || VISIT || !document.querySelector('.stage')) render();
       scheduleCritter();
     } catch { /* gate/waking đã render */ }
