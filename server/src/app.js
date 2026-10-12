@@ -1740,6 +1740,7 @@ export function buildApp({ config, db, logger = true }) {
           const orderGold = Math.round(order.gold * (1 + 0.05 * skillRank(me, 'nguoibankheo')));
           grant(me.user_id, { gold: orderGold, xp: order.exp, stars: order.stars });
           addSold.run(orderGold, me.user_id);
+          markFirstSale.run(Date.now(), me.user_id);
           db.prepare('DELETE FROM orders WHERE id = ?').run(order.id);
           db.prepare('UPDATE farmers SET next_order_at = ? WHERE user_id = ?')
             .run(Date.now() + scaleMs(ORDER_REFRESH_MS, config.fast), me.user_id);

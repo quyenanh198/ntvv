@@ -51,8 +51,11 @@ test('order delivery and discard survive a lost response without repeating effec
     assert.equal(after.gold, before.gold + first.json().gained);
     assert.equal(after.xp, before.xp + 10);
     assert.equal(after.stars, before.stars + 1);
+    const firstSaleAt = db.prepare('SELECT first_sale_at FROM farmers WHERE user_id = 1').get().first_sale_at;
+    assert.ok(firstSaleAt > 0);
     assert.equal((await post('order-deliver', firstId, 'deliver-order-request-01')).statusCode, 200);
     assert.deepEqual(db.prepare('SELECT gold, xp, stars FROM farmers WHERE user_id = 1').get(), after);
+    assert.equal(db.prepare('SELECT first_sale_at FROM farmers WHERE user_id = 1').get().first_sale_at, firstSaleAt);
     assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get(), undefined);
     assert.equal((await post('order-deliver', firstId, 'deliver-order-request-02')).statusCode, 400);
 
