@@ -248,8 +248,11 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.plot[data-idx="0"][data-kind="harvest"]').click();
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
-  await page.locator('[data-sheet="more"]').first().click();
-  await page.locator('[data-sheet="orders"]').click();
+  const orderPrompt = page.locator('.farm-next-step[data-next-step="orders"]');
+  await orderPrompt.waitFor();
+  assert.match(await orderPrompt.innerText(), /đơn sẵn sàng giao/);
+  await orderPrompt.click();
+  await page.locator('.o-fast').waitFor();
   const quickCard = page.locator('.order-card').filter({ has: page.locator('.o-fast') });
   await quickCard.locator(`[data-deliver="${quickOrder.id}"]:not(:disabled)`).waitFor();
   const quickInventoryBefore = db.prepare('SELECT qty FROM inventory WHERE owner_id = 1 AND item = ?').get(quickCrop)?.qty || 0;

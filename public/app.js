@@ -663,12 +663,15 @@
     const ready = plots.filter((plot) => plot.crop && plot.ready).length;
     const empty = plots.filter((plot) => !plot.crop).length;
     const dry = plots.filter((plot) => plot.crop && !plot.ready && !plot.watered).length;
+    const deliverableOrders = farm.orders.filter(canDeliver).length;
     const firstSaleReady = farm.level <= 2 && !farm.soldGold
       && Object.entries(farm.inventory).some(([id, qty]) => qty > 0 && crops()[id]);
     const step = ready
       ? { kind: 'harvest', icon: '🧺', title: `${ready} ô đã chín`, detail: 'Chạm để thu hoạch ô đầu tiên.' }
       : firstSaleReady
         ? { kind: 'inventory', icon: '🎒', title: 'Bán vụ đầu tiên', detail: 'Chạm để mở kho và bán nông sản.' }
+      : deliverableOrders
+        ? { kind: 'orders', icon: '🚚', title: `${deliverableOrders} đơn sẵn sàng giao`, detail: 'Chạm để giao hàng và nhận vàng, EXP, sao.' }
       : dry
         ? { kind: 'water', icon: '💧', title: `${dry} ô cần tưới`, detail: 'Chạm để tưới ô đầu tiên và nhận EXP.' }
         : empty
