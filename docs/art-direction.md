@@ -2,6 +2,8 @@
 
 The crop, tree, animal, and machine catalog and static client asset references are tracked in [art-inventory.md](art-inventory.md). Regenerate it with `npm run art:inventory` after changing game content or asset files.
 
+The cow milk inventory sprite uses `asset/source_products/v3/cow-milk.png` as its 1254px source and `public/assets/products-v3/cow-milk.png` as its 256px game export. It was generated with the built-in imagegen tool using the prompt: "A single small-game inventory sprite of fresh cow milk in a clear squat glass bottle with a cream-colored cap and a tiny blank paper label. Hand-painted cozy farm game style matching soft watercolor/gouache produce icons; three-quarter view, warm light from upper left, subtle dark outline, clean silhouette, centered with generous padding. Transparent background, no scene, no text, no extra objects. Square composition, high resolution."
+
 ## Scene standard
 
 - **View:** compact three-quarter view, with the soil or floor visible below the object. Keep the object upright so its silhouette reads in a square plot.
