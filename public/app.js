@@ -62,6 +62,7 @@
     khoaichien: 'assets/products-v3/potato-fries.png', salad: 'assets/products-v3/garden-salad.png',
     comchien: 'assets/products-v3/fried-rice.png', supbi: 'assets/products-v3/pumpkin-soup.png',
     nuoccarot: 'assets/products-v3/carrot-juice.png', nuocduahau: 'assets/products-v3/watermelon-juice.png', mutdau: 'assets/products-v3/strawberry-jam.png',
+    sinhtoxoai: 'assets/products-v3/mango-smoothie.png', nuocchanh: 'assets/products-v3/lemonade.png', nuocthom: 'assets/products-v3/pineapple-juice.png',
     sotcachua: 'assets/products-v3/tomato-sauce.png', phomai: 'assets/products-v3/farm-cheese.png',
     nuoccam: 'assets/products-v3/orange-juice.png', banhmi: 'assets/products-v3/egg-bread.png',
     banhbi: 'assets/products-v3/pumpkin-pie.png', cuonlen: 'assets/products-v3/wool-roll.png',
