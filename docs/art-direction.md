@@ -164,3 +164,8 @@ Quail eggs (`trungcut`), duck eggs (`trungvit`), goose egg (`trungngong`), and r
 Banana, lemon, coconut, peach, and cherry tree and fruit icons use the transparent originals in `asset/png/fruit_trees/`, copied into `public/assets/art/trees/` under their game IDs (`chuoi`, `chanh`, `dua`, `dao`, `anhdao`).
 
 Tamarind (`quame`), ambarella (`coc`), avocado (`quabo`), and durian (`saurieng`) have 1024×1024 transparent originals in `asset/source_trees/v3/` and 256×256 game exports in `public/assets/art/trees/` under their game IDs.
+
+Watermelon juice and roasted coffee product sprites use `asset/source_products/v3/watermelon-juice.png` and `roasted-coffee.png` as full-resolution transparent sources. Their 256px exports are in `public/assets/products-v3/`. Built-in imagegen prompts:
+
+- Watermelon juice: "One clear glass of fresh watermelon juice, rosy red with a small watermelon wedge on the rim and a simple reusable straw. Hand-painted watercolor/gouache matching soft farm-game food sprites, warm upper-left light, subtle dark contour, readable silhouette at 80 CSS pixels. Centered square composition with generous padding. Truly transparent background, no scene, no words, no other objects."
+- Roasted coffee: "A small open kraft-paper pouch filled with freshly roasted deep brown coffee beans, with several beans resting in front. Hand-painted watercolor/gouache matching soft farm-game food sprites, warm upper-left light, subtle dark contour, readable silhouette at 80 CSS pixels. Centered square composition with generous padding. Truly transparent background, no scene, no logo, no letters, no other objects."
