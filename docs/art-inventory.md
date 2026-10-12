@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 33/186 catalog products have PNG or SVG icons. 170 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 35/186 catalog products have PNG or SVG icons. 172 static asset paths appear in the client.
 
 ## Crops
 
@@ -135,7 +135,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cá nhỏ | canho | ho | SVG icon |
 | Cá nướng | canuong | lonuong | PNG art |
 | Cà phê hảo hạng | caphehaohang | xuongcaocap | emoji |
-| Cà phê rang | capherang | mayrang | emoji |
+| Cà phê rang | capherang | mayrang | PNG art |
 | Cà phê sữa | caphesua | mayrang | emoji |
 | Cá rô | caro | ho | SVG icon |
 | Cá tra | catra | catra | emoji |
@@ -189,7 +189,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Nước dứa | nuocthom | mayep | emoji |
 | Nước ép cà rốt | nuoccarot | mayep | PNG art |
 | Nước ép cóc | nuoccoc | mayep | emoji |
-| Nước ép dưa hấu | nuocduahau | mayep | emoji |
+| Nước ép dưa hấu | nuocduahau | mayep | PNG art |
 | Nước hoa hoa hồng | nuochoa | xuongcaocap | emoji |
 | Ốc bàn tay | ocbantay | ocbantay | emoji |
 | Ốc bàn tay nướng phô mai | ocbantaynuongphomai | quanoc | emoji |
@@ -444,8 +444,10 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/quail-eggs.png` | 15 KB |
 | `assets/products-v3/rabbit-fur.png` | 20 KB |
 | `assets/products-v3/rice-flour.png` | 18 KB |
+| `assets/products-v3/roasted-coffee.png` | 86 KB |
 | `assets/products-v3/strawberry-jam.png` | 18 KB |
 | `assets/products-v3/tomato-sauce.png` | 20 KB |
+| `assets/products-v3/watermelon-juice.png` | 81 KB |
 | `assets/products-v3/wool-roll.png` | 19 KB |
 | `assets/scene-v3/chicken_coop_v3.png` | 66 KB |
 | `assets/scene-v3/farmer_v3.png` | 63 KB |
