@@ -14,7 +14,12 @@ CREATE TABLE IF NOT EXISTS farmers (
   stars INTEGER NOT NULL DEFAULT 0,
   plots_count INTEGER NOT NULL,
   next_order_at INTEGER NOT NULL DEFAULT 0,
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  funnel_enrolled_at INTEGER NOT NULL DEFAULT 0,
+  first_plant_at INTEGER NOT NULL DEFAULT 0,
+  first_harvest_at INTEGER NOT NULL DEFAULT 0,
+  first_sale_at INTEGER NOT NULL DEFAULT 0,
+  day2_return_at INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS plots (
@@ -32,6 +37,16 @@ CREATE TABLE IF NOT EXISTS inventory (
   item TEXT NOT NULL,
   qty INTEGER NOT NULL,
   PRIMARY KEY (owner_id, item)
+);
+
+CREATE TABLE IF NOT EXISTS economy_sales (
+  day TEXT NOT NULL,
+  channel TEXT NOT NULL,
+  category TEXT NOT NULL,
+  transactions INTEGER NOT NULL DEFAULT 0,
+  units INTEGER NOT NULL DEFAULT 0,
+  gold INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, channel, category)
 );
 
 CREATE TABLE IF NOT EXISTS animals (
@@ -204,6 +219,30 @@ CREATE TABLE IF NOT EXISTS events (
   text TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_events_at ON events(at DESC);
+
+CREATE TABLE IF NOT EXISTS mutation_results (
+  owner_id INTEGER NOT NULL,
+  request_key TEXT NOT NULL,
+  route TEXT NOT NULL,
+  body_hash TEXT NOT NULL,
+  outcome_json TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (owner_id, request_key)
+);
+CREATE INDEX IF NOT EXISTS idx_mutation_results_created ON mutation_results(created_at);
+
+CREATE TABLE IF NOT EXISTS collection_discoveries (
+  owner_id INTEGER NOT NULL,
+  item TEXT NOT NULL,
+  first_at INTEGER NOT NULL,
+  PRIMARY KEY (owner_id, item)
+);
+CREATE TABLE IF NOT EXISTS collection_claims (
+  owner_id INTEGER NOT NULL,
+  collection_id TEXT NOT NULL,
+  claimed_at INTEGER NOT NULL,
+  PRIMARY KEY (owner_id, collection_id)
+);
 `;
 
 export function openDb(dataDir) {
@@ -212,6 +251,7 @@ export function openDb(dataDir) {
   }
   const db = new Database(dataDir === ':memory:' ? ':memory:' : join(dataDir, 'farm2.sqlite3'));
   db.pragma('journal_mode = WAL');
+  const migrate = db.transaction(() => {
   db.exec(SCHEMA);
   // Cột thêm sau khi farm2 đã chạy thật — ALTER có guard, idempotent.
   const cols = db.prepare('PRAGMA table_info(farmers)').all().map((c) => c.name);
@@ -245,6 +285,9 @@ export function openDb(dataDir) {
   if (!cols.includes('machine_levels_json')) db.exec("ALTER TABLE farmers ADD COLUMN machine_levels_json TEXT NOT NULL DEFAULT '{}'");
   if (!cols.includes('support_paid')) db.exec('ALTER TABLE farmers ADD COLUMN support_paid INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('last_seen_at')) db.exec('ALTER TABLE farmers ADD COLUMN last_seen_at INTEGER NOT NULL DEFAULT 0');
+  for (const milestone of ['funnel_enrolled_at', 'first_plant_at', 'first_harvest_at', 'first_sale_at', 'day2_return_at']) {
+    if (!cols.includes(milestone)) db.exec(`ALTER TABLE farmers ADD COLUMN ${milestone} INTEGER NOT NULL DEFAULT 0`);
+  }
   const lcols = db.prepare('PRAGMA table_info(lottery_draws)').all().map((c) => c.name);
   if (lcols.length && !lcols.includes('winners_json')) db.exec('ALTER TABLE lottery_draws ADD COLUMN winners_json TEXT');
   if (!cols.includes('away_report_json')) db.exec('ALTER TABLE farmers ADD COLUMN away_report_json TEXT');
@@ -273,6 +316,13 @@ export function openDb(dataDir) {
   if (!pcols.includes('fruit_stock')) db.exec('ALTER TABLE plots ADD COLUMN fruit_stock INTEGER NOT NULL DEFAULT 0');
   // Cây trồng trước khi có tuổi thọ: tính tuổi từ lúc nâng cấp.
   db.prepare('UPDATE plots SET tree_at = ? WHERE tree = 1 AND tree_at IS NULL').run(Date.now());
+  });
+  try {
+    migrate();
+  } catch (error) {
+    db.close();
+    throw error;
+  }
   return db;
 }
 

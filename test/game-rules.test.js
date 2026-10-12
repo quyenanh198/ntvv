@@ -274,6 +274,14 @@ test('TRADE ORDERS: order slots and refresh intervals', () => {
   assert.ok(order.gold > 0);
   assert.ok(order.exp > 0);
   assert.ok(order.stars >= 1);
+  for (const level of [ORDER_UNLOCK_LEVEL, 10, 20, 40, 50]) {
+    const quick = generateOrder(level, () => 0.99, { quick: true });
+    const [[id, qty]] = Object.entries(quick.items);
+    assert.equal(Object.keys(quick.items).length, 1);
+    assert.ok(CROPS[id].level <= level);
+    assert.ok(CROPS[id].growMs <= ORDER_BOARD_REFRESH_MS);
+    assert.ok(qty <= HARVEST_YIELD);
+  }
 });
 
 test('MARKETPLACE WANTS: rules for peer-to-peer buying markup and caps', () => {
