@@ -39,6 +39,16 @@ CREATE TABLE IF NOT EXISTS inventory (
   PRIMARY KEY (owner_id, item)
 );
 
+CREATE TABLE IF NOT EXISTS economy_sales (
+  day TEXT NOT NULL,
+  channel TEXT NOT NULL,
+  category TEXT NOT NULL,
+  transactions INTEGER NOT NULL DEFAULT 0,
+  units INTEGER NOT NULL DEFAULT 0,
+  gold INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, channel, category)
+);
+
 CREATE TABLE IF NOT EXISTS animals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   owner_id INTEGER NOT NULL,

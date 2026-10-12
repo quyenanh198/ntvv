@@ -803,6 +803,18 @@ export function buildApp({ config, db, logger = true }) {
   // Kinh tế làng = tổng vàng cả làng đã thu từ bán hàng (không tính vàng tặng, trộm, thưởng).
   const villageGold = () => db.prepare('SELECT COALESCE(SUM(sold_gold), 0) g FROM farmers').get().g;
   const addSold = db.prepare('UPDATE farmers SET sold_gold = sold_gold + ? WHERE user_id = ?');
+  const seafoodItems = new Set([...FISHING.loot.map((entry) => entry.id), ...Object.values(FISH_FARM).map((entry) => entry.product)]);
+  const saleCategory = (item) => CROPS[item] ? 'field_crop'
+    : TREES[item] ? 'tree_fruit'
+      : ANIMAL_PRODUCTS.has(item) ? 'animal_product'
+        : MACHINE_PRODUCTS.has(item) ? 'processed_good'
+          : seafoodItems.has(item) ? 'seafood' : 'other';
+  const addEconomySale = db.prepare(`INSERT INTO economy_sales (day, channel, category, transactions, units, gold)
+    VALUES (?, ?, ?, 1, ?, ?)
+    ON CONFLICT(day, channel, category) DO UPDATE SET
+      transactions = transactions + 1, units = units + excluded.units, gold = gold + excluded.gold`);
+  const recordEconomySale = (channel, category, units, gold) =>
+    addEconomySale.run(new Date().toISOString().slice(0, 10), channel, category, units, gold);
   const markFirstPlant = db.prepare('UPDATE farmers SET first_plant_at = ? WHERE user_id = ? AND funnel_enrolled_at > 0 AND first_plant_at = 0');
   const markFirstHarvest = db.prepare('UPDATE farmers SET first_harvest_at = ? WHERE user_id = ? AND funnel_enrolled_at > 0 AND first_harvest_at = 0');
   const markFirstSale = db.prepare('UPDATE farmers SET first_sale_at = ? WHERE user_id = ? AND funnel_enrolled_at > 0 AND first_sale_at = 0');
@@ -1404,6 +1416,7 @@ export function buildApp({ config, db, logger = true }) {
           const gained = Math.round(info.sell * n * GOLD_MULT * mult * pm);
           grant(me.user_id, { gold: gained });
           addSold.run(gained, me.user_id);
+          recordEconomySale('direct', saleCategory(item), n, gained);
           markFirstSale.run(Date.now(), me.user_id);
           bumpSaturation(item, info.sell * n * GOLD_MULT);
           bumpQuest(me.user_id, 'sell', n);
@@ -1740,6 +1753,7 @@ export function buildApp({ config, db, logger = true }) {
           const orderGold = Math.round(order.gold * (1 + 0.05 * skillRank(me, 'nguoibankheo')));
           grant(me.user_id, { gold: orderGold, xp: order.exp, stars: order.stars });
           addSold.run(orderGold, me.user_id);
+          recordEconomySale('order', 'mixed_order', Object.values(items).reduce((sum, qty) => sum + qty, 0), orderGold);
           markFirstSale.run(Date.now(), me.user_id);
           db.prepare('DELETE FROM orders WHERE id = ?').run(order.id);
           db.prepare('UPDATE farmers SET next_order_at = ? WHERE user_id = ?')
@@ -2664,6 +2678,15 @@ export function buildApp({ config, db, logger = true }) {
       firstTenMinutes: funnelTenMinutes.get(from, now - 600_000),
       dayTwo: funnelDayTwo.get(from, now - 2 * FUNNEL_DAY_MS),
     };
+  });
+  const economySales = db.prepare(`SELECT day, channel, category, transactions, units, gold
+    FROM economy_sales WHERE day BETWEEN ? AND ? ORDER BY day, channel, category`);
+  app.get('/internal/farm/economy', async (request, reply) => {
+    if (!authorizeInternal(request, reply)) return reply;
+    const now = clockNow();
+    const day = (at) => new Date(at).toISOString().slice(0, 10);
+    return { sampledAt: now, windowDays: 30,
+      rows: economySales.all(day(now - 29 * FUNNEL_DAY_MS), day(now)) };
   });
 
   return app;

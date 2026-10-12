@@ -8,12 +8,15 @@ Set `FARM_INTERNAL_SECRET` on the server to enable `GET /internal/farm/metrics`.
 
 The same secret protects `GET /internal/farm/funnel`. It reports aggregate counts for farmers first enrolled after this upgrade during the last 30 days: first plant, first harvest, first direct sale or order delivery, the number completing each within ten minutes, and returns between 24 and 48 hours after enrollment. The ten-minute denominator includes only farmers enrolled at least ten minutes ago; the return denominator includes only farmers enrolled at least 48 hours ago. Existing farmers are excluded because their earlier actions cannot be reconstructed reliably. The endpoint exposes no player identifiers. Scrape it regularly alongside operational metrics, and compare cohorts after enough time has elapsed; it does not substitute for observed play sessions.
 
+`GET /internal/farm/economy` uses the same secret and returns persisted UTC daily sale totals for the last 30 calendar days. Direct sales are grouped by item family (`field_crop`, `tree_fruit`, `animal_product`, `processed_good`, `seafood`, or `other`); order rewards are grouped as `mixed_order` because an order can contain several families. Each row gives transaction count, item units, and gold credited. Rows have no player or item identifiers. Totals start when this version is deployed and cannot reconstruct earlier sales. An item can move between players before sale, so its family is not proof of where that seller produced it. Compare these totals with the balance scenarios before changing prices.
+
 The metrics snapshot contains process start time, uptime, `startupReadyMs`, total API requests, 4xx and 5xx counts, idempotent mutation replay count, and five latency buckets measured through response completion. `startupReadyMs` is measured from server startup before database setup through Fastify readiness. Counters reset on process restart; scrape them regularly and derive error rates and latency trends from deltas between samples. A restart appears as a new `startedAt` value. The endpoint omits player IDs, route names, and request bodies.
 
 Example from a trusted host:
 
 ```sh
 curl -H "x-farm-secret: $FARM_INTERNAL_SECRET" http://localhost:8090/internal/farm/metrics
+curl -H "x-farm-secret: $FARM_INTERNAL_SECRET" http://localhost:8090/internal/farm/economy
 ```
 
 This is a first operational baseline. Persisted metrics, alerts, external request cold-start timing, and a restore rehearsal still need release work.
