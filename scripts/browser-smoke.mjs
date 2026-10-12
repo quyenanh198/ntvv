@@ -156,8 +156,28 @@ try {
   await page.locator('.seed-card[data-crop="luami"]').click();
   await page.locator('.plot[data-idx="0"][data-kind="waterplot"]').waitFor();
   assert.match(await page.locator('.plot[data-idx="0"]').getAttribute('aria-label'), /Ô đất 1, .*: tưới cây, còn/);
+  let releaseMarket;
+  let marketCaptured;
+  const marketReady = new Promise((resolve) => { marketCaptured = resolve; });
+  await page.route('**/farm/api/wants', async (route) => {
+    const response = await route.fetch();
+    marketCaptured();
+    await new Promise((resolve) => { releaseMarket = resolve; });
+    await route.fulfill({ response });
+  });
+  await page.locator('[data-sheet="more"]').first().click();
+  await page.locator('[data-sheet="market"]').click();
+  await marketReady;
+  await page.keyboard.press('Escape');
+  await page.locator('.sheet').waitFor({ state: 'detached' });
   await page.locator('.plot[data-idx="0"][data-kind="waterplot"]').click();
   await page.locator('.plot[data-idx="0"][data-kind="plotmenu"]').waitFor();
+  const delayedMarket = page.waitForResponse((response) => response.url().endsWith('/farm/api/wants') && response.status() === 200);
+  releaseMarket();
+  await delayedMarket;
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal(await page.locator('.sheet').count(), 0, 'A stale market response must not reopen a closed sheet');
+  await page.unroute('**/farm/api/wants');
   assert.match(await page.locator('.plot[data-idx="0"]').getAttribute('aria-label'), /Ô đất 1, .*: đã tưới, mở tùy chọn, còn/);
   assert.equal(db.prepare('SELECT watered FROM plots WHERE owner_id = 1 AND idx = 0').get().watered, 1);
   await page.screenshot({ path: resolve(outputDir, 'planted-320.png'), style: '.float-gain { visibility: hidden !important; }' });
