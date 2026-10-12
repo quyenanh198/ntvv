@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS farmers (
   gold INTEGER NOT NULL,
   gems INTEGER NOT NULL,
   xp INTEGER NOT NULL DEFAULT 0,
+  mutation_version INTEGER NOT NULL DEFAULT 0,
   stars INTEGER NOT NULL DEFAULT 0,
   plots_count INTEGER NOT NULL,
   next_order_at INTEGER NOT NULL DEFAULT 0,
@@ -255,6 +256,7 @@ export function openDb(dataDir) {
   db.exec(SCHEMA);
   // Cột thêm sau khi farm2 đã chạy thật — ALTER có guard, idempotent.
   const cols = db.prepare('PRAGMA table_info(farmers)').all().map((c) => c.name);
+  if (!cols.includes('mutation_version')) db.exec('ALTER TABLE farmers ADD COLUMN mutation_version INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('energy')) db.exec('ALTER TABLE farmers ADD COLUMN energy INTEGER NOT NULL DEFAULT 100');
   if (!cols.includes('energy_at')) db.exec('ALTER TABLE farmers ADD COLUMN energy_at INTEGER NOT NULL DEFAULT 0');
   if (!cols.includes('coop_level')) db.exec('ALTER TABLE farmers ADD COLUMN coop_level INTEGER NOT NULL DEFAULT 1');

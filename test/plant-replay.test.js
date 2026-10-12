@@ -18,20 +18,24 @@ test('single and bulk planting replay without charging or awarding XP twice', as
     method: 'POST', url: `/farm/api${route}`, payload,
     headers: { 'idempotency-key': key },
   });
-  const balance = () => db.prepare('SELECT gold, xp FROM farmers WHERE user_id = 1').get();
+  const balance = () => db.prepare('SELECT gold, xp, mutation_version FROM farmers WHERE user_id = 1').get();
   const plots = () => db.prepare('SELECT idx, crop, tree FROM plots WHERE owner_id = 1 ORDER BY idx').all();
   try {
     assert.equal((await app.inject({ method: 'GET', url: '/farm/api/state' })).statusCode, 200);
     const first = await post('/plant', { idx: 0, crop: 'luami' }, 'single-plant-request-01');
     assert.equal(first.statusCode, 200, first.body);
+    assert.equal(first.json().me.mutationVersion, 1);
     const afterSingle = balance();
-    assert.equal((await post('/plant', { idx: 0, crop: 'luami' }, 'single-plant-request-01')).statusCode, 200);
+    const replaySingle = await post('/plant', { idx: 0, crop: 'luami' }, 'single-plant-request-01');
+    assert.equal(replaySingle.statusCode, 200);
+    assert.equal(replaySingle.json().me.mutationVersion, 1);
     assert.deepEqual(balance(), afterSingle);
     assert.equal(plots().length, 1);
     assert.equal((await post('/plant', { idx: 0, crop: 'carot' }, 'single-plant-request-01')).statusCode, 409);
 
     const bulk = await post('/plant-all', { crop: 'carot' }, 'bulk-plant-request-01');
     assert.equal(bulk.statusCode, 200, bulk.body);
+    assert.equal(bulk.json().me.mutationVersion, 2);
     assert.equal(bulk.json().planted, 11);
     const afterBulk = balance();
     assert.equal((await post('/plant-all', { crop: 'carot' }, 'bulk-plant-request-01')).statusCode, 200);

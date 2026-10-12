@@ -37,6 +37,7 @@ test('legacy schema upgrades atomically and preserves the running machine job', 
         assert.equal(db.prepare('PRAGMA integrity_check').pluck().get(), 'ok');
         assert.deepEqual(db.prepare('SELECT gold, gems, gift_gold, support_paid FROM farmers WHERE user_id = 1').get(),
           { gold: 400, gems: 7, gift_gold: 25, support_paid: 25 });
+        assert.equal(db.prepare('SELECT mutation_version FROM farmers WHERE user_id = 1').get().mutation_version, 0);
         assert.deepEqual(db.prepare('SELECT funnel_enrolled_at, first_plant_at, first_harvest_at, first_sale_at, day2_return_at FROM farmers WHERE user_id = 1').get(),
           { funnel_enrolled_at: 0, first_plant_at: 0, first_harvest_at: 0, first_sale_at: 0, day2_return_at: 0 });
         assert.deepEqual(db.prepare('SELECT kind, recipe, ready_at, queue_count FROM machine_jobs').get(),
