@@ -312,7 +312,11 @@ try {
   await page.locator('.sheet').waitFor({ state: 'detached' });
   assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-sheet')), 'more');
 
+  const levelSixXp = [1, 2, 3, 4, 5].reduce((sum, level) => sum + xpNeedFor(level), 0);
+  db.prepare('UPDATE farmers SET xp = ? WHERE user_id = 1').run(levelSixXp);
   await page.setViewportSize({ width: 320, height: 800 });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.plot').first().waitFor();
   await page.locator('[data-sheet="more"]').first().click();
   await page.locator('[data-sheet="barns"]').click();
   await page.locator('[data-barn="cut"]').click();
