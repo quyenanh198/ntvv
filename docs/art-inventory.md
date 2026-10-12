@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 30/186 catalog products have PNG or SVG icons. 167 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 33/186 catalog products have PNG or SVG icons. 170 static asset paths appear in the client.
 
 ## Crops
 
@@ -107,7 +107,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Áo dài lụa | aodai | xuongcaocap | emoji |
 | Áo len | aolen | xuongdet | emoji |
 | Bánh bí ngô | banhbi | lobanh | PNG art |
-| Bánh cà rốt | banhcarot | lobanh | emoji |
+| Bánh cà rốt | banhcarot | lobanh | PNG art |
 | Bánh dứa | banhdua | lobanh | emoji |
 | Bánh gừng | banhgung | lobanh | emoji |
 | Bánh kem dâu | banhkem | lobanh | emoji |
@@ -123,7 +123,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Bột chiên | botchien | quanvat | emoji |
 | Bột gạo | botgao | coixay | PNG art |
 | Bột mì | botmi | coixay | SVG icon |
-| Bơ | bo | nhamaysua | emoji |
+| Bơ | bo | nhamaysua | PNG art |
 | Cá chép | cachep | ho | SVG icon |
 | Cá chim trắng | cachim | cachim | emoji |
 | Cá điêu hồng | dieuhong | dieuhong | emoji |
@@ -133,7 +133,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cá lóc | caloc | caloc | emoji |
 | Cá lóc nướng trui | calocnuong | lonuong | emoji |
 | Cá nhỏ | canho | ho | SVG icon |
-| Cá nướng | canuong | lonuong | emoji |
+| Cá nướng | canuong | lonuong | PNG art |
 | Cà phê hảo hạng | caphehaohang | xuongcaocap | emoji |
 | Cà phê rang | capherang | mayrang | emoji |
 | Cà phê sữa | caphesua | mayrang | emoji |
@@ -422,7 +422,9 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/tree_01.png` | 10 KB |
 | `assets/pack/tree_02.png` | 14 KB |
 | `assets/pack/well.png` | 17 KB |
+| `assets/products-v3/butter.png` | 78 KB |
 | `assets/products-v3/cane-sugar.png` | 18 KB |
+| `assets/products-v3/carrot-cake.png` | 106 KB |
 | `assets/products-v3/carrot-juice.png` | 13 KB |
 | `assets/products-v3/cow-milk.png` | 59 KB |
 | `assets/products-v3/duck-eggs.png` | 18 KB |
@@ -432,6 +434,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/garden-salad.png` | 22 KB |
 | `assets/products-v3/goat-milk.png` | 55 KB |
 | `assets/products-v3/goose-egg.png` | 19 KB |
+| `assets/products-v3/grilled-fish.png` | 96 KB |
 | `assets/products-v3/honey.png` | 86 KB |
 | `assets/products-v3/orange-juice.png` | 21 KB |
 | `assets/products-v3/pork.png` | 78 KB |

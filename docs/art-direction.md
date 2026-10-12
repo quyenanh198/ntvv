@@ -10,6 +10,12 @@ The goat milk sprite uses `asset/source_products/v3/goat-milk.png` as its 1254px
 
 The pork sprite uses `asset/source_products/v3/pork.png` as its 1254px source and `public/assets/products-v3/pork.png` as its 256px export. Built-in imagegen prompt: "Single inventory sprite for a cozy farm game: a clean butcher's cut of fresh pork, a compact rosy pink boneless cut with a thin cream fat edge, resting on one small folded kraft-paper wrapper. Friendly food illustration, no blood. Hand-painted watercolor/gouache matching soft farm-game product sprites, warm upper-left light, subtle dark contour, strong silhouette at 80 CSS pixels, centered with generous padding. True transparent background, no scene, no text, no other objects. Square PNG."
 
+The fish oven, dairy, and bakery product sprites use `asset/source_products/v3/grilled-fish.png`, `butter.png`, and `carrot-cake.png` as their 1254px sources, with matching 256px exports in `public/assets/products-v3/`. Built-in imagegen prompts:
+
+- Grilled fish: "One inventory product sprite for a cozy farm game: a whole grilled freshwater fish, golden brown with gentle grill marks and one small lemon wedge, presented on a plain oval ceramic plate. Friendly appetizing hand-painted watercolor/gouache, warm upper-left light, subtle dark outline, clear silhouette at 80 CSS pixels, centered with padding. Truly transparent background, no scene, no text, no other objects. Square PNG."
+- Butter: "One inventory product sprite for a cozy farm game: a small block of fresh golden butter with one neat curl cut from the top, sitting on a folded cream paper wrapper. Hand-painted watercolor/gouache matching soft farm-game food icons, warm upper-left light, subtle dark contour, clear silhouette at 80 CSS pixels, centered with padding. True transparent background, no scene, no text, no other objects. Square PNG."
+- Carrot cake: "One inventory product sprite for a cozy farm game: a small round carrot cake with cream frosting, a tiny carrot-shaped icing decoration, and one visible slice showing orange crumb, on a simple ceramic dessert plate. Hand-painted watercolor/gouache matching soft farm-game food icons, warm upper-left light, subtle dark contour, clear silhouette at 80 CSS pixels, centered with padding. Truly transparent background, no scene, no words, no other objects. Square PNG."
+
 ## Scene standard
 
 - **View:** compact three-quarter view, with the soil or floor visible below the object. Keep the object upright so its silhouette reads in a square plot.

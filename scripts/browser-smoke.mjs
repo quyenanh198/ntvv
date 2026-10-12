@@ -402,6 +402,17 @@ try {
     await page.screenshot({ path: resolve(outputDir, `${animal}-barn-320.png`) });
     await page.keyboard.press('Escape');
   }
+  await page.locator('[data-sheet="more"]').first().click();
+  await page.locator('.more-card[data-sheet="mill"]').click();
+  for (const product of ['grilled-fish', 'butter', 'carrot-cake']) {
+    await page.waitForFunction((name) => {
+      const image = document.querySelector(`.sheet img[src*="products-v3/${name}.png"]`);
+      return image?.complete && image.naturalWidth > 0;
+    }, product);
+  }
+  await checkNoOverflow(page, '320px new factory goods');
+  await page.screenshot({ path: resolve(outputDir, 'factory-goods-320.png') });
+  await page.keyboard.press('Escape');
 
   await page.setViewportSize({ width: 844, height: 390 });
   await checkNoOverflow(page, '844px landscape farm');
