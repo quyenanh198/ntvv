@@ -312,6 +312,18 @@ try {
   await page.locator('.sheet').waitFor({ state: 'detached' });
   assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-sheet')), 'more');
 
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.locator('[data-sheet="more"]').first().click();
+  await page.locator('[data-sheet="barns"]').click();
+  await page.locator('[data-barn="cut"]').click();
+  const quailProduct = page.locator('.sheet img[src*="products-v3/quail-eggs.png"]');
+  assert.ok(await quailProduct.count() > 0, 'Quail barn should use its product sprite');
+  assert.ok((await quailProduct.first().getAttribute('src')).includes('?v='), 'Product sprite should use the deploy version');
+  assert.ok(await quailProduct.first().evaluate((image) => image.complete && image.naturalWidth > 0), 'Quail product sprite should load');
+  await checkNoOverflow(page, '320px quail barn');
+  await page.screenshot({ path: resolve(outputDir, 'quail-barn-320.png') });
+  await page.keyboard.press('Escape');
+
   await page.setViewportSize({ width: 1280, height: 900 });
   await checkNoOverflow(page, '1280px farm');
   await page.screenshot({ path: resolve(outputDir, 'farm-1280.png') });

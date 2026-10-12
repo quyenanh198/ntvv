@@ -68,7 +68,7 @@
     quabo: 'assets/art/trees/quabo-qua.png', saurieng: 'assets/art/trees/saurieng-qua.png',
     canho: 'assets/ui/fish-canho.svg', caro: 'assets/ui/fish-caro.svg', cachep: 'assets/ui/fish-cachep.svg', cakoi: 'assets/ui/fish-cakoi.svg',
   };
-  const itemIcon = (id) => ITEM_ICON[id] || (DATA?.config.crops[id] ? cropSprite(id, 3) : null);
+  const itemIcon = (id) => ITEM_ICON[id] ? A(ITEM_ICON[id]) : (DATA?.config.crops[id] ? cropSprite(id, 3) : null);
   const itemImg = (id, cls = '') => {
     const path = itemIcon(id);
     if (path) return `<img class="${cls}" src="${path}" alt="" />`;
@@ -890,7 +890,7 @@
     return `<div class="barn-card${locked ? ' barn-card--locked' : ''}">
       <div class="barn-head">${barnArtImg(a.id)}
         <span class="seed-info"><span class="seed-name">${a.name}${locked ? '' : ` · ${house} cấp ${barn.level}`}</span>
-          <div class="seed-meta">${locked ? `🔒 Mở ở cấp ${a.level}` : `${herd.length}/${barn.capacity} con · ${info.name} ${info.emoji} mỗi ${fmtDuration(a.produceMs)}${readyN ? ` · <b>${readyN} sẵn sàng</b>` : ''}`}</div></span>
+          <div class="seed-meta">${locked ? `🔒 Mở ở cấp ${a.level}` : `${herd.length}/${barn.capacity} con · ${info.name} ${itemImg(a.product, 'coin-img')} mỗi ${fmtDuration(a.produceMs)}${readyN ? ` · <b>${readyN} sẵn sàng</b>` : ''}`}</div></span>
       </div>
       ${locked ? '' : `<div class="barn-actions">
         <button class="gbtn gbtn--green btn-mini" data-buy-animal="${a.id}" ${full || m.gold < a.price ? 'disabled' : ''}>＋ Mua ${a.name.toLowerCase()} · ${a.price.toLocaleString('vi')} ${COIN}</button>
@@ -1088,7 +1088,7 @@
            return `<div class="inv-row">
              ${barnArtImg(k)}
              <span class="seed-info"><span class="seed-name">${a.name}</span>
-               <div class="seed-meta">${a.price.toLocaleString('vi')} ${COIN} · ${info.name} ${info.emoji} mỗi ${fmtDuration(a.produceMs)} · chuồng ${herd}/${m.barns[k].capacity}</div></span>
+               <div class="seed-meta">${a.price.toLocaleString('vi')} ${COIN} · ${info.name} ${itemImg(a.product, 'coin-img')} mỗi ${fmtDuration(a.produceMs)} · chuồng ${herd}/${m.barns[k].capacity}</div></span>
              <button class="gbtn gbtn--green btn-mini" data-buy-animal="${k}" ${herd >= m.barns[k].capacity ? 'disabled' : ''}>Mua</button>
            </div>`;
          }).join('')}
@@ -1230,15 +1230,15 @@
       const pens = herd.map((x) => `
         <span class="hen${x.ready ? ' hen--ready' : ''}">
           ${barnArtImg(kind)}
-          <small>${x.ready ? `${productInfo.emoji}!` : x.ready_at == null ? 'đói' : fmtTime(x.ready_at - Date.now())}</small>
+          <small>${x.ready ? `${itemImg(a.product, 'coin-img')}!` : x.ready_at == null ? 'đói' : fmtTime(x.ready_at - Date.now())}</small>
         </span>`).join('');
       return sheetShell(
         `${a.emoji} Chuồng ${a.name} cấp ${barn.level} · ${herd.length}/${barn.capacity} <span class="sheet-coins"><img class="coin-img" src="${A('assets/art/feed.png')}" alt=""/> ${feedQty}</span>`,
-        `<p class="sheet-note">🤖 Chuồng tự vận hành: tới giờ là sản phẩm TỰ vào kho và tự ăn tiếp — chỉ cần trữ đủ thức ăn. Mỗi ${a.name.toLowerCase()} ăn ${a.feedQty} 🌰 → ${productInfo.name} ${productInfo.emoji} sau ${fmtDuration(a.produceMs)} (bán ${productInfo.sell} ${COIN}, +${a.expCollect} EXP).</p>
+        `<p class="sheet-note">🤖 Chuồng tự vận hành: tới giờ là sản phẩm TỰ vào kho và tự ăn tiếp — chỉ cần trữ đủ thức ăn. Mỗi ${a.name.toLowerCase()} ăn ${a.feedQty} 🌰 → ${productInfo.name} ${itemImg(a.product, 'coin-img')} sau ${fmtDuration(a.produceMs)} (bán ${productInfo.sell} ${COIN}, +${a.expCollect} EXP).</p>
          ${herd.length === 0 ? `<p class="sheet-note">Chuồng trống — mua ${a.name.toLowerCase()} đầu tiên đi!</p>` : `<div class="hen-row">${pens}</div>`}
          <div class="sheet-actions">
            ${hungryN ? `<button class="btn gbtn gbtn--green" data-feed-kind="${kind}" ${feedQty >= a.feedQty ? '' : 'disabled'}>🌰 Cho ăn (${hungryN} con đói)</button>` : ''}
-           ${readyN ? `<button class="btn gbtn gbtn--gold" data-collect-kind="${kind}">${productInfo.emoji} Thu ${readyN}</button>` : ''}
+           ${readyN ? `<button class="btn gbtn gbtn--gold" data-collect-kind="${kind}">${itemImg(a.product, 'coin-img')} Thu ${readyN}</button>` : ''}
            ${herd.length < barn.capacity ? `<button class="btn btn-ghost" data-buy-animal="${kind}">＋ Mua ${a.name} (${a.price.toLocaleString('vi')} vàng)</button>
            <button class="btn gbtn gbtn--green" data-buy-animal="${kind}" data-count="max" ${m.gold >= a.price ? '' : 'disabled'}>＋ Mua đầy chuồng (${barn.capacity - herd.length} con · ${((barn.capacity - herd.length) * a.price).toLocaleString('vi')} vàng)</button>` : ''}
            ${barn.next ? `<button class="btn gbtn gbtn--gold" data-upgrade-barn="${kind}" ${m.gold >= barn.next.gold ? '' : 'disabled'}>⬆️ Nâng chuồng cấp ${barn.next.level} (${barn.next.capacity} con) — ${barn.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}
