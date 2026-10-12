@@ -499,6 +499,22 @@ try {
   await page.locator('.sheet .seed-card[data-crop="carot"]').click();
   await page.locator('.plot[data-idx="3"][data-kind="waterplot"]').waitFor();
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM plots WHERE owner_id = 1').get().n, 4);
+  // A returning farmer should see finished production without opening More first.
+  db.prepare('UPDATE farmers SET level = 10 WHERE user_id = 1').run();
+  db.prepare('UPDATE plots SET ready_at = ?, watered = 1 WHERE owner_id = 1').run(Date.now() + 60 * 60 * 1000);
+  db.prepare('DELETE FROM orders WHERE owner_id = 1').run();
+  db.prepare('INSERT INTO animals (owner_id, kind, ready_at) VALUES (1, ?, ?)').run('ga', Date.now() - 1000);
+  db.prepare('INSERT INTO machine_jobs (owner_id, kind, recipe, ready_at) VALUES (1, ?, ?, ?)').run('coixay', 'botmi', Date.now() - 1000);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.farm-next-step[data-next-step="mill"]').click();
+  assert.equal(await page.locator('.sheet--factory #btn-collect-all').count(), 1,
+    'factory next action should open the collection controls');
+  await page.keyboard.press('Escape');
+  db.prepare('DELETE FROM machine_jobs WHERE owner_id = 1').run();
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.farm-next-step[data-next-step="barn"]').click();
+  assert.equal(await page.locator('.sheet [data-collect-kind="ga"]').count(), 1,
+    'animal next action should open the ready animal pen');
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
