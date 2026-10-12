@@ -455,6 +455,10 @@ try {
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').click();
   await page.locator('.seed-card[data-crop="luami"]').click();
   await firstPlantReady;
+  assert.equal(await page.locator('.sheet .seed-card[data-crop="luami"]').isDisabled(), true,
+    'pending seed choice should be disabled');
+  assert.equal(await page.locator('.sheet .seed-card[data-crop="luami"]').getAttribute('aria-busy'), 'true',
+    'pending seed choice should announce its busy state');
   await page.keyboard.press('Escape');
   await page.locator('.plot[data-idx="1"][data-kind="empty"]').click();
   await page.locator('.seed-card[data-crop="carot"]').click();

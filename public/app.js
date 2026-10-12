@@ -314,16 +314,25 @@
     if (r.farm && VISIT) VISIT = { ownerId: VISIT.ownerId, farm: r.farm, myActs: r.myActs };
   }
 
-  async function run(fn, resource = 'global') {
+  async function run(fn, resource = 'global', control = null) {
     if (pendingResources.has('global') || pendingResources.has(resource)
       || (resource === 'global' && pendingResources.size > 0)) return null;
     pendingResources.add(resource);
+    const wasDisabled = control?.disabled;
+    if (control) {
+      control.disabled = true;
+      control.setAttribute('aria-busy', 'true');
+    }
     try {
       return await fn();
     } catch {
       return null;
     } finally {
       pendingResources.delete(resource);
+      if (control?.isConnected) {
+        control.disabled = wasDisabled;
+        control.removeAttribute('aria-busy');
+      }
     }
   }
   const plotResource = (ownerId, idx) => `plot:${ownerId}:${idx}`;
@@ -1942,12 +1951,12 @@
         if (!el.dataset.tree) return;
         const startedSheet = sheet;
         const wasAll = sheet.all;
-        const r = await run(() => wasAll ? api('/plant-all', { crop: el.dataset.tree }) : api('/plant-tree', { idx: sheet.idx, tree: el.dataset.tree }), wasAll ? 'global' : plotResource(me().id, sheet.idx));
+        const r = await run(() => wasAll ? api('/plant-all', { crop: el.dataset.tree }) : api('/plant-tree', { idx: sheet.idx, tree: el.dataset.tree }), wasAll ? 'global' : plotResource(me().id, sheet.idx), el);
         if (r) { updateMe(r); closeSheetAfterAction(startedSheet); toast(wasAll ? `🌳 Đã trồng ${r.planted} cây!` : '🌳 Cây đã bén rễ!'); render(); }
       }));
-    document.getElementById('btn-remove-tree')?.addEventListener('click', async () => {
+    document.getElementById('btn-remove-tree')?.addEventListener('click', async (e) => {
       const startedSheet = sheet;
-      const r = await run(() => api('/remove-tree', { idx: sheet.idx }), plotResource(me().id, sheet.idx));
+      const r = await run(() => api('/remove-tree', { idx: sheet.idx }), plotResource(me().id, sheet.idx), e.currentTarget);
       if (r) { updateMe(r); closeSheetAfterAction(startedSheet); toast('🪓 Đã nhổ cây.'); render(); }
     });
     document.querySelectorAll('[data-crop]').forEach((el) =>
@@ -1956,7 +1965,7 @@
         if (!cropId) return;
         const startedSheet = sheet;
         const wasAll = sheet.all;
-        const r = await run(() => wasAll ? api('/plant-all', { crop: cropId }) : api('/plant', { idx: sheet.idx, crop: cropId }), wasAll ? 'global' : plotResource(me().id, sheet.idx));
+        const r = await run(() => wasAll ? api('/plant-all', { crop: cropId }) : api('/plant', { idx: sheet.idx, crop: cropId }), wasAll ? 'global' : plotResource(me().id, sheet.idx), el);
         if (r) { updateMe(r); closeSheetAfterAction(startedSheet); if (wasAll) toast(`🌱 Đã gieo ${r.planted} ô!`); render(); }
       }));
 
@@ -2167,12 +2176,12 @@
 
     document.getElementById('btn-water-own')?.addEventListener('click', async (e) => {
       const startedSheet = sheet;
-      const r = await run(() => api('/water', { idx: sheet.idx }), plotResource(me().id, sheet.idx));
+      const r = await run(() => api('/water', { idx: sheet.idx }), plotResource(me().id, sheet.idx), e.currentTarget);
       if (r) { updateMe(r); closeSheetAfterAction(startedSheet); floatGain(e.clientX || 200, e.clientY || 300, '💧'); render(); }
     });
-    document.getElementById('btn-speedup-plot')?.addEventListener('click', async () => {
+    document.getElementById('btn-speedup-plot')?.addEventListener('click', async (e) => {
       const startedSheet = sheet;
-      const r = await run(() => api('/speedup', { target: 'plot', idx: sheet.idx }), plotResource(me().id, sheet.idx));
+      const r = await run(() => api('/speedup', { target: 'plot', idx: sheet.idx }), plotResource(me().id, sheet.idx), e.currentTarget);
       if (r) { updateMe(r); closeSheetAfterAction(startedSheet); toast(`💎 -${r.cost} kim cương — chín ngay!`); render(); }
     });
     document.getElementById('btn-speedup-mill')?.addEventListener('click', async () => {
@@ -2237,7 +2246,7 @@
       if (VISIT && INSPECT && kind !== 'empty') {
         const fee = DATA.config.cansa?.inspectFee || 0;
         if (!window.confirm(`Khám xét ô này? ${fee ? `Tốn ${fee.toLocaleString('vi')} vàng.` : 'Miễn phí, mỗi nhà 5 lượt/ngày.'} Trúng cần sa: ô bị nhổ sạch, bạn lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')} vàng.`)) return;
-        const r = await run(() => api('/inspect', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx));
+        const r = await run(() => api('/inspect', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx), btn);
         if (r) {
           updateMe(r);
           toast(r.found ? `🚨 Trúng rồi! Cần sa bị nhổ sạch — bạn lĩnh ${r.bounty.toLocaleString('vi')} vàng` : `🔍 Không có gì${r.fee ? ` — mất ${r.fee.toLocaleString('vi')} vàng phí khám` : ''} (còn ${r.left} lượt hôm nay)`);
@@ -2250,7 +2259,7 @@
       if (kind === 'empty') { sfx('playTap'); sheet = { type: 'seed', idx }; render(); }
       else if (kind === 'waterplot') {
         sfx('playWater');
-        const r = await run(() => api('/water', { idx }), plotResource(me().id, idx));
+        const r = await run(() => api('/water', { idx }), plotResource(me().id, idx), btn);
         if (r) { updateMe(r); floatGain(x, y, '💧'); render(); }
       }
       else if (kind === 'expand') { sfx('playTap'); sheet = { type: 'expand' }; render(); }
@@ -2259,7 +2268,7 @@
         const p = me().plots[idx];
         const c = p?.crop ? crops()[p.crop] : null;
         sfx('playHarvest');
-        const r = await run(() => api('/harvest', { idx }), plotResource(me().id, idx));
+        const r = await run(() => api('/harvest', { idx }), plotResource(me().id, idx), btn);
         if (r) {
           sfx('playCoin');
           updateMe(r);
@@ -2268,15 +2277,15 @@
         }
       } else if (kind === 'water') {
         sfx('playWater');
-        const r = await run(() => api('/water', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx));
+        const r = await run(() => api('/water', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx), btn);
         if (r) { updateMe(r); floatGain(x, y, '💧 −10p', `+${2 * 4} ${COIN}`); render(); }
       } else if (kind === 'poach') {
         sfx('playHarvest');
-        const r = await run(() => api('/poach', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx));
+        const r = await run(() => api('/poach', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx), btn);
         if (r) { updateMe(r); floatGain(x, y, '😋 +2'); render(); }
       } else if (kind === 'ripe' && VISIT) {
         if (!window.confirm('Thu hoạch giúp ô này? Nông sản vào kho của bạn ấy, bạn nhận 8 vàng công.')) return;
-        const r = await run(() => api('/harvest-help', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx));
+        const r = await run(() => api('/harvest-help', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx), btn);
         if (r) { sfx('playHarvest'); sfx('playCoin'); updateMe(r); floatGain(x, y, '🧺', `+${r.gained} ${COIN}`); render(); }
       } else if (kind === 'growing' || kind === 'ripe') {
         const farm = VISIT ? VISIT.farm : me();

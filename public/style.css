@@ -2273,3 +2273,11 @@ button, a, .plot, .side-btn, .gbtn, .hud-round, .coin-pill, .seed-card, .inv-row
   box-shadow: 0 2px 6px rgba(214, 48, 49, 0.35);
 }
 
+.plot[aria-busy="true"],
+.seed-card[aria-busy="true"],
+.gbtn[aria-busy="true"] {
+  opacity: .65;
+  cursor: progress;
+  outline: 3px solid var(--gold, #e9b949);
+  outline-offset: 2px;
+}
