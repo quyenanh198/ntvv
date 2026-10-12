@@ -403,7 +403,7 @@ try {
     await page.keyboard.press('Escape');
   }
   await page.locator('[data-sheet="more"]').first().click();
-  await page.locator('[data-sheet="mill"]').click();
+  await page.locator('.more-card[data-sheet="mill"]').click();
   for (const product of ['grilled-fish', 'butter', 'carrot-cake']) {
     await page.waitForFunction((name) => {
       const image = document.querySelector(`.sheet img[src*="products-v3/${name}.png"]`);
