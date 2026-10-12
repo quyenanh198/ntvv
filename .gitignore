@@ -4,4 +4,4 @@ node_modules
 .env
 .devdata
 artifacts/browser/
-artifacts/review/
+artifacts/review*/
