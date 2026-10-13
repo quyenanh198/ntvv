@@ -42,6 +42,15 @@ Olive oil and ambarella juice use `asset/source_products/v3/olive-oil.png` and `
 - Olive oil: "One clear corked glass bottle of golden-green olive oil with a blank kraft tag, two dark green olives and one olive leaf by its base. Hand-painted watercolor/gouache product icon, three-quarter view, warm upper-left light, soft dark contour, readable at 80 CSS pixels, transparent background, no text."
 - Ambarella juice: "One short clear glass of pale yellow-green Vietnamese ambarella juice with ice and a green straw, and one sliced ambarella fruit beside it. Distinct from lemonade and pineapple juice. Hand-painted watercolor/gouache product icon, three-quarter view, warm upper-left light, soft dark contour, readable at 80 CSS pixels, transparent background, no text."
 
+The weaving-workshop sprites use matching sources in `asset/source_products/v3/` and 256px game exports in `public/assets/products-v3/`. Built-in imagegen prompts:
+
+- Cotton fabric: "One folded rectangle of natural ivory cotton fabric with visible woven texture and a small cotton blossom beside it. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
+- Silk fabric: "One folded length of lustrous pale rose silk with a soft flowing fold and a silkworm cocoon beside it, distinct from matte cotton. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
+- Wool scarf: "One hand-knit rustic red wool scarf folded in a loop, chunky stitches and two short tasseled ends. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
+- Alpaca scarf: "One fine fluffy cream alpaca scarf folded in a loop, pale teal border trim and two short tassels, distinct from the red wool scarf. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
+- Wool sweater: "One blue-gray hand-knit wool sweater laid flat with ribbed cuffs and a crew neck. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
+- Rabbit-wool hat: "One soft white hand-knit rabbit-wool beanie with rolled brim and gray-tipped pom-pom. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
+
 The fish oven, dairy, and bakery product sprites use `asset/source_products/v3/grilled-fish.png`, `butter.png`, and `carrot-cake.png` as their 1254px sources, with matching 256px exports in `public/assets/products-v3/`. Built-in imagegen prompts:
 
 - Grilled fish: "One inventory product sprite for a cozy farm game: a whole grilled freshwater fish, golden brown with gentle grill marks and one small lemon wedge, presented on a plain oval ceramic plate. Friendly appetizing hand-painted watercolor/gouache, warm upper-left light, subtle dark outline, clear silhouette at 80 CSS pixels, centered with padding. Truly transparent background, no scene, no text, no other objects. Square PNG."

@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 63/186 catalog products have PNG or SVG icons. 200 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 69/186 catalog products have PNG or SVG icons. 206 static asset paths appear in the client.
 
 ## Crops
 
@@ -105,7 +105,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Product | ID | Source | Current art |
 | --- | --- | --- | --- |
 | Áo dài lụa | aodai | xuongcaocap | emoji |
-| Áo len | aolen | xuongdet | emoji |
+| Áo len | aolen | xuongdet | PNG art |
 | Bánh bí ngô | banhbi | lobanh | PNG art |
 | Bánh cà rốt | banhcarot | lobanh | PNG art |
 | Bánh dứa | banhdua | lobanh | PNG art |
@@ -160,8 +160,8 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Kem sầu riêng | kemsaurieng | nhamaysua | PNG art |
 | Kem vani | kemvani | nhamaysua | PNG art |
 | Kẹo đậu phộng | keodauphong | quanvat | emoji |
-| Khăn alpaca | khanalpaca | xuongdet | emoji |
-| Khăn len | khanlen | xuongdet | emoji |
+| Khăn alpaca | khanalpaca | xuongdet | PNG art |
+| Khăn len | khanlen | xuongdet | PNG art |
 | Khoai lang kén | khoailangken | quanvat | emoji |
 | Khoai lang nướng | khoailangnuong | bepan | emoji |
 | Khoai tây chiên | khoaichien | bepan | PNG art |
@@ -170,12 +170,12 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Len | len | cuu | SVG icon |
 | Lông alpaca | longalpaca | alpaca | PNG art |
 | Lông thỏ | longtho | tho | PNG art |
-| Lụa | lua | xuongdet | emoji |
+| Lụa | lua | xuongdet | PNG art |
 | Lươn | luon | luon | emoji |
 | Lươn xào sả ớt | luonxao | lonuong | emoji |
 | Mật ong | matong | ong | PNG art |
 | Me rim ớt | merim | quanvat | emoji |
-| Mũ len thỏ | mulen | xuongdet | emoji |
+| Mũ len thỏ | mulen | xuongdet | PNG art |
 | Mực | muc | muc | emoji |
 | Mực nướng sa tế | mucnuong | lonuong | emoji |
 | Mứt cam | mutcam | noimut | PNG art |
@@ -287,7 +287,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Trứng muối | trungmuoi | bepan | emoji |
 | Trứng ngỗng | trungngong | ngong | PNG art |
 | Trứng vịt | trungvit | vit | PNG art |
-| Vải bông | vai | xuongdet | emoji |
+| Vải bông | vai | xuongdet | PNG art |
 | Xôi đậu phộng | xoidauphong | quanvat | emoji |
 | Xúc xích | xucxich | bepan | emoji |
 
@@ -424,6 +424,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/tree_02.png` | 14 KB |
 | `assets/pack/well.png` | 17 KB |
 | `assets/products-v3/alpaca-fleece.png` | 89 KB |
+| `assets/products-v3/alpaca-scarf.png` | 88 KB |
 | `assets/products-v3/ambarella-juice.png` | 98 KB |
 | `assets/products-v3/apple-pie.png` | 111 KB |
 | `assets/products-v3/buffalo-cheese.png` | 79 KB |
@@ -434,6 +435,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/carrot-juice.png` | 13 KB |
 | `assets/products-v3/cocoa-powder.png` | 90 KB |
 | `assets/products-v3/corn-flour.png` | 92 KB |
+| `assets/products-v3/cotton-fabric.png` | 88 KB |
 | `assets/products-v3/cow-milk.png` | 59 KB |
 | `assets/products-v3/deer-velvet.png` | 66 KB |
 | `assets/products-v3/dragon-fruit-syrup.png` | 89 KB |
@@ -466,8 +468,10 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/pumpkin-soup.png` | 25 KB |
 | `assets/products-v3/quail-eggs.png` | 15 KB |
 | `assets/products-v3/rabbit-fur.png` | 20 KB |
+| `assets/products-v3/rabbit-wool-hat.png` | 100 KB |
 | `assets/products-v3/rice-flour.png` | 18 KB |
 | `assets/products-v3/roasted-coffee.png` | 86 KB |
+| `assets/products-v3/silk-fabric.png` | 102 KB |
 | `assets/products-v3/silkworm-silk.png` | 71 KB |
 | `assets/products-v3/strawberry-cake.png` | 104 KB |
 | `assets/products-v3/strawberry-jam.png` | 18 KB |
@@ -479,6 +483,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/watermelon-juice.png` | 81 KB |
 | `assets/products-v3/wheat-flour.png` | 89 KB |
 | `assets/products-v3/wool-roll.png` | 19 KB |
+| `assets/products-v3/wool-scarf.png` | 105 KB |
+| `assets/products-v3/wool-sweater.png` | 104 KB |
 | `assets/scene-v3/chicken_coop_v3.png` | 66 KB |
 | `assets/scene-v3/farmer_v3.png` | 63 KB |
 | `assets/scene-v3/farmhouse_v3.png` | 63 KB |
