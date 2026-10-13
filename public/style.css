@@ -1939,6 +1939,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   line-height: 1.4;
 }
 .machine-grid .mc-recipe-meta b { color: #3e3426; }
+.machine-grid .mc-missing { color: #794514; font-size: .72rem; font-weight: 750; line-height: 1.35; }
 .machine-grid .mc-add {
   grid-column: 1 / -1;
   display: flex; align-items: center; justify-content: flex-end; gap: .3rem;
@@ -1968,7 +1969,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   * { animation: none !important; transition: none !important; }
 }
 
-.mc-plus[data-off] { opacity: .3; filter: grayscale(1); box-shadow: none; cursor: pointer; }
+.mc-plus--want { background: linear-gradient(180deg, #fff0bb, #f4d384); border-color: #a76c24; color: #653907; }
 
 /* ---- Chọn giống: lưới thẻ ---- */
 .sheet--wide { width: min(1100px, 100%); }

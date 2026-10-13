@@ -449,8 +449,17 @@ try {
   await page.locator('[data-sheet="more"]').first().click();
   await page.locator('[data-sheet="orders"]').click();
   await page.locator('[data-make-order="pizza"]').click();
-  assert.equal(await page.locator('.mc-row--recommended[data-recipe-output="pizza"]').count(), 1,
+  const pizzaRecipe = page.locator('.mc-row--recommended[data-recipe-output="pizza"]');
+  assert.equal(await pizzaRecipe.count(), 1,
     'an order missing a processed good should highlight its factory recipe');
+  assert.match(await pizzaRecipe.locator('.mc-missing').innerText(), /Thiếu .*Bột mì.*Sốt cà chua.*Phô mai/,
+    'the recipe should name each missing ingredient');
+  const buyMissing = pizzaRecipe.locator('.mc-plus--want');
+  assert.equal(await buyMissing.isEnabled(), true, 'buy-missing control should be actionable');
+  assert.equal(await buyMissing.getAttribute('aria-disabled'), null,
+    'buy-missing control should not announce itself as disabled');
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await buyMissing.click();
   await checkNoOverflow(page, '320px order factory shortcut');
   await page.screenshot({ path: resolve(outputDir, 'order-factory-320.png') });
   await page.keyboard.press('Escape');
