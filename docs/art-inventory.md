@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 38/186 catalog products have PNG or SVG icons. 175 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 42/186 catalog products have PNG or SVG icons. 179 static asset paths appear in the client.
 
 ## Crops
 
@@ -110,10 +110,10 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Bánh cà rốt | banhcarot | lobanh | PNG art |
 | Bánh dứa | banhdua | lobanh | emoji |
 | Bánh gừng | banhgung | lobanh | emoji |
-| Bánh kem dâu | banhkem | lobanh | emoji |
-| Bánh mật ong | banhmatong | lobanh | emoji |
+| Bánh kem dâu | banhkem | lobanh | PNG art |
+| Bánh mật ong | banhmatong | lobanh | PNG art |
 | Bánh mì trứng | banhmi | lobanh | PNG art |
-| Bánh táo | banhtao | lobanh | emoji |
+| Bánh táo | banhtao | lobanh | PNG art |
 | Bánh tôm | banhtom | quanvat | emoji |
 | Bánh tráng trộn | banhtrangtron | quanvat | emoji |
 | Bánh xèo | banhxeo | bepan | emoji |
@@ -258,7 +258,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Phô mai | phomai | nhamaysua | PNG art |
 | Phô mai dê | phomaide | nhamaysua | emoji |
 | Phô mai trâu | phomaitrau | nhamaysua | emoji |
-| Pizza | pizza | lobanh | emoji |
+| Pizza | pizza | lobanh | PNG art |
 | Rượu nho ủ | ruouvang | xuongcaocap | emoji |
 | Salad rau | salad | bepan | PNG art |
 | Sầu riêng chiên | saurienchien | bepan | emoji |
@@ -423,6 +423,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/tree_01.png` | 10 KB |
 | `assets/pack/tree_02.png` | 14 KB |
 | `assets/pack/well.png` | 17 KB |
+| `assets/products-v3/apple-pie.png` | 111 KB |
 | `assets/products-v3/butter.png` | 78 KB |
 | `assets/products-v3/cane-sugar.png` | 18 KB |
 | `assets/products-v3/carrot-cake.png` | 106 KB |
@@ -431,11 +432,13 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/duck-eggs.png` | 18 KB |
 | `assets/products-v3/egg-bread.png` | 24 KB |
 | `assets/products-v3/farm-cheese.png` | 16 KB |
+| `assets/products-v3/farm-pizza.png` | 110 KB |
 | `assets/products-v3/fried-rice.png` | 23 KB |
 | `assets/products-v3/garden-salad.png` | 22 KB |
 | `assets/products-v3/goat-milk.png` | 55 KB |
 | `assets/products-v3/goose-egg.png` | 19 KB |
 | `assets/products-v3/grilled-fish.png` | 96 KB |
+| `assets/products-v3/honey-cake.png` | 105 KB |
 | `assets/products-v3/honey.png` | 86 KB |
 | `assets/products-v3/lemonade.png` | 73 KB |
 | `assets/products-v3/mango-smoothie.png` | 61 KB |
@@ -449,6 +452,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/rabbit-fur.png` | 20 KB |
 | `assets/products-v3/rice-flour.png` | 18 KB |
 | `assets/products-v3/roasted-coffee.png` | 86 KB |
+| `assets/products-v3/strawberry-cake.png` | 104 KB |
 | `assets/products-v3/strawberry-jam.png` | 18 KB |
 | `assets/products-v3/tomato-sauce.png` | 20 KB |
 | `assets/products-v3/watermelon-juice.png` | 81 KB |
