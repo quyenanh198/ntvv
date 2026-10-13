@@ -1326,7 +1326,10 @@
           return `<div class="seed-row mc-row${job ? ' mc-row--active' : ''}${canAdd ? '' : ' mc-row--dim'}" ${missing ? `data-missing="${missing}" data-missing-name="${r.name}" title="Thiếu nguyên liệu — bấm để đăng tin thu mua" style="cursor:pointer"` : 'style="cursor:default"'}>
             ${itemImg(outId, 'seed-sprite')}
             <span class="seed-info"><span class="seed-name">${r.name}</span>
-              <div class="seed-meta">${ins} → ${Object.values(r.out)[0]} ${outInfo?.name || ''} · ⏱ ${fmtDuration(r.ms)} · bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp}EXP</div></span>
+              <div class="seed-meta mc-recipe-meta">
+                <span>${ins} → <b>${Object.values(r.out)[0]} ${outInfo?.name || ''}</b></span>
+                <span>⏱ ${fmtDuration(r.ms)} · Bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp} EXP</span>
+              </div></span>
             <span class="mc-add">
               ${state}
               <button class="mc-plus" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="1" ${canAdd ? '' : 'data-off="1" aria-disabled="true"'} aria-label="${canAdd ? `Thêm 1 mẻ ${r.name} tại ${mc.name}` : unavailable}" title="${canAdd ? 'Thêm 1 mẻ' : unavailable}">＋</button>
