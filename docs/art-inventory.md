@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 42/186 catalog products have PNG or SVG icons. 179 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 47/186 catalog products have PNG or SVG icons. 184 static asset paths appear in the client.
 
 ## Crops
 
@@ -168,7 +168,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Lẩu cá koi | lauca | lonuong | emoji |
 | Lẩu ếch | lauech | lonuong | emoji |
 | Len | len | cuu | SVG icon |
-| Lông alpaca | longalpaca | alpaca | emoji |
+| Lông alpaca | longalpaca | alpaca | PNG art |
 | Lông thỏ | longtho | tho | PNG art |
 | Lụa | lua | xuongdet | emoji |
 | Lươn | luon | luon | emoji |
@@ -183,7 +183,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Mứt gừng | mutgung | noimut | emoji |
 | Mứt sầu riêng | mutsaurieng | noimut | emoji |
 | Nem chua | nemchua | quanvat | emoji |
-| Nhung hươu | nhunghuou | huou | emoji |
+| Nhung hươu | nhunghuou | huou | PNG art |
 | Nước cam | nuoccam | mayep | PNG art |
 | Nước chanh | nuocchanh | mayep | PNG art |
 | Nước dứa | nuocthom | mayep | PNG art |
@@ -271,19 +271,19 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Sữa | sua | bo | PNG art |
 | Sữa chua dâu | suachua | nhamaysua | emoji |
 | Sữa dê | suade | de | PNG art |
-| Sữa trâu | suatrau | trau | emoji |
+| Sữa trâu | suatrau | trau | PNG art |
 | Thịt heo | thit | heo | PNG art |
 | Thức ăn gia súc | thucan | shop | PNG art |
 | Tiệc gia đình | buatiec | xuongcaocap | emoji |
 | Tôm | tom | tom | emoji |
 | Tôm nướng | tomnuong | lonuong | emoji |
-| Tơ tằm | totam | tam | emoji |
+| Tơ tằm | totam | tam | PNG art |
 | Trà sả mật ong | trasa | quanvat | emoji |
 | Trà sữa | trasua | bepan | emoji |
 | Trà túi lọc | tratui | mayrang | emoji |
 | Trứng | trung | ga | SVG icon |
 | Trứng cút | trungcut | cut | PNG art |
-| Trứng gà tây | trunggatay | gatay | emoji |
+| Trứng gà tây | trunggatay | gatay | PNG art |
 | Trứng muối | trungmuoi | bepan | emoji |
 | Trứng ngỗng | trungngong | ngong | PNG art |
 | Trứng vịt | trungvit | vit | PNG art |
@@ -423,12 +423,15 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/tree_01.png` | 10 KB |
 | `assets/pack/tree_02.png` | 14 KB |
 | `assets/pack/well.png` | 17 KB |
+| `assets/products-v3/alpaca-fleece.png` | 89 KB |
 | `assets/products-v3/apple-pie.png` | 111 KB |
+| `assets/products-v3/buffalo-milk.png` | 66 KB |
 | `assets/products-v3/butter.png` | 78 KB |
 | `assets/products-v3/cane-sugar.png` | 18 KB |
 | `assets/products-v3/carrot-cake.png` | 106 KB |
 | `assets/products-v3/carrot-juice.png` | 13 KB |
 | `assets/products-v3/cow-milk.png` | 59 KB |
+| `assets/products-v3/deer-velvet.png` | 66 KB |
 | `assets/products-v3/duck-eggs.png` | 18 KB |
 | `assets/products-v3/egg-bread.png` | 24 KB |
 | `assets/products-v3/farm-cheese.png` | 16 KB |
@@ -452,9 +455,11 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/rabbit-fur.png` | 20 KB |
 | `assets/products-v3/rice-flour.png` | 18 KB |
 | `assets/products-v3/roasted-coffee.png` | 86 KB |
+| `assets/products-v3/silkworm-silk.png` | 71 KB |
 | `assets/products-v3/strawberry-cake.png` | 104 KB |
 | `assets/products-v3/strawberry-jam.png` | 18 KB |
 | `assets/products-v3/tomato-sauce.png` | 20 KB |
+| `assets/products-v3/turkey-eggs.png` | 77 KB |
 | `assets/products-v3/watermelon-juice.png` | 81 KB |
 | `assets/products-v3/wool-roll.png` | 19 KB |
 | `assets/scene-v3/chicken_coop_v3.png` | 66 KB |
