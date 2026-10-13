@@ -385,6 +385,13 @@ try {
   await page.keyboard.press('Escape');
   await page.locator('.sheet').waitFor({ state: 'detached' });
   assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-sheet')), 'more');
+  await page.setViewportSize({ width: 320, height: 800 });
+  await page.locator('[data-sheet="more"]').first().click();
+  await page.locator('[data-sheet="orders"]').click();
+  await page.locator('.order-card').nth(1).locator('[data-grow-order="luami"]').click();
+  assert.match(await page.locator('.seed-card[data-crop="luami"]').getAttribute('class'), /seed-card--recommended/,
+    'a regular multi-item order should lead to its missing crop');
+  await page.keyboard.press('Escape');
 
   const levelSixXp = [1, 2, 3, 4, 5].reduce((sum, level) => sum + xpNeedFor(level), 0);
   db.prepare('UPDATE farmers SET xp = ? WHERE user_id = 1').run(levelSixXp);
@@ -434,6 +441,21 @@ try {
   await page.locator('.machine-block').filter({ has: page.locator('img[src*="machines-v3/bakery-oven.png"]') }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'bakery-goods-320.png') });
   await page.keyboard.press('Escape');
+  db.prepare('DELETE FROM orders WHERE owner_id = 1').run();
+  db.prepare('UPDATE farmers SET orders_refresh_at = ? WHERE user_id = 1').run(Date.now() + 60 * 60 * 1000);
+  db.prepare('INSERT INTO orders (owner_id, slot, items_json, gold, exp, stars) VALUES (1, 1, ?, 1000, 40, 1)')
+    .run(JSON.stringify({ pizza: 1 }));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-sheet="more"]').first().click();
+  await page.locator('[data-sheet="orders"]').click();
+  await page.locator('[data-make-order="pizza"]').click();
+  assert.equal(await page.locator('.mc-row--recommended[data-recipe-output="pizza"]').count(), 1,
+    'an order missing a processed good should highlight its factory recipe');
+  await checkNoOverflow(page, '320px order factory shortcut');
+  await page.screenshot({ path: resolve(outputDir, 'order-factory-320.png') });
+  await page.keyboard.press('Escape');
+  db.prepare('DELETE FROM orders WHERE owner_id = 1').run();
+  await page.reload({ waitUntil: 'domcontentloaded' });
 
   await page.setViewportSize({ width: 844, height: 390 });
   await checkNoOverflow(page, '844px landscape farm');

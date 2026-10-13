@@ -1885,6 +1885,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .mc-status--idle { color: #9c8468; }
 .mc-collect { width: 100%; margin-bottom: .4rem; }
 .mc-row--active { background: rgba(255, 214, 102, .35) !important; border-color: #e1aa27 !important; }
+.mc-row--recommended { outline: 3px solid #5c973a; outline-offset: 1px; background: #f2f9e8 !important; }
 .mc-row--dim .seed-sprite, .mc-row--dim .emoji-ic { filter: grayscale(.6); opacity: .7; }
 .mc-row .seed-name small { font-weight: 700; color: #b47a12; font-size: .72rem; }
 .mc-add { display: flex; gap: .25rem; flex: none; }
