@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 84/186 catalog products have PNG or SVG icons. 221 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 88/186 catalog products have PNG or SVG icons. 225 static asset paths appear in the client.
 
 ## Crops
 
@@ -131,7 +131,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cá kho tiêu | cakho | lonuong | PNG art |
 | Cá koi | cakoi | ho | SVG icon |
 | Cá lóc | caloc | caloc | emoji |
-| Cá lóc nướng trui | calocnuong | lonuong | emoji |
+| Cá lóc nướng trui | calocnuong | lonuong | PNG art |
 | Cá nhỏ | canho | ho | SVG icon |
 | Cá nướng | canuong | lonuong | PNG art |
 | Cà phê hảo hạng | caphehaohang | xuongcaocap | PNG art |
@@ -139,7 +139,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cà phê sữa | caphesua | mayrang | PNG art |
 | Cá rô | caro | ho | SVG icon |
 | Cá tra | catra | catra | emoji |
-| Cá tra kho tộ | catrakho | lonuong | emoji |
+| Cá tra kho tộ | catrakho | lonuong | PNG art |
 | Cá viên chiên | cavienchien | quanvat | emoji |
 | Cao nhung hươu | caonhung | xuongcaocap | PNG art |
 | Chả cá | chaca | lonuong | PNG art |
@@ -153,7 +153,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Dầu ô liu | dauoliu | mayep | PNG art |
 | Đường mía | duongmia | coixay | PNG art |
 | Ếch | ech | ech | emoji |
-| Gỏi cuốn cá | goicuon | lonuong | emoji |
+| Gỏi cuốn cá | goicuon | lonuong | PNG art |
 | Hộp phô mai thượng hạng | hopphomai | xuongcaocap | PNG art |
 | Hộp quà nông trại | hopqua | xuongcaocap | PNG art |
 | Kem dưa hấu | kem | nhamaysua | PNG art |
@@ -276,7 +276,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Thức ăn gia súc | thucan | shop | PNG art |
 | Tiệc gia đình | buatiec | xuongcaocap | PNG art |
 | Tôm | tom | tom | emoji |
-| Tôm nướng | tomnuong | lonuong | emoji |
+| Tôm nướng | tomnuong | lonuong | PNG art |
 | Tơ tằm | totam | tam | PNG art |
 | Trà sả mật ong | trasa | quanvat | emoji |
 | Trà sữa | trasua | bepan | emoji |
@@ -428,6 +428,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/alpaca-scarf.png` | 88 KB |
 | `assets/products-v3/ambarella-juice.png` | 98 KB |
 | `assets/products-v3/apple-pie.png` | 111 KB |
+| `assets/products-v3/braised-pangasius.png` | 122 KB |
 | `assets/products-v3/buffalo-cheese.png` | 79 KB |
 | `assets/products-v3/buffalo-milk.png` | 66 KB |
 | `assets/products-v3/butter.png` | 78 KB |
@@ -451,6 +452,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/farm-pizza.png` | 110 KB |
 | `assets/products-v3/fish-cakes.png` | 110 KB |
 | `assets/products-v3/fish-hotpot.png` | 120 KB |
+| `assets/products-v3/fish-spring-rolls.png` | 122 KB |
 | `assets/products-v3/fish-sushi.png` | 114 KB |
 | `assets/products-v3/fried-rice.png` | 23 KB |
 | `assets/products-v3/garden-salad.png` | 22 KB |
@@ -460,6 +462,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/goat-milk.png` | 55 KB |
 | `assets/products-v3/goose-egg.png` | 19 KB |
 | `assets/products-v3/grilled-fish.png` | 96 KB |
+| `assets/products-v3/grilled-shrimp.png` | 110 KB |
+| `assets/products-v3/grilled-snakehead-fish.png` | 112 KB |
 | `assets/products-v3/honey-cake.png` | 105 KB |
 | `assets/products-v3/honey.png` | 86 KB |
 | `assets/products-v3/iced-milk-coffee.png` | 78 KB |
