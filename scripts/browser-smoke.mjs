@@ -537,6 +537,19 @@ try {
   await page.locator('.farm-next-step[data-next-step="feed"]').click();
   assert.equal(await page.locator('.sheet [data-buy="thucan"]').count(), 3,
     'hungry animal next action should open feed purchase controls');
+  await page.keyboard.press('Escape');
+  db.prepare('DELETE FROM animals WHERE owner_id = 1').run();
+  const plantedAt = Date.now();
+  const insertWaitingPlot = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (1, ?, ?, ?, ?, 1)');
+  for (let idx = 4; idx < 12; idx += 1) insertWaitingPlot.run(idx, 'luami', plantedAt, plantedAt + 2 * 60 * 60 * 1000);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const growingPrompt = page.locator('.farm-next-step[data-next-step="growing"]');
+  await growingPrompt.waitFor();
+  assert.match(await growingPrompt.innerText(), /Ô 1 chín sau/,
+    'a fully planted farm should show the next crop return time');
+  await growingPrompt.click();
+  assert.equal(await page.locator('.sheet #btn-speedup-plot').count(), 1,
+    'waiting prompt should open the next growing plot');
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

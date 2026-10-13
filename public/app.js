@@ -691,6 +691,8 @@
     const ready = plots.filter((plot) => plot.crop && plot.ready).length;
     const empty = plots.filter((plot) => !plot.crop).length;
     const dry = plots.filter((plot) => plot.crop && !plot.ready && !plot.watered).length;
+    const nextGrowing = plots.filter((plot) => plot.crop && !plot.ready && plot.readyAt != null)
+      .sort((a, b) => a.readyAt - b.readyAt)[0];
     const deliverableOrders = farm.orders.filter(canDeliver).length;
     const finishedJobs = Object.values(farm.machines).reduce((total, jobs) => total
       + Object.values(jobs || {}).reduce((count, job) => count + (job.completed || 0), 0), 0);
@@ -711,8 +713,10 @@
         ? { kind: 'water', icon: '💧', title: `${dry} ô cần tưới`, detail: 'Chạm để tưới ô đầu tiên và nhận EXP.' }
         : empty
           ? { kind: 'seed', icon: '🌱', title: `${empty} ô đang trống`, detail: 'Chạm để chọn hạt giống.' }
-          : { kind: 'orders', icon: '🏡', title: 'Nông trại đang lớn lên', detail: 'Chạm để xem mục tiêu tiếp theo.' };
-    return `<button class="farm-next-step" type="button" data-next-step="${step.kind}"><span aria-hidden="true">${step.icon}</span><span><b>${step.title}</b><small>${step.detail}</small></span></button>`;
+          : nextGrowing
+            ? { kind: 'growing', idx: nextGrowing.idx, readyAt: nextGrowing.readyAt, icon: '⏳', title: 'Vụ tiếp theo sắp chín', detail: `Ô ${nextGrowing.idx + 1} chín sau ${fmtTime(nextGrowing.readyAt - Date.now())}` }
+            : { kind: 'orders', icon: '🏡', title: 'Nông trại đang lớn lên', detail: 'Chạm để xem mục tiêu tiếp theo.' };
+    return `<button class="farm-next-step" type="button" data-next-step="${step.kind}"${step.kind === 'growing' ? ` data-next-idx="${step.idx}" data-next-ready="${step.readyAt}"` : ''}><span aria-hidden="true">${step.icon}</span><span><b>${step.title}</b><small>${step.detail}</small></span></button>`;
   }
 
   function renderUpcomingUnlocks(level) {
@@ -1809,6 +1813,10 @@
         render();
         return;
       }
+      if (kind === 'growing') {
+        document.querySelector(`.plot[data-idx="${ev.currentTarget.dataset.nextIdx}"]`)?.click();
+        return;
+      }
       document.querySelector(kind === 'harvest' ? '.plot[data-kind="harvest"]' : '.plot[data-kind="waterplot"]')?.click();
     });
     document.getElementById('btn-inspect-mode')?.addEventListener('click', () => { INSPECT = !INSPECT; toast(INSPECT ? '🔍 Bấm vào một ô đang trồng để khám xét' : 'Tắt khám xét'); render(); });
@@ -2365,6 +2373,12 @@
       refresh().finally(() => { machineRefreshPending = false; });
     }
     if (flip && !sheet && !showLb) { render(); return; }
+
+    const nextGrowingPrompt = document.querySelector('.farm-next-step[data-next-step="growing"]');
+    if (nextGrowingPrompt) {
+      const detail = nextGrowingPrompt.querySelector('small');
+      if (detail) detail.textContent = `Ô ${Number(nextGrowingPrompt.dataset.nextIdx) + 1} chín sau ${fmtTime(Number(nextGrowingPrompt.dataset.nextReady) - now)}`;
+    }
 
     document.querySelectorAll('.plot--growing').forEach((el) => {
       const left = Number(el.dataset.ready) - now;
