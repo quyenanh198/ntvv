@@ -14,3 +14,5 @@ Claiming requires every discovery in that set. The unique claim row and mutation
 The first set gives an early return goal at corn's level 4 unlock. The second stretches through chili's level 9 unlock. Player sessions should check whether these feel achievable and whether the reward fits the measured gold economy before tuning values.
 
 The farm toolbar shows the first unclaimed set, its discovery count, and the next missing crop or unlock level. This keeps the longer goal visible beside the immediate farm action and opens the full collection sheet with one tap.
+
+When every crop in a set has been discovered, the farm's immediate-action prompt names the completed collection and its reward after any ready harvest or first sale. It opens the collection sheet directly. Once claimed, the prompt returns to the next farm task and the collection toolbar advances to the next unclaimed set. The 320px browser walkthrough checks the prompt, claim, one-time gold change, and dismissal.
