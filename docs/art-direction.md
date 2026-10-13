@@ -10,6 +10,11 @@ The goat milk sprite uses `asset/source_products/v3/goat-milk.png` as its 1254px
 
 The pork sprite uses `asset/source_products/v3/pork.png` as its 1254px source and `public/assets/products-v3/pork.png` as its 256px export. Built-in imagegen prompt: "Single inventory sprite for a cozy farm game: a clean butcher's cut of fresh pork, a compact rosy pink boneless cut with a thin cream fat edge, resting on one small folded kraft-paper wrapper. Friendly food illustration, no blood. Hand-painted watercolor/gouache matching soft farm-game product sprites, warm upper-left light, subtle dark contour, strong silhouette at 80 CSS pixels, centered with generous padding. True transparent background, no scene, no text, no other objects. Square PNG."
 
+The pineapple and ginger cakes use `asset/source_products/v3/pineapple-cake.png` and `ginger-cake.png` as generated sources, with 256px exports in `public/assets/products-v3/`. Built-in imagegen prompts:
+
+- Pineapple cake: "One square transparent inventory sprite for a cozy Vietnamese farm game: bánh dứa, a small golden pineapple cake with one cut wedge exposing yellow pineapple filling, on a simple cream ceramic dessert plate. Hand-painted watercolor/gouache bakery style, warm upper-left light, subtle dark contour, three-quarter view, readable at 80 CSS pixels, centered with transparent padding. No scene, text, logo, or extra objects."
+- Ginger cake: "One square transparent inventory sprite for a cozy Vietnamese farm game: bánh gừng, a small round ginger cake with warm amber crumb, pale cream icing drizzle, and one thin ginger slice on top, on a simple cream ceramic dessert plate. Hand-painted watercolor/gouache bakery style, warm upper-left light, subtle dark contour, three-quarter view, readable at 80 CSS pixels, centered with transparent padding. No scene, text, logo, or extra objects."
+
 The fish oven, dairy, and bakery product sprites use `asset/source_products/v3/grilled-fish.png`, `butter.png`, and `carrot-cake.png` as their 1254px sources, with matching 256px exports in `public/assets/products-v3/`. Built-in imagegen prompts:
 
 - Grilled fish: "One inventory product sprite for a cozy farm game: a whole grilled freshwater fish, golden brown with gentle grill marks and one small lemon wedge, presented on a plain oval ceramic plate. Friendly appetizing hand-painted watercolor/gouache, warm upper-left light, subtle dark outline, clear silhouette at 80 CSS pixels, centered with padding. Truly transparent background, no scene, no text, no other objects. Square PNG."
@@ -133,7 +138,7 @@ Vanilla source images are `asset/source_crops/v3/vanilla-growing.png` and `asset
 | Fruit trees and items | All thirteen species have individual tree and fruit-item PNGs | Review scale and ready-state contrast together at phone width |
 | Animals | All fifteen species have individual PNGs | Review scale and shadow together at phone width |
 | Machines | All twelve machines have unique PNGs in factory cards | Standardize footprint and active/ready feedback |
-| Products and UI icons | Fourteen processed goods and four early animal products have hand-painted PNGs; most other products use emoji | Extend the product set in recipe and unlock order, then standardize UI icons |
+| Products and UI icons | All fifteen animal products and six plated bakery goods have PNG or SVG icons; most other products use emoji | Extend the product set in recipe and unlock order, then standardize UI icons |
 
 The fishing pond source is `asset/source_scene/v3/fishing_pond_v3.png`; its 256×256 transparent game export is `public/assets/scene-v3/fishing_pond_v3.png`. It was generated with the built-in image tool using the coop and farmhouse as style references: a three-quarter hand-painted oval freshwater pond, grassy stone rim, reeds, lily pads, a small wooden dock, warm upper-left light, and transparent background. The source is retained for future size or color adjustments.
 

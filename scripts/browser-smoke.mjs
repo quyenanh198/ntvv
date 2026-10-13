@@ -584,7 +584,7 @@ try {
   assert.equal(await page.locator('.sheet #btn-speedup-plot').count(), 1,
     'waiting prompt should open the next growing plot');
   await page.keyboard.press('Escape');
-  for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou']) {
+  for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -592,6 +592,7 @@ try {
   for (const [item, file] of [
     ['trunggatay', 'turkey-eggs'], ['totam', 'silkworm-silk'], ['suatrau', 'buffalo-milk'],
     ['longalpaca', 'alpaca-fleece'], ['nhunghuou', 'deer-velvet'],
+    ['banhdua', 'pineapple-cake'], ['banhgung', 'ginger-cake'],
   ]) {
     const image = page.locator(`.inv-row[data-item="${item}"] img[src*="products-v3/${file}.png"]`);
     await image.waitFor();

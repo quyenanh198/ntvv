@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 47/186 catalog products have PNG or SVG icons. 184 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 49/186 catalog products have PNG or SVG icons. 186 static asset paths appear in the client.
 
 ## Crops
 
@@ -108,8 +108,8 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Áo len | aolen | xuongdet | emoji |
 | Bánh bí ngô | banhbi | lobanh | PNG art |
 | Bánh cà rốt | banhcarot | lobanh | PNG art |
-| Bánh dứa | banhdua | lobanh | emoji |
-| Bánh gừng | banhgung | lobanh | emoji |
+| Bánh dứa | banhdua | lobanh | PNG art |
+| Bánh gừng | banhgung | lobanh | PNG art |
 | Bánh kem dâu | banhkem | lobanh | PNG art |
 | Bánh mật ong | banhmatong | lobanh | PNG art |
 | Bánh mì trứng | banhmi | lobanh | PNG art |
@@ -438,6 +438,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/farm-pizza.png` | 110 KB |
 | `assets/products-v3/fried-rice.png` | 23 KB |
 | `assets/products-v3/garden-salad.png` | 22 KB |
+| `assets/products-v3/ginger-cake.png` | 89 KB |
 | `assets/products-v3/goat-milk.png` | 55 KB |
 | `assets/products-v3/goose-egg.png` | 19 KB |
 | `assets/products-v3/grilled-fish.png` | 96 KB |
@@ -446,6 +447,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/lemonade.png` | 73 KB |
 | `assets/products-v3/mango-smoothie.png` | 61 KB |
 | `assets/products-v3/orange-juice.png` | 21 KB |
+| `assets/products-v3/pineapple-cake.png` | 91 KB |
 | `assets/products-v3/pineapple-juice.png` | 68 KB |
 | `assets/products-v3/pork.png` | 78 KB |
 | `assets/products-v3/potato-fries.png` | 23 KB |
