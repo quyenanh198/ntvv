@@ -602,7 +602,7 @@ try {
   assert.equal(await page.locator('.sheet #btn-speedup-plot').count(), 1,
     'waiting prompt should open the next growing plot');
   await page.keyboard.press('Escape');
-  for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao', 'mutcam', 'mutgung', 'mutsaurieng', 'siro', 'suachua', 'phomaide', 'phomaitrau', 'kem', 'kemvani', 'kemsaurieng', 'dauoliu', 'nuoccoc', 'vai', 'lua', 'khanlen', 'khanalpaca', 'aolen', 'mulen']) {
+  for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao', 'mutcam', 'mutgung', 'mutsaurieng', 'siro', 'suachua', 'phomaide', 'phomaitrau', 'kem', 'kemvani', 'kemsaurieng', 'dauoliu', 'nuoccoc', 'vai', 'lua', 'khanlen', 'khanalpaca', 'aolen', 'mulen', 'caphesua', 'socola', 'tratui']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -635,6 +635,7 @@ try {
     ['dauoliu', 'olive-oil'], ['nuoccoc', 'ambarella-juice'],
     ['vai', 'cotton-fabric'], ['lua', 'silk-fabric'], ['khanlen', 'wool-scarf'],
     ['khanalpaca', 'alpaca-scarf'], ['aolen', 'wool-sweater'], ['mulen', 'rabbit-wool-hat'],
+    ['caphesua', 'iced-milk-coffee'], ['socola', 'milk-chocolate'], ['tratui', 'tea-bags'],
   ]) {
     const image = page.locator(`.inv-row[data-item="${item}"] img[src*="products-v3/${file}.png"]`);
     await image.waitFor();
@@ -652,6 +653,8 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'juice-products-320.png') });
   await page.locator('.inv-row[data-item="mulen"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'weaving-products-320.png') });
+  await page.locator('.inv-row[data-item="tratui"]').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'roaster-products-320.png') });
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

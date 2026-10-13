@@ -51,6 +51,12 @@ The weaving-workshop sprites use matching sources in `asset/source_products/v3/`
 - Wool sweater: "One blue-gray hand-knit wool sweater laid flat with ribbed cuffs and a crew neck. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
 - Rabbit-wool hat: "One soft white hand-knit rabbit-wool beanie with rolled brim and gray-tipped pom-pom. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
 
+The remaining coffee-roaster products use `asset/source_products/v3/iced-milk-coffee.png`, `milk-chocolate.png`, and `tea-bags.png` as generated sources, with 256px exports in `public/assets/products-v3/`. Built-in imagegen prompts:
+
+- Iced milk coffee: "One short clear glass of Vietnamese iced milk coffee, dark coffee swirling into pale condensed milk with three ice cubes and a wooden stirrer. Hand-painted watercolor/gouache product icon, three-quarter view, warm upper-left light, soft dark contour, transparent background, no text."
+- Milk chocolate: "One small rectangular milk chocolate bar with four raised squares and a broken corner, two cacao beans beside it, distinct from cocoa powder. Hand-painted watercolor/gouache product icon, three-quarter view, warm upper-left light, soft dark contour, transparent background, no text."
+- Tea bags: "A tidy stack of three plain kraft-paper tea bags with strings and blank tags, one open bag showing green tea leaves and a few loose leaves beside it. Hand-painted watercolor/gouache product icon, three-quarter view, warm upper-left light, soft dark contour, transparent background, no text."
+
 The fish oven, dairy, and bakery product sprites use `asset/source_products/v3/grilled-fish.png`, `butter.png`, and `carrot-cake.png` as their 1254px sources, with matching 256px exports in `public/assets/products-v3/`. Built-in imagegen prompts:
 
 - Grilled fish: "One inventory product sprite for a cozy farm game: a whole grilled freshwater fish, golden brown with gentle grill marks and one small lemon wedge, presented on a plain oval ceramic plate. Friendly appetizing hand-painted watercolor/gouache, warm upper-left light, subtle dark outline, clear silhouette at 80 CSS pixels, centered with padding. Truly transparent background, no scene, no text, no other objects. Square PNG."
