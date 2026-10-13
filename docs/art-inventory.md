@@ -403,6 +403,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops-v3/wheat-growing.png` | 54 KB |
 | `assets/crops-v3/wheat-ripe.png` | 85 KB |
 | `assets/crops/seed-1.svg` | <1 KB |
+| `assets/decor-v3/scarecrow.png` | 36 KB |
 | `assets/machines-v3/bakery-oven.png` | 38 KB |
 | `assets/machines-v3/coffee-roaster.png` | 29 KB |
 | `assets/machines-v3/dairy-workshop.png` | 39 KB |
@@ -469,7 +470,6 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/ui/fish-caro.svg` | <1 KB |
 | `assets/ui/flour.svg` | <1 KB |
 | `assets/ui/gem.svg` | <1 KB |
-| `assets/ui/scarecrow.svg` | <1 KB |
 | `assets/ui/star.svg` | <1 KB |
 | `assets/ui/wool.svg` | <1 KB |
 
