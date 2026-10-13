@@ -583,6 +583,22 @@ try {
   await growingPrompt.click();
   assert.equal(await page.locator('.sheet #btn-speedup-plot').count(), 1,
     'waiting prompt should open the next growing plot');
+  await page.keyboard.press('Escape');
+  for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou']) {
+    db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
+  }
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="inventory"]').click();
+  for (const [item, file] of [
+    ['trunggatay', 'turkey-eggs'], ['totam', 'silkworm-silk'], ['suatrau', 'buffalo-milk'],
+    ['longalpaca', 'alpaca-fleece'], ['nhunghuou', 'deer-velvet'],
+  ]) {
+    const image = page.locator(`.inv-row[data-item="${item}"] img[src*="products-v3/${file}.png"]`);
+    await image.waitFor();
+    assert.ok(await image.evaluate((element) => element.complete && element.naturalWidth > 0), `${item} product sprite should load in inventory`);
+  }
+  await page.locator('.inv-row[data-item="nhunghuou"]').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'animal-products-320.png') });
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
