@@ -602,15 +602,15 @@ try {
   assert.equal(await page.locator('.sheet #btn-speedup-plot').count(), 1,
     'waiting prompt should open the next growing plot');
   await page.keyboard.press('Escape');
-  for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao', 'mutcam', 'mutgung', 'mutsaurieng', 'siro', 'suachua', 'phomaide', 'phomaitrau', 'kem', 'kemvani', 'kemsaurieng', 'dauoliu', 'nuoccoc', 'vai', 'lua', 'khanlen', 'khanalpaca', 'aolen', 'mulen', 'caphesua', 'socola', 'tratui']) {
+  for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao', 'mutcam', 'mutgung', 'mutsaurieng', 'siro', 'suachua', 'phomaide', 'phomaitrau', 'kem', 'kemvani', 'kemsaurieng', 'dauoliu', 'nuoccoc', 'vai', 'lua', 'khanlen', 'khanalpaca', 'aolen', 'mulen', 'caphesua', 'socola', 'tratui', 'ruouvang', 'caonhung', 'nuochoa', 'hopphomai', 'aodai', 'buatiec', 'hopqua', 'caphehaohang']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.dock-btn[data-sheet="inventory"]').click();
   const inventorySearch = page.locator('#inventory-search');
   await inventorySearch.fill('pho mai');
-  assert.equal(await page.locator('.sheet--inventory .inv-row[data-item]:visible').count(), 2,
-    'accent-tolerant inventory search should find both stocked cheeses');
+  assert.equal(await page.locator('.sheet--inventory .inv-row[data-item]:visible').count(), 3,
+    'accent-tolerant inventory search should find all three stocked cheeses');
   await page.locator('[data-inventory-group="animals"]').click();
   assert.equal(await page.locator('.sheet--inventory .inv-row[data-item]:visible').count(), 0,
     'category filter should combine with inventory search');
@@ -636,6 +636,10 @@ try {
     ['vai', 'cotton-fabric'], ['lua', 'silk-fabric'], ['khanlen', 'wool-scarf'],
     ['khanalpaca', 'alpaca-scarf'], ['aolen', 'wool-sweater'], ['mulen', 'rabbit-wool-hat'],
     ['caphesua', 'iced-milk-coffee'], ['socola', 'milk-chocolate'], ['tratui', 'tea-bags'],
+    ['ruouvang', 'aged-grape-wine'], ['caonhung', 'deer-antler-paste'],
+    ['nuochoa', 'rose-perfume'], ['hopphomai', 'premium-cheese-box'],
+    ['aodai', 'silk-ao-dai'], ['buatiec', 'family-feast'],
+    ['hopqua', 'farm-gift-box'], ['caphehaohang', 'premium-coffee'],
   ]) {
     const image = page.locator(`.inv-row[data-item="${item}"] img[src*="products-v3/${file}.png"]`);
     await image.waitFor();
@@ -655,6 +659,8 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'weaving-products-320.png') });
   await page.locator('.inv-row[data-item="tratui"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'roaster-products-320.png') });
+  await page.locator('.inv-row[data-item="caphehaohang"]').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'premium-products-320.png') });
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
