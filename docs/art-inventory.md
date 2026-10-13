@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 80/186 catalog products have PNG or SVG icons. 217 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 84/186 catalog products have PNG or SVG icons. 221 static asset paths appear in the client.
 
 ## Crops
 
@@ -128,7 +128,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cá chim trắng | cachim | cachim | emoji |
 | Cá điêu hồng | dieuhong | dieuhong | emoji |
 | Cá điêu hồng chiên | cadieuhongchien | lonuong | emoji |
-| Cá kho tiêu | cakho | lonuong | emoji |
+| Cá kho tiêu | cakho | lonuong | PNG art |
 | Cá koi | cakoi | ho | SVG icon |
 | Cá lóc | caloc | caloc | emoji |
 | Cá lóc nướng trui | calocnuong | lonuong | emoji |
@@ -142,7 +142,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cá tra kho tộ | catrakho | lonuong | emoji |
 | Cá viên chiên | cavienchien | quanvat | emoji |
 | Cao nhung hươu | caonhung | xuongcaocap | PNG art |
-| Chả cá | chaca | lonuong | emoji |
+| Chả cá | chaca | lonuong | PNG art |
 | Chè đậu xanh | chedauxanh | quanvat | emoji |
 | Chuối chiên | chuoichien | quanvat | emoji |
 | Cóc dầm muối ớt | cocdam | bepan | emoji |
@@ -165,7 +165,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Khoai lang kén | khoailangken | quanvat | emoji |
 | Khoai lang nướng | khoailangnuong | bepan | emoji |
 | Khoai tây chiên | khoaichien | bepan | PNG art |
-| Lẩu cá koi | lauca | lonuong | emoji |
+| Lẩu cá koi | lauca | lonuong | PNG art |
 | Lẩu ếch | lauech | lonuong | emoji |
 | Len | len | cuu | SVG icon |
 | Lông alpaca | longalpaca | alpaca | PNG art |
@@ -267,7 +267,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Sô-cô-la | socola | mayrang | PNG art |
 | Sốt cà chua | sotcachua | noimut | PNG art |
 | Súp bí đỏ | supbi | bepan | PNG art |
-| Sushi | sushi | lonuong | emoji |
+| Sushi | sushi | lonuong | PNG art |
 | Sữa | sua | bo | PNG art |
 | Sữa chua dâu | suachua | nhamaysua | PNG art |
 | Sữa dê | suade | de | PNG art |
@@ -449,6 +449,9 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/farm-cheese.png` | 16 KB |
 | `assets/products-v3/farm-gift-box.png` | 116 KB |
 | `assets/products-v3/farm-pizza.png` | 110 KB |
+| `assets/products-v3/fish-cakes.png` | 110 KB |
+| `assets/products-v3/fish-hotpot.png` | 120 KB |
+| `assets/products-v3/fish-sushi.png` | 114 KB |
 | `assets/products-v3/fried-rice.png` | 23 KB |
 | `assets/products-v3/garden-salad.png` | 22 KB |
 | `assets/products-v3/ginger-cake.png` | 89 KB |
@@ -466,6 +469,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/olive-oil.png` | 74 KB |
 | `assets/products-v3/orange-juice.png` | 21 KB |
 | `assets/products-v3/orange-marmalade.png` | 91 KB |
+| `assets/products-v3/pepper-braised-fish.png` | 128 KB |
 | `assets/products-v3/pineapple-cake.png` | 91 KB |
 | `assets/products-v3/pineapple-juice.png` | 68 KB |
 | `assets/products-v3/pork.png` | 78 KB |
