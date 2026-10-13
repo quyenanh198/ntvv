@@ -115,6 +115,8 @@
   // ---------- helpers ----------
   const esc = (s) =>
     String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const normalizeSearch = (value) => String(value || '').normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('vi').replace(/[đĐ]/g, 'd');
 
   // Trại ngủ (trang chờ sablier) hoặc đang khởi động (502/503): request chưa
   // tới server, nên cứ thử lại tại chỗ mỗi 2s thay vì reload cả trang — người
@@ -1425,7 +1427,13 @@
         <button class="btn gbtn gbtn--green" id="btn-cook-all" ${canCookAny ? '' : 'disabled'} title="Xếp tối đa mọi công thức đủ nguyên liệu (trừ thức ăn gia súc)">🏭 Chế biến hết</button>
       </div>`;
       const orderHint = sheet.preferredRecipe ? `<p class="sheet-note seed-tip">Đơn hàng cần ${esc(goods()[sheet.preferredRecipe]?.name || sheet.preferredRecipe)}. Công thức được đánh dấu bên dưới.</p>` : '';
-      return sheetShell('🏭 Khu chế biến', `${orderHint}${toolbar}${viewButtons}${emptyView}<div class="machine-grid">${blocks}</div>`, 'sheet--factory');
+      const finder = `<div class="mc-finder">
+        <label for="factory-search">Tìm công thức hoặc nguyên liệu</label>
+        <input id="factory-search" type="search" autocomplete="off" value="${esc(sheet.factoryQuery || '')}" placeholder="Ví dụ: bánh, cá, bột mì" />
+        <p class="mc-result-count" role="status" aria-live="polite"></p>
+        <p class="sheet-note mc-search-empty" hidden>Không tìm thấy công thức phù hợp. Xóa tìm kiếm hoặc chọn Tất cả.</p>
+      </div>`;
+      return sheetShell('🏭 Khu chế biến', `${orderHint}${toolbar}${viewButtons}${finder}${emptyView}<div class="machine-grid">${blocks}</div>`, 'sheet--factory');
     }
 
     if (t === 'money') {
@@ -1849,14 +1857,12 @@
         sheet = { type: el.dataset.sheet }; render();
       }));
     if (sheet?.type === 'inventory') {
-      const normalizeItemName = (value) => String(value || '').normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('vi').replace(/đ/g, 'd');
       const updateInventoryFinder = () => {
-        const query = normalizeItemName(sheet.inventoryQuery).trim();
+        const query = normalizeSearch(sheet.inventoryQuery).trim();
         const group = sheet.inventoryGroup || 'all';
         let visible = 0;
         document.querySelectorAll('.sheet--inventory .inv-row[data-item]').forEach((row) => {
-          const name = normalizeItemName(row.querySelector('.seed-name')?.textContent);
+          const name = normalizeSearch(row.querySelector('.seed-name')?.textContent);
           row.hidden = (group !== 'all' && row.dataset.inventoryKind !== group) || !name.includes(query);
           if (!row.hidden) visible += 1;
         });
@@ -2099,6 +2105,31 @@
         render();
         document.querySelector(`[data-factory-view="${sheet.factoryView}"]`)?.focus();
       }));
+    if (sheet?.type === 'mill') {
+      const updateFactoryFinder = () => {
+        const query = normalizeSearch(sheet.factoryQuery).trim();
+        let visible = 0;
+        document.querySelectorAll('.sheet--factory .machine-grid > .machine-block').forEach((block) => {
+          const rows = [...block.querySelectorAll('.mc-row')];
+          rows.forEach((row) => {
+            const recipe = row.querySelector('.seed-name')?.textContent || '';
+            const ingredients = row.querySelector('.mc-recipe-meta span')?.textContent || '';
+            row.hidden = Boolean(query) && !normalizeSearch(`${recipe} ${ingredients}`).includes(query);
+            if (!row.hidden) visible += 1;
+          });
+          block.hidden = Boolean(query) && !rows.some((row) => !row.hidden);
+        });
+        const count = document.querySelector('.mc-result-count');
+        if (count) count.textContent = `${visible} công thức phù hợp`;
+        const empty = document.querySelector('.mc-search-empty');
+        if (empty) empty.hidden = !query || visible > 0 || Boolean(document.querySelector('.mc-view-empty'));
+      };
+      document.querySelector('#factory-search')?.addEventListener('input', (event) => {
+        sheet.factoryQuery = event.currentTarget.value;
+        updateFactoryFinder();
+      });
+      updateFactoryFinder();
+    }
     document.querySelectorAll('[data-machine-run]').forEach((el) =>
       el.addEventListener('click', async () => {
         if (!el.dataset.recipe) return;

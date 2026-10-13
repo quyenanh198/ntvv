@@ -444,6 +444,25 @@ try {
   await page.locator('[data-factory-view="all"]').click();
   assert.equal(await page.locator('.sheet--factory .mc-row').count(), allRecipes,
     'all view should restore every recipe');
+  const factorySearch = page.locator('#factory-search');
+  await factorySearch.fill('ca kho tieu');
+  assert.equal(await page.locator('.sheet--factory .mc-row:visible').count(), 1,
+    'accent-tolerant recipe search should isolate pepper-braised fish');
+  assert.equal(await page.locator('.sheet--factory .mc-row[data-recipe-output="cakho"]:visible').count(), 1);
+  await page.locator('[data-factory-view="active"]').click();
+  assert.equal(await factorySearch.inputValue(), 'ca kho tieu',
+    'recipe search should survive factory status changes');
+  await page.locator('[data-factory-view="all"]').click();
+  assert.equal(await page.locator('.sheet--factory .mc-row[data-recipe-output="cakho"]:visible').count(), 1);
+  await factorySearch.fill('no such recipe');
+  assert.equal(await page.locator('.sheet--factory .mc-search-empty:visible').count(), 1,
+    'unmatched recipe search should explain how to recover');
+  await factorySearch.fill('bot mi');
+  assert.ok(await page.locator('.sheet--factory .mc-row:visible').count() > 0,
+    'ingredient search should ignore Vietnamese accents');
+  await factorySearch.fill('');
+  assert.equal(await page.locator('.sheet--factory .mc-row:visible').count(), allRecipes,
+    'clearing search should restore every unlocked recipe');
   for (const product of ['grilled-fish', 'butter', 'carrot-cake', 'apple-pie', 'farm-pizza', 'strawberry-cake', 'honey-cake']) {
     await page.waitForFunction((name) => {
       const image = document.querySelector(`.sheet img[src*="products-v3/${name}.png"]`);

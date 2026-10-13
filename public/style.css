@@ -1966,6 +1966,12 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .mc-view-switch button { min-height: 44px; padding: .45rem .7rem; border: 2px solid #a1794b; border-radius: 12px; background: #fff8e6; color: #503818; font: inherit; font-size: .82rem; font-weight: 800; cursor: pointer; }
 .mc-view-switch button[aria-pressed="true"] { background: #376d37; border-color: #28532b; color: #fff; }
 .mc-view-switch button:focus-visible { outline: 3px solid #284f7d; outline-offset: 2px; }
+.mc-finder { margin: 0 0 .7rem; display: grid; gap: .35rem; }
+.mc-finder label { color: #503818; font-size: .82rem; font-weight: 800; }
+.mc-finder input { width: 100%; min-height: 44px; padding: .5rem .65rem; border: 2px solid #a1794b; border-radius: 10px; background: #fffdf4; color: #3e3426; font: inherit; }
+.mc-finder input:focus-visible { outline: 3px solid #284f7d; outline-offset: 2px; }
+.mc-result-count { margin: 0; color: #614b33; font-size: .78rem; font-weight: 700; }
+.sheet--factory .mc-row[hidden], .sheet--factory .machine-block[hidden], .sheet--factory .mc-search-empty[hidden] { display: none; }
 .mc-view-empty { padding: .7rem; border: 1px solid #b9a17e; border-radius: 10px; }
 
 /* ---- Điện thoại: tắt các hiệu ứng nặng GPU (blur nền, filter, animation hàng loạt) ---- */
