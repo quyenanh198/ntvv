@@ -67,6 +67,7 @@
     mutcam: 'assets/products-v3/orange-marmalade.png', mutgung: 'assets/products-v3/ginger-preserve.png',
     mutsaurieng: 'assets/products-v3/durian-jam.png', siro: 'assets/products-v3/dragon-fruit-syrup.png',
     sinhtoxoai: 'assets/products-v3/mango-smoothie.png', nuocchanh: 'assets/products-v3/lemonade.png', nuocthom: 'assets/products-v3/pineapple-juice.png',
+    dauoliu: 'assets/products-v3/olive-oil.png', nuoccoc: 'assets/products-v3/ambarella-juice.png',
     sotcachua: 'assets/products-v3/tomato-sauce.png', phomai: 'assets/products-v3/farm-cheese.png',
     phomaide: 'assets/products-v3/goat-cheese.png', phomaitrau: 'assets/products-v3/buffalo-cheese.png',
     suachua: 'assets/products-v3/strawberry-yogurt.png', kem: 'assets/products-v3/watermelon-ice-cream.png',
