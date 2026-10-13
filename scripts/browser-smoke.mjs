@@ -208,6 +208,7 @@ try {
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
   assert.ok(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty > 0);
   await page.locator('.dock-btn[data-sheet="inventory"]').click();
+  await page.locator('.float-gain').first().waitFor({ state: 'detached' });
   await auditAccessibility(page, 'inventory-320');
   await checkNoOverflow(page, '320px inventory controls');
   assert.equal(await page.locator('.inv-worth-card').count(), 2,
