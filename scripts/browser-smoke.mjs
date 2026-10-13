@@ -419,7 +419,7 @@ try {
   }
   await page.locator('[data-sheet="more"]').first().click();
   await page.locator('.more-card[data-sheet="mill"]').click();
-  for (const product of ['grilled-fish', 'butter', 'carrot-cake']) {
+  for (const product of ['grilled-fish', 'butter', 'carrot-cake', 'apple-pie', 'farm-pizza', 'strawberry-cake', 'honey-cake']) {
     await page.waitForFunction((name) => {
       const image = document.querySelector(`.sheet img[src*="products-v3/${name}.png"]`);
       return image?.complete && image.naturalWidth > 0;
@@ -431,6 +431,8 @@ try {
   assert.ok(recipeMetaSize >= 12, `factory recipe details should be readable at 320px: ${recipeMetaSize}px`);
   await checkNoOverflow(page, '320px new factory goods');
   await page.screenshot({ path: resolve(outputDir, 'factory-goods-320.png') });
+  await page.locator('.machine-block').filter({ has: page.locator('img[src*="machines-v3/bakery-oven.png"]') }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'bakery-goods-320.png') });
   await page.keyboard.press('Escape');
 
   await page.setViewportSize({ width: 844, height: 390 });
