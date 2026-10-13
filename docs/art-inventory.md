@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 49/186 catalog products have PNG or SVG icons. 186 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 51/186 catalog products have PNG or SVG icons. 188 static asset paths appear in the client.
 
 ## Crops
 
@@ -118,11 +118,11 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Bánh tráng trộn | banhtrangtron | quanvat | emoji |
 | Bánh xèo | banhxeo | bepan | emoji |
 | Bắp xào bơ | bapxao | quanvat | emoji |
-| Bột bắp | botbap | coixay | emoji |
-| Bột ca cao | botcacao | mayrang | emoji |
+| Bột bắp | botbap | coixay | PNG art |
+| Bột ca cao | botcacao | mayrang | PNG art |
 | Bột chiên | botchien | quanvat | emoji |
 | Bột gạo | botgao | coixay | PNG art |
-| Bột mì | botmi | coixay | SVG icon |
+| Bột mì | botmi | coixay | PNG art |
 | Bơ | bo | nhamaysua | PNG art |
 | Cá chép | cachep | ho | SVG icon |
 | Cá chim trắng | cachim | cachim | emoji |
@@ -430,6 +430,8 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/cane-sugar.png` | 18 KB |
 | `assets/products-v3/carrot-cake.png` | 106 KB |
 | `assets/products-v3/carrot-juice.png` | 13 KB |
+| `assets/products-v3/cocoa-powder.png` | 90 KB |
+| `assets/products-v3/corn-flour.png` | 92 KB |
 | `assets/products-v3/cow-milk.png` | 59 KB |
 | `assets/products-v3/deer-velvet.png` | 66 KB |
 | `assets/products-v3/duck-eggs.png` | 18 KB |
@@ -463,6 +465,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/tomato-sauce.png` | 20 KB |
 | `assets/products-v3/turkey-eggs.png` | 77 KB |
 | `assets/products-v3/watermelon-juice.png` | 81 KB |
+| `assets/products-v3/wheat-flour.png` | 89 KB |
 | `assets/products-v3/wool-roll.png` | 19 KB |
 | `assets/scene-v3/chicken_coop_v3.png` | 66 KB |
 | `assets/scene-v3/farmer_v3.png` | 63 KB |
@@ -479,7 +482,6 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/ui/fish-cakoi.svg` | <1 KB |
 | `assets/ui/fish-canho.svg` | <1 KB |
 | `assets/ui/fish-caro.svg` | <1 KB |
-| `assets/ui/flour.svg` | <1 KB |
 | `assets/ui/gem.svg` | <1 KB |
 | `assets/ui/star.svg` | <1 KB |
 | `assets/ui/wool.svg` | <1 KB |
