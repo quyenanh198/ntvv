@@ -410,6 +410,10 @@ try {
       return image?.complete && image.naturalWidth > 0;
     }, product);
   }
+  const recipeMeta = page.locator('.machine-grid .mc-recipe-meta').first();
+  assert.equal(await recipeMeta.locator('span').count(), 2, 'factory recipes should separate ingredients and rewards');
+  const recipeMetaSize = await recipeMeta.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+  assert.ok(recipeMetaSize >= 12, `factory recipe details should be readable at 320px: ${recipeMetaSize}px`);
   await checkNoOverflow(page, '320px new factory goods');
   await page.screenshot({ path: resolve(outputDir, 'factory-goods-320.png') });
   await page.keyboard.press('Escape');

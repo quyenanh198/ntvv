@@ -1930,6 +1930,14 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .sheet--factory .sheet-scroll { max-height: calc(min(92dvh, 940px) - 5.5rem - var(--bottom-safe)); }
 .machine-grid .mc-row { grid-template-columns: 44px minmax(0, 1fr); row-gap: .3rem; padding: .45rem .5rem; }
 .machine-grid .mc-row .seed-sprite { width: 40px; height: 40px; }
+.machine-grid .mc-recipe-meta {
+  display: grid;
+  gap: .2rem;
+  color: #614b33;
+  font-size: .75rem;
+  line-height: 1.4;
+}
+.machine-grid .mc-recipe-meta b { color: #3e3426; }
 .machine-grid .mc-add {
   grid-column: 1 / -1;
   display: flex; align-items: center; justify-content: flex-end; gap: .3rem;
