@@ -621,6 +621,23 @@ try {
   assert.equal(await page.locator('.sheet #btn-speedup-plot').count(), 1,
     'waiting prompt should open the next growing plot');
   await page.keyboard.press('Escape');
+  for (const crop of ['luami', 'carot', 'ngo']) {
+    db.prepare('INSERT OR IGNORE INTO collection_discoveries (owner_id, item, first_at) VALUES (1, ?, ?)').run(crop, Date.now());
+  }
+  const collectionGoldBefore = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const collectionPrompt = page.locator('.farm-next-step[data-next-step="collections"]');
+  await collectionPrompt.waitFor();
+  assert.match(await collectionPrompt.innerText(), /Vụ mùa đầu tiên.*hoàn thành/,
+    'a finished collection should become the next useful farm action');
+  await collectionPrompt.click();
+  await page.locator('.sheet [data-collection-claim="first_harvests"]:enabled').click();
+  await page.locator('.sheet [data-collection-claim="first_harvests"]:disabled').waitFor();
+  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, collectionGoldBefore + 1600,
+    'claiming the suggested collection should grant its reward once');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.farm-next-step[data-next-step="collections"]').count(), 0,
+    'a claimed collection should leave the immediate-action prompt');
   for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao', 'mutcam', 'mutgung', 'mutsaurieng', 'siro', 'suachua', 'phomaide', 'phomaitrau', 'kem', 'kemvani', 'kemsaurieng', 'dauoliu', 'nuoccoc', 'vai', 'lua', 'khanlen', 'khanalpaca', 'aolen', 'mulen', 'caphesua', 'socola', 'tratui', 'ruouvang', 'caonhung', 'nuochoa', 'hopphomai', 'aodai', 'buatiec', 'hopqua', 'caphehaohang', 'chaca', 'cakho', 'sushi', 'lauca', 'goicuon', 'tomnuong', 'catrakho', 'calocnuong']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }

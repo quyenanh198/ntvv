@@ -726,12 +726,16 @@
     const finishedJobs = Object.values(farm.machines).reduce((total, jobs) => total
       + Object.values(jobs || {}).reduce((count, job) => count + (job.completed || 0), 0), 0);
     const hungryAnimals = farm.animals.filter((animal) => animal.ready_at == null).length;
+    const readyCollection = (farm.collections || []).find((collection) => !collection.claimed
+      && collection.items.every((item) => item.found));
     const firstSaleReady = farm.level <= 2 && !farm.soldGold
       && Object.entries(farm.inventory).some(([id, qty]) => qty > 0 && crops()[id]);
     const step = ready
       ? { kind: 'harvest', icon: '🧺', title: `${ready} ô đã chín`, detail: 'Chạm để thu hoạch ô đầu tiên.' }
       : firstSaleReady
         ? { kind: 'inventory', icon: '🎒', title: 'Bán vụ đầu tiên', detail: 'Chạm để mở kho và bán nông sản.' }
+      : readyCollection
+        ? { kind: 'collections', icon: '📒', title: `${readyCollection.name} đã hoàn thành`, detail: `Chạm để nhận ${readyCollection.gold.toLocaleString('vi')} vàng${readyCollection.gems ? ` và ${readyCollection.gems} kim cương` : ''}.` }
       : deliverableOrders
         ? { kind: 'orders', icon: '🚚', title: `${deliverableOrders} đơn sẵn sàng giao`, detail: 'Chạm để giao hàng và nhận vàng, EXP, sao.' }
       : finishedJobs
@@ -1908,8 +1912,8 @@
         render();
         return;
       }
-      if (kind === 'orders' || kind === 'inventory') {
-        sheet = { type: kind === 'inventory' ? 'inventory' : me().level >= DATA.config.orderUnlockLevel ? 'orders' : 'quests' };
+      if (kind === 'orders' || kind === 'inventory' || kind === 'collections') {
+        sheet = { type: kind === 'inventory' ? 'inventory' : kind === 'collections' ? 'collections' : me().level >= DATA.config.orderUnlockLevel ? 'orders' : 'quests' };
         render();
         return;
       }
