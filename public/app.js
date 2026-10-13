@@ -1125,7 +1125,10 @@
                 </span>` : ''}
             </div>`;
           }).join('');
-      const worth = `<p class="sheet-note worth-line">📦 Giá trị kho (giá bán hiện tại): <b>${(m.inventoryValue || 0).toLocaleString('vi')}</b> ${COIN} · 💰 Tài sản ước tính (vàng + kho): <b>${(m.netWorth ?? m.gold).toLocaleString('vi')}</b> ${COIN}</p>`;
+      const worth = `<div class="inv-worth" role="group" aria-label="Giá trị tài sản">
+        <div class="inv-worth-card"><span>Giá trị kho</span><strong>${(m.inventoryValue || 0).toLocaleString('vi')} ${COIN}</strong><small>Giá bán hiện tại</small></div>
+        <div class="inv-worth-card"><span>Tổng tài sản</span><strong>${(m.netWorth ?? m.gold).toLocaleString('vi')} ${COIN}</strong><small>Vàng + giá trị kho</small></div>
+      </div>`;
       return sheetShell(`🎒 Kho đồ <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, worth + finder + rows, 'sheet--inventory');
     }
 

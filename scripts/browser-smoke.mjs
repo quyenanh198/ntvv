@@ -208,8 +208,19 @@ try {
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
   assert.ok(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty > 0);
   await page.locator('.dock-btn[data-sheet="inventory"]').click();
+  await page.locator('.float-gain').first().waitFor({ state: 'detached' });
   await auditAccessibility(page, 'inventory-320');
   await checkNoOverflow(page, '320px inventory controls');
+  assert.equal(await page.locator('.inv-worth-card').count(), 2,
+    'inventory value and total assets should have separate summaries');
+  assert.match(await page.locator('.inv-worth-card').first().innerText(), /Giá trị kho/);
+  assert.match(await page.locator('.inv-worth-card').last().innerText(), /Tổng tài sản/);
+  const summaryCards = await page.locator('.inv-worth-card').evaluateAll((cards) => cards.map((card) => ({
+    left: card.getBoundingClientRect().left, right: card.getBoundingClientRect().right,
+    width: card.getBoundingClientRect().width,
+  })));
+  assert.ok(summaryCards[0].width >= 100 && summaryCards[0].right <= summaryCards[1].left,
+    `320px inventory summaries should form readable side-by-side cards: ${JSON.stringify(summaryCards)}`);
   const inventoryControls = await page.locator('.inv-row[data-item="luami"] .qty-ctl > *').evaluateAll((items) => items.map((item) => ({
     width: item.getBoundingClientRect().width,
     height: item.getBoundingClientRect().height,

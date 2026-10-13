@@ -1430,7 +1430,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   box-shadow: 0 4px 12px rgba(42, 57, 26, .16);
   animation: gain-up 1.3s ease-out forwards;
 }
-.float-gain--xp { color: #aa7511; animation-delay: .08s; }
+.float-gain--xp { color: #72500d; animation-delay: .08s; }
 .float-gain .coin-img { width: 18px; height: 18px; }
 
 @keyframes fade-in { from { opacity: 0; } }
@@ -2064,7 +2064,12 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .tax-banner--debt { background: rgba(90, 30, 60, .92); border-color: #ff7ab3; }
 .tax-banner--credit { background: rgba(20, 70, 40, .92); border-color: #7bd66b; color: #d8ffd0; }
 
-.worth-line { background: rgba(255,255,255,.55); border-radius: 10px; padding: .4rem .6rem; }
+.inv-worth { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; margin: .35rem 0 .7rem; }
+.inv-worth-card { min-width: 0; display: grid; gap: .16rem; padding: .5rem .6rem; border: 1px solid #dfc591; border-radius: 12px; background: #fff8e8; }
+.inv-worth-card > span { color: #614b33; font-size: .75rem; font-weight: 800; }
+.inv-worth-card strong { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; color: #3e3426; font-size: .94rem; line-height: 1.25; overflow-wrap: anywhere; }
+.inv-worth-card strong .coin-img { width: 17px; height: 17px; }
+.inv-worth-card small { color: #715b43; font-size: .68rem; line-height: 1.2; }
 
 /* ---- Mobile: chống double-tap zoom ----
    Bấm nhanh nhiều lần (thu hoạch, trộm hết…) trên iOS bị hiểu là double-tap →
