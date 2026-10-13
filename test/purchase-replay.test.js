@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -28,10 +29,18 @@ test('animal and lottery purchases do not repeat after a lost response', async (
     assert.equal(first.statusCode, 200, first.body);
     assert.equal(first.json().bought, 2);
     const afterAnimal = gold();
-    assert.equal((await post('/buy-animal', animal, 'animal-purchase-request-01')).statusCode, 200);
+    assert.equal((await post('/buy-animal', { count: 2, kind: 'ga' }, 'animal-purchase-request-01')).statusCode, 200,
+      'the same JSON fields in another order should replay');
     assert.equal(gold(), afterAnimal);
     assert.equal(db.prepare("SELECT COUNT(*) n FROM animals WHERE owner_id = 1 AND kind = 'ga'").get().n, 2);
     assert.equal((await post('/buy-animal', { kind: 'ga', count: 1 }, 'animal-purchase-request-01')).statusCode, 409);
+    const legacyHash = createHash('sha256').update(JSON.stringify(animal)).digest('hex');
+    db.prepare('UPDATE mutation_results SET body_hash = ? WHERE owner_id = 1 AND request_key = ?')
+      .run(legacyHash, 'animal-purchase-request-01');
+    assert.equal((await post('/buy-animal', animal, 'animal-purchase-request-01')).statusCode, 200,
+      'records written before canonical hashing should still replay');
+    assert.equal(gold(), afterAnimal);
+    assert.equal(db.prepare("SELECT COUNT(*) n FROM animals WHERE owner_id = 1 AND kind = 'ga'").get().n, 2);
     assert.equal((await post('/buy-chicken', {}, 'chicken-purchase-request-01')).statusCode, 200);
     const afterChicken = gold();
     assert.equal((await post('/buy-chicken', {}, 'chicken-purchase-request-01')).statusCode, 200);

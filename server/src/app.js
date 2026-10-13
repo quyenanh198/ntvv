@@ -93,6 +93,13 @@ const PUBLIC_DIR = resolve(__dirname, '../../public');
 const ME_CACHE_TTL_MS = 30_000;
 const ME_CACHE_MAX = 300;
 const FUNNEL_DAY_MS = 86_400_000;
+const canonicalBody = (value) => {
+  if (Array.isArray(value)) return value.map(canonicalBody);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalBody(value[key])]));
+  }
+  return value;
+};
 const COLLECTIONS = [
   { id: 'first_harvests', name: 'Vụ mùa đầu tiên', items: ['luami', 'carot', 'ngo'], gold: 400, gems: 0 },
   { id: 'village_flavors', name: 'Hương vị làng quê', items: ['rauthom', 'toi', 'sa', 'cachua', 'ot'], gold: 2000, gems: 2 },
@@ -139,12 +146,16 @@ export function buildApp({ config, db, logger = true }) {
     if (key !== undefined && (typeof key !== 'string' || !/^[A-Za-z0-9_-]{16,100}$/.test(key))) {
       return { error: 'bad_idempotency_key' };
     }
-    const bodyHash = createHash('sha256').update(JSON.stringify(request.body ?? {})).digest('hex');
+    const body = request.body ?? {};
+    const legacyBodyHash = createHash('sha256').update(JSON.stringify(body)).digest('hex');
+    const bodyHash = `v2:${createHash('sha256').update(JSON.stringify(canonicalBody(body))).digest('hex')}`;
     return db.transaction(() => {
       if (key) {
         const prior = mutationRecord.get(request.farmer.user_id, key);
         if (prior) {
-          if (prior.route !== route || prior.body_hash !== bodyHash) return { error: 'idempotency_conflict' };
+          if (prior.route !== route || (prior.body_hash !== bodyHash && prior.body_hash !== legacyBodyHash)) {
+            return { error: 'idempotency_conflict' };
+          }
           apiMetrics.replayedMutations += 1;
           return { outcome: JSON.parse(prior.outcome_json), replay: true };
         }
