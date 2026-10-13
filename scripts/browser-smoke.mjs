@@ -316,7 +316,8 @@ try {
   assert.ok(quickOrder, 'The board should contain a quick crop order');
   const [[quickCrop, quickQty]] = Object.entries(JSON.parse(quickOrder.items_json));
   assert.ok(quickQty >= 1 && quickQty <= 4);
-  const growOrder = page.locator(`[data-grow-order="${quickCrop}"]`);
+  const growOrder = page.locator('.order-card').filter({ has: page.locator('.o-fast') })
+    .locator(`[data-grow-order="${quickCrop}"]`);
   assert.equal(await growOrder.isEnabled(), true, 'A missing quick crop should lead directly to planting');
   await page.screenshot({ path: resolve(outputDir, 'quick-order-320.png') });
   await growOrder.click();
