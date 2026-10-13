@@ -426,6 +426,23 @@ try {
   }
   await page.locator('[data-sheet="more"]').first().click();
   await page.locator('.more-card[data-sheet="mill"]').click();
+  const allRecipes = await page.locator('.sheet--factory .mc-row').count();
+  assert.ok(allRecipes > 0, 'all factory recipes should be visible by default');
+  await page.locator('[data-factory-view="available"]').click();
+  assert.equal(await page.locator('[data-factory-view="available"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.locator('.sheet--factory .mc-row[data-can-make="0"]').count(), 0,
+    'available view should only show craftable recipes');
+  assert.ok(await page.locator('.sheet--factory .mc-row').count() <= allRecipes);
+  await page.locator('[data-factory-view="active"]').click();
+  assert.equal(await page.locator('.sheet--factory .mc-row[data-job-active="0"]').count(), 0,
+    'active view should only show queued or ready recipes');
+  if (await page.locator('.sheet--factory .mc-row').count() === 0) {
+    assert.equal(await page.locator('.mc-view-empty').count(), 1,
+      'empty active view should explain the next action');
+  }
+  await page.locator('[data-factory-view="all"]').click();
+  assert.equal(await page.locator('.sheet--factory .mc-row').count(), allRecipes,
+    'all view should restore every recipe');
   for (const product of ['grilled-fish', 'butter', 'carrot-cake', 'apple-pie', 'farm-pizza', 'strawberry-cake', 'honey-cake']) {
     await page.waitForFunction((name) => {
       const image = document.querySelector(`.sheet img[src*="products-v3/${name}.png"]`);
