@@ -254,3 +254,5 @@ The eight premium-workshop products use transparent full-resolution sources in `
 - `family-feast`: wooden tray with a small pizza, fish soup, and watermelon ice cream.
 - `farm-gift-box`: open kraft gift box with cake, chocolate, milk tea, and burgundy ribbon.
 - `premium-coffee`: dark teal ceramic cup of coffee with golden crema and roasted beans.
+
+The fish-oven batch has transparent full-resolution sources `fish-cakes.png`, `pepper-braised-fish.png`, `fish-sushi.png`, and `fish-hotpot.png` in `asset/source_products/v3/`, with 256px game exports in `public/assets/products-v3/`. Built-in imagegen prompts specified a single centered watercolor/gouache food icon on transparent square, warm upper-left light, subtle dark contour, readable at 80px, and no scene, text, or border. Subjects were Vietnamese dill and scallion fish cakes, black-pepper clay-pot braised fish, four pale-pink fish nigiri, and tomato-mushroom fish hotpot.

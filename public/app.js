@@ -60,6 +60,8 @@
     sua: 'assets/products-v3/cow-milk.png', len: 'assets/ui/wool.svg', matong: 'assets/products-v3/honey.png',
     suade: 'assets/products-v3/goat-milk.png', thit: 'assets/products-v3/pork.png',
     canuong: 'assets/products-v3/grilled-fish.png', bo: 'assets/products-v3/butter.png',
+    chaca: 'assets/products-v3/fish-cakes.png', cakho: 'assets/products-v3/pepper-braised-fish.png',
+    sushi: 'assets/products-v3/fish-sushi.png', lauca: 'assets/products-v3/fish-hotpot.png',
     banhcarot: 'assets/products-v3/carrot-cake.png',
     khoaichien: 'assets/products-v3/potato-fries.png', salad: 'assets/products-v3/garden-salad.png',
     comchien: 'assets/products-v3/fried-rice.png', supbi: 'assets/products-v3/pumpkin-soup.png',
