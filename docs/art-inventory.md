@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 51/186 catalog products have PNG or SVG icons. 188 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 55/186 catalog products have PNG or SVG icons. 192 static asset paths appear in the client.
 
 ## Crops
 
@@ -178,10 +178,10 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Mũ len thỏ | mulen | xuongdet | emoji |
 | Mực | muc | muc | emoji |
 | Mực nướng sa tế | mucnuong | lonuong | emoji |
-| Mứt cam | mutcam | noimut | emoji |
+| Mứt cam | mutcam | noimut | PNG art |
 | Mứt dâu | mutdau | noimut | PNG art |
-| Mứt gừng | mutgung | noimut | emoji |
-| Mứt sầu riêng | mutsaurieng | noimut | emoji |
+| Mứt gừng | mutgung | noimut | PNG art |
+| Mứt sầu riêng | mutsaurieng | noimut | PNG art |
 | Nem chua | nemchua | quanvat | emoji |
 | Nhung hươu | nhunghuou | huou | PNG art |
 | Nước cam | nuoccam | mayep | PNG art |
@@ -263,7 +263,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Salad rau | salad | bepan | PNG art |
 | Sầu riêng chiên | saurienchien | bepan | emoji |
 | Sinh tố xoài | sinhtoxoai | mayep | PNG art |
-| Siro thanh long | siro | noimut | emoji |
+| Siro thanh long | siro | noimut | PNG art |
 | Sô-cô-la | socola | mayrang | emoji |
 | Sốt cà chua | sotcachua | noimut | PNG art |
 | Súp bí đỏ | supbi | bepan | PNG art |
@@ -434,13 +434,16 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/corn-flour.png` | 92 KB |
 | `assets/products-v3/cow-milk.png` | 59 KB |
 | `assets/products-v3/deer-velvet.png` | 66 KB |
+| `assets/products-v3/dragon-fruit-syrup.png` | 89 KB |
 | `assets/products-v3/duck-eggs.png` | 18 KB |
+| `assets/products-v3/durian-jam.png` | 108 KB |
 | `assets/products-v3/egg-bread.png` | 24 KB |
 | `assets/products-v3/farm-cheese.png` | 16 KB |
 | `assets/products-v3/farm-pizza.png` | 110 KB |
 | `assets/products-v3/fried-rice.png` | 23 KB |
 | `assets/products-v3/garden-salad.png` | 22 KB |
 | `assets/products-v3/ginger-cake.png` | 89 KB |
+| `assets/products-v3/ginger-preserve.png` | 95 KB |
 | `assets/products-v3/goat-milk.png` | 55 KB |
 | `assets/products-v3/goose-egg.png` | 19 KB |
 | `assets/products-v3/grilled-fish.png` | 96 KB |
@@ -449,6 +452,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/lemonade.png` | 73 KB |
 | `assets/products-v3/mango-smoothie.png` | 61 KB |
 | `assets/products-v3/orange-juice.png` | 21 KB |
+| `assets/products-v3/orange-marmalade.png` | 91 KB |
 | `assets/products-v3/pineapple-cake.png` | 91 KB |
 | `assets/products-v3/pineapple-juice.png` | 68 KB |
 | `assets/products-v3/pork.png` | 78 KB |
