@@ -1185,9 +1185,14 @@
             const ok = canDeliver(o);
             const missing = Object.entries(o.items).reduce((sum, [id, q]) => sum + Math.max(0, q - (m.inventory[id] || 0)), 0);
             const quick = o.slot === 0 && Object.keys(o.items).length === 1 && Boolean(crops()[Object.keys(o.items)[0]]);
-            const quickCropId = quick ? Object.keys(o.items)[0] : null;
+            const missingItems = Object.entries(o.items).filter(([id, q]) => (m.inventory[id] || 0) < q);
+            const missingCropId = missingItems.find(([id]) => crops()[id] && !crops()[id].risky)?.[0];
+            const missingRecipeId = !missingCropId && missingItems.find(([id]) => {
+              const machine = DATA.config.machines[goods()[id]?.source];
+              return machine && m.level >= machine.level && Object.values(machine.recipes).some((recipe) => recipe.out[id]);
+            })?.[0];
             const emptyPlot = m.plots.find((plot) => !plot.crop);
-            const canGrowQuick = quickCropId && !ok && emptyPlot && m.gold >= crops()[quickCropId].seed;
+            const canGrowMissing = missingCropId && emptyPlot && m.gold >= crops()[missingCropId].seed;
             const items = Object.entries(o.items).map(([id, q]) => {
               const have = m.inventory[id] || 0;
               const itemName = esc(itemInfo(id)?.name || id);
@@ -1199,7 +1204,8 @@
               <div class="o-items">${items}</div>
               <div class="o-reward">${o.gold.toLocaleString('vi')} ${COIN} · +${o.exp}EXP · ${o.stars}${STAR}</div>
               <div class="sheet-actions">
-                ${quickCropId && !ok ? `<button class="btn-mini gbtn gbtn--gold" data-grow-order="${quickCropId}" ${canGrowQuick ? '' : 'disabled'}>${!emptyPlot ? 'Chờ ô trống' : m.gold < crops()[quickCropId].seed ? 'Thiếu vàng mua hạt' : `🌱 Gieo ${esc(crops()[quickCropId].name)}`}</button>` : ''}
+                ${missingCropId ? `<button class="btn-mini gbtn gbtn--gold" data-grow-order="${missingCropId}" ${canGrowMissing ? '' : 'disabled'}>${!emptyPlot ? 'Chờ ô trống' : m.gold < crops()[missingCropId].seed ? 'Thiếu vàng mua hạt' : `🌱 Gieo ${esc(crops()[missingCropId].name)}`}</button>` : ''}
+                ${missingRecipeId ? `<button class="btn-mini gbtn gbtn--gold" data-make-order="${missingRecipeId}">🏭 Làm ${esc(goods()[missingRecipeId].name)}</button>` : ''}
                 <button class="btn-mini gbtn gbtn--green" data-deliver="${o.id}" aria-label="Giao đơn hàng ${o.slot + 1}" ${ok ? '' : 'disabled'}>🚚 Giao</button>
                 <button class="btn-mini btn-ghost" data-discard="${o.id}" aria-label="Bỏ đơn hàng ${o.slot + 1}">Bỏ</button>
               </div>
@@ -1329,7 +1335,7 @@
             state = `<small class="mc-run" data-machine-ready="${job.currentReadyAt || job.readyAt}">🔄 1 đang làm · chờ ${job.queued} · ${fmtTime(left)}</small>
               <button class="mc-plus mc-plus--gem" data-machine-speed="${mc.id}" data-recipe="${r.id}" aria-label="Hoàn thành ngay ${r.name} với ${Math.max(1, Math.ceil(left / 300000))} kim cương" title="Xong ngay">${GEM}${Math.max(1, Math.ceil(left / 300000))}</button>`;
           }
-          return `<div class="seed-row mc-row${job ? ' mc-row--active' : ''}${canAdd ? '' : ' mc-row--dim'}" ${missing ? `data-missing="${missing}" data-missing-name="${r.name}" title="Thiếu nguyên liệu — bấm để đăng tin thu mua" style="cursor:pointer"` : 'style="cursor:default"'}>
+          return `<div class="seed-row mc-row${job ? ' mc-row--active' : ''}${canAdd ? '' : ' mc-row--dim'}${sheet.preferredRecipe === outId ? ' mc-row--recommended' : ''}" data-recipe-output="${outId}" ${missing ? `data-missing="${missing}" data-missing-name="${r.name}" title="Thiếu nguyên liệu — bấm để đăng tin thu mua" style="cursor:pointer"` : 'style="cursor:default"'}>
             ${itemImg(outId, 'seed-sprite')}
             <span class="seed-info"><span class="seed-name">${r.name}</span>
               <div class="seed-meta mc-recipe-meta">
@@ -1358,7 +1364,8 @@
         <button class="btn gbtn gbtn--gold" id="btn-collect-all" ${readyTotal ? '' : 'disabled'}>✅ Thu hết${readyTotal ? ` (${readyTotal} món xong)` : ''}</button>
         <button class="btn gbtn gbtn--green" id="btn-cook-all" ${canCookAny ? '' : 'disabled'} title="Xếp tối đa mọi công thức đủ nguyên liệu (trừ thức ăn gia súc)">🏭 Chế biến hết</button>
       </div>`;
-      return sheetShell('🏭 Khu chế biến', `${toolbar}<div class="machine-grid">${blocks}</div>`, 'sheet--factory');
+      const orderHint = sheet.preferredRecipe ? `<p class="sheet-note seed-tip">Đơn hàng cần ${esc(goods()[sheet.preferredRecipe]?.name || sheet.preferredRecipe)}. Công thức được đánh dấu bên dưới.</p>` : '';
+      return sheetShell('🏭 Khu chế biến', `${orderHint}${toolbar}<div class="machine-grid">${blocks}</div>`, 'sheet--factory');
     }
 
     if (t === 'money') {
@@ -2252,6 +2259,12 @@
         if (!firstEmpty) return;
         sheet = { type: 'seed', idx: firstEmpty.idx, preferredCrop: el.dataset.growOrder };
         render();
+      }));
+    document.querySelectorAll('[data-make-order]').forEach((el) =>
+      el.addEventListener('click', () => {
+        sheet = { type: 'mill', preferredRecipe: el.dataset.makeOrder };
+        render();
+        document.querySelector('.mc-row--recommended')?.scrollIntoView({ block: 'center' });
       }));
     document.querySelectorAll('[data-deliver]').forEach((el) =>
       el.addEventListener('click', async (e) => {
