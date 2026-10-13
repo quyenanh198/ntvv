@@ -81,6 +81,8 @@
     banhkem: 'assets/products-v3/strawberry-cake.png', banhmatong: 'assets/products-v3/honey-cake.png',
     banhdua: 'assets/products-v3/pineapple-cake.png', banhgung: 'assets/products-v3/ginger-cake.png',
     botgao: 'assets/products-v3/rice-flour.png', duongmia: 'assets/products-v3/cane-sugar.png', capherang: 'assets/products-v3/roasted-coffee.png',
+    caphesua: 'assets/products-v3/iced-milk-coffee.png', socola: 'assets/products-v3/milk-chocolate.png',
+    tratui: 'assets/products-v3/tea-bags.png',
     trungcut: 'assets/products-v3/quail-eggs.png', trungvit: 'assets/products-v3/duck-eggs.png',
     trungngong: 'assets/products-v3/goose-egg.png', longtho: 'assets/products-v3/rabbit-fur.png',
     trunggatay: 'assets/products-v3/turkey-eggs.png', totam: 'assets/products-v3/silkworm-silk.png',

@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 69/186 catalog products have PNG or SVG icons. 206 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 72/186 catalog products have PNG or SVG icons. 209 static asset paths appear in the client.
 
 ## Crops
 
@@ -136,7 +136,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cá nướng | canuong | lonuong | PNG art |
 | Cà phê hảo hạng | caphehaohang | xuongcaocap | emoji |
 | Cà phê rang | capherang | mayrang | PNG art |
-| Cà phê sữa | caphesua | mayrang | emoji |
+| Cà phê sữa | caphesua | mayrang | PNG art |
 | Cá rô | caro | ho | SVG icon |
 | Cá tra | catra | catra | emoji |
 | Cá tra kho tộ | catrakho | lonuong | emoji |
@@ -264,7 +264,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Sầu riêng chiên | saurienchien | bepan | emoji |
 | Sinh tố xoài | sinhtoxoai | mayep | PNG art |
 | Siro thanh long | siro | noimut | PNG art |
-| Sô-cô-la | socola | mayrang | emoji |
+| Sô-cô-la | socola | mayrang | PNG art |
 | Sốt cà chua | sotcachua | noimut | PNG art |
 | Súp bí đỏ | supbi | bepan | PNG art |
 | Sushi | sushi | lonuong | emoji |
@@ -280,7 +280,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Tơ tằm | totam | tam | PNG art |
 | Trà sả mật ong | trasa | quanvat | emoji |
 | Trà sữa | trasua | bepan | emoji |
-| Trà túi lọc | tratui | mayrang | emoji |
+| Trà túi lọc | tratui | mayrang | PNG art |
 | Trứng | trung | ga | SVG icon |
 | Trứng cút | trungcut | cut | PNG art |
 | Trứng gà tây | trunggatay | gatay | PNG art |
@@ -455,8 +455,10 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/grilled-fish.png` | 96 KB |
 | `assets/products-v3/honey-cake.png` | 105 KB |
 | `assets/products-v3/honey.png` | 86 KB |
+| `assets/products-v3/iced-milk-coffee.png` | 78 KB |
 | `assets/products-v3/lemonade.png` | 73 KB |
 | `assets/products-v3/mango-smoothie.png` | 61 KB |
+| `assets/products-v3/milk-chocolate.png` | 78 KB |
 | `assets/products-v3/olive-oil.png` | 74 KB |
 | `assets/products-v3/orange-juice.png` | 21 KB |
 | `assets/products-v3/orange-marmalade.png` | 91 KB |
@@ -476,6 +478,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/strawberry-cake.png` | 104 KB |
 | `assets/products-v3/strawberry-jam.png` | 18 KB |
 | `assets/products-v3/strawberry-yogurt.png` | 98 KB |
+| `assets/products-v3/tea-bags.png` | 99 KB |
 | `assets/products-v3/tomato-sauce.png` | 20 KB |
 | `assets/products-v3/turkey-eggs.png` | 77 KB |
 | `assets/products-v3/vanilla-ice-cream.png` | 64 KB |
