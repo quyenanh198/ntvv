@@ -602,7 +602,7 @@ try {
   assert.equal(await page.locator('.sheet #btn-speedup-plot').count(), 1,
     'waiting prompt should open the next growing plot');
   await page.keyboard.press('Escape');
-  for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao', 'mutcam', 'mutgung', 'mutsaurieng', 'siro', 'suachua', 'phomaide', 'phomaitrau', 'kem', 'kemvani', 'kemsaurieng', 'dauoliu', 'nuoccoc', 'vai', 'lua', 'khanlen', 'khanalpaca', 'aolen', 'mulen', 'caphesua', 'socola', 'tratui', 'ruouvang', 'caonhung', 'nuochoa', 'hopphomai', 'aodai', 'buatiec', 'hopqua', 'caphehaohang', 'chaca', 'cakho', 'sushi', 'lauca']) {
+  for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao', 'mutcam', 'mutgung', 'mutsaurieng', 'siro', 'suachua', 'phomaide', 'phomaitrau', 'kem', 'kemvani', 'kemsaurieng', 'dauoliu', 'nuoccoc', 'vai', 'lua', 'khanlen', 'khanalpaca', 'aolen', 'mulen', 'caphesua', 'socola', 'tratui', 'ruouvang', 'caonhung', 'nuochoa', 'hopphomai', 'aodai', 'buatiec', 'hopqua', 'caphehaohang', 'chaca', 'cakho', 'sushi', 'lauca', 'goicuon', 'tomnuong', 'catrakho', 'calocnuong']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -642,6 +642,8 @@ try {
     ['hopqua', 'farm-gift-box'], ['caphehaohang', 'premium-coffee'],
     ['chaca', 'fish-cakes'], ['cakho', 'pepper-braised-fish'],
     ['sushi', 'fish-sushi'], ['lauca', 'fish-hotpot'],
+    ['goicuon', 'fish-spring-rolls'], ['tomnuong', 'grilled-shrimp'],
+    ['catrakho', 'braised-pangasius'], ['calocnuong', 'grilled-snakehead-fish'],
   ]) {
     const image = page.locator(`.inv-row[data-item="${item}"] img[src*="products-v3/${file}.png"]`);
     await image.waitFor();
