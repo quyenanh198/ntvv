@@ -153,6 +153,17 @@ try {
   const startingGold = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').click();
   await auditAccessibility(page, 'seed-320');
+  const seedChoice = await page.locator('.seed-card[data-crop="luami"]').evaluate((element) => ({
+    width: element.getBoundingClientRect().width,
+    height: element.getBoundingClientRect().height,
+    detailSize: Number.parseFloat(getComputedStyle(element.querySelector('.seed-meta')).fontSize),
+    costSize: Number.parseFloat(getComputedStyle(element.querySelector('.seed-cost')).fontSize),
+  }));
+  assert.ok(seedChoice.width >= 130 && seedChoice.height >= 44, `320px seed choice is too small: ${JSON.stringify(seedChoice)}`);
+  assert.ok(seedChoice.detailSize >= 11.5 && seedChoice.costSize >= 12,
+    `320px seed cost or timing is too small: ${JSON.stringify(seedChoice)}`);
+  await checkNoOverflow(page, '320px seed chooser');
+  await page.screenshot({ path: resolve(outputDir, 'seed-320.png') });
   await page.locator('.seed-card[data-crop="luami"]').click();
   await page.locator('.plot[data-idx="0"][data-kind="waterplot"]').waitFor();
   assert.match(await page.locator('.plot[data-idx="0"]').getAttribute('aria-label'), /Ô đất 1, .*: tưới cây, còn/);

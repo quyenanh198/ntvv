@@ -1978,14 +1978,15 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   box-shadow: 0 3px 8px rgba(103, 82, 50, .07); cursor: pointer; text-align: center; font: inherit; color: inherit;
 }
 .seed-card .seed-sprite { width: 46px; height: 46px; }
-.seed-card .seed-name { font-size: .78rem; font-weight: 800; line-height: 1.1; }
-.seed-card .seed-meta { font-size: .62rem; color: var(--muted); font-weight: 650; line-height: 1.2; }
-.seed-card .seed-cost, .seed-card .seed-lock { font-size: .66rem; padding: .1rem .4rem; margin-top: .1rem; }
+.seed-card .seed-name { font-size: .85rem; font-weight: 800; line-height: 1.2; }
+.seed-card .seed-meta { font-size: .72rem; color: var(--muted); font-weight: 650; line-height: 1.35; }
+.seed-card .seed-cost, .seed-card .seed-lock { font-size: .75rem; padding: .15rem .45rem; margin-top: .1rem; }
 .seed-card--locked { opacity: .55; filter: grayscale(.3); cursor: default; }
 .seed-card--tree { background: rgba(232, 246, 222, .85); border-color: #b8d59a; }
 .seed-card--recommended { border-color: #5d9a37; background: #f0f9df; box-shadow: 0 0 0 2px #c8e69f inset; }
 .seed-card:not(.seed-card--locked):active { transform: translateY(1px); }
 @media (max-width: 480px) { .seed-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 359px) { .seed-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .seed-sort { display: flex; gap: .3rem; flex-wrap: wrap; margin: .2rem 0 .5rem; }
 .seed-section-title { margin: .65rem 0 .35rem; font-size: .85rem; color: #5a351c; }
