@@ -37,6 +37,11 @@ The remaining dairy sprites use matching source filenames in `asset/source_produ
 - Vanilla ice cream: "A pale cream vanilla soft-serve swirl with vanilla bean specks in a golden waffle cone, with a vanilla pod beside it. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
 - Durian ice cream: "Two pale golden durian ice-cream scoops in a cream dessert cup, with a distinct durian wedge on the rim. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
 
+Olive oil and ambarella juice use `asset/source_products/v3/olive-oil.png` and `ambarella-juice.png` as generated sources, with 256px exports in `public/assets/products-v3/`. Built-in imagegen prompts:
+
+- Olive oil: "One clear corked glass bottle of golden-green olive oil with a blank kraft tag, two dark green olives and one olive leaf by its base. Hand-painted watercolor/gouache product icon, three-quarter view, warm upper-left light, soft dark contour, readable at 80 CSS pixels, transparent background, no text."
+- Ambarella juice: "One short clear glass of pale yellow-green Vietnamese ambarella juice with ice and a green straw, and one sliced ambarella fruit beside it. Distinct from lemonade and pineapple juice. Hand-painted watercolor/gouache product icon, three-quarter view, warm upper-left light, soft dark contour, readable at 80 CSS pixels, transparent background, no text."
+
 The fish oven, dairy, and bakery product sprites use `asset/source_products/v3/grilled-fish.png`, `butter.png`, and `carrot-cake.png` as their 1254px sources, with matching 256px exports in `public/assets/products-v3/`. Built-in imagegen prompts:
 
 - Grilled fish: "One inventory product sprite for a cozy farm game: a whole grilled freshwater fish, golden brown with gentle grill marks and one small lemon wedge, presented on a plain oval ceramic plate. Friendly appetizing hand-painted watercolor/gouache, warm upper-left light, subtle dark outline, clear silhouette at 80 CSS pixels, centered with padding. Truly transparent background, no scene, no text, no other objects. Square PNG."

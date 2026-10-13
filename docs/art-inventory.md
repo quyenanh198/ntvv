@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 61/186 catalog products have PNG or SVG icons. 198 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 63/186 catalog products have PNG or SVG icons. 200 static asset paths appear in the client.
 
 ## Crops
 
@@ -150,7 +150,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cua | cua | cua | emoji |
 | Cua hấp sả | cuahap | lonuong | emoji |
 | Cuộn len | cuonlen | xuongdet | PNG art |
-| Dầu ô liu | dauoliu | mayep | emoji |
+| Dầu ô liu | dauoliu | mayep | PNG art |
 | Đường mía | duongmia | coixay | PNG art |
 | Ếch | ech | ech | emoji |
 | Gỏi cuốn cá | goicuon | lonuong | emoji |
@@ -188,7 +188,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Nước chanh | nuocchanh | mayep | PNG art |
 | Nước dứa | nuocthom | mayep | PNG art |
 | Nước ép cà rốt | nuoccarot | mayep | PNG art |
-| Nước ép cóc | nuoccoc | mayep | emoji |
+| Nước ép cóc | nuoccoc | mayep | PNG art |
 | Nước ép dưa hấu | nuocduahau | mayep | PNG art |
 | Nước hoa hoa hồng | nuochoa | xuongcaocap | emoji |
 | Ốc bàn tay | ocbantay | ocbantay | emoji |
@@ -424,6 +424,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/tree_02.png` | 14 KB |
 | `assets/pack/well.png` | 17 KB |
 | `assets/products-v3/alpaca-fleece.png` | 89 KB |
+| `assets/products-v3/ambarella-juice.png` | 98 KB |
 | `assets/products-v3/apple-pie.png` | 111 KB |
 | `assets/products-v3/buffalo-cheese.png` | 79 KB |
 | `assets/products-v3/buffalo-milk.png` | 66 KB |
@@ -454,6 +455,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/honey.png` | 86 KB |
 | `assets/products-v3/lemonade.png` | 73 KB |
 | `assets/products-v3/mango-smoothie.png` | 61 KB |
+| `assets/products-v3/olive-oil.png` | 74 KB |
 | `assets/products-v3/orange-juice.png` | 21 KB |
 | `assets/products-v3/orange-marmalade.png` | 91 KB |
 | `assets/products-v3/pineapple-cake.png` | 91 KB |
