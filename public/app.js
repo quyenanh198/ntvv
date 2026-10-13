@@ -1067,11 +1067,29 @@
 
     if (t === 'inventory') {
       const entries = Object.entries(m.inventory);
+      const animalProducts = new Set(Object.values(DATA.config.animals).map((animal) => animal.product));
+      const inventoryGroup = (id) => crops()[id] ? 'crops' : trees()[id] ? 'fruit'
+        : animalProducts.has(id) ? 'animals'
+          : DATA.config.machines[goods()[id]?.source] ? 'products' : 'other';
+      const inventoryGroups = [
+        ['all', 'Tất cả'], ['crops', 'Cây trồng'], ['fruit', 'Trái cây'],
+        ['animals', 'Vật nuôi'], ['products', 'Chế biến'], ['other', 'Khác'],
+      ];
+      const inventoryCounts = { all: entries.length, crops: 0, fruit: 0, animals: 0, products: 0, other: 0 };
+      entries.forEach(([id]) => { inventoryCounts[inventoryGroup(id)] += 1; });
+      const selectedGroup = inventoryGroups.some(([key]) => key === sheet.inventoryGroup) ? sheet.inventoryGroup : 'all';
+      const finder = `<div class="inv-finder">
+        <label for="inventory-search">Tìm trong kho</label>
+        <input id="inventory-search" type="search" autocomplete="off" value="${esc(sheet.inventoryQuery || '')}" placeholder="Tên vật phẩm" />
+        <div class="inv-groups" role="group" aria-label="Lọc kho theo loại">${inventoryGroups.map(([key, label]) => `<button type="button" data-inventory-group="${key}" aria-pressed="${selectedGroup === key}">${label} (${inventoryCounts[key]})</button>`).join('')}</div>
+        <p class="inv-result-count" aria-live="polite"></p>
+        <p class="sheet-note inv-filter-empty" hidden>Không tìm thấy vật phẩm phù hợp. Chọn Tất cả hoặc xóa từ tìm kiếm.</p>
+      </div>`;
       const rows = entries.length === 0
         ? '<p class="sheet-note">Kho trống — thu hoạch gì đó đi!</p>'
         : entries.map(([id, q]) => {
             const info = itemInfo(id);
-            return `<div class="inv-row${info?.sell ? ' inv-row--sell' : ''}" data-item="${id}">
+            return `<div class="inv-row${info?.sell ? ' inv-row--sell' : ''}" data-item="${id}" data-inventory-kind="${inventoryGroup(id)}">
               ${itemImg(id)}
               <span class="seed-info"><span class="seed-name">${info?.name || id}</span>
                 <div class="seed-meta">x${q}${info?.sell ? ` · ${Math.round(info.sell * (m.market?.[id]?.mult || 1)).toLocaleString('vi')} ${COIN}/cái${m.market?.[id] ? ` <i class="sat">📉 −${Math.round((1 - m.market[id].mult) * 100)}% bão hoà · hồi ~${m.market[id].hours}h</i>` : ''}` : ' · không bán được'}</div></span>
@@ -1088,7 +1106,7 @@
             </div>`;
           }).join('');
       const worth = `<p class="sheet-note worth-line">📦 Giá trị kho (giá bán hiện tại): <b>${(m.inventoryValue || 0).toLocaleString('vi')}</b> ${COIN} · 💰 Tài sản ước tính (vàng + kho): <b>${(m.netWorth ?? m.gold).toLocaleString('vi')}</b> ${COIN}</p>`;
-      return sheetShell(`🎒 Kho đồ <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, worth + rows);
+      return sheetShell(`🎒 Kho đồ <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, worth + finder + rows, 'sheet--inventory');
     }
 
     if (t === 'shop') {
@@ -1816,6 +1834,36 @@
         if (el.dataset.sheet === 'money') { openMoney(); return; }
         sheet = { type: el.dataset.sheet }; render();
       }));
+    if (sheet?.type === 'inventory') {
+      const normalizeItemName = (value) => String(value || '').normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('vi').replace(/đ/g, 'd');
+      const updateInventoryFinder = () => {
+        const query = normalizeItemName(sheet.inventoryQuery).trim();
+        const group = sheet.inventoryGroup || 'all';
+        let visible = 0;
+        document.querySelectorAll('.sheet--inventory .inv-row[data-item]').forEach((row) => {
+          const name = normalizeItemName(row.querySelector('.seed-name')?.textContent);
+          row.hidden = (group !== 'all' && row.dataset.inventoryKind !== group) || !name.includes(query);
+          if (!row.hidden) visible += 1;
+        });
+        document.querySelectorAll('[data-inventory-group]').forEach((button) => {
+          button.setAttribute('aria-pressed', String(button.dataset.inventoryGroup === group));
+        });
+        const count = document.querySelector('.inv-result-count');
+        if (count) count.textContent = `${visible} vật phẩm phù hợp`;
+        const empty = document.querySelector('.inv-filter-empty');
+        if (empty) empty.hidden = visible > 0 || Object.keys(me().inventory).length === 0;
+      };
+      document.querySelector('#inventory-search')?.addEventListener('input', (event) => {
+        sheet.inventoryQuery = event.currentTarget.value;
+        updateInventoryFinder();
+      });
+      document.querySelectorAll('[data-inventory-group]').forEach((button) => button.addEventListener('click', () => {
+        sheet.inventoryGroup = button.dataset.inventoryGroup;
+        updateInventoryFinder();
+      }));
+      updateInventoryFinder();
+    }
     document.querySelectorAll('[data-action="leaderboard"]').forEach((el) =>
       el.addEventListener('click', async () => {
         sfx('playTap');

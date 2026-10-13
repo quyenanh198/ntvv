@@ -607,6 +607,22 @@ try {
   }
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.dock-btn[data-sheet="inventory"]').click();
+  const inventorySearch = page.locator('#inventory-search');
+  await inventorySearch.fill('pho mai');
+  assert.equal(await page.locator('.sheet--inventory .inv-row[data-item]:visible').count(), 2,
+    'accent-tolerant inventory search should find both stocked cheeses');
+  await page.locator('[data-inventory-group="animals"]').click();
+  assert.equal(await page.locator('.sheet--inventory .inv-row[data-item]:visible').count(), 0,
+    'category filter should combine with inventory search');
+  assert.equal(await page.locator('.inv-filter-empty:visible').count(), 1,
+    'empty category search should explain how to recover');
+  await inventorySearch.fill('');
+  assert.ok(await page.locator('.sheet--inventory .inv-row[data-item]:visible').count() >= 5,
+    'animal-products category should show stocked animal goods');
+  assert.equal(await page.locator('.sheet--inventory .inv-row[data-inventory-kind="products"]:visible').count(), 0,
+    'animal-products category should hide processed goods');
+  await page.locator('[data-inventory-group="all"]').click();
+  await checkNoOverflow(page, '320px inventory finder');
   for (const [item, file] of [
     ['trunggatay', 'turkey-eggs'], ['totam', 'silkworm-silk'], ['suatrau', 'buffalo-milk'],
     ['longalpaca', 'alpaca-fleece'], ['nhunghuou', 'deer-velvet'],
