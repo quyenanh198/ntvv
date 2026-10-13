@@ -601,7 +601,7 @@ try {
   assert.equal(await page.locator('.sheet #btn-speedup-plot').count(), 1,
     'waiting prompt should open the next growing plot');
   await page.keyboard.press('Escape');
-  for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao']) {
+  for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao', 'mutcam', 'mutgung', 'mutsaurieng', 'siro']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -611,6 +611,8 @@ try {
     ['longalpaca', 'alpaca-fleece'], ['nhunghuou', 'deer-velvet'],
     ['banhdua', 'pineapple-cake'], ['banhgung', 'ginger-cake'],
     ['botmi', 'wheat-flour'], ['botbap', 'corn-flour'], ['botcacao', 'cocoa-powder'],
+    ['mutcam', 'orange-marmalade'], ['mutgung', 'ginger-preserve'],
+    ['mutsaurieng', 'durian-jam'], ['siro', 'dragon-fruit-syrup'],
   ]) {
     const image = page.locator(`.inv-row[data-item="${item}"] img[src*="products-v3/${file}.png"]`);
     await image.waitFor();
@@ -620,6 +622,8 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'animal-products-320.png') });
   await page.locator('.inv-row[data-item="botcacao"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'flour-products-320.png') });
+  await page.locator('.inv-row[data-item="siro"]').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'jam-products-320.png') });
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
