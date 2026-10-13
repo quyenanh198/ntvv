@@ -28,6 +28,15 @@ The orange marmalade, ginger preserve, durian jam, and dragon-fruit syrup sprite
 - Durian jam: "A small clear glass jar of pale golden durian jam, cream cloth lid tied with twine, one distinct durian wedge beside it. Friendly hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
 - Dragon-fruit syrup: "A small clear glass bottle of vivid magenta dragon-fruit syrup, cork stopper and blank kraft-paper tag, one sliced dragon-fruit wedge with white flesh and black seeds beside it. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
 
+The remaining dairy sprites use matching source filenames in `asset/source_products/v3/` and 256px game exports in `public/assets/products-v3/`. Built-in imagegen prompts:
+
+- Strawberry yogurt: "A small cream ceramic cup of strawberry yogurt with a pink swirl, two fresh strawberry halves on top, and a short wooden spoon. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
+- Goat cheese: "A small ivory wedge of crumbly goat cheese on a folded kraft-paper wrapper with a simple goat silhouette. Distinct from yellow cow cheese. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
+- Buffalo cheese: "A small glossy ivory ball of buffalo milk cheese with a wedge cut from it, on a green banana leaf. Distinct from crumbly goat cheese. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
+- Watermelon ice cream: "Two coral-pink scoops with dark seed flecks in a cream dessert cup, with a watermelon wedge on the rim. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
+- Vanilla ice cream: "A pale cream vanilla soft-serve swirl with vanilla bean specks in a golden waffle cone, with a vanilla pod beside it. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
+- Durian ice cream: "Two pale golden durian ice-cream scoops in a cream dessert cup, with a distinct durian wedge on the rim. Hand-painted watercolor/gouache product icon, warm upper-left light, soft dark contour, transparent background, no text."
+
 The fish oven, dairy, and bakery product sprites use `asset/source_products/v3/grilled-fish.png`, `butter.png`, and `carrot-cake.png` as their 1254px sources, with matching 256px exports in `public/assets/products-v3/`. Built-in imagegen prompts:
 
 - Grilled fish: "One inventory product sprite for a cozy farm game: a whole grilled freshwater fish, golden brown with gentle grill marks and one small lemon wedge, presented on a plain oval ceramic plate. Friendly appetizing hand-painted watercolor/gouache, warm upper-left light, subtle dark outline, clear silhouette at 80 CSS pixels, centered with padding. Truly transparent background, no scene, no text, no other objects. Square PNG."

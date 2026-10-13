@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 55/186 catalog products have PNG or SVG icons. 192 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 61/186 catalog products have PNG or SVG icons. 198 static asset paths appear in the client.
 
 ## Crops
 
@@ -156,9 +156,9 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Gỏi cuốn cá | goicuon | lonuong | emoji |
 | Hộp phô mai thượng hạng | hopphomai | xuongcaocap | emoji |
 | Hộp quà nông trại | hopqua | xuongcaocap | emoji |
-| Kem dưa hấu | kem | nhamaysua | emoji |
-| Kem sầu riêng | kemsaurieng | nhamaysua | emoji |
-| Kem vani | kemvani | nhamaysua | emoji |
+| Kem dưa hấu | kem | nhamaysua | PNG art |
+| Kem sầu riêng | kemsaurieng | nhamaysua | PNG art |
+| Kem vani | kemvani | nhamaysua | PNG art |
 | Kẹo đậu phộng | keodauphong | quanvat | emoji |
 | Khăn alpaca | khanalpaca | xuongdet | emoji |
 | Khăn len | khanlen | xuongdet | emoji |
@@ -256,8 +256,8 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Ốc vú nàng nướng phô mai | ocvunangnuongphomai | quanoc | emoji |
 | Ốc vú nàng xào me | ocvunangxaome | quanoc | emoji |
 | Phô mai | phomai | nhamaysua | PNG art |
-| Phô mai dê | phomaide | nhamaysua | emoji |
-| Phô mai trâu | phomaitrau | nhamaysua | emoji |
+| Phô mai dê | phomaide | nhamaysua | PNG art |
+| Phô mai trâu | phomaitrau | nhamaysua | PNG art |
 | Pizza | pizza | lobanh | PNG art |
 | Rượu nho ủ | ruouvang | xuongcaocap | emoji |
 | Salad rau | salad | bepan | PNG art |
@@ -269,7 +269,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Súp bí đỏ | supbi | bepan | PNG art |
 | Sushi | sushi | lonuong | emoji |
 | Sữa | sua | bo | PNG art |
-| Sữa chua dâu | suachua | nhamaysua | emoji |
+| Sữa chua dâu | suachua | nhamaysua | PNG art |
 | Sữa dê | suade | de | PNG art |
 | Sữa trâu | suatrau | trau | PNG art |
 | Thịt heo | thit | heo | PNG art |
@@ -425,6 +425,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/well.png` | 17 KB |
 | `assets/products-v3/alpaca-fleece.png` | 89 KB |
 | `assets/products-v3/apple-pie.png` | 111 KB |
+| `assets/products-v3/buffalo-cheese.png` | 79 KB |
 | `assets/products-v3/buffalo-milk.png` | 66 KB |
 | `assets/products-v3/butter.png` | 78 KB |
 | `assets/products-v3/cane-sugar.png` | 18 KB |
@@ -436,6 +437,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/deer-velvet.png` | 66 KB |
 | `assets/products-v3/dragon-fruit-syrup.png` | 89 KB |
 | `assets/products-v3/duck-eggs.png` | 18 KB |
+| `assets/products-v3/durian-ice-cream.png` | 111 KB |
 | `assets/products-v3/durian-jam.png` | 108 KB |
 | `assets/products-v3/egg-bread.png` | 24 KB |
 | `assets/products-v3/farm-cheese.png` | 16 KB |
@@ -444,6 +446,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/garden-salad.png` | 22 KB |
 | `assets/products-v3/ginger-cake.png` | 89 KB |
 | `assets/products-v3/ginger-preserve.png` | 95 KB |
+| `assets/products-v3/goat-cheese.png` | 78 KB |
 | `assets/products-v3/goat-milk.png` | 55 KB |
 | `assets/products-v3/goose-egg.png` | 19 KB |
 | `assets/products-v3/grilled-fish.png` | 96 KB |
@@ -466,8 +469,11 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/silkworm-silk.png` | 71 KB |
 | `assets/products-v3/strawberry-cake.png` | 104 KB |
 | `assets/products-v3/strawberry-jam.png` | 18 KB |
+| `assets/products-v3/strawberry-yogurt.png` | 98 KB |
 | `assets/products-v3/tomato-sauce.png` | 20 KB |
 | `assets/products-v3/turkey-eggs.png` | 77 KB |
+| `assets/products-v3/vanilla-ice-cream.png` | 64 KB |
+| `assets/products-v3/watermelon-ice-cream.png` | 93 KB |
 | `assets/products-v3/watermelon-juice.png` | 81 KB |
 | `assets/products-v3/wheat-flour.png` | 89 KB |
 | `assets/products-v3/wool-roll.png` | 19 KB |
