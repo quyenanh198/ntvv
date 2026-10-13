@@ -243,3 +243,14 @@ The remaining five animal-product sprites use `asset/source_products/v3/turkey-e
 - Buffalo milk: "A stout small glass bottle of rich buffalo milk with a dark blue cloth cap tied with twine and a tiny plain blue tag without text, distinct from cow milk. Hand-painted watercolor/gouache, warm upper-left light, soft dark contour, readable at 80 CSS pixels, transparent square with generous padding; no animal, scene, or letters."
 - Alpaca fleece: "A tidy bundle of freshly shorn alpaca fleece, thick cream-colored curls and a small tan ribbon around the middle, distinct from smooth rabbit fur and sheep wool. Hand-painted watercolor/gouache, warm upper-left light, soft dark contour, readable at 80 CSS pixels, transparent square with generous padding; no alpaca, scene, or words."
 - Deer velvet: "A small pair of soft brown deer velvet antlers with rounded fuzzy tips, tied with a cream ribbon. No deer, injury, or blood. Hand-painted watercolor/gouache, warm upper-left light, soft dark contour, readable at 80 CSS pixels, transparent square with generous padding; no scene or words."
+
+The eight premium-workshop products use transparent full-resolution sources in `asset/source_products/v3/` and 256px game exports in `public/assets/products-v3/`. Built-in imagegen prompts requested a single centered hand-painted storybook inventory icon on a transparent square, with no scene, text, or border. Subjects and file stems:
+
+- `aged-grape-wine`: squat dark green corked bottle of red grape wine with a blank paper label and purple grapes.
+- `deer-antler-paste`: amber jar of herbal paste with a cloth cap and a small antler segment.
+- `rose-perfume`: clear glass bottle of pale pink perfume with a round stopper and a rose.
+- `premium-cheese-box`: shallow open wooden gift box holding three distinct cheeses.
+- `silk-ao-dai`: pale pink Vietnamese silk áo dài with high collar, long sleeves, split panels, and floral embroidery.
+- `family-feast`: wooden tray with a small pizza, fish soup, and watermelon ice cream.
+- `farm-gift-box`: open kraft gift box with cake, chocolate, milk tea, and burgundy ribbon.
+- `premium-coffee`: dark teal ceramic cup of coffee with golden crema and roasted beans.
