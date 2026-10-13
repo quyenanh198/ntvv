@@ -1953,6 +1953,11 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 .mc-toolbar { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .6rem; }
 .mc-toolbar .btn { flex: 1 1 200px; }
+.mc-view-switch { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .7rem; }
+.mc-view-switch button { min-height: 44px; padding: .45rem .7rem; border: 2px solid #a1794b; border-radius: 12px; background: #fff8e6; color: #503818; font: inherit; font-size: .82rem; font-weight: 800; cursor: pointer; }
+.mc-view-switch button[aria-pressed="true"] { background: #376d37; border-color: #28532b; color: #fff; }
+.mc-view-switch button:focus-visible { outline: 3px solid #284f7d; outline-offset: 2px; }
+.mc-view-empty { padding: .7rem; border: 1px solid #b9a17e; border-radius: 10px; }
 
 /* ---- Điện thoại: tắt các hiệu ứng nặng GPU (blur nền, filter, animation hàng loạt) ---- */
 @media (max-width: 900px), (pointer: coarse) {

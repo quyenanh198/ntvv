@@ -1302,8 +1302,11 @@
 
     if (t === 'mill') {
       const QMAX = DATA.config.machineQueueMax || 50;
+      const factoryView = ['all', 'available', 'active'].includes(sheet.factoryView) ? sheet.factoryView : 'all';
+      const recipeCounts = { all: 0, available: 0, active: 0 };
       const blocks = Object.values(DATA.config.machines).map((mc) => {
         if (m.level < mc.level) {
+          if (factoryView !== 'all') return '';
           return `<div class="machine-block machine-block--locked"><h4>${machineIcon(mc)}<span>${mc.name}</span></h4><p class="sheet-note">🔒 Mở ở cấp ${mc.level}</p></div>`;
         }
         const jobs = m.machines[mc.id] || {};
@@ -1323,6 +1326,10 @@
           const room = QMAX - (job ? job.queue : 0);
           const maxBatches = Math.max(0, Math.min(room, ...Object.entries(r.in).map(([iid, q]) => Math.floor((m.inventory[iid] || 0) / q))));
           const canAdd = maxBatches > 0;
+          recipeCounts.all += 1;
+          if (canAdd) recipeCounts.available += 1;
+          if (job) recipeCounts.active += 1;
+          if ((factoryView === 'available' && !canAdd) || (factoryView === 'active' && !job)) return '';
           const missingParts = room > 0 ? Object.entries(r.in).filter(([iid, q]) => (m.inventory[iid] || 0) < q)
             .map(([iid, q]) => ({ id: iid, qty: q - (m.inventory[iid] || 0) })) : [];
           const missing = missingParts.map(({ id, qty }) => `${id}:${qty}`).join(',');
@@ -1342,7 +1349,7 @@
             state = `<small class="mc-run" data-machine-ready="${job.currentReadyAt || job.readyAt}">🔄 1 đang làm · chờ ${job.queued} · ${fmtTime(left)}</small>
               <button class="mc-plus mc-plus--gem" data-machine-speed="${mc.id}" data-recipe="${r.id}" aria-label="Hoàn thành ngay ${r.name} với ${Math.max(1, Math.ceil(left / 300000))} kim cương" title="Xong ngay">${GEM}${Math.max(1, Math.ceil(left / 300000))}</button>`;
           }
-          return `<div class="seed-row mc-row${job ? ' mc-row--active' : ''}${canAdd ? '' : ' mc-row--dim'}${sheet.preferredRecipe === outId ? ' mc-row--recommended' : ''}" data-recipe-output="${outId}" ${missing ? `data-missing="${missing}" data-missing-name="${r.name}" title="Thiếu nguyên liệu — bấm để đăng tin thu mua" style="cursor:pointer"` : 'style="cursor:default"'}>
+          return `<div class="seed-row mc-row${job ? ' mc-row--active' : ''}${canAdd ? '' : ' mc-row--dim'}${sheet.preferredRecipe === outId ? ' mc-row--recommended' : ''}" data-recipe-output="${outId}" data-can-make="${canAdd ? '1' : '0'}" data-job-active="${job ? '1' : '0'}" ${missing ? `data-missing="${missing}" data-missing-name="${r.name}" title="Thiếu nguyên liệu — bấm để đăng tin thu mua" style="cursor:pointer"` : 'style="cursor:default"'}>
             ${itemImg(outId, 'seed-sprite')}
             <span class="seed-info"><span class="seed-name">${r.name}</span>
               <div class="seed-meta mc-recipe-meta">
@@ -1356,6 +1363,7 @@
             </span>
           </div>`;
         }).join('');
+        if (factoryView !== 'all' && !rows) return '';
         const ml = (m.machineLevels || {})[mc.id] || 0;
         const ug = DATA.config.machineUpgradeGold || [];
         const up = ml >= ug.length
@@ -1367,12 +1375,18 @@
       const canCookAny = Object.values(DATA.config.machines).some((mc) => m.level >= mc.level && Object.values(mc.recipes).some((r) => r.id !== 'thucan'
         && Object.entries(r.in).every(([iid, q]) => (m.inventory[iid] || 0) >= q)
         && ((m.machines[mc.id] || {})[r.id]?.queue || 0) < QMAX));
+      const viewButtons = `<div class="mc-view-switch" role="group" aria-label="Lọc công thức chế biến">
+        <button type="button" data-factory-view="all" aria-pressed="${factoryView === 'all'}">Tất cả (${recipeCounts.all})</button>
+        <button type="button" data-factory-view="available" aria-pressed="${factoryView === 'available'}">Có thể làm (${recipeCounts.available})</button>
+        <button type="button" data-factory-view="active" aria-pressed="${factoryView === 'active'}">Đang làm (${recipeCounts.active})</button>
+      </div>`;
+      const emptyView = factoryView !== 'all' && !recipeCounts[factoryView] ? `<p class="sheet-note mc-view-empty">${factoryView === 'available' ? 'Chưa đủ nguyên liệu cho công thức nào. Chọn Tất cả để xem nguyên liệu cần mua.' : 'Chưa có mẻ nào đang làm. Chọn Có thể làm để bắt đầu.'}</p>` : '';
       const toolbar = `<div class="mc-toolbar">
         <button class="btn gbtn gbtn--gold" id="btn-collect-all" ${readyTotal ? '' : 'disabled'}>✅ Thu hết${readyTotal ? ` (${readyTotal} món xong)` : ''}</button>
         <button class="btn gbtn gbtn--green" id="btn-cook-all" ${canCookAny ? '' : 'disabled'} title="Xếp tối đa mọi công thức đủ nguyên liệu (trừ thức ăn gia súc)">🏭 Chế biến hết</button>
       </div>`;
       const orderHint = sheet.preferredRecipe ? `<p class="sheet-note seed-tip">Đơn hàng cần ${esc(goods()[sheet.preferredRecipe]?.name || sheet.preferredRecipe)}. Công thức được đánh dấu bên dưới.</p>` : '';
-      return sheetShell('🏭 Khu chế biến', `${orderHint}${toolbar}<div class="machine-grid">${blocks}</div>`, 'sheet--factory');
+      return sheetShell('🏭 Khu chế biến', `${orderHint}${toolbar}${viewButtons}${emptyView}<div class="machine-grid">${blocks}</div>`, 'sheet--factory');
     }
 
     if (t === 'money') {
@@ -2009,6 +2023,13 @@
         if (r) { updateMe(r); closeSheetAfterAction(startedSheet); if (wasAll) toast(`🌱 Đã gieo ${r.planted} ô!`); render(); }
       }));
 
+    document.querySelectorAll('[data-factory-view]').forEach((el) =>
+      el.addEventListener('click', () => {
+        if (!sheet || sheet.type !== 'mill') return;
+        sheet.factoryView = el.dataset.factoryView;
+        render();
+        document.querySelector(`[data-factory-view="${sheet.factoryView}"]`)?.focus();
+      }));
     document.querySelectorAll('[data-machine-run]').forEach((el) =>
       el.addEventListener('click', async () => {
         if (!el.dataset.recipe) return;
