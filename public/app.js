@@ -54,7 +54,9 @@
     ? `<img src="${A(BARN_ART[kind])}" alt="" />`
     : `<span class="emoji-ic emoji-ic--barn">${DATA?.config.animals[kind]?.emoji || '🐾'}</span>`);
   const ITEM_ICON = {
-    trung: 'assets/ui/egg.svg', botmi: 'assets/ui/flour.svg', thucan: 'assets/art/feed.png',
+    trung: 'assets/ui/egg.svg', botmi: 'assets/products-v3/wheat-flour.png',
+    botbap: 'assets/products-v3/corn-flour.png', botcacao: 'assets/products-v3/cocoa-powder.png',
+    thucan: 'assets/art/feed.png',
     sua: 'assets/products-v3/cow-milk.png', len: 'assets/ui/wool.svg', matong: 'assets/products-v3/honey.png',
     suade: 'assets/products-v3/goat-milk.png', thit: 'assets/products-v3/pork.png',
     canuong: 'assets/products-v3/grilled-fish.png', bo: 'assets/products-v3/butter.png',
