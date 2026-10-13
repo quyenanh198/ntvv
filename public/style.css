@@ -1256,6 +1256,15 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   gap: .4rem;
 }
 .inv-row > img { width: 44px; height: 44px; object-fit: contain; }
+.inv-finder { margin: .55rem 0 .7rem; display: grid; gap: .4rem; }
+.inv-finder label { color: #503818; font-size: .82rem; font-weight: 800; }
+.inv-finder input { width: 100%; min-height: 44px; padding: .5rem .65rem; border: 2px solid #a1794b; border-radius: 10px; background: #fffdf4; color: #3e3426; font: inherit; }
+.inv-groups { display: flex; flex-wrap: wrap; gap: .35rem; }
+.inv-groups button { min-height: 44px; padding: .4rem .65rem; border: 2px solid #a1794b; border-radius: 10px; background: #fff8e6; color: #503818; font: inherit; font-size: .78rem; font-weight: 800; cursor: pointer; }
+.inv-groups button[aria-pressed="true"] { background: #376d37; border-color: #28532b; color: #fff; }
+.inv-finder input:focus-visible, .inv-groups button:focus-visible { outline: 3px solid #284f7d; outline-offset: 2px; }
+.inv-result-count { margin: 0; color: #614b33; font-size: .78rem; font-weight: 700; }
+.sheet--inventory .inv-row[hidden], .sheet--inventory .inv-filter-empty[hidden] { display: none; }
 
 .quest-row {
   min-height: 62px;
