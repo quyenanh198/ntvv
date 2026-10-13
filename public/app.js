@@ -579,7 +579,7 @@
             ${luxStrip((visiting ? visiting.farm : m).luxury)}
             <span class="field-decor decor-1">🌻</span>
             <span class="field-decor decor-2">🍄</span>
-            <img class="scarecrow-img" src="${A('assets/ui/scarecrow.svg')}" alt="" />
+            <img class="scarecrow-img" src="${A('assets/decor-v3/scarecrow.png')}" alt="" />
             <span class="butterfly">🦋</span>
             <div class="farm-grid" id="grid">${renderPlots(visiting)}</div>
           </div>

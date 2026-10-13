@@ -18,6 +18,12 @@ The fish oven, dairy, and bakery product sprites use `asset/source_products/v3/g
 
 ## Scene standard
 
+The [reference farm scene](../asset/reference-scenes/farm-v3.png) shows the shared three-quarter camera, warm upper-left light, soft dark contours, quiet hills, and the scale relationship between buildings, farmer, animals, and crop plots. It is a style reference for new assets; the playable farm remains assembled from individual sprites.
+
+Built-in imagegen used the current 320px farm screenshot as a layout reference with this prompt: "One cohesive cozy Vietnamese farm scene showing a hand-painted red barn, warm tiled-roof farmhouse, small greenhouse, chicken coop, market stall, windmill, farmer, and a foreground patch of square crop plots with distinct empty soil, green growing crop, dry crop, and ready golden wheat. Use a compact three-quarter camera view, warm light from upper left, soft shadows below-right, natural saturated produce, quiet green hills and pale blue sky, gentle dark contours, watercolor/gouache texture. Preserve clear silhouettes and a readable farm scale at phone size. No HUD, menus, text, logos, buttons, badges, borders, or screenshot framing. Landscape illustration."
+
+The painted scarecrow uses `asset/source_decor/v3/scarecrow.png` as its transparent source and `public/assets/decor-v3/scarecrow.png` as its 192px game export. Built-in imagegen used the reference scene as a style reference with this prompt: "One friendly small scarecrow standing upright on a wooden post, wearing a straw hat and simple red tunic with short straw arms, with a subtle soft shadow below-right. Cozy farm-game silhouette readable at about 42 CSS pixels; center it in a square canvas with generous transparent padding. Match the reference scene's hand-painted texture and soft dark contours. Truly transparent background, no landscape, no plots, no text, no logo, no other characters or objects."
+
 - **View:** compact three-quarter view, with the soil or floor visible below the object. Keep the object upright so its silhouette reads in a square plot.
 - **Light:** warm light from upper left; soft shadow below and slightly right. Avoid a second hard light source.
 - **Color:** natural, saturated produce against deep green leaves and warm brown soil. Keep the farm background quieter than interactive objects.
