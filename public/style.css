@@ -1430,7 +1430,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   box-shadow: 0 4px 12px rgba(42, 57, 26, .16);
   animation: gain-up 1.3s ease-out forwards;
 }
-.float-gain--xp { color: #aa7511; animation-delay: .08s; }
+.float-gain--xp { color: #72500d; animation-delay: .08s; }
 .float-gain .coin-img { width: 18px; height: 18px; }
 
 @keyframes fade-in { from { opacity: 0; } }
