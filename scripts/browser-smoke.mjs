@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { MACHINES, xpNeedFor } from '../server/src/game.js';
+import { FESTIVAL, GOLD_MULT, MACHINES, xpNeedFor } from '../server/src/game.js';
 
 const players = [
   { id: 1, username: 'browser', display_name: 'Browser Farmer' },
@@ -142,6 +142,11 @@ try {
   await page.locator('.dock-btn[data-sheet="more"]').click();
   assert.equal(await page.locator('.sheet .more-card[data-action="leaderboard"]').count(), 1,
     'leaderboard should remain available from More on narrow phones');
+  await page.locator('.sheet .more-card[data-sheet="festival"]').click();
+  assert.equal(await page.locator('.sheet--festival [data-festival-locked]:disabled').count(), 2,
+    'starter festival should explain locked orders and processing');
+  await page.keyboard.press('Escape');
+  await page.locator('.dock-btn[data-sheet="more"]').click();
   await page.locator('.sheet .more-card[data-sheet="family"]').click();
   const familySearch = page.locator('.sheet--family .family-search');
   assert.equal(await familySearch.isVisible(), true, 'More should open a searchable family list on phones');
@@ -799,6 +804,40 @@ try {
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('.farm-next-step[data-next-step="collections"]').count(), 0,
     'a claimed collection should leave the immediate-action prompt');
+  db.prepare('UPDATE festival SET counters_json = ?, claims_json = ? WHERE owner_id = 1')
+    .run(JSON.stringify({ harvest: 50 }), '[]');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const festivalGoldBefore = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
+  await page.locator('.farm-next-step[data-next-step="festival"]').click();
+  assert.equal(await page.locator('.festival-card').first().getAttribute('data-festival-id'), '1',
+    'festival should place a ready reward first');
+  assert.equal(await page.locator('.sheet--festival [role="progressbar"]').count(), FESTIVAL.milestones.length);
+  const festivalButtonSizes = await page.locator('.festival-card-footer button').evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height));
+  assert.ok(festivalButtonSizes.every((height) => height >= 44), 'festival actions need 44px touch targets');
+  await checkNoOverflow(page, '320px festival');
+  await auditAccessibility(page, 'festival-320');
+  await page.screenshot({ path: resolve(outputDir, 'festival-320.png') });
+  await page.locator('[data-fest-claim="1"]').click();
+  await page.locator('.festival-card--claimed[data-festival-id="1"]').waitFor();
+  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold,
+    festivalGoldBefore + FESTIVAL.milestones.find((milestone) => milestone.id === 1).gold * GOLD_MULT);
+  assert.equal(await page.locator('[data-fest-claim="1"]').count(), 0, 'claimed reward should have no second claim control');
+  assert.equal(await page.locator('.festival-card').last().getAttribute('data-festival-id'), '1');
+  await page.locator('.festival-card[data-festival-id="3"] [data-sheet="orders"]').click();
+  assert.ok(await page.locator('.sheet .order-card').count() > 0, 'festival order activity should open the order board');
+  await page.keyboard.press('Escape');
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await page.locator('.more-card[data-sheet="festival"]').click();
+  await page.locator('.festival-card[data-festival-id="4"] [data-sheet="mill"]').click();
+  assert.equal(await page.locator('.sheet--factory').count(), 1, 'festival processing activity should open the factory');
+  await page.keyboard.press('Escape');
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await page.locator('.more-card[data-sheet="festival"]').click();
+  await page.locator('[data-festival-farm]').last().click();
+  assert.equal(await page.locator('.sheet').count(), 0);
+  assert.equal(await page.locator('.plot:focus').count(), 1, 'festival harvest activity should return focus to the field');
+  assert.equal(await page.locator('.farm-next-step[data-next-step="festival"]').count(), 0,
+    'claiming the final ready festival reward should clear the prompt');
   for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao', 'mutcam', 'mutgung', 'mutsaurieng', 'siro', 'suachua', 'phomaide', 'phomaitrau', 'kem', 'kemvani', 'kemsaurieng', 'dauoliu', 'nuoccoc', 'vai', 'lua', 'khanlen', 'khanalpaca', 'aolen', 'mulen', 'caphesua', 'socola', 'tratui', 'ruouvang', 'caonhung', 'nuochoa', 'hopphomai', 'aodai', 'buatiec', 'hopqua', 'caphehaohang', 'chaca', 'cakho', 'sushi', 'lauca', 'goicuon', 'tomnuong', 'catrakho', 'calocnuong']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
