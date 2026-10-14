@@ -67,6 +67,7 @@
     cadieuhongchien: 'assets/products-v3/fried-red-tilapia.png', luonxao: 'assets/products-v3/lemongrass-chili-eel.png',
     cuahap: 'assets/products-v3/steamed-lemongrass-crab.png', mucnuong: 'assets/products-v3/satay-grilled-squid.png',
     banhcarot: 'assets/products-v3/carrot-cake.png',
+    chuoichien: 'assets/products-v3/banana-fritters.png', banhtom: 'assets/products-v3/shrimp-fritters.png',
     khoaichien: 'assets/products-v3/potato-fries.png', salad: 'assets/products-v3/garden-salad.png',
     comchien: 'assets/products-v3/fried-rice.png', supbi: 'assets/products-v3/pumpkin-soup.png',
     nuoccarot: 'assets/products-v3/carrot-juice.png', nuocduahau: 'assets/products-v3/watermelon-juice.png', mutdau: 'assets/products-v3/strawberry-jam.png',
@@ -846,7 +847,7 @@
         <img class="sb sb-coop" src="${A('assets/scene-v3/chicken_coop_v3.png')}" alt="" />
         <img class="sb sb-hen2" src="${A('assets/art/chicken_v3.png')}" alt="" />
         <img class="sb sb-mill" src="${A('assets/scene-v3/windmill_v3.png')}" alt="" />
-        <img class="sb sb-shop" src="${A('assets/scene-v3/market_shop_v3.png')}" alt="" />`;
+        <img class="sb sb-shop" src="${A('assets/scene-v3/market_shop_v3-224.png')}" alt="" />`;
     }
     return `
       ${coopUnlocked ? `
@@ -865,7 +866,7 @@
         </button>`
       : `<img class="sb sb-mill sb--locked" src="${A('assets/scene-v3/windmill_v3.png')}" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
       <button class="sb sb-btn sb-shop" data-sheet="shop" title="Cửa hàng">
-          <img src="${A('assets/scene-v3/market_shop_v3.png')}" alt="Cửa hàng" />
+          <img src="${A('assets/scene-v3/market_shop_v3-224.png')}" alt="Cửa hàng" />
         <span class="sb-tag">Cửa hàng</span>
       </button>`;
   }

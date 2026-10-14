@@ -13,4 +13,6 @@ Four scene exports changed from about 1,237 KB of 500–512px PNGs to about 331 
 
 The next performance review should sample several runs on a slower mobile network and measure later sheets, polling, memory, and interaction work before setting time-to-interactive budgets.
 
+After later UI additions, the first-load transfer approached the 1.2 MB guardrail. The market building is now served from a 224×207 export (91,564 B instead of 116,942 B) at both scene locations; the original remains in the asset folder. The same CI browser probe measures the resulting startup transfer.
+
 The matched farmhouse, barn, and greenhouse replaced three older scene assets. Their 192px exports total about 198 KB and retain readable silhouettes in the reviewed 320px and 1280px screenshots. The first-load image sample is now 784,719 B, leaving 115,281 B under the image budget; total local transfer is 1,095,957 B, leaving 104,043 B under its budget. These are single hosted-runner samples, so timing differences are not treated as performance gains.
