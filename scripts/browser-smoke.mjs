@@ -142,6 +142,15 @@ try {
   await page.locator('.dock-btn[data-sheet="more"]').click();
   assert.equal(await page.locator('.sheet .more-card[data-action="leaderboard"]').count(), 1,
     'leaderboard should remain available from More on narrow phones');
+  await page.locator('.sheet .more-card[data-sheet="family"]').click();
+  const familySearch = page.locator('.sheet--family .family-search');
+  assert.equal(await familySearch.isVisible(), true, 'More should open a searchable family list on phones');
+  await familySearch.fill('không có ai');
+  assert.equal(await page.locator('.sheet--family .family-none').count(), 1);
+  await familySearch.fill('');
+  assert.equal(await page.locator('.sheet--family .family-member').count(), 1);
+  await auditAccessibility(page, 'family-320');
+  await page.screenshot({ path: resolve(outputDir, 'family-320.png') });
   await page.keyboard.press('Escape');
 
   // A delayed older poll must not replace a newer farm state.
@@ -266,7 +275,10 @@ try {
   await friendPage.locator('.seed-card[data-crop="luami"]').click();
   await friendPage.locator('.plot[data-idx="0"][data-kind="waterplot"]').waitFor();
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.locator('.family-member[data-visit="2"]').click();
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await page.locator('.sheet .more-card[data-sheet="family"]').click();
+  await page.locator('.sheet--family .family-search').fill('Friend');
+  await page.locator('.sheet--family .family-member[data-visit="2"]').click();
   await page.locator('.visit-bar').waitFor();
   const visitLayout = await page.locator('.visit-bar').evaluate((bar) => ({
     barWidth: bar.getBoundingClientRect().width,
