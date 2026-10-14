@@ -78,6 +78,8 @@
     banhxeo: 'assets/products-v3/crispy-pancake.png', cocdam: 'assets/products-v3/chili-ambarella.png',
     khoailangnuong: 'assets/products-v3/roasted-sweet-potatoes.png', saurienchien: 'assets/products-v3/durian-fritters.png',
     trasua: 'assets/products-v3/milk-tea.png', trungmuoi: 'assets/products-v3/salted-eggs.png', xucxich: 'assets/products-v3/pork-sausages.png',
+    tom: 'assets/products-v3/fresh-shrimp.png', cua: 'assets/products-v3/freshwater-crab.png', luon: 'assets/products-v3/farm-eel.png',
+    ech: 'assets/products-v3/farm-frog.png', muc: 'assets/products-v3/fresh-squid.png', lauech: 'assets/products-v3/frog-hotpot.png',
     khoaichien: 'assets/products-v3/potato-fries.png', salad: 'assets/products-v3/garden-salad.png',
     comchien: 'assets/products-v3/fried-rice.png', supbi: 'assets/products-v3/pumpkin-soup.png',
     nuoccarot: 'assets/products-v3/carrot-juice.png', nuocduahau: 'assets/products-v3/watermelon-juice.png', mutdau: 'assets/products-v3/strawberry-jam.png',
@@ -1001,7 +1003,7 @@
       const sp = cfg[b.species];
       const left = b.readyAt - Date.now();
       return `<div class="inv-row fish-batch">
-        <span class="emoji-ic emoji-ic--barn">${sp?.emoji || '🐟'}</span>
+        ${itemImg(sp?.product || b.species, 'seed-sprite')}
         <span class="seed-info"><span class="seed-name">${b.qty} con ${sp?.name || b.species}</span>
           <div class="seed-meta">${b.ready ? '<b>✅ Sẵn sàng thu</b>' : `⏱ còn ${fmtTime(left)}`}</div></span>
         ${b.ready ? `<button class="gbtn gbtn--gold btn-mini" data-fish-harvest="${b.id}" aria-label="Thu ${b.qty} con ${esc(sp?.name || b.species)}">Thu</button>` : ''}

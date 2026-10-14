@@ -591,6 +591,12 @@ try {
       assert.equal(await icon.evaluate((image) => image.naturalWidth), 128, `${product} should use the compact game export`);
     }
   }
+  for (const recipe of Object.values(MACHINES.lonuong.recipes)) {
+    const product = Object.keys(recipe.out)[0];
+    const icon = page.locator(`.mc-row[data-recipe-output="${product}"] > img.seed-sprite`);
+    assert.equal(await icon.count(), 1, `${product} needs an individual fish-oven sprite`);
+    await icon.evaluate((image) => image.decode());
+  }
   await page.screenshot({ path: resolve(outputDir, 'snack-goods-320.png') });
   for (const product of ['banhtrangtron', 'nemchua', 'trasa']) {
     await page.locator(`.mc-row[data-recipe-output="${product}"]`).scrollIntoViewIfNeeded();
@@ -600,6 +606,8 @@ try {
     await page.locator(`.mc-row[data-recipe-output="${product}"]`).scrollIntoViewIfNeeded();
     await page.screenshot({ path: resolve(outputDir, `kitchen-${product}-320.png`) });
   }
+  await page.locator('.mc-row[data-recipe-output="lauech"]').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'factory-frog-hotpot-320.png') });
   await page.keyboard.press('Escape');
   db.prepare('DELETE FROM orders WHERE owner_id = 1').run();
   db.prepare('UPDATE farmers SET orders_refresh_at = ? WHERE user_id = 1').run(Date.now() + 60 * 60 * 1000);
@@ -752,6 +760,10 @@ try {
   const pondActionBounds = await pondHarvestAll.boundingBox();
   assert.ok(pondActionBounds.y >= 0 && pondActionBounds.y + pondActionBounds.height <= page.viewportSize().height,
     'pond shortcut should scroll its harvest controls into the viewport');
+  const pondShrimp = page.locator('.fish-batch img[src*="products-v3/fresh-shrimp.png"]');
+  await pondShrimp.evaluate((image) => image.decode());
+  assert.equal(await pondShrimp.evaluate((image) => image.naturalWidth), 128,
+    'pond batches should use their compact product sprites');
   await checkNoOverflow(page, '320px ready pond batches');
   await page.screenshot({ path: resolve(outputDir, 'pond-ready-320.png') });
   await pondHarvestAll.click();
@@ -847,7 +859,7 @@ try {
   for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao', 'mutcam', 'mutgung', 'mutsaurieng', 'siro', 'suachua', 'phomaide', 'phomaitrau', 'kem', 'kemvani', 'kemsaurieng', 'dauoliu', 'nuoccoc', 'vai', 'lua', 'khanlen', 'khanalpaca', 'aolen', 'mulen', 'caphesua', 'socola', 'tratui', 'ruouvang', 'caonhung', 'nuochoa', 'hopphomai', 'aodai', 'buatiec', 'hopqua', 'caphehaohang', 'chaca', 'cakho', 'sushi', 'lauca', 'goicuon', 'tomnuong', 'catrakho', 'calocnuong']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
-  for (const item of ['cadieuhongchien', 'luonxao', 'cuahap', 'mucnuong']) {
+  for (const item of ['cadieuhongchien', 'luonxao', 'cuahap', 'mucnuong', 'tom', 'cua', 'luon', 'ech', 'muc', 'lauech']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -891,6 +903,8 @@ try {
     ['catrakho', 'braised-pangasius'], ['calocnuong', 'grilled-snakehead-fish'],
     ['cadieuhongchien', 'fried-red-tilapia'], ['luonxao', 'lemongrass-chili-eel'],
     ['cuahap', 'steamed-lemongrass-crab'], ['mucnuong', 'satay-grilled-squid'],
+    ['tom', 'fresh-shrimp'], ['cua', 'freshwater-crab'], ['luon', 'farm-eel'],
+    ['ech', 'farm-frog'], ['muc', 'fresh-squid'], ['lauech', 'frog-hotpot'],
   ]) {
     const image = page.locator(`.inv-row[data-item="${item}"] img[src*="products-v3/${file}.png"]`);
     await image.waitFor();
@@ -916,6 +930,10 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'fish-oven-products-320.png') });
   await page.locator('.inv-row[data-item="mucnuong"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'seafood-products-320.png') });
+  await page.locator('[data-inventory-group="other"]').click();
+  await page.locator('.inv-row[data-item="cua"]').scrollIntoViewIfNeeded();
+  await checkNoOverflow(page, '320px aquatic product sprites');
+  await page.screenshot({ path: resolve(outputDir, 'aquatic-products-320.png') });
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

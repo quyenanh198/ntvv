@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 117/186 catalog products have PNG or SVG icons. 254 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 123/186 catalog products have PNG or SVG icons. 260 static asset paths appear in the client.
 
 ## Crops
 
@@ -147,12 +147,12 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Chuối chiên | chuoichien | quanvat | PNG art |
 | Cóc dầm muối ớt | cocdam | bepan | PNG art |
 | Cơm chiên trứng | comchien | bepan | PNG art |
-| Cua | cua | cua | emoji |
+| Cua | cua | cua | PNG art |
 | Cua hấp sả | cuahap | lonuong | PNG art |
 | Cuộn len | cuonlen | xuongdet | PNG art |
 | Dầu ô liu | dauoliu | mayep | PNG art |
 | Đường mía | duongmia | coixay | PNG art |
-| Ếch | ech | ech | emoji |
+| Ếch | ech | ech | PNG art |
 | Gỏi cuốn cá | goicuon | lonuong | PNG art |
 | Hộp phô mai thượng hạng | hopphomai | xuongcaocap | PNG art |
 | Hộp quà nông trại | hopqua | xuongcaocap | PNG art |
@@ -166,17 +166,17 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Khoai lang nướng | khoailangnuong | bepan | PNG art |
 | Khoai tây chiên | khoaichien | bepan | PNG art |
 | Lẩu cá koi | lauca | lonuong | PNG art |
-| Lẩu ếch | lauech | lonuong | emoji |
+| Lẩu ếch | lauech | lonuong | PNG art |
 | Len | len | cuu | SVG icon |
 | Lông alpaca | longalpaca | alpaca | PNG art |
 | Lông thỏ | longtho | tho | PNG art |
 | Lụa | lua | xuongdet | PNG art |
-| Lươn | luon | luon | emoji |
+| Lươn | luon | luon | PNG art |
 | Lươn xào sả ớt | luonxao | lonuong | PNG art |
 | Mật ong | matong | ong | PNG art |
 | Me rim ớt | merim | quanvat | PNG art |
 | Mũ len thỏ | mulen | xuongdet | PNG art |
-| Mực | muc | muc | emoji |
+| Mực | muc | muc | PNG art |
 | Mực nướng sa tế | mucnuong | lonuong | PNG art |
 | Mứt cam | mutcam | noimut | PNG art |
 | Mứt dâu | mutdau | noimut | PNG art |
@@ -275,7 +275,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Thịt heo | thit | heo | PNG art |
 | Thức ăn gia súc | thucan | shop | PNG art |
 | Tiệc gia đình | buatiec | xuongcaocap | PNG art |
-| Tôm | tom | tom | emoji |
+| Tôm | tom | tom | PNG art |
 | Tôm nướng | tomnuong | lonuong | PNG art |
 | Tơ tằm | totam | tam | PNG art |
 | Trà sả mật ong | trasa | quanvat | PNG art |
@@ -455,16 +455,22 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/egg-bread.png` | 24 KB |
 | `assets/products-v3/family-feast.png` | 135 KB |
 | `assets/products-v3/farm-cheese.png` | 16 KB |
+| `assets/products-v3/farm-eel.png` | 16 KB |
+| `assets/products-v3/farm-frog.png` | 18 KB |
 | `assets/products-v3/farm-gift-box.png` | 116 KB |
 | `assets/products-v3/farm-pizza.png` | 110 KB |
 | `assets/products-v3/fish-cakes.png` | 110 KB |
 | `assets/products-v3/fish-hotpot.png` | 120 KB |
 | `assets/products-v3/fish-spring-rolls.png` | 122 KB |
 | `assets/products-v3/fish-sushi.png` | 114 KB |
+| `assets/products-v3/fresh-shrimp.png` | 19 KB |
+| `assets/products-v3/fresh-squid.png` | 15 KB |
+| `assets/products-v3/freshwater-crab.png` | 17 KB |
 | `assets/products-v3/fried-fish-balls.png` | 19 KB |
 | `assets/products-v3/fried-red-tilapia.png` | 114 KB |
 | `assets/products-v3/fried-rice-cakes.png` | 20 KB |
 | `assets/products-v3/fried-rice.png` | 23 KB |
+| `assets/products-v3/frog-hotpot.png` | 26 KB |
 | `assets/products-v3/garden-salad.png` | 22 KB |
 | `assets/products-v3/ginger-cake.png` | 89 KB |
 | `assets/products-v3/ginger-preserve.png` | 95 KB |
