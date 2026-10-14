@@ -16,10 +16,11 @@ test('malformed purchase, queue, and harvest quantities leave player value untou
     assert.equal((await app.inject({ method: 'GET', url: '/farm/api/state' })).statusCode, 200);
     db.prepare("INSERT INTO fish_batches (owner_id, species, qty, planted_at, ready_at) VALUES (1, 'oc', 1, 1, 1)").run();
     const snapshot = () => ({
-      farmer: db.prepare('SELECT gold, gems, xp, coop_level, pond_level, barn_levels_json, machine_levels_json FROM farmers WHERE user_id = 1').get(),
+      farmer: db.prepare('SELECT gold, gems, xp, sunk_gold, skills_json, title_id, frame_id, coop_level, pond_level, barn_levels_json, machine_levels_json FROM farmers WHERE user_id = 1').get(),
       animals: db.prepare('SELECT COUNT(*) AS n FROM animals WHERE owner_id = 1').get().n,
       jobs: db.prepare('SELECT COUNT(*) AS n FROM machine_jobs WHERE owner_id = 1').get().n,
       tickets: db.prepare('SELECT COUNT(*) AS n FROM lottery_tickets WHERE owner_id = 1').get().n,
+      luxury: db.prepare('SELECT item FROM luxury WHERE owner_id = 1 ORDER BY item').all(),
       fish: db.prepare('SELECT id, qty FROM fish_batches WHERE owner_id = 1').all(),
       inventory: db.prepare('SELECT item, qty FROM inventory WHERE owner_id = 1 ORDER BY item').all(),
     });
@@ -28,6 +29,8 @@ test('malformed purchase, queue, and harvest quantities leave player value untou
       ['/buy-animal', { kind: 'ga', count: -2 }],
       ['/buy-animal', { kind: 'ga', count: 'banana' }],
       ['/buy-animal', { kind: 'toString', count: 1 }],
+      ['/luxury-buy', { item: 'toString' }],
+      ['/skill-learn', { id: 'toString' }],
       ['/upgrade-barn', { kind: 'toString' }],
       ['/machine-run', { machine: 'coixay', recipe: 'botmi', count: 0 }],
       ['/machine-run', { machine: 'coixay', recipe: 'botmi', count: 1.5 }],
