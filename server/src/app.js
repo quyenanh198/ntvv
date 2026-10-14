@@ -1569,7 +1569,11 @@ export function buildApp({ config, db, logger = true }) {
 
       api.post('/feed', async (request, reply) => {
         const me = request.farmer;
-        const kind = ANIMALS[request.body?.kind] ? request.body.kind : 'ga';
+        const requestedKind = request.body?.kind;
+        if (requestedKind !== undefined && (typeof requestedKind !== 'string' || !Object.hasOwn(ANIMALS, requestedKind))) {
+          return reply.code(400).send({ error: 'bad_request' });
+        }
+        const kind = requestedKind ?? 'ga';
         const a = ANIMALS[kind];
         const feed = runJournaledMutation(request, 'feed', () => {
           const hungry = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND kind = ? AND ready_at IS NULL').all(me.user_id, kind);
@@ -1589,7 +1593,11 @@ export function buildApp({ config, db, logger = true }) {
 
       api.post('/collect', async (request, reply) => {
         const me = request.farmer;
-        const kind = ANIMALS[request.body?.kind] ? request.body.kind : 'ga';
+        const requestedKind = request.body?.kind;
+        if (requestedKind !== undefined && (typeof requestedKind !== 'string' || !Object.hasOwn(ANIMALS, requestedKind))) {
+          return reply.code(400).send({ error: 'bad_request' });
+        }
+        const kind = requestedKind ?? 'ga';
         const a = ANIMALS[kind];
         const collect = runJournaledMutation(request, 'collect', () => {
           const ready = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND kind = ? AND ready_at IS NOT NULL AND ready_at <= ?')

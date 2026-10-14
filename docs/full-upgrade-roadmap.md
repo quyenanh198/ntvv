@@ -67,6 +67,7 @@ This is the project plan for the farm game, separate from the older stability au
 
 - **Client response ordering:** successful journaled mutations now increment a persisted per-farmer mutation version. The client ignores an older mutation response and refreshes; independent plots can be pending at the same time. A browser race check delays the first planting response, completes a second planting, then verifies the older response does not roll back gold or plots. Other mutation resources still use the shared lock.
 - **Retry payload compatibility:** new mutation records hash a canonical JSON body, so retries with the same fields in a different order replay. Existing records retain their original hash and still replay when sent in their original order; the purchase integration test covers both formats and checks that value moves once.
+- **Animal action validation:** feed and collect reject unknown or malformed animal kinds before touching inventory or animal readiness; omitting the kind still selects chickens for the legacy shortcut. Integration coverage checks both behaviors and replay safety.
 - **Sheet continuity:** a completed plot action closes only the sheet from which it began. A second browser race check holds a planting response while the player opens another seed chooser, then verifies that chooser remains usable.
 
 ## 10. Improve speed and accessibility
