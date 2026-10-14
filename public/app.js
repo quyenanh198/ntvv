@@ -68,6 +68,8 @@
     cuahap: 'assets/products-v3/steamed-lemongrass-crab.png', mucnuong: 'assets/products-v3/satay-grilled-squid.png',
     banhcarot: 'assets/products-v3/carrot-cake.png',
     chuoichien: 'assets/products-v3/banana-fritters.png', banhtom: 'assets/products-v3/shrimp-fritters.png',
+    bapxao: 'assets/products-v3/buttered-corn.png', botchien: 'assets/products-v3/fried-rice-cakes.png',
+    cavienchien: 'assets/products-v3/fried-fish-balls.png',
     khoaichien: 'assets/products-v3/potato-fries.png', salad: 'assets/products-v3/garden-salad.png',
     comchien: 'assets/products-v3/fried-rice.png', supbi: 'assets/products-v3/pumpkin-soup.png',
     nuoccarot: 'assets/products-v3/carrot-juice.png', nuocduahau: 'assets/products-v3/watermelon-juice.png', mutdau: 'assets/products-v3/strawberry-jam.png',

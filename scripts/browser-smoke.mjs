@@ -534,7 +534,7 @@ try {
     'canceling bulk production should leave ingredients untouched');
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM machine_jobs WHERE owner_id = 1').get().n, bulkJobsBefore,
     'canceling bulk production should queue no jobs');
-  for (const product of ['grilled-fish', 'butter', 'carrot-cake', 'apple-pie', 'farm-pizza', 'strawberry-cake', 'honey-cake']) {
+  for (const product of ['grilled-fish', 'butter', 'carrot-cake', 'apple-pie', 'farm-pizza', 'strawberry-cake', 'honey-cake', 'buttered-corn', 'fried-rice-cakes', 'fried-fish-balls']) {
     await page.waitForFunction((name) => {
       const image = document.querySelector(`.sheet img[src*="products-v3/${name}.png"]`);
       return image?.complete && image.naturalWidth > 0;
@@ -548,6 +548,8 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'factory-goods-320.png') });
   await page.locator('.machine-block').filter({ has: page.locator('img[src*="machines-v3/bakery-oven.png"]') }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'bakery-goods-320.png') });
+  await page.locator('.machine-block').filter({ has: page.locator('img[src*="machines-v3/snack-stall.png"]') }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'snack-goods-320.png') });
   await page.keyboard.press('Escape');
   db.prepare('DELETE FROM orders WHERE owner_id = 1').run();
   db.prepare('UPDATE farmers SET orders_refresh_at = ? WHERE user_id = 1').run(Date.now() + 60 * 60 * 1000);
