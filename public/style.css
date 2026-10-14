@@ -1947,7 +1947,9 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .sheet--factory .sheet-scroll { max-height: calc(min(92dvh, 940px) - 5.5rem - var(--bottom-safe)); }
 .machine-grid .mc-row { grid-template-columns: 44px minmax(0, 1fr); row-gap: .3rem; padding: .45rem .5rem; }
 .machine-grid .mc-row .seed-sprite { width: 40px; height: 40px; }
+.machine-grid .mc-row .seed-info { grid-column: 2; }
 .machine-grid .mc-recipe-meta {
+  grid-column: 1 / -1;
   display: grid;
   gap: .2rem;
   color: #614b33;
@@ -1955,7 +1957,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   line-height: 1.4;
 }
 .machine-grid .mc-recipe-meta b { color: #3e3426; }
-.machine-grid .mc-missing { color: #794514; font-size: .72rem; font-weight: 750; line-height: 1.35; }
+.machine-grid .mc-missing { grid-column: 1 / -1; color: #794514; font-size: .72rem; font-weight: 750; line-height: 1.35; }
 .machine-grid .mc-add {
   grid-column: 1 / -1;
   display: flex; align-items: center; justify-content: flex-end; gap: .3rem;
