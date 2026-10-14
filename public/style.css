@@ -824,6 +824,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .sheet--family .family-search { min-height: 44px; }
 .sheet--family .family-strip { flex-direction: column; overflow-x: hidden; overflow-y: auto; gap: .45rem; max-height: min(58vh, 450px); scrollbar-width: thin; }
 .sheet--family .family-member { width: 100%; min-height: 52px; }
+.sheet--family .family-name { max-width: none; font-size: .8rem; }
 
 .visit-bar, .farm-toolbar {
   width: 100%;
