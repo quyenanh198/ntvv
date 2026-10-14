@@ -425,6 +425,22 @@ try {
   db.prepare('UPDATE farmers SET xp = ? WHERE user_id = 1').run(levelTwentyXp);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.plot').first().waitFor();
+  const sceneTargets = await page.locator('.scene-banner .sb-btn').evaluateAll((buttons) => buttons.map((button) => {
+    const rect = button.getBoundingClientRect();
+    return { name: button.className, left: rect.left, right: rect.right, width: rect.width, height: rect.height };
+  }));
+  assert.ok(sceneTargets.every((target) => target.width >= 44 && target.height >= 44),
+    `active scene shortcuts need 44px mobile targets: ${JSON.stringify(sceneTargets)}`);
+  const cowTarget = sceneTargets.find((target) => target.name.includes('sb-cowbarn'));
+  const sheepTarget = sceneTargets.find((target) => target.name.includes('sb-sheep'));
+  assert.ok(cowTarget && sheepTarget && cowTarget.right <= sheepTarget.left,
+    `cow and sheep shortcuts should stay separate at 320px: ${JSON.stringify(sceneTargets)}`);
+  await checkNoOverflow(page, '320px animal scene shortcuts');
+  await page.screenshot({ path: resolve(outputDir, 'animal-scene-shortcuts-320.png') });
+  await page.locator('.scene-banner .sb-cowbarn').click();
+  assert.match(await page.locator('.sheet').innerText(), /Chuồng Bò/,
+    'tapping the cow in the scene should open its barn');
+  await page.keyboard.press('Escape');
   for (const [animal, product] of [['de', 'goat-milk'], ['heo', 'pork']]) {
     await page.locator('[data-sheet="more"]').first().click();
     await page.locator('[data-sheet="barns"]').click();
