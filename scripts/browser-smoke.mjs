@@ -542,6 +542,13 @@ try {
   }
   const recipeMeta = page.locator('.machine-grid .mc-recipe-meta').first();
   assert.equal(await recipeMeta.locator('span').count(), 2, 'factory recipes should separate ingredients and rewards');
+  assert.match(await recipeMeta.locator('span').first().innerText(), /^Cần:/);
+  const recipeWidths = await recipeMeta.evaluate((element) => ({
+    details: element.getBoundingClientRect().width,
+    card: element.closest('.mc-row').getBoundingClientRect().width,
+  }));
+  assert.ok(recipeWidths.details >= recipeWidths.card - 28,
+    `factory ingredients should use the full card width: ${JSON.stringify(recipeWidths)}`);
   const recipeMetaSize = await recipeMeta.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
   assert.ok(recipeMetaSize >= 12, `factory recipe details should be readable at 320px: ${recipeMetaSize}px`);
   await checkNoOverflow(page, '320px new factory goods');
