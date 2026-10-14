@@ -1442,7 +1442,8 @@
         <p class="mc-result-count" role="status" aria-live="polite"></p>
         <p class="sheet-note mc-search-empty" hidden>Không tìm thấy công thức phù hợp. Xóa tìm kiếm hoặc chọn Tất cả.</p>
       </div>`;
-      return sheetShell('🏭 Khu chế biến', `${orderHint}${toolbar}${viewButtons}${finder}${emptyView}<div class="machine-grid">${blocks}</div>`, 'sheet--factory');
+      const bulkNote = '<p class="sheet-note mc-bulk-note">Chế biến hết xếp tối đa mọi công thức đủ nguyên liệu. Nguyên liệu dùng ngay; mẻ đã xếp không hủy được.</p>';
+      return sheetShell('🏭 Khu chế biến', `${orderHint}${toolbar}${bulkNote}${viewButtons}${finder}${emptyView}<div class="machine-grid">${blocks}</div>`, 'sheet--factory');
     }
 
     if (t === 'money') {
@@ -2203,6 +2204,7 @@
       }
     });
     document.getElementById('btn-cook-all')?.addEventListener('click', async () => {
+      if (!window.confirm('Xếp tối đa mọi công thức đủ nguyên liệu? Nguyên liệu sẽ dùng ngay và không thể hủy các mẻ đã xếp.')) return;
       const r = await run(() => api('/machine-run-all', {}));
       if (r) { updateMe(r); toast(`🏭 Đã xếp ${r.queued} mẻ vào ${new Set(r.jobs.map((j) => j.machine)).size} máy!`); render(); }
     });
