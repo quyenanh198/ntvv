@@ -756,6 +756,9 @@ try {
   const singlePondHarvest = page.locator(`[data-fish-harvest="${growingBatchId}"]`);
   assert.equal(await singlePondHarvest.getAttribute('aria-label'), 'Thu 2 con Ốc bươu');
   assert.equal(await singlePondHarvest.evaluate((button) => button === document.activeElement), true);
+  const singlePondBounds = await singlePondHarvest.boundingBox();
+  assert.ok(singlePondBounds.width >= 44 && singlePondBounds.height >= 44,
+    'individual pond harvest needs a 44px touch target');
   await singlePondHarvest.click();
   await singlePondHarvest.waitFor({ state: 'detached' });
   assert.equal(pondQty('oc'), snailsBefore + 5);

@@ -994,7 +994,7 @@
     const batchRows = ff.batches.map((b) => {
       const sp = cfg[b.species];
       const left = b.readyAt - Date.now();
-      return `<div class="inv-row">
+      return `<div class="inv-row fish-batch">
         <span class="emoji-ic emoji-ic--barn">${sp?.emoji || '🐟'}</span>
         <span class="seed-info"><span class="seed-name">${b.qty} con ${sp?.name || b.species}</span>
           <div class="seed-meta">${b.ready ? '<b>✅ Sẵn sàng thu</b>' : `⏱ còn ${fmtTime(left)}`}</div></span>
