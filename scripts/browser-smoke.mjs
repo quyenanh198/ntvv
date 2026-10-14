@@ -495,6 +495,7 @@ try {
   assert.match(await page.locator('#btn-fish-stock-max').innerText(), /Thả tối đa \(2\)/);
   await checkNoOverflow(page, '320px pond stocking');
   await auditAccessibility(page, 'fishing-320');
+  await page.locator('#fish-preview').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'fishing-stock-320.png') });
   await page.locator('#btn-fish-stock').click();
   assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, 50);
