@@ -515,7 +515,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/scene-v3/farmhouse_v3.png` | 63 KB |
 | `assets/scene-v3/fishing_pond_v3.png` | 82 KB |
 | `assets/scene-v3/greenhouse_v3.png` | 67 KB |
-| `assets/scene-v3/market_shop_v3.png` | 114 KB |
+| `assets/scene-v3/market_shop_v3-224.png` | 89 KB |
 | `assets/scene-v3/red_barn_v3.png` | 63 KB |
 | `assets/scene-v3/windmill_v3.png` | 88 KB |
 | `assets/ui/coin.svg` | <1 KB |
