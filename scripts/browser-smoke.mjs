@@ -191,7 +191,8 @@ try {
   await auditAccessibility(page, 'seed-320');
   await page.locator('.seed-search-disclosure > summary').click();
   await page.locator('#seed-search').fill('ngo');
-  assert.equal(await page.locator('.sheet--seed .seed-card:visible').count(), 1);
+  assert.equal(await page.locator('.sheet--seed .seed-card:visible').count(), 2,
+    'name search should include both Ngô and Bí ngô');
   assert.equal(await page.locator('.seed-card[data-seed-name="Ngô"]').isDisabled(), true);
   assert.equal(await page.locator('.seed-future').getAttribute('open'), '',
     'search should reveal a locked matching seed with its unlock level');
