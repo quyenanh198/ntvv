@@ -103,6 +103,7 @@
     quame: 'assets/art/trees/quame-qua.png', coc: 'assets/art/trees/coc-qua.png',
     quabo: 'assets/art/trees/quabo-qua.png', saurieng: 'assets/art/trees/saurieng-qua.png',
     canho: 'assets/ui/fish-canho.svg', caro: 'assets/ui/fish-caro.svg', cachep: 'assets/ui/fish-cachep.svg', cakoi: 'assets/ui/fish-cakoi.svg',
+    catra: 'assets/ui/fish-catra.svg', dieuhong: 'assets/ui/fish-dieuhong.svg', caloc: 'assets/ui/fish-caloc.svg', cachim: 'assets/ui/fish-cachim.svg',
   };
   const itemIcon = (id) => ITEM_ICON[id] ? A(ITEM_ICON[id]) : (DATA?.config.crops[id] ? cropSprite(id, 3) : null);
   const itemImg = (id, cls = '') => {

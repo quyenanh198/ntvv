@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 92/186 catalog products have PNG or SVG icons. 229 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 96/186 catalog products have PNG or SVG icons. 233 static asset paths appear in the client.
 
 ## Crops
 
@@ -125,12 +125,12 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Bột mì | botmi | coixay | PNG art |
 | Bơ | bo | nhamaysua | PNG art |
 | Cá chép | cachep | ho | SVG icon |
-| Cá chim trắng | cachim | cachim | emoji |
-| Cá điêu hồng | dieuhong | dieuhong | emoji |
+| Cá chim trắng | cachim | cachim | SVG icon |
+| Cá điêu hồng | dieuhong | dieuhong | SVG icon |
 | Cá điêu hồng chiên | cadieuhongchien | lonuong | PNG art |
 | Cá kho tiêu | cakho | lonuong | PNG art |
 | Cá koi | cakoi | ho | SVG icon |
-| Cá lóc | caloc | caloc | emoji |
+| Cá lóc | caloc | caloc | SVG icon |
 | Cá lóc nướng trui | calocnuong | lonuong | PNG art |
 | Cá nhỏ | canho | ho | SVG icon |
 | Cá nướng | canuong | lonuong | PNG art |
@@ -138,7 +138,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cà phê rang | capherang | mayrang | PNG art |
 | Cà phê sữa | caphesua | mayrang | PNG art |
 | Cá rô | caro | ho | SVG icon |
-| Cá tra | catra | catra | emoji |
+| Cá tra | catra | catra | SVG icon |
 | Cá tra kho tộ | catrakho | lonuong | PNG art |
 | Cá viên chiên | cavienchien | quanvat | emoji |
 | Cao nhung hươu | caonhung | xuongcaocap | PNG art |
@@ -520,9 +520,13 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/ui/egg.svg` | <1 KB |
 | `assets/ui/feed.svg` | <1 KB |
 | `assets/ui/fish-cachep.svg` | <1 KB |
+| `assets/ui/fish-cachim.svg` | <1 KB |
 | `assets/ui/fish-cakoi.svg` | <1 KB |
+| `assets/ui/fish-caloc.svg` | <1 KB |
 | `assets/ui/fish-canho.svg` | <1 KB |
 | `assets/ui/fish-caro.svg` | <1 KB |
+| `assets/ui/fish-catra.svg` | <1 KB |
+| `assets/ui/fish-dieuhong.svg` | <1 KB |
 | `assets/ui/gem.svg` | <1 KB |
 | `assets/ui/star.svg` | <1 KB |
 | `assets/ui/wool.svg` | <1 KB |
