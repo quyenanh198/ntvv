@@ -111,6 +111,8 @@ test('ITEM INFO HELPER: resolves crops, goods, and returns null for unknown item
 
   const unknown = itemInfo('non_existent_item_xyz');
   assert.equal(unknown, null);
+  assert.equal(itemInfo('toString'), null);
+  assert.equal(itemInfo('__proto__'), null);
 });
 
 test('LEVEL PROGRESSION: levelFor correctly maps xp to levels and increases monotonically', () => {
