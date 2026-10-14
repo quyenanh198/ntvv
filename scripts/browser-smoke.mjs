@@ -705,9 +705,18 @@ try {
   db.prepare('UPDATE farmers SET xp = ? WHERE user_id = 1').run(levelTenXp);
   db.prepare('UPDATE plots SET ready_at = ?, watered = 1 WHERE owner_id = 1').run(Date.now() + 60 * 60 * 1000);
   db.prepare('DELETE FROM orders WHERE owner_id = 1').run();
+  db.prepare('UPDATE farmers SET orders_refresh_at = ?, next_order_at = ? WHERE user_id = 1')
+    .run(Date.now() + 60 * 60 * 1000, Date.now() + 60 * 60 * 1000);
+  db.prepare("DELETE FROM inventory WHERE owner_id = 1 AND item = 'toi'").run();
+  db.prepare('INSERT INTO orders (owner_id, slot, items_json, gold, exp, stars) VALUES (1, 0, ?, 100, 10, 1)')
+    .run(JSON.stringify({ toi: 1 }));
+  db.prepare("DELETE FROM collection_discoveries WHERE owner_id = 1 AND item = 'ngo'").run();
   db.prepare('INSERT INTO animals (owner_id, kind, ready_at) VALUES (1, ?, ?)').run('ga', Date.now() - 1000);
   db.prepare('INSERT INTO machine_jobs (owner_id, kind, recipe, ready_at) VALUES (1, ?, ?, ?)').run('coixay', 'botmi', Date.now() - 1000);
   await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.farm-next-step').waitFor();
+  assert.equal(await page.locator('.farm-next-step').getAttribute('data-next-step'), 'mill',
+    `finished production should take priority: ${await page.locator('.farm-next-step').innerText()}`);
   await page.locator('.farm-next-step[data-next-step="mill"]').click();
   assert.equal(await page.locator('.sheet--factory #btn-collect-all').count(), 1,
     'factory next action should open the collection controls');
