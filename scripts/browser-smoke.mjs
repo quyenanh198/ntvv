@@ -214,6 +214,12 @@ try {
   assert.ok(seedChoice.width >= 130 && seedChoice.height >= 44, `320px seed choice is too small: ${JSON.stringify(seedChoice)}`);
   assert.ok(seedChoice.detailSize >= 11.5 && seedChoice.costSize >= 12,
     `320px seed cost or timing is too small: ${JSON.stringify(seedChoice)}`);
+  const seedHeadingLayout = await page.locator('.seed-section-title').first().evaluate((heading) => ({
+    headingTop: heading.getBoundingClientRect().top,
+    sortBottom: Math.max(...[...document.querySelectorAll('.seed-sort button')].map((button) => button.getBoundingClientRect().bottom)),
+  }));
+  assert.ok(seedHeadingLayout.headingTop >= seedHeadingLayout.sortBottom,
+    `seed section heading should not cover sort controls: ${JSON.stringify(seedHeadingLayout)}`);
   await checkNoOverflow(page, '320px seed chooser');
   await page.screenshot({ path: resolve(outputDir, 'seed-320.png') });
   await page.locator('.seed-card[data-crop="luami"]').click();
