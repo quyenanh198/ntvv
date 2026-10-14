@@ -25,7 +25,7 @@ test('single and bulk planting replay without charging or awarding XP twice', as
     const beforeInvalid = balance();
     for (const [index, crop] of ['toString', '__proto__'].entries()) {
       for (const route of ['/plant', '/plant-all']) {
-        const invalid = await post(route, route === '/plant' ? { idx: 0, crop } : { crop }, `invalid-crop-${index}-${route}`);
+        const invalid = await post(route, route === '/plant' ? { idx: 0, crop } : { crop }, `invalid-crop-${index}-${route.slice(1)}`);
         assert.equal(invalid.statusCode, 400, invalid.body);
         assert.equal(invalid.json().error, 'bad_request');
       }
