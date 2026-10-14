@@ -482,6 +482,26 @@ try {
     await page.screenshot({ path: resolve(outputDir, `${animal}-barn-320.png`) });
     await page.keyboard.press('Escape');
   }
+  const goldBeforePond = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
+  db.prepare('UPDATE farmers SET gold = 350 WHERE user_id = 1').run();
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await page.locator('.more-card[data-sheet="fishing"]').click();
+  assert.equal(await page.locator('label[for="fish-species"]').isVisible(), true);
+  assert.equal(await page.locator('label[for="fish-qty"]').isVisible(), true);
+  await page.locator('#fish-species').selectOption('luon');
+  await page.locator('#fish-qty').fill('10');
+  assert.match(await page.locator('#fish-preview').innerText(), /Bạn chọn 10 con.*Sẽ thả 2 con Lươn, tốn 300/);
+  assert.match(await page.locator('#btn-fish-stock-max').innerText(), /Thả tối đa \(2\)/);
+  await checkNoOverflow(page, '320px pond stocking');
+  await auditAccessibility(page, 'fishing-320');
+  await page.screenshot({ path: resolve(outputDir, 'fishing-stock-320.png') });
+  await page.locator('#btn-fish-stock').click();
+  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, 50);
+  const stockedBatch = db.prepare("SELECT id, qty FROM fish_batches WHERE owner_id = 1 AND species = 'luon' ORDER BY id DESC LIMIT 1").get();
+  assert.equal(stockedBatch.qty, 2, 'stocking should match the capped preview');
+  db.prepare('DELETE FROM fish_batches WHERE id = ?').run(stockedBatch.id);
+  db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(goldBeforePond);
   db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'luami', 8) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 8").run();
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('[data-sheet="more"]').first().click();

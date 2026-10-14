@@ -1001,12 +1001,12 @@
     return `<p class="sheet-note" style="margin-top:.7rem">🐟 <b>Ao nuôi</b> — thả giống theo mẻ, đủ giờ thu cả mẻ (cá là tiêu hao). Sức chứa <b>${ff.used}/${ff.capacity}</b> con (nâng ao câu cá để nuôi nhiều hơn).</p>
       ${readyN > 1 ? `<button class="btn gbtn gbtn--gold" id="btn-fish-harvest-all" style="width:100%;margin-bottom:.4rem">✅ Thu hết ${readyN} mẻ</button>` : ''}
       ${batchRows || '<p class="sheet-note">Ao đang trống — thả giống đi!</p>'}
-      ${room > 0 ? `<div class="want-form">
-        <select id="fish-species">${options}</select>
-        <input id="fish-qty" type="number" inputmode="numeric" min="1" max="${room}" value="${room}" />
-        <button class="gbtn gbtn--green btn-mini" id="btn-fish-stock">🐟 Thả giống</button>
-        <button class="gbtn gbtn--gold btn-mini" id="btn-fish-stock-max" title="Thả đầy chỗ trống (${room} con)">Thả đầy</button>
-      </div><p class="sheet-note" id="fish-preview"></p>` : '<p class="sheet-note">Ao đã đầy — thu hoạch hoặc nâng cấp ao để thả thêm.</p>'}`;
+      ${room > 0 ? `<div class="want-form fish-stock-form">
+        <label class="want-field want-field--item" for="fish-species">Loài nuôi<select id="fish-species">${options}</select></label>
+        <label class="want-field want-field--qty" for="fish-qty">Số con<input id="fish-qty" type="number" inputmode="numeric" min="1" max="${room}" value="1" /></label>
+        <button class="gbtn gbtn--green btn-mini" id="btn-fish-stock">🐟 Thả số đã chọn</button>
+        <button class="gbtn gbtn--gold btn-mini" id="btn-fish-stock-max">Thả tối đa</button>
+      </div><p class="sheet-note" id="fish-preview" role="status" aria-live="polite"></p>` : '<p class="sheet-note">Ao đã đầy — thu hoạch hoặc nâng cấp ao để thả thêm.</p>'}`;
   }
 
   function renderSheet() {
@@ -2189,9 +2189,23 @@
     const fishPreview = () => {
       const sel = document.getElementById('fish-species'); const q = document.getElementById('fish-qty'); const p = document.getElementById('fish-preview');
       if (!sel || !p) return;
-      const sp = DATA.config.fishFarm[sel.value]; const n = Math.max(1, Number(q?.value) || 1);
+      const sp = DATA.config.fishFarm[sel.value];
+      if (!sp) return;
+      const requested = Number(q?.value);
+      const valid = Number.isSafeInteger(requested) && requested >= 1;
+      const room = Math.max(0, me().fishFarm.capacity - me().fishFarm.used);
+      const affordable = Math.floor(me().gold / sp.fry);
+      const maxStock = Math.max(0, Math.min(room, affordable));
+      const n = valid ? Math.min(requested, maxStock) : 0;
+      const stockButton = document.getElementById('btn-fish-stock');
+      const maxButton = document.getElementById('btn-fish-stock-max');
+      if (stockButton) stockButton.disabled = n < 1;
+      if (maxButton) { maxButton.disabled = maxStock < 1; maxButton.textContent = `Thả tối đa (${maxStock})`; }
       const info = itemInfo(sp?.product);
-      p.innerHTML = sp ? `${n} con ${sp.name}: giống <b>${(sp.fry * n).toLocaleString('vi')}</b> vàng · sau ${fmtDuration(sp.growMs)} thu ${n} ${info?.name || ''} (bán ${((info?.sell || 0) * n).toLocaleString('vi')} vàng)` : '';
+      if (!valid) { p.textContent = 'Nhập số con nguyên dương để xem chi phí.'; return; }
+      if (!maxStock) { p.textContent = `Chưa đủ ${sp.fry.toLocaleString('vi')} vàng để mua giống ${sp.name}.`; return; }
+      const limitNote = n < requested ? `Bạn chọn ${requested} con; ao còn ${room} chỗ và đủ vàng cho ${affordable} con. ` : '';
+      p.innerHTML = `${limitNote}Sẽ thả <b>${n} con ${sp.name}</b>, tốn <b>${(sp.fry * n).toLocaleString('vi')}</b> vàng · sau ${fmtDuration(sp.growMs)} thu ${n} ${info?.name || ''} (bán ${((info?.sell || 0) * n).toLocaleString('vi')} vàng).`;
     };
     document.getElementById('fish-species')?.addEventListener('change', fishPreview);
     document.getElementById('fish-qty')?.addEventListener('input', fishPreview);
