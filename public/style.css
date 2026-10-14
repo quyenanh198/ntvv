@@ -1590,6 +1590,8 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .sb-well { display: none; }
   .sb-sheep { width: 10%; }
   .sb-pig { width: 10.5%; }
+  .scene-banner .sb-btn { min-width: 44px; min-height: 44px; display: grid; place-items: center; }
+  .scene-banner .sb-cowbarn { right: 37%; }
   .sb-farmer { width: 16%; }
   .sb-dog { width: 11%; }
   .sb-tag { display: none; }
