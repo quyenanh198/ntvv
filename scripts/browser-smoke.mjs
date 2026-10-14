@@ -715,6 +715,43 @@ try {
   db.prepare('DELETE FROM machine_jobs WHERE owner_id = 1').run();
   db.prepare('UPDATE animals SET ready_at = NULL WHERE owner_id = 1').run();
   db.prepare("DELETE FROM inventory WHERE owner_id = 1 AND item = 'thucan'").run();
+  const pondQty = (item) => db.prepare('SELECT qty FROM inventory WHERE owner_id = 1 AND item = ?').get(item)?.qty || 0;
+  const snailsBefore = pondQty('oc');
+  const shrimpBefore = pondQty('tom');
+  const insertPondBatch = db.prepare('INSERT INTO fish_batches (owner_id, species, qty, planted_at, ready_at) VALUES (1, ?, ?, ?, ?)');
+  insertPondBatch.run('oc', 3, Date.now() - 2000, Date.now() - 1000);
+  insertPondBatch.run('tom', 5, Date.now() - 2000, Date.now() - 1000);
+  const growingBatchId = Number(insertPondBatch.run('oc', 2, Date.now(), Date.now() + 60 * 60 * 1000).lastInsertRowid);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const pondPrompt = page.locator('.farm-next-step[data-next-step="pond"]');
+  assert.match(await pondPrompt.innerText(), /2 mẻ trong ao đã lớn/);
+  await pondPrompt.click();
+  const pondHarvestAll = page.locator('#btn-fish-harvest-all');
+  assert.equal(await pondHarvestAll.evaluate((button) => button === document.activeElement), true,
+    'pond shortcut should focus the harvest action inside its sheet');
+  const pondActionBounds = await pondHarvestAll.boundingBox();
+  assert.ok(pondActionBounds.y >= 0 && pondActionBounds.y + pondActionBounds.height <= page.viewportSize().height,
+    'pond shortcut should scroll its harvest controls into the viewport');
+  await checkNoOverflow(page, '320px ready pond batches');
+  await page.screenshot({ path: resolve(outputDir, 'pond-ready-320.png') });
+  await pondHarvestAll.click();
+  await pondHarvestAll.waitFor({ state: 'detached' });
+  assert.equal(pondQty('oc'), snailsBefore + 3);
+  assert.equal(pondQty('tom'), shrimpBefore + 5);
+  assert.deepEqual(db.prepare('SELECT id FROM fish_batches WHERE owner_id = 1').all(), [{ id: growingBatchId }],
+    'bulk pond harvest should leave a growing batch untouched');
+  await page.keyboard.press('Escape');
+  db.prepare('UPDATE fish_batches SET ready_at = ? WHERE id = ?').run(Date.now() - 1000, growingBatchId);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.farm-next-step[data-next-step="pond"]').click();
+  const singlePondHarvest = page.locator(`[data-fish-harvest="${growingBatchId}"]`);
+  assert.equal(await singlePondHarvest.getAttribute('aria-label'), 'Thu 2 con Ốc bươu');
+  assert.equal(await singlePondHarvest.evaluate((button) => button === document.activeElement), true);
+  await singlePondHarvest.click();
+  await singlePondHarvest.waitFor({ state: 'detached' });
+  assert.equal(pondQty('oc'), snailsBefore + 5);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM fish_batches WHERE owner_id = 1').get().n, 0);
+  await page.keyboard.press('Escape');
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.farm-next-step[data-next-step="feed"]').click();
   assert.equal(await page.locator('.sheet [data-buy="thucan"]').count(), 3,

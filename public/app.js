@@ -736,6 +736,7 @@
     const deliverableOrders = farm.orders.filter(canDeliver).length;
     const finishedJobs = Object.values(farm.machines).reduce((total, jobs) => total
       + Object.values(jobs || {}).reduce((count, job) => count + (job.completed || 0), 0), 0);
+    const readyFishBatches = (farm.fishFarm?.batches || []).filter((batch) => batch.ready);
     const hungryAnimals = farm.animals.filter((animal) => animal.ready_at == null).length;
     const readyCollection = (farm.collections || []).find((collection) => !collection.claimed
       && collection.items.every((item) => item.found));
@@ -751,6 +752,8 @@
         ? { kind: 'orders', icon: '🚚', title: `${deliverableOrders} đơn sẵn sàng giao`, detail: 'Chạm để giao hàng và nhận vàng, EXP, sao.' }
       : finishedJobs
         ? { kind: 'mill', icon: '🏭', title: `${finishedJobs} mẻ đã chế biến xong`, detail: 'Chạm để nhận sản phẩm từ nhà máy.' }
+      : readyFishBatches.length
+        ? { kind: 'pond', icon: '🐟', title: `${readyFishBatches.length} mẻ trong ao đã lớn`, detail: 'Chạm để thu hoạch và giải phóng chỗ nuôi.' }
       : hungryAnimals
         ? { kind: 'feed', icon: '🌰', title: `${hungryAnimals} vật nuôi đang đói`, detail: 'Chạm để mua thức ăn và tiếp tục nuôi.' }
       : dry
@@ -995,7 +998,7 @@
         <span class="emoji-ic emoji-ic--barn">${sp?.emoji || '🐟'}</span>
         <span class="seed-info"><span class="seed-name">${b.qty} con ${sp?.name || b.species}</span>
           <div class="seed-meta">${b.ready ? '<b>✅ Sẵn sàng thu</b>' : `⏱ còn ${fmtTime(left)}`}</div></span>
-        ${b.ready ? `<button class="gbtn gbtn--gold btn-mini" data-fish-harvest="${b.id}">Thu</button>` : ''}
+        ${b.ready ? `<button class="gbtn gbtn--gold btn-mini" data-fish-harvest="${b.id}" aria-label="Thu ${b.qty} con ${esc(sp?.name || b.species)}">Thu</button>` : ''}
       </div>`;
     }).join('');
     const species = Object.values(cfg).sort((x, y) => x.level - y.level);
@@ -1947,6 +1950,14 @@
       if (kind === 'mill' || kind === 'feed') {
         sheet = { type: kind === 'mill' ? 'mill' : 'shop' };
         render();
+        return;
+      }
+      if (kind === 'pond') {
+        sheet = { type: 'fishing' };
+        render();
+        const harvest = document.querySelector('#btn-fish-harvest-all') || document.querySelector('[data-fish-harvest]');
+        harvest?.scrollIntoView({ block: 'center' });
+        harvest?.focus({ preventScroll: true });
         return;
       }
       if (kind === 'growing') {
