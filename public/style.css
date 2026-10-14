@@ -1469,11 +1469,11 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .bg-tree, .hills-far { display: none; }
 
   .top-hud {
-    min-height: calc(96px + var(--top-safe));
+    min-height: calc(102px + var(--top-safe));
     padding: calc(.3rem + var(--top-safe)) .5rem .4rem;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 40px 38px;
+    grid-template-rows: 40px 44px;
     gap: .3rem;
   }
   .hud-player {
@@ -1505,13 +1505,13 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .hud-right::-webkit-scrollbar { display: none; }
   .hud-right > *, .hud-rounds { flex: 0 0 auto; }
   .hud-rounds .hud-round[data-sheet="ledger"] { display: none; }
-  .coin-pill { min-height: 36px; border-radius: 11px; border-width: 2px; padding: .18rem .2rem; gap: .18rem; }
+  .coin-pill { min-height: 44px; border-radius: 11px; border-width: 2px; padding: .18rem .2rem; gap: .18rem; }
   .coin-pill > .coin-img { width: 22px; height: 22px; }
   .coin-pill b { font-size: .72rem; }
   .pill-plus { width: 20px; height: 20px; border-radius: 7px; font-size: .8rem; }
 
   .stage-center {
-    top: calc(96px + var(--top-safe));
+    top: calc(102px + var(--top-safe));
     left: 0;
     right: 0;
     margin: 0 auto;
@@ -1596,7 +1596,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .sb-dog { width: 11%; }
   .sb-tag { display: none; }
   .welcome-sign, .pond-img { display: none; }
-  .hud-round { width: 34px; height: 34px; border-width: 2px; font-size: .85rem; }
+  .hud-round { width: 44px; height: 44px; border-width: 2px; font-size: .95rem; }
   .hud-rounds { gap: .28rem; }
   .coin-pill--star { display: none; } /* sheet Sao vẫn mở được từ pill kim cương */
 
@@ -1664,6 +1664,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 /* ---------- small phones ---------- */
 @media (max-width: 430px) {
+  .hud-rounds #btn-lb { display: none; }
   .coin-pill b { max-width: 4.7ch; overflow: hidden; text-overflow: ellipsis; }
   .pill-plus { display: none; }
   .side-left .side-btn { min-width: 0; flex: 1 1 0; grid-template-columns: 18px auto; padding-inline: .3rem; }
