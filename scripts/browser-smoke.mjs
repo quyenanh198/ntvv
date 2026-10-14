@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { xpNeedFor } from '../server/src/game.js';
+import { MACHINES, xpNeedFor } from '../server/src/game.js';
 
 const players = [
   { id: 1, username: 'browser', display_name: 'Browser Farmer' },
@@ -577,7 +577,18 @@ try {
   await page.locator('.machine-block').filter({ has: page.locator('img[src*="machines-v3/bakery-oven.png"]') }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'bakery-goods-320.png') });
   await page.locator('.machine-block').filter({ has: page.locator('img[src*="machines-v3/snack-stall.png"]') }).scrollIntoViewIfNeeded();
+  for (const recipe of Object.values(MACHINES.quanvat.recipes)) {
+    const product = Object.keys(recipe.out)[0];
+    const icon = page.locator(`.mc-row[data-recipe-output="${product}"] > img.seed-sprite`);
+    assert.equal(await icon.count(), 1, `${product} needs its own snack sprite`);
+    await icon.evaluate((image) => image.decode());
+    assert.equal(await icon.evaluate((image) => image.naturalWidth), 128, `${product} should use the compact game export`);
+  }
   await page.screenshot({ path: resolve(outputDir, 'snack-goods-320.png') });
+  for (const product of ['banhtrangtron', 'nemchua', 'trasa']) {
+    await page.locator(`.mc-row[data-recipe-output="${product}"]`).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: resolve(outputDir, `snack-${product}-320.png`) });
+  }
   await page.keyboard.press('Escape');
   db.prepare('DELETE FROM orders WHERE owner_id = 1').run();
   db.prepare('UPDATE farmers SET orders_refresh_at = ? WHERE user_id = 1').run(Date.now() + 60 * 60 * 1000);

@@ -180,11 +180,13 @@ Vanilla source images are `asset/source_crops/v3/vanilla-growing.png` and `asset
 | Fruit trees and items | All thirteen species have individual tree and fruit-item PNGs | Review scale and ready-state contrast together at phone width |
 | Animals | All fifteen species have individual PNGs | Review scale and shadow together at phone width |
 | Machines | All twelve machines have unique PNGs in factory cards | Standardize footprint and active/ready feedback |
-| Products and UI icons | All fifteen animal products and six plated bakery goods have PNG or SVG icons; most other products use emoji | Extend the product set in recipe and unlock order, then standardize UI icons |
+| Products and UI icons | 110/186 catalog products have PNG or SVG icons, including all fourteen snack-stall products | Complete remaining product families in recipe and unlock order, then standardize UI icons |
 
 The fishing pond source is `asset/source_scene/v3/fishing_pond_v3.png`; its 256×256 transparent game export is `public/assets/scene-v3/fishing_pond_v3.png`. It was generated with the built-in image tool using the coop and farmhouse as style references: a three-quarter hand-painted oval freshwater pond, grassy stone rim, reeds, lily pads, a small wooden dock, warm upper-left light, and transparent background. The source is retained for future size or color adjustments.
 
 ## Review checklist for each new sprite
+
+The snack stall now has individual art for all fourteen products. Full-resolution transparent sources are retained in `asset/source_products/v3/`, with matching 128×128 exports in `public/assets/products-v3/`. The final nine subjects are rice-paper salad, mung-bean dessert, peanut brittle, sweet-potato fritters, chili tamarind, cured pork rolls, lemongrass snails, honey lemongrass tea, and peanut sticky rice. They were generated with the built-in image tool using the existing potato-fries sprite as a style reference: warm hand-painted food, three-quarter view, upper-left light, simple silhouette, transparent background, and no lettering. The earlier five snack sources are retained alongside this batch. CI checks that every snack recipe loads its individual 128px export at 320px.
 
 The original coop, windmill, market, and farmer scene images are in `asset/source_scene/v3/`. Their 256px transparent browser exports are in `public/assets/scene-v3/`; the scene displays them at about 115–135 CSS pixels on desktop. These four exports total about 331 KB, down from about 1,237 KB for the 500–512px originals.
 The farmhouse, red barn, and greenhouse sources are also in `asset/source_scene/v3/`. Their 192px transparent browser exports are in `public/assets/scene-v3/`; this size keeps the three central buildings readable in the scene while respecting the first-load image budget.
