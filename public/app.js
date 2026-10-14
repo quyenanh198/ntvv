@@ -1601,7 +1601,7 @@
           <div class="q-track" role="progressbar" aria-label="Tiến độ ${esc(ms.label)}" aria-valuemin="0" aria-valuemax="${ms.target}" aria-valuenow="${Math.min(ms.progress, ms.target)}"><i style="width:${Math.min(100, Math.round((ms.progress / ms.target) * 100))}%"></i></div>
           <p class="festival-hint">${activity.hint}</p>
           <div class="festival-card-footer"><span class="festival-reward">Thưởng: ${reward}</span>${ms.claimed ? '<span class="festival-claimed">Đã nhận quà</span>' : done
-            ? `<button class="gbtn gbtn--gold" data-fest-claim="${ms.id}" aria-label="Nhận thưởng ${esc(ms.label)}">Nhận quà</button>` : action}</div>
+            ? `<button class="gbtn gbtn--gold" data-fest-claim="${ms.id}" aria-label="Nhận quà: ${esc(ms.label)}">Nhận quà</button>` : action}</div>
         </article>`;
       }).join('');
       return sheetShell(
