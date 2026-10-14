@@ -13,8 +13,8 @@ test('animal feeding and collection replay without consuming or granting twice',
     db, logger: false,
     config: { dataDir, mockChatUser: { id: 1, username: 'keeper', display_name: 'Keeper' } },
   });
-  const post = (route, key) => app.inject({
-    method: 'POST', url: `/farm/api${route}`, payload: { kind: 'ga' },
+  const post = (route, key, payload = { kind: 'ga' }) => app.inject({
+    method: 'POST', url: `/farm/api${route}`, payload,
     headers: { 'idempotency-key': key },
   });
   const qty = (item) => db.prepare('SELECT qty FROM inventory WHERE owner_id = 1 AND item = ?').get(item)?.qty || 0;
@@ -24,17 +24,32 @@ test('animal feeding and collection replay without consuming or granting twice',
     db.prepare("INSERT INTO animals (owner_id, kind) VALUES (1, 'ga')").run();
     db.prepare("INSERT INTO animals (owner_id, kind) VALUES (1, 'ga')").run();
     db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'thucan', 2) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 2").run();
-    const feed = await post('/feed', 'animal-feed-request-01');
+    for (const [index, kind] of ['unknown', 'toString', null, 42].entries()) {
+      const invalid = await post('/feed', `invalid-feed-kind-${index}`, { kind });
+      assert.equal(invalid.statusCode, 400, invalid.body);
+      assert.equal(invalid.json().error, 'bad_request');
+    }
+    assert.equal(qty('thucan'), 2);
+    assert.deepEqual(animalTimes(), [null, null]);
+    const feed = await post('/feed', 'animal-feed-request-01', {});
     assert.equal(feed.statusCode, 200, feed.body);
     assert.equal(feed.json().fed, 2);
     const fedTimes = animalTimes();
     const feedAfter = qty('thucan');
-    assert.equal((await post('/feed', 'animal-feed-request-01')).statusCode, 200);
+    assert.equal((await post('/feed', 'animal-feed-request-01', {})).statusCode, 200);
     assert.deepEqual(animalTimes(), fedTimes);
     assert.equal(qty('thucan'), feedAfter);
-    assert.equal((await post('/feed', 'animal-feed-request-02')).statusCode, 400);
+    assert.equal((await post('/feed', 'animal-feed-request-02', {})).statusCode, 400);
 
     db.prepare("UPDATE animals SET ready_at = ? WHERE owner_id = 1 AND kind = 'ga'").run(Date.now() - 1000);
+    const readyTimes = animalTimes();
+    for (const [index, kind] of ['unknown', 'toString', null, 42].entries()) {
+      const invalid = await post('/collect', `invalid-collect-kind-${index}`, { kind });
+      assert.equal(invalid.statusCode, 400, invalid.body);
+      assert.equal(invalid.json().error, 'bad_request');
+    }
+    assert.deepEqual(animalTimes(), readyTimes);
+    assert.equal(qty('trung'), 0);
     const xpBefore = db.prepare('SELECT xp FROM farmers WHERE user_id = 1').get().xp;
     const collect = await post('/collect', 'animal-collect-request-01');
     assert.equal(collect.statusCode, 200, collect.body);
