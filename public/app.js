@@ -740,6 +740,7 @@
     const hungryAnimals = farm.animals.filter((animal) => animal.ready_at == null).length;
     const readyCollection = (farm.collections || []).find((collection) => !collection.claimed
       && collection.items.every((item) => item.found));
+    const readyFestival = farm.festival.milestones.filter((milestone) => !milestone.claimed && milestone.progress >= milestone.target).length;
     const firstSaleReady = farm.level <= 2 && !farm.soldGold
       && Object.entries(farm.inventory).some(([id, qty]) => qty > 0 && crops()[id]);
     const step = ready
@@ -748,6 +749,8 @@
         ? { kind: 'inventory', icon: '🎒', title: 'Bán vụ đầu tiên', detail: 'Chạm để mở kho và bán nông sản.' }
       : readyCollection
         ? { kind: 'collections', icon: '📒', title: `${readyCollection.name} đã hoàn thành`, detail: `Chạm để nhận ${readyCollection.gold.toLocaleString('vi')} vàng${readyCollection.gems ? ` và ${readyCollection.gems} kim cương` : ''}.` }
+      : readyFestival
+        ? { kind: 'festival', icon: '🎪', title: `${readyFestival} phần thưởng lễ hội sẵn sàng`, detail: 'Chạm để nhận quà của mùa này.' }
       : deliverableOrders
         ? { kind: 'orders', icon: '🚚', title: `${deliverableOrders} đơn sẵn sàng giao`, detail: 'Chạm để giao hàng và nhận vàng, EXP, sao.' }
       : finishedJobs
@@ -1576,24 +1579,36 @@
 
     if (t === 'festival') {
       const fest = m.festival;
-      const rows = fest.milestones.map((ms) => {
+      const claimed = fest.milestones.filter((ms) => ms.claimed).length;
+      const ready = fest.milestones.filter((ms) => !ms.claimed && ms.progress >= ms.target).length;
+      const rank = (ms) => ms.claimed ? 2 : ms.progress >= ms.target ? 0 : 1;
+      const processLevel = Math.min(...Object.values(DATA.config.machines).map((machine) => machine.level));
+      const activities = {
+        harvest: { icon: '🌾', hint: 'Thu hoạch cây trên ruộng của bạn để tăng tiến độ.', action: '<button class="gbtn gbtn--green" data-festival-farm>Ra ruộng</button>' },
+        deliver: { icon: '🚚', hint: 'Giao đơn hàng trên bảng đơn để tăng tiến độ.', sheet: 'orders', level: DATA.config.orderUnlockLevel, label: 'Xem đơn hàng' },
+        process: { icon: '🏭', hint: 'Lấy các mẻ đã chế biến xong để tăng tiến độ.', sheet: 'mill', level: processLevel, label: 'Mở chế biến' },
+      };
+      const rows = [...fest.milestones].sort((a, b) => rank(a) - rank(b) || a.id - b.id).map((ms) => {
         const done = ms.progress >= ms.target;
+        const activity = activities[ms.type];
         const reward = [ms.gold ? `${ms.gold.toLocaleString('vi')} ${COIN}` : '', ms.gems ? `${ms.gems} ${GEM}` : ''].filter(Boolean).join(' + ');
-        return `<div class="quest-row${ms.claimed ? ' quest-row--done' : ''}">
-          <span class="q-emoji">${ms.claimed ? '✅' : done ? '🎁' : '🎪'}</span>
-          <span class="seed-info">
-            <span class="seed-name">${ms.label}</span>
-            <div class="q-track"><i style="width:${Math.round((ms.progress / ms.target) * 100)}%"></i></div>
-            <div class="seed-meta">${reward}</div>
-          </span>
-          <span class="q-right">${ms.claimed ? 'Đã nhận' : done
-            ? `<button class="gbtn gbtn--gold btn-mini" data-fest-claim="${ms.id}">Nhận!</button>`
-            : `${ms.progress}/${ms.target}`}</span>
-        </div>`;
+        const action = activity.action || (m.level >= activity.level
+          ? `<button class="gbtn gbtn--green" data-sheet="${activity.sheet}">${activity.label}</button>`
+          : `<button class="gbtn" data-festival-locked="${ms.type}" disabled>Mở ở cấp ${activity.level}</button>`);
+        return `<article class="festival-card${ms.claimed ? ' festival-card--claimed' : done ? ' festival-card--ready' : ''}" data-festival-id="${ms.id}" aria-labelledby="festival-goal-${ms.id}">
+          <div class="festival-card-heading"><h4 id="festival-goal-${ms.id}"><span aria-hidden="true">${ms.claimed ? '✅' : done ? '🎁' : activity.icon}</span> ${esc(ms.label)}</h4>
+            <span class="festival-status">${ms.progress}/${ms.target}${ms.claimed ? ' · Đã nhận' : done ? ' · Quà sẵn sàng' : ''}</span></div>
+          <div class="q-track" role="progressbar" aria-label="Tiến độ ${esc(ms.label)}" aria-valuemin="0" aria-valuemax="${ms.target}" aria-valuenow="${Math.min(ms.progress, ms.target)}"><i style="width:${Math.min(100, Math.round((ms.progress / ms.target) * 100))}%"></i></div>
+          <p class="festival-hint">${activity.hint}</p>
+          <div class="festival-card-footer"><span class="festival-reward">Thưởng: ${reward}</span>${ms.claimed ? '<span class="festival-claimed">Đã nhận quà</span>' : done
+            ? `<button class="gbtn gbtn--gold" data-fest-claim="${ms.id}" aria-label="Nhận thưởng ${esc(ms.label)}">Nhận quà</button>` : action}</div>
+        </article>`;
       }).join('');
       return sheetShell(
         `${fest.emoji} ${fest.name} <span class="sheet-coins">⏳ còn ${fest.daysLeft} ngày</span>`,
-        `<p class="sheet-note">Sự kiện cá nhân — đạt mốc là nhận quà, hết ${fest.daysLeft} ngày mở mùa mới.</p>${rows}`,
+        `<p class="festival-summary">Đã nhận <b>${claimed}/${fest.milestones.length}</b> phần thưởng${ready ? ` · <b>${ready} quà đang chờ</b>` : ''}.</p>
+         <p class="sheet-note">Sự kiện cá nhân trong ${fest.daysLeft} ngày còn lại. Thu hoạch, giao đơn và lấy sản phẩm để tiến gần mốc tiếp theo; mùa mới sẽ đặt lại tiến độ.</p>${rows}`,
+        'sheet--festival',
       );
     }
 
@@ -1942,8 +1957,8 @@
         render();
         return;
       }
-      if (kind === 'orders' || kind === 'inventory' || kind === 'collections') {
-        sheet = { type: kind === 'inventory' ? 'inventory' : kind === 'collections' ? 'collections' : me().level >= DATA.config.orderUnlockLevel ? 'orders' : 'quests' };
+      if (['orders', 'inventory', 'collections', 'festival'].includes(kind)) {
+        sheet = { type: kind === 'orders' && me().level < DATA.config.orderUnlockLevel ? 'quests' : kind };
         render();
         return;
       }
@@ -1966,6 +1981,13 @@
       }
       document.querySelector(kind === 'harvest' ? '.plot[data-kind="harvest"]' : '.plot[data-kind="waterplot"]')?.click();
     });
+    document.querySelectorAll('[data-festival-farm]').forEach((button) => button.addEventListener('click', () => {
+      sheet = null;
+      render();
+      const plot = document.querySelector('.plot[data-kind="harvest"]') || document.querySelector('.plot[data-kind="empty"]') || document.querySelector('.plot:not(:disabled)');
+      plot?.scrollIntoView({ block: 'center' });
+      plot?.focus({ preventScroll: true });
+    }));
     document.getElementById('btn-inspect-mode')?.addEventListener('click', () => { INSPECT = !INSPECT; toast(INSPECT ? '🔍 Bấm vào một ô đang trồng để khám xét' : 'Tắt khám xét'); render(); });
     document.getElementById('btn-gold-give')?.addEventListener('click', async () => {
       const v = window.prompt(`Tặng ${VISIT.farm.name} bao nhiêu vàng? (bạn có ${me().gold.toLocaleString('vi')})`, '');
