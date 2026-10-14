@@ -180,11 +180,13 @@ Vanilla source images are `asset/source_crops/v3/vanilla-growing.png` and `asset
 | Fruit trees and items | All thirteen species have individual tree and fruit-item PNGs | Review scale and ready-state contrast together at phone width |
 | Animals | All fifteen species have individual PNGs | Review scale and shadow together at phone width |
 | Machines | All twelve machines have unique PNGs in factory cards | Standardize footprint and active/ready feedback |
-| Products and UI icons | 110/186 catalog products have PNG or SVG icons, including all fourteen snack-stall products | Complete remaining product families in recipe and unlock order, then standardize UI icons |
+| Products and UI icons | 117/186 catalog products have PNG or SVG icons, including all eleven kitchen and fourteen snack-stall products | Complete remaining product families in recipe and unlock order, then standardize UI icons |
 
 The fishing pond source is `asset/source_scene/v3/fishing_pond_v3.png`; its 256×256 transparent game export is `public/assets/scene-v3/fishing_pond_v3.png`. It was generated with the built-in image tool using the coop and farmhouse as style references: a three-quarter hand-painted oval freshwater pond, grassy stone rim, reeds, lily pads, a small wooden dock, warm upper-left light, and transparent background. The source is retained for future size or color adjustments.
 
 ## Review checklist for each new sprite
+
+The family kitchen now has individual art for all eleven products. The final seven are `crispy-pancake`, `chili-ambarella`, `roasted-sweet-potatoes`, `durian-fritters`, `milk-tea`, `salted-eggs`, and `pork-sausages`. Their transparent full-resolution sources live in `asset/source_products/v3/` and 128×128 game exports in `public/assets/products-v3/`. Built-in imagegen prompts used the potato-fries sprite as the style reference and specified a single centered painted food icon, three-quarter view, warm upper-left light, transparent background, and no lettering. All seven were reviewed at export size; CI checks individual art for every kitchen recipe at 320px.
 
 The snack stall now has individual art for all fourteen products. Full-resolution transparent sources are retained in `asset/source_products/v3/`, with matching 128×128 exports in `public/assets/products-v3/`. The final nine subjects are rice-paper salad, mung-bean dessert, peanut brittle, sweet-potato fritters, chili tamarind, cured pork rolls, lemongrass snails, honey lemongrass tea, and peanut sticky rice. They were generated with the built-in image tool using the existing potato-fries sprite as a style reference: warm hand-painted food, three-quarter view, upper-left light, simple silhouette, transparent background, and no lettering. The earlier five snack sources are retained alongside this batch. CI checks that every snack recipe loads its individual 128px export at 320px.
 
