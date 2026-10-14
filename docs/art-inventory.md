@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 88/186 catalog products have PNG or SVG icons. 225 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 92/186 catalog products have PNG or SVG icons. 229 static asset paths appear in the client.
 
 ## Crops
 
@@ -127,7 +127,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cá chép | cachep | ho | SVG icon |
 | Cá chim trắng | cachim | cachim | emoji |
 | Cá điêu hồng | dieuhong | dieuhong | emoji |
-| Cá điêu hồng chiên | cadieuhongchien | lonuong | emoji |
+| Cá điêu hồng chiên | cadieuhongchien | lonuong | PNG art |
 | Cá kho tiêu | cakho | lonuong | PNG art |
 | Cá koi | cakoi | ho | SVG icon |
 | Cá lóc | caloc | caloc | emoji |
@@ -148,7 +148,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cóc dầm muối ớt | cocdam | bepan | emoji |
 | Cơm chiên trứng | comchien | bepan | PNG art |
 | Cua | cua | cua | emoji |
-| Cua hấp sả | cuahap | lonuong | emoji |
+| Cua hấp sả | cuahap | lonuong | PNG art |
 | Cuộn len | cuonlen | xuongdet | PNG art |
 | Dầu ô liu | dauoliu | mayep | PNG art |
 | Đường mía | duongmia | coixay | PNG art |
@@ -172,12 +172,12 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Lông thỏ | longtho | tho | PNG art |
 | Lụa | lua | xuongdet | PNG art |
 | Lươn | luon | luon | emoji |
-| Lươn xào sả ớt | luonxao | lonuong | emoji |
+| Lươn xào sả ớt | luonxao | lonuong | PNG art |
 | Mật ong | matong | ong | PNG art |
 | Me rim ớt | merim | quanvat | emoji |
 | Mũ len thỏ | mulen | xuongdet | PNG art |
 | Mực | muc | muc | emoji |
-| Mực nướng sa tế | mucnuong | lonuong | emoji |
+| Mực nướng sa tế | mucnuong | lonuong | PNG art |
 | Mứt cam | mutcam | noimut | PNG art |
 | Mứt dâu | mutdau | noimut | PNG art |
 | Mứt gừng | mutgung | noimut | PNG art |
@@ -454,6 +454,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/fish-hotpot.png` | 120 KB |
 | `assets/products-v3/fish-spring-rolls.png` | 122 KB |
 | `assets/products-v3/fish-sushi.png` | 114 KB |
+| `assets/products-v3/fried-red-tilapia.png` | 114 KB |
 | `assets/products-v3/fried-rice.png` | 23 KB |
 | `assets/products-v3/garden-salad.png` | 22 KB |
 | `assets/products-v3/ginger-cake.png` | 89 KB |
@@ -468,6 +469,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/honey.png` | 86 KB |
 | `assets/products-v3/iced-milk-coffee.png` | 78 KB |
 | `assets/products-v3/lemonade.png` | 73 KB |
+| `assets/products-v3/lemongrass-chili-eel.png` | 101 KB |
 | `assets/products-v3/mango-smoothie.png` | 61 KB |
 | `assets/products-v3/milk-chocolate.png` | 78 KB |
 | `assets/products-v3/olive-oil.png` | 74 KB |
@@ -488,9 +490,11 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/rice-flour.png` | 18 KB |
 | `assets/products-v3/roasted-coffee.png` | 86 KB |
 | `assets/products-v3/rose-perfume.png` | 81 KB |
+| `assets/products-v3/satay-grilled-squid.png` | 112 KB |
 | `assets/products-v3/silk-ao-dai.png` | 77 KB |
 | `assets/products-v3/silk-fabric.png` | 102 KB |
 | `assets/products-v3/silkworm-silk.png` | 71 KB |
+| `assets/products-v3/steamed-lemongrass-crab.png` | 132 KB |
 | `assets/products-v3/strawberry-cake.png` | 104 KB |
 | `assets/products-v3/strawberry-jam.png` | 18 KB |
 | `assets/products-v3/strawberry-yogurt.png` | 98 KB |
