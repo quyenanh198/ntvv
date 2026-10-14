@@ -64,6 +64,8 @@
     sushi: 'assets/products-v3/fish-sushi.png', lauca: 'assets/products-v3/fish-hotpot.png',
     goicuon: 'assets/products-v3/fish-spring-rolls.png', tomnuong: 'assets/products-v3/grilled-shrimp.png',
     catrakho: 'assets/products-v3/braised-pangasius.png', calocnuong: 'assets/products-v3/grilled-snakehead-fish.png',
+    cadieuhongchien: 'assets/products-v3/fried-red-tilapia.png', luonxao: 'assets/products-v3/lemongrass-chili-eel.png',
+    cuahap: 'assets/products-v3/steamed-lemongrass-crab.png', mucnuong: 'assets/products-v3/satay-grilled-squid.png',
     banhcarot: 'assets/products-v3/carrot-cake.png',
     khoaichien: 'assets/products-v3/potato-fries.png', salad: 'assets/products-v3/garden-salad.png',
     comchien: 'assets/products-v3/fried-rice.png', supbi: 'assets/products-v3/pumpkin-soup.png',
