@@ -29,7 +29,7 @@ test('single and bulk planting replay without charging or awarding XP twice', as
         assert.equal(invalid.statusCode, 400, invalid.body);
         assert.equal(invalid.json().error, 'bad_request');
       }
-      const invalidTree = await post('/plant-tree', { idx: 0, tree: crop }, `invalid-tree-${index}`);
+      const invalidTree = await post('/plant-tree', { idx: 0, tree: crop }, `invalid-tree-kind-${index}`);
       assert.equal(invalidTree.statusCode, 400, invalidTree.body);
       assert.equal(invalidTree.json().error, 'bad_request');
     }
