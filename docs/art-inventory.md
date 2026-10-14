@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 110/186 catalog products have PNG or SVG icons. 247 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 117/186 catalog products have PNG or SVG icons. 254 static asset paths appear in the client.
 
 ## Crops
 
@@ -116,7 +116,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Bánh táo | banhtao | lobanh | PNG art |
 | Bánh tôm | banhtom | quanvat | PNG art |
 | Bánh tráng trộn | banhtrangtron | quanvat | PNG art |
-| Bánh xèo | banhxeo | bepan | emoji |
+| Bánh xèo | banhxeo | bepan | PNG art |
 | Bắp xào bơ | bapxao | quanvat | PNG art |
 | Bột bắp | botbap | coixay | PNG art |
 | Bột ca cao | botcacao | mayrang | PNG art |
@@ -145,7 +145,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Chả cá | chaca | lonuong | PNG art |
 | Chè đậu xanh | chedauxanh | quanvat | PNG art |
 | Chuối chiên | chuoichien | quanvat | PNG art |
-| Cóc dầm muối ớt | cocdam | bepan | emoji |
+| Cóc dầm muối ớt | cocdam | bepan | PNG art |
 | Cơm chiên trứng | comchien | bepan | PNG art |
 | Cua | cua | cua | emoji |
 | Cua hấp sả | cuahap | lonuong | PNG art |
@@ -163,7 +163,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Khăn alpaca | khanalpaca | xuongdet | PNG art |
 | Khăn len | khanlen | xuongdet | PNG art |
 | Khoai lang kén | khoailangken | quanvat | PNG art |
-| Khoai lang nướng | khoailangnuong | bepan | emoji |
+| Khoai lang nướng | khoailangnuong | bepan | PNG art |
 | Khoai tây chiên | khoaichien | bepan | PNG art |
 | Lẩu cá koi | lauca | lonuong | PNG art |
 | Lẩu ếch | lauech | lonuong | emoji |
@@ -261,7 +261,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Pizza | pizza | lobanh | PNG art |
 | Rượu nho ủ | ruouvang | xuongcaocap | PNG art |
 | Salad rau | salad | bepan | PNG art |
-| Sầu riêng chiên | saurienchien | bepan | emoji |
+| Sầu riêng chiên | saurienchien | bepan | PNG art |
 | Sinh tố xoài | sinhtoxoai | mayep | PNG art |
 | Siro thanh long | siro | noimut | PNG art |
 | Sô-cô-la | socola | mayrang | PNG art |
@@ -279,17 +279,17 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Tôm nướng | tomnuong | lonuong | PNG art |
 | Tơ tằm | totam | tam | PNG art |
 | Trà sả mật ong | trasa | quanvat | PNG art |
-| Trà sữa | trasua | bepan | emoji |
+| Trà sữa | trasua | bepan | PNG art |
 | Trà túi lọc | tratui | mayrang | PNG art |
 | Trứng | trung | ga | SVG icon |
 | Trứng cút | trungcut | cut | PNG art |
 | Trứng gà tây | trunggatay | gatay | PNG art |
-| Trứng muối | trungmuoi | bepan | emoji |
+| Trứng muối | trungmuoi | bepan | PNG art |
 | Trứng ngỗng | trungngong | ngong | PNG art |
 | Trứng vịt | trungvit | vit | PNG art |
 | Vải bông | vai | xuongdet | PNG art |
 | Xôi đậu phộng | xoidauphong | quanvat | PNG art |
-| Xúc xích | xucxich | bepan | emoji |
+| Xúc xích | xucxich | bepan | PNG art |
 
 ## Static client asset references
 
@@ -437,16 +437,19 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/cane-sugar.png` | 18 KB |
 | `assets/products-v3/carrot-cake.png` | 106 KB |
 | `assets/products-v3/carrot-juice.png` | 13 KB |
+| `assets/products-v3/chili-ambarella.png` | 24 KB |
 | `assets/products-v3/chili-tamarind.png` | 21 KB |
 | `assets/products-v3/cocoa-powder.png` | 90 KB |
 | `assets/products-v3/corn-flour.png` | 92 KB |
 | `assets/products-v3/cotton-fabric.png` | 88 KB |
 | `assets/products-v3/cow-milk.png` | 59 KB |
+| `assets/products-v3/crispy-pancake.png` | 24 KB |
 | `assets/products-v3/cured-pork-rolls.png` | 23 KB |
 | `assets/products-v3/deer-antler-paste.png` | 90 KB |
 | `assets/products-v3/deer-velvet.png` | 66 KB |
 | `assets/products-v3/dragon-fruit-syrup.png` | 89 KB |
 | `assets/products-v3/duck-eggs.png` | 18 KB |
+| `assets/products-v3/durian-fritters.png` | 23 KB |
 | `assets/products-v3/durian-ice-cream.png` | 111 KB |
 | `assets/products-v3/durian-jam.png` | 108 KB |
 | `assets/products-v3/egg-bread.png` | 24 KB |
@@ -480,6 +483,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/lemongrass-snails.png` | 24 KB |
 | `assets/products-v3/mango-smoothie.png` | 61 KB |
 | `assets/products-v3/milk-chocolate.png` | 78 KB |
+| `assets/products-v3/milk-tea.png` | 20 KB |
 | `assets/products-v3/mung-bean-dessert.png` | 23 KB |
 | `assets/products-v3/olive-oil.png` | 74 KB |
 | `assets/products-v3/orange-juice.png` | 21 KB |
@@ -489,6 +493,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/pepper-braised-fish.png` | 128 KB |
 | `assets/products-v3/pineapple-cake.png` | 91 KB |
 | `assets/products-v3/pineapple-juice.png` | 68 KB |
+| `assets/products-v3/pork-sausages.png` | 20 KB |
 | `assets/products-v3/pork.png` | 78 KB |
 | `assets/products-v3/potato-fries.png` | 23 KB |
 | `assets/products-v3/premium-cheese-box.png` | 101 KB |
@@ -501,7 +506,9 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/rice-flour.png` | 18 KB |
 | `assets/products-v3/rice-paper-salad.png` | 22 KB |
 | `assets/products-v3/roasted-coffee.png` | 86 KB |
+| `assets/products-v3/roasted-sweet-potatoes.png` | 22 KB |
 | `assets/products-v3/rose-perfume.png` | 81 KB |
+| `assets/products-v3/salted-eggs.png` | 23 KB |
 | `assets/products-v3/satay-grilled-squid.png` | 112 KB |
 | `assets/products-v3/shrimp-fritters.png` | 27 KB |
 | `assets/products-v3/silk-ao-dai.png` | 77 KB |
