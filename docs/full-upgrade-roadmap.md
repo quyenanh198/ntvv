@@ -70,6 +70,7 @@ This is the project plan for the farm game, separate from the older stability au
 - **Animal action validation:** feed and collect reject unknown or malformed animal kinds before touching inventory or animal readiness; omitting the kind still selects chickens for the legacy shortcut. Integration coverage checks both behaviors and replay safety.
 - **Catalog ID validation:** animal purchase/upgrade, machine queue/collect/upgrade/speedup, and fish stocking accept only own catalog IDs. Integration checks prototype-like IDs return `bad_request` without changing gold, inventory, queues, animals, fish batches, or upgrade levels.
 - **Crop and tree ID validation:** individual and bulk planting, tree planting, and shared item lookup now exclude inherited object names. Integration checks malformed crop/tree IDs return `bad_request` without changing gold, XP, mutation version, or plots.
+- **Purchase catalog validation:** luxury purchases and skill learning also reject inherited object names. The integration snapshot includes sunk gold, skill ranks, equipped cosmetics, and luxury ownership when checking rejected requests.
 - **Sheet continuity:** a completed plot action closes only the sheet from which it began. A second browser race check holds a planting response while the player opens another seed chooser, then verifies that chooser remains usable.
 
 ## 10. Improve speed and accessibility

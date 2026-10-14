@@ -1973,7 +1973,7 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/luxury-buy', async (request, reply) => {
         const { item } = request.body ?? {};
         const me = request.farmer;
-        const lux = LUXURY[item];
+        const lux = Object.hasOwn(LUXURY, item) ? LUXURY[item] : null;
         if (!lux) return reply.code(400).send({ error: 'bad_request' });
         const purchase = runJournaledMutation(request, 'luxury-buy', () => {
           if (db.prepare('SELECT 1 FROM luxury WHERE owner_id = ? AND item = ?').get(me.user_id, item)) return { error: 'already_owned' };
@@ -2099,7 +2099,7 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/skill-learn', async (request, reply) => {
         const { id } = request.body ?? {};
         const me = request.farmer;
-        const node = SKILL_NODES[id];
+        const node = Object.hasOwn(SKILL_NODES, id) ? SKILL_NODES[id] : null;
         if (!node) return reply.code(400).send({ error: 'bad_request' });
         const learn = runJournaledMutation(request, 'skill-learn', () => {
           const current = getFarmer.get(me.user_id);
