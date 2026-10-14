@@ -107,6 +107,19 @@ try {
   assert.ok(resourceNames.every((name) => name && name.length > 5), 'Header controls need descriptive screen-reader names');
   assert.match(resourceNames[0], /vàng, mở kho đồ/);
   assert.match(await page.locator('.coin-pill--star').getAttribute('aria-label'), /sao nông trại, mở mốc sao/);
+  const headerTargets = await page.locator('.hud-right button:visible').evaluateAll((buttons) => buttons.map((button) => ({
+    name: button.getAttribute('aria-label'),
+    width: button.getBoundingClientRect().width,
+    height: button.getBoundingClientRect().height,
+  })));
+  assert.ok(headerTargets.every((target) => target.height >= 44),
+    `320px header controls need 44px tall targets: ${JSON.stringify(headerTargets)}`);
+  assert.ok(headerTargets.filter((target) => target.name?.includes('âm thanh') || target.name?.includes('bản tin')).every((target) => target.width >= 44),
+    `320px round header controls need 44px wide targets: ${JSON.stringify(headerTargets)}`);
+  assert.equal(await page.locator('#btn-lb:visible').count(), 0,
+    'narrow header should leave leaderboard access to the More menu');
+  const headerOverflow = await page.locator('.hud-right').evaluate((element) => element.scrollWidth - element.clientWidth);
+  assert.ok(headerOverflow <= 1, `starter header controls should fit at 320px: ${headerOverflow}px overflow`);
   const emptyPlotNames = await page.locator('.plot[data-kind="empty"]').evaluateAll((plots) => plots.map((plot) => plot.getAttribute('aria-label')));
   assert.equal(emptyPlotNames.length, 12);
   assert.equal(new Set(emptyPlotNames).size, 12, 'Each empty plot needs a distinct accessible name');
@@ -126,6 +139,10 @@ try {
   const audioNameBefore = await audioButton.getAttribute('aria-label');
   await audioButton.click();
   assert.notEqual(await audioButton.getAttribute('aria-label'), audioNameBefore, 'Audio control should announce its next action after toggling');
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  assert.equal(await page.locator('.sheet .more-card[data-action="leaderboard"]').count(), 1,
+    'leaderboard should remain available from More on narrow phones');
+  await page.keyboard.press('Escape');
 
   // A delayed older poll must not replace a newer farm state.
   let releaseOldState;
