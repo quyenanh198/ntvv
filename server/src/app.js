@@ -1544,7 +1544,7 @@ export function buildApp({ config, db, logger = true }) {
       // ---- Chuồng gà ----
       // want: số con muốn mua, hoặc 'max' = mua đầy chuồng (tới hết vàng).
       async function buyAnimal(request, reply, kind, want = 1, route = 'buy-animal') {
-        const a = ANIMALS[kind];
+        const a = Object.hasOwn(ANIMALS, kind) ? ANIMALS[kind] : null;
         const me = request.farmer;
         if (!a || (want !== 'max' && (!Number.isSafeInteger(want) || want < 1))) return reply.code(400).send({ error: 'bad_request' });
         const purchase = runJournaledMutation(request, route, () => {
@@ -1618,8 +1618,8 @@ export function buildApp({ config, db, logger = true }) {
       // Xếp `count` mẻ công thức vào máy (mỗi món một job riêng, chạy song song).
       // Trả { n, total } hoặc { error }. Không tự trả lời HTTP.
       function queueRecipe(me, machineId, recipeId, count = 1) {
-        const machine = MACHINES[machineId];
-        const recipe = machine?.recipes[recipeId];
+        const machine = Object.hasOwn(MACHINES, machineId) ? MACHINES[machineId] : null;
+        const recipe = machine && Object.hasOwn(machine.recipes, recipeId) ? machine.recipes[recipeId] : null;
         if (!machine || !recipe) return { error: 'bad_request' };
         if (levelFor(me.xp) < machine.level) return { error: 'level_too_low' };
         const cur = db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').get(me.user_id, machineId, recipeId);
@@ -1701,7 +1701,7 @@ export function buildApp({ config, db, logger = true }) {
         })();
       }
       async function machineCollect(request, reply, machineId, recipeId, route = 'machine-collect') {
-        const machine = MACHINES[machineId];
+        const machine = Object.hasOwn(MACHINES, machineId) ? MACHINES[machineId] : null;
         const me = request.farmer;
         if (!machine) return reply.code(400).send({ error: 'bad_request' });
         const collect = runJournaledMutation(request, route, () => {
@@ -1953,7 +1953,7 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/machine-upgrade', async (request, reply) => {
         const { machine } = request.body ?? {};
         const me = request.farmer;
-        if (!MACHINES[machine]) return reply.code(400).send({ error: 'bad_request' });
+        if (!Object.hasOwn(MACHINES, machine)) return reply.code(400).send({ error: 'bad_request' });
         const upgrade = runJournaledMutation(request, 'machine-upgrade', () => {
           const current = getFarmer.get(me.user_id);
           const lv = machineLevel(current, machine);
@@ -2076,7 +2076,7 @@ export function buildApp({ config, db, logger = true }) {
             return { cost };
           }
           if (target === 'mill' || target === 'machine') {
-            if (target === 'machine' && !MACHINES[request.body?.kind]) return { error: 'bad_request' };
+            if (target === 'machine' && !Object.hasOwn(MACHINES, request.body?.kind)) return { error: 'bad_request' };
             const mk = target === 'machine' ? request.body.kind : 'coixay';
             const rc = request.body?.recipe;
             const cur = rc
@@ -2412,7 +2412,7 @@ export function buildApp({ config, db, logger = true }) {
 
       // ---- Nâng cấp chuồng gà / ao cá ----
       async function upgradeBarn(request, reply, kind, route = 'upgrade-barn') {
-        const a = ANIMALS[kind];
+        const a = Object.hasOwn(ANIMALS, kind) ? ANIMALS[kind] : null;
         const me = request.farmer;
         if (!a) return reply.code(400).send({ error: 'bad_request' });
         const upgrade = runJournaledMutation(request, route, () => {
@@ -2436,7 +2436,7 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/fish-stock', async (request, reply) => {
         const { species, qty } = request.body ?? {};
         const me = request.farmer;
-        const sp = FISH_FARM[species];
+        const sp = Object.hasOwn(FISH_FARM, species) ? FISH_FARM[species] : null;
         const requested = qty ?? 1;
         if (!sp || (requested !== 'max' && (!Number.isSafeInteger(requested) || requested < 1))) return reply.code(400).send({ error: 'bad_request' });
         const stock = runJournaledMutation(request, 'fish-stock', () => {

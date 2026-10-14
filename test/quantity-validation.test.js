@@ -16,7 +16,7 @@ test('malformed purchase, queue, and harvest quantities leave player value untou
     assert.equal((await app.inject({ method: 'GET', url: '/farm/api/state' })).statusCode, 200);
     db.prepare("INSERT INTO fish_batches (owner_id, species, qty, planted_at, ready_at) VALUES (1, 'oc', 1, 1, 1)").run();
     const snapshot = () => ({
-      farmer: db.prepare('SELECT gold, gems, xp FROM farmers WHERE user_id = 1').get(),
+      farmer: db.prepare('SELECT gold, gems, xp, coop_level, pond_level, barn_levels_json, machine_levels_json FROM farmers WHERE user_id = 1').get(),
       animals: db.prepare('SELECT COUNT(*) AS n FROM animals WHERE owner_id = 1').get().n,
       jobs: db.prepare('SELECT COUNT(*) AS n FROM machine_jobs WHERE owner_id = 1').get().n,
       tickets: db.prepare('SELECT COUNT(*) AS n FROM lottery_tickets WHERE owner_id = 1').get().n,
@@ -27,13 +27,21 @@ test('malformed purchase, queue, and harvest quantities leave player value untou
     const cases = [
       ['/buy-animal', { kind: 'ga', count: -2 }],
       ['/buy-animal', { kind: 'ga', count: 'banana' }],
+      ['/buy-animal', { kind: 'toString', count: 1 }],
+      ['/upgrade-barn', { kind: 'toString' }],
       ['/machine-run', { machine: 'coixay', recipe: 'botmi', count: 0 }],
       ['/machine-run', { machine: 'coixay', recipe: 'botmi', count: 1.5 }],
       ['/machine-run', { machine: 'coixay', recipe: 'botmi', count: 51 }],
+      ['/machine-run', { machine: 'toString', recipe: 'botmi', count: 1 }],
+      ['/machine-run', { machine: 'coixay', recipe: 'toString', count: 1 }],
+      ['/machine-collect', { machine: 'toString' }],
+      ['/machine-upgrade', { machine: 'toString' }],
+      ['/speedup', { target: 'machine', kind: 'toString' }],
       ['/lottery-buy', { qty: 'banana' }],
       ['/lottery-buy', { qty: -1 }],
       ['/fish-stock', { species: 'oc', qty: 0 }],
       ['/fish-stock', { species: 'oc', qty: 'banana' }],
+      ['/fish-stock', { species: 'toString', qty: 1 }],
       ['/fish-harvest', { id: 0 }],
       ['/fish-harvest', { id: 'banana' }],
     ];
