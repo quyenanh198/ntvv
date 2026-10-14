@@ -148,7 +148,8 @@ try {
   await familySearch.fill('không có ai');
   assert.equal(await page.locator('.sheet--family .family-none').count(), 1);
   await familySearch.fill('');
-  assert.equal(await page.locator('.sheet--family .family-member').count(), 1);
+  assert.ok(await page.locator('.sheet--family .family-member').count() >= 2,
+    'clearing search should restore the player and friends');
   await auditAccessibility(page, 'family-320');
   await page.screenshot({ path: resolve(outputDir, 'family-320.png') });
   await page.keyboard.press('Escape');
