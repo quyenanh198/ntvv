@@ -469,6 +469,8 @@ try {
     await page.screenshot({ path: resolve(outputDir, `${animal}-barn-320.png`) });
     await page.keyboard.press('Escape');
   }
+  db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'luami', 8) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 8").run();
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('[data-sheet="more"]').first().click();
   await page.locator('.more-card[data-sheet="mill"]').click();
   const allRecipes = await page.locator('.sheet--factory .mc-row').count();
@@ -507,6 +509,18 @@ try {
   await factorySearch.fill('');
   assert.equal(await page.locator('.sheet--factory .mc-row:visible').count(), allRecipes,
     'clearing search should restore every unlocked recipe');
+  assert.match(await page.locator('.mc-bulk-note').innerText(), /Nguyên liệu dùng ngay.*không hủy được/,
+    'bulk production should explain its irreversible ingredient use');
+  const bulkWheatBefore = db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty;
+  const bulkJobsBefore = db.prepare('SELECT COUNT(*) AS n FROM machine_jobs WHERE owner_id = 1').get().n;
+  let bulkConfirmation = '';
+  page.once('dialog', async (dialog) => { bulkConfirmation = dialog.message(); await dialog.dismiss(); });
+  await page.locator('#btn-cook-all').click();
+  assert.match(bulkConfirmation, /Xếp tối đa mọi công thức.*không thể hủy/);
+  assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty, bulkWheatBefore,
+    'canceling bulk production should leave ingredients untouched');
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM machine_jobs WHERE owner_id = 1').get().n, bulkJobsBefore,
+    'canceling bulk production should queue no jobs');
   for (const product of ['grilled-fish', 'butter', 'carrot-cake', 'apple-pie', 'farm-pizza', 'strawberry-cake', 'honey-cake']) {
     await page.waitForFunction((name) => {
       const image = document.querySelector(`.sheet img[src*="products-v3/${name}.png"]`);
