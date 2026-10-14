@@ -1042,7 +1042,7 @@ export function buildApp({ config, db, logger = true }) {
       // ---- Trồng trọt ----
       api.post('/plant', async (request, reply) => {
         const { idx, crop: cropId } = request.body ?? {};
-        const crop = CROPS[cropId];
+        const crop = Object.hasOwn(CROPS, cropId) ? CROPS[cropId] : null;
         const me = request.farmer;
         if (!crop || !Number.isInteger(idx) || idx < 0 || idx >= me.plots_count) {
           return reply.code(400).send({ error: 'bad_request' });
@@ -1067,8 +1067,8 @@ export function buildApp({ config, db, logger = true }) {
 
       api.post('/plant-all', async (request, reply) => {
         const { crop: cropId } = request.body ?? {};
-        const crop = CROPS[cropId];
-        const tree = TREES[cropId];
+        const crop = Object.hasOwn(CROPS, cropId) ? CROPS[cropId] : null;
+        const tree = Object.hasOwn(TREES, cropId) ? TREES[cropId] : null;
         const me = request.farmer;
         if (!crop && !tree) return reply.code(400).send({ error: 'bad_request' });
         const plant = runJournaledMutation(request, 'plant-all', () => {
@@ -2314,7 +2314,7 @@ export function buildApp({ config, db, logger = true }) {
         const { idx, tree: treeId } = request.body ?? {};
         const me = request.farmer;
         const planted = runJournaledMutation(request, 'plant-tree', () => {
-          const tree = TREES[treeId];
+          const tree = Object.hasOwn(TREES, treeId) ? TREES[treeId] : null;
           const current = getFarmer.get(me.user_id);
           if (current.tax_owed > 0) return { error: 'tax_due' };
           if (!tree || !Number.isInteger(idx) || idx < 0 || idx >= current.plots_count) return { error: 'bad_request' };

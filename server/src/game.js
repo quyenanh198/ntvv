@@ -275,7 +275,10 @@ export const TREES = {
 };
 
 export function itemInfo(id) {
-  return CROPS[id] || GOODS[id] || TREES[id] || null;
+  if (Object.hasOwn(CROPS, id)) return CROPS[id];
+  if (Object.hasOwn(GOODS, id)) return GOODS[id];
+  if (Object.hasOwn(TREES, id)) return TREES[id];
+  return null;
 }
 
 // ---- Vật nuôi (mục 7.1) — gà/bò/cừu, chuồng riêng từng loại (mục 9.4) ------

@@ -22,6 +22,19 @@ test('single and bulk planting replay without charging or awarding XP twice', as
   const plots = () => db.prepare('SELECT idx, crop, tree FROM plots WHERE owner_id = 1 ORDER BY idx').all();
   try {
     assert.equal((await app.inject({ method: 'GET', url: '/farm/api/state' })).statusCode, 200);
+    const beforeInvalid = balance();
+    for (const [index, crop] of ['toString', '__proto__'].entries()) {
+      for (const route of ['/plant', '/plant-all']) {
+        const invalid = await post(route, route === '/plant' ? { idx: 0, crop } : { crop }, `invalid-crop-${index}-${route.slice(1)}`);
+        assert.equal(invalid.statusCode, 400, invalid.body);
+        assert.equal(invalid.json().error, 'bad_request');
+      }
+      const invalidTree = await post('/plant-tree', { idx: 0, tree: crop }, `invalid-tree-kind-${index}`);
+      assert.equal(invalidTree.statusCode, 400, invalidTree.body);
+      assert.equal(invalidTree.json().error, 'bad_request');
+    }
+    assert.deepEqual(balance(), beforeInvalid);
+    assert.deepEqual(plots(), []);
     const first = await post('/plant', { idx: 0, crop: 'luami' }, 'single-plant-request-01');
     assert.equal(first.statusCode, 200, first.body);
     assert.equal(first.json().me.mutationVersion, 1);

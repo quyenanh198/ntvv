@@ -69,6 +69,7 @@ This is the project plan for the farm game, separate from the older stability au
 - **Retry payload compatibility:** new mutation records hash a canonical JSON body, so retries with the same fields in a different order replay. Existing records retain their original hash and still replay when sent in their original order; the purchase integration test covers both formats and checks that value moves once.
 - **Animal action validation:** feed and collect reject unknown or malformed animal kinds before touching inventory or animal readiness; omitting the kind still selects chickens for the legacy shortcut. Integration coverage checks both behaviors and replay safety.
 - **Catalog ID validation:** animal purchase/upgrade, machine queue/collect/upgrade/speedup, and fish stocking accept only own catalog IDs. Integration checks prototype-like IDs return `bad_request` without changing gold, inventory, queues, animals, fish batches, or upgrade levels.
+- **Crop and tree ID validation:** individual and bulk planting, tree planting, and shared item lookup now exclude inherited object names. Integration checks malformed crop/tree IDs return `bad_request` without changing gold, XP, mutation version, or plots.
 - **Sheet continuity:** a completed plot action closes only the sheet from which it began. A second browser race check holds a planting response while the player opens another seed chooser, then verifies that chooser remains usable.
 
 ## 10. Improve speed and accessibility
