@@ -621,7 +621,7 @@
             <h3 class="family-heading" id="family-heading">👥 Người nhà</h3>
             <div class="family-search-wrap">
               <span class="family-search-icon">🔍</span>
-              <input class="family-search" type="search" placeholder="Tìm người nhà…" value="${esc(familyFilter)}" />
+              <input class="family-search" type="search" aria-label="Tìm người nhà" placeholder="Tìm người nhà…" value="${esc(familyFilter)}" />
             </div>
             <div class="family-strip">${familyStripHtml()}</div>
           </section>
@@ -659,7 +659,7 @@
       modalReturnFocusId = null;
     }
     if (searchWasFocused) {
-      const input = document.querySelector('.family-search');
+      const input = document.querySelector(sheet?.type === 'family' ? '.sheet--family .family-search' : '.family-block .family-search');
       if (input) {
         input.focus();
         input.setSelectionRange(input.value.length, input.value.length);
@@ -673,7 +673,7 @@
 
   function familyStripHtml() {
     const q = fold(familyFilter.trim());
-    const list = q ? DATA.family.filter((u) => u.me || fold(u.name).includes(q)) : DATA.family;
+    const list = q ? DATA.family.filter((u) => fold(u.me ? 'Nhà mình' : u.name).includes(q)) : DATA.family;
     if (list.length === 0) return '<span class="family-none">😅 Không thấy ai tên vậy</span>';
     return list.map((u) => {
       const active = VISIT ? VISIT.ownerId === u.id : u.me;
@@ -1661,6 +1661,13 @@
       );
     }
 
+    if (t === 'family') {
+      return sheetShell('👥 Người nhà', `<p class="sheet-note">Chọn người nhà để ghé thăm ruộng và giúp nhau.</p>
+        <div class="family-search-wrap"><span class="family-search-icon" aria-hidden="true">🔍</span>
+          <input class="family-search" type="search" aria-label="Tìm người nhà" placeholder="Tìm người nhà…" value="${esc(familyFilter)}" />
+        </div><div class="family-strip">${familyStripHtml()}</div>`, 'sheet--family');
+    }
+
     if (t === 'more') {
       const qReady = m.daily.done >= m.daily.required && !m.daily.chestClaimed;
       const oReady = m.orders.some((o) => canDeliver(o));
@@ -1725,6 +1732,11 @@
             <span class="mc-icon">🤝${wantsReady ? '<i class="dot"></i>' : ''}</span>
             <span class="mc-name">Chợ thu mua</span>
             <span class="mc-sub">Giao dịch</span>
+          </button>
+          <button class="more-card" data-sheet="family">
+            <span class="mc-icon">👥</span>
+            <span class="mc-name">Người nhà</span>
+            <span class="mc-sub">${DATA.family.length} nông dân · ghé thăm</span>
           </button>
           <button class="more-card" data-sheet="luxury">
             <span class="mc-icon">💎</span>
@@ -2058,22 +2070,22 @@
 
     document.getElementById('btn-home')?.addEventListener('click', () => { VISIT = null; INSPECT = false; refresh(); });
 
-    document.querySelector('.family-strip')?.addEventListener('click', async (ev) => {
+    document.querySelectorAll('.family-strip').forEach((strip) => strip.addEventListener('click', async (ev) => {
       const el = ev.target.closest('[data-visit]');
       if (!el) return;
-      if (el.dataset.me === '1') { VISIT = null; refresh(); return; }
+      if (el.dataset.me === '1') { VISIT = null; sheet = null; refresh(); return; }
       try {
         const r = await api(`/farm/${Number(el.dataset.visit)}`);
         VISIT = { ownerId: Number(el.dataset.visit), farm: r.farm, myActs: r.myActs };
+        sheet = null;
         render();
       } catch { /* toast lo rồi */ }
-    });
+    }));
 
-    document.querySelector('.family-search')?.addEventListener('input', (ev) => {
+    document.querySelectorAll('.family-search').forEach((input) => input.addEventListener('input', (ev) => {
       familyFilter = ev.target.value;
-      const strip = document.querySelector('.family-strip');
-      if (strip) strip.innerHTML = familyStripHtml();
-    });
+      document.querySelectorAll('.family-strip').forEach((strip) => { strip.innerHTML = familyStripHtml(); });
+    }));
 
     document.getElementById('btn-plantall')?.addEventListener('click', () => { sheet = { type: 'seed', all: true }; render(); });
     document.getElementById('btn-harvestall')?.addEventListener('click', async (e) => {

@@ -821,6 +821,10 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 }
 .family-level { grid-area: level; font-size: .58rem; color: var(--muted); font-weight: 700; }
 .family-none { padding: .45rem .7rem; color: var(--muted); font-size: .78rem; }
+.sheet--family .family-search { min-height: 44px; }
+.sheet--family .family-strip { flex-direction: column; overflow-x: hidden; overflow-y: auto; gap: .45rem; max-height: min(58vh, 450px); scrollbar-width: thin; }
+.sheet--family .family-member { width: 100%; min-height: 52px; }
+.sheet--family .family-name { max-width: none; font-size: .8rem; }
 
 .visit-bar, .farm-toolbar {
   width: 100%;
@@ -1689,7 +1693,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .side-left { top: calc(57px + var(--top-safe)); }
   .side-left .side-btn { min-height: 36px; }
   .scene-banner { height: 110px; }
-  .family-search-wrap { display: none; }
+  .family-block .family-search-wrap { display: none; }
   .family-strip { margin-bottom: .25rem; }
   .side-right { bottom: calc(.25rem + var(--bottom-safe)); padding: .22rem; }
   .side-right .side-btn { min-height: 42px; }
