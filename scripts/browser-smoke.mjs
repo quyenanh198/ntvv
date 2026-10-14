@@ -189,6 +189,21 @@ try {
   const startingGold = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').click();
   await auditAccessibility(page, 'seed-320');
+  await page.locator('.seed-search-disclosure > summary').click();
+  await page.locator('#seed-search').fill('ngo');
+  assert.equal(await page.locator('.sheet--seed .seed-card:visible').count(), 1);
+  assert.equal(await page.locator('.seed-card[data-seed-name="Ngô"]').isDisabled(), true);
+  assert.equal(await page.locator('.seed-future').getAttribute('open'), '',
+    'search should reveal a locked matching seed with its unlock level');
+  await page.locator('#seed-search').fill('ca rot');
+  assert.equal(await page.locator('.sheet--seed .seed-card:visible').count(), 1,
+    'seed search should ignore Vietnamese accents');
+  await page.locator('[data-seed-sort="value"]').click();
+  assert.equal(await page.locator('#seed-search').inputValue(), 'ca rot', 'seed search should survive sorting');
+  await page.locator('#seed-search').fill('khong co giong');
+  assert.equal(await page.locator('.seed-search-empty:visible').count(), 1);
+  await page.locator('#seed-search').fill('');
+  await page.locator('[data-seed-sort="time"]').click();
   const seedChoice = await page.locator('.seed-card[data-crop="luami"]').evaluate((element) => ({
     width: element.getBoundingClientRect().width,
     height: element.getBoundingClientRect().height,
@@ -487,6 +502,27 @@ try {
     await page.screenshot({ path: resolve(outputDir, `${animal}-barn-320.png`) });
     await page.keyboard.press('Escape');
   }
+  const goldBeforeSeedReview = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
+  db.prepare('UPDATE farmers SET gold = 50 WHERE user_id = 1').run();
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.plot[data-kind="empty"]').first().click();
+  await page.locator('[data-seed-sort="value"]').click();
+  const seedAvailability = await page.locator('.sheet--seed [data-seed-section]').first().locator('.seed-card').evaluateAll((cards) => cards.map((card) => card.disabled));
+  const firstUnavailableSeed = seedAvailability.indexOf(true);
+  assert.ok(firstUnavailableSeed > 0 && seedAvailability.slice(firstUnavailableSeed).every(Boolean),
+    'affordable seeds should precede unaffordable seeds within the selected sort');
+  assert.ok(await page.locator('.seed-unaffordable').count() > 0, 'unaffordable choices should explain the missing gold');
+  await page.locator('#seed-search').fill('ca phe');
+  assert.equal(await page.locator('.sheet--seed .seed-card:visible').count(), 1);
+  assert.equal(await page.locator('.seed-card[data-seed-name="Cà phê"]').isDisabled(), true);
+  await checkNoOverflow(page, '320px seed finder');
+  await auditAccessibility(page, 'seed-finder-320');
+  await page.locator('.seed-card[data-seed-name="Cà phê"]').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'seed-finder-320.png') });
+  await page.locator('#seed-search').fill('');
+  await page.locator('[data-seed-sort="time"]').click();
+  await page.keyboard.press('Escape');
+  db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(goldBeforeSeedReview);
   const goldBeforePond = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
   db.prepare('UPDATE farmers SET gold = 350 WHERE user_id = 1').run();
   await page.reload({ waitUntil: 'domcontentloaded' });
