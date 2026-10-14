@@ -1038,37 +1038,48 @@
         ? (y[valueKey] - x[valueKey]) || (x[timeKey] - y[timeKey])
         : seedSort === 'level' ? (x.level - y.level) || (x[timeKey] - y[timeKey])
         : (x[timeKey] - y[timeKey]) || (x[valueKey] - y[valueKey]));
-      const sortBar = `<div class="seed-sort">
-        ${[['time', '⏱ Thời gian'], ['value', '💰 Giá trị'], ['level', '🔓 Cấp']].map(([k, label]) => `<button class="gbtn btn-mini${seedSort === k ? ' gbtn--gold' : ''}" data-seed-sort="${k}">${label}</button>`).join('')}
+      const sortBar = `<div class="seed-sort" role="group" aria-label="Sắp xếp giống">
+        ${[['time', '⏱ Thời gian'], ['value', '💰 Giá trị'], ['level', '🔓 Cấp']].map(([k, label]) => `<button class="gbtn btn-mini${seedSort === k ? ' gbtn--gold' : ''}" data-seed-sort="${k}" aria-pressed="${seedSort === k}">${label}</button>`).join('')}
       </div>`;
+      const finderFields = `<div class="seed-finder mc-finder"><label for="seed-search">Tìm giống theo tên</label>
+        <input id="seed-search" type="search" autocomplete="off" value="${esc(sheet.seedQuery || '')}" placeholder="Ví dụ: cà rốt, cam" />
+        <p class="seed-result-count mc-result-count" role="status" aria-live="polite"></p>
+        <p class="sheet-note seed-search-empty" hidden>Không tìm thấy giống phù hợp. Xóa tìm kiếm để xem lại các giống.</p></div>`;
+      const finder = m.level < 4
+        ? `<details class="seed-search-disclosure" ${sheet.seedQuery ? 'open' : ''}><summary>Tìm giống khác</summary>${finderFields}</details>`
+        : finderFields;
       const cropCard = (c) => {
         const lockLevel = m.level < c.level;
         const locked = lockLevel || m.gold < c.seed;
         const baseProfit = c.sell * DATA.config.harvestYield - c.seed;
         const cycleXp = c.expSow + c.expHarvest;
-        return `<button class="seed-card${locked ? ' seed-card--locked' : ''}${sheet.preferredCrop === c.id ? ' seed-card--recommended' : ''}" data-crop="${locked ? '' : c.id}" title="${c.name}" ${locked ? 'disabled' : ''}>
+        return `<button class="seed-card${locked ? ' seed-card--locked' : ''}${sheet.preferredCrop === c.id ? ' seed-card--recommended' : ''}" data-crop="${locked ? '' : c.id}" data-seed-name="${esc(c.name)}" data-seed-unlocked="${lockLevel ? '0' : '1'}" title="${c.name}" ${locked ? 'disabled' : ''}>
           <img class="seed-sprite" src="${cropSprite(c.id, 3)}" alt="" />
           <span class="seed-name">${c.name}</span>
           <span class="seed-meta">⏱ ${fmtDuration(c.growMs)} · ${c.risky ? `${(DATA.config.cansa?.reward || 1000000).toLocaleString('vi')} ${COIN}/cây · bị khám xét = mất trắng` : `~${baseProfit.toLocaleString('vi')} ${COIN}/ô · ${cycleXp} EXP`}</span>
           ${lockLevel ? `<span class="seed-lock">Lv ${c.level}</span>` : `<span class="seed-cost">${c.seed} ${COIN}</span>`}
+          ${!lockLevel && m.gold < c.seed ? `<span class="seed-unaffordable">Thiếu ${(c.seed - m.gold).toLocaleString('vi')} vàng</span>` : ''}
         </button>`;
       };
       const allCrops = sortBy(Object.values(crops()), 'growMs', 'sell');
       const availableCrops = allCrops.filter((c) => c.level <= m.level)
-        .sort((a, b) => Number(b.id === sheet.preferredCrop) - Number(a.id === sheet.preferredCrop));
+        .sort((a, b) => Number(b.id === sheet.preferredCrop) - Number(a.id === sheet.preferredCrop)
+          || Number(m.gold < a.seed) - Number(m.gold < b.seed));
       const futureCrops = allCrops.filter((c) => c.level > m.level);
       const treeCard = (t) => {
         const lockLevel = m.level < t.level;
         const locked = lockLevel || m.gold < t.price;
-        return `<button class="seed-card seed-card--tree${locked ? ' seed-card--locked' : ''}" data-tree="${locked ? '' : t.id}" title="${t.name} — lớn ${fmtDuration(t.growMs)}, rồi ${t.yield} quả mỗi ${fmtDuration(t.cycleMs)}, tàn sau ${fmtDuration(t.lifeMs)}" ${locked ? 'disabled' : ''}>
+        return `<button class="seed-card seed-card--tree${locked ? ' seed-card--locked' : ''}" data-tree="${locked ? '' : t.id}" data-seed-name="${esc(t.name)}" data-seed-unlocked="${lockLevel ? '0' : '1'}" title="${t.name} — lớn ${fmtDuration(t.growMs)}, rồi ${t.yield} quả mỗi ${fmtDuration(t.cycleMs)}, tàn sau ${fmtDuration(t.lifeMs)}" ${locked ? 'disabled' : ''}>
           <img class="seed-sprite" src="${treeArt(t.id)}" alt="" />
           <span class="seed-name">${t.name} ${t.emoji}</span>
           <span class="seed-meta">🌳 lớn ${fmtDuration(t.growMs)} · ${t.yield} quả/${fmtDuration(t.cycleMs)} · sống ${fmtDuration(t.lifeMs)} · ${t.sell.toLocaleString('vi')} ${COIN}</span>
           ${lockLevel ? `<span class="seed-lock">Lv ${t.level}</span>` : `<span class="seed-cost">${t.price.toLocaleString('vi')} ${COIN}</span>`}
+          ${!lockLevel && m.gold < t.price ? `<span class="seed-unaffordable">Thiếu ${(t.price - m.gold).toLocaleString('vi')} vàng</span>` : ''}
         </button>`;
       };
       const allTrees = sortBy(Object.values(trees()), 'growMs', 'sell');
-      const availableTrees = allTrees.filter((tree) => tree.level <= m.level);
+      const availableTrees = allTrees.filter((tree) => tree.level <= m.level)
+        .sort((a, b) => Number(m.gold < a.price) - Number(m.gold < b.price));
       const futureTrees = allTrees.filter((tree) => tree.level > m.level);
       return sheetShell(
         sheet.all ? `🧺 Gieo hết ô trống <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`
@@ -1077,15 +1088,15 @@
          ${sheet.preferredCrop ? `<p class="sheet-note seed-tip">🌱 Đơn hàng cần ${esc(crops()[sheet.preferredCrop]?.name || sheet.preferredCrop)}. Chọn giống được đánh dấu để gieo vào ô trống.</p>` : ''}
          ${m.level === 1 ? '<p class="sheet-note seed-tip">🌾 Bắt đầu với Lúa mì: thu sau 1 phút. Cà rốt cho nhiều vàng hơn nếu bạn có thời gian chờ.</p>' : ''}
          <p class="sheet-note">Lãi ước tính cho một ô sau khi bán đủ ${DATA.config.harvestYield} nông sản; giá chợ có thể thay đổi.</p>
-         ${sortBar}
-         <h3 class="seed-section-title">🌱 Trồng được ở cấp ${m.level}</h3>
-         <div class="seed-grid">${availableCrops.map(cropCard).join('')}</div>
-         ${availableTrees.length ? `<h3 class="seed-section-title">🌳 Cây ăn quả</h3><div class="seed-grid">${availableTrees.map(treeCard).join('')}</div>` : ''}
+         ${finder}${sortBar}
+         <section data-seed-section><h3 class="seed-section-title">🌱 Trồng được ở cấp ${m.level}</h3>
+         <div class="seed-grid">${availableCrops.map(cropCard).join('')}</div></section>
+         ${availableTrees.length ? `<section data-seed-section><h3 class="seed-section-title">🌳 Cây ăn quả</h3><div class="seed-grid">${availableTrees.map(treeCard).join('')}</div></section>` : ''}
          ${futureCrops.length || futureTrees.length ? `<details class="seed-future"><summary>🔒 Xem giống sắp mở (${futureCrops.length + futureTrees.length})</summary>
-           ${futureCrops.length ? `<div class="seed-grid">${futureCrops.map(cropCard).join('')}</div>` : ''}
-           ${futureTrees.length ? `<h3 class="seed-section-title">🌳 Cây ăn quả sắp mở</h3><div class="seed-grid">${futureTrees.map(treeCard).join('')}</div>` : ''}
+           ${futureCrops.length ? `<section data-seed-section><div class="seed-grid">${futureCrops.map(cropCard).join('')}</div></section>` : ''}
+           ${futureTrees.length ? `<section data-seed-section><h3 class="seed-section-title">🌳 Cây ăn quả sắp mở</h3><div class="seed-grid">${futureTrees.map(treeCard).join('')}</div></section>` : ''}
          </details>` : ''}`,
-        'sheet--wide',
+        'sheet--wide sheet--seed',
       );
     }
 
@@ -1910,6 +1921,37 @@
         if (el.dataset.sheet === 'money') { openMoney(); return; }
         sheet = { type: el.dataset.sheet }; render();
       }));
+    if (sheet?.type === 'seed') {
+      const updateSeedFinder = () => {
+        const root = document.querySelector('.sheet--seed');
+        if (!root) return;
+        const query = normalizeSearch(sheet.seedQuery).trim();
+        let matched = 0;
+        let unlocked = 0;
+        root.querySelectorAll('.seed-card[data-seed-name]').forEach((card) => {
+          card.hidden = !normalizeSearch(card.dataset.seedName).includes(query);
+          if (!card.hidden) { matched += 1; if (card.dataset.seedUnlocked === '1') unlocked += 1; }
+        });
+        root.querySelectorAll('[data-seed-section]').forEach((section) => {
+          section.hidden = ![...section.querySelectorAll('.seed-card')].some((card) => !card.hidden);
+        });
+        const future = root.querySelector('.seed-future');
+        if (future) {
+          const hasMatch = [...future.querySelectorAll('.seed-card')].some((card) => !card.hidden);
+          future.hidden = !hasMatch;
+          future.open = Boolean(query) && hasMatch;
+        }
+        root.querySelector('.seed-result-count').textContent = query
+          ? `${matched} giống phù hợp · ${unlocked} đã mở`
+          : `${unlocked} giống đã mở · ${matched - unlocked} sắp mở`;
+        root.querySelector('.seed-search-empty').hidden = matched > 0;
+      };
+      document.getElementById('seed-search')?.addEventListener('input', (event) => {
+        sheet.seedQuery = event.currentTarget.value;
+        updateSeedFinder();
+      });
+      updateSeedFinder();
+    }
     if (sheet?.type === 'inventory') {
       const updateInventoryFinder = () => {
         const query = normalizeSearch(sheet.inventoryQuery).trim();
