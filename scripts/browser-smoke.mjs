@@ -417,6 +417,8 @@ try {
   assert.equal(await tradeQuantity.inputValue(), '1');
   assert.match(await friendPage.locator(`[data-want="${want.id}"] [data-want-fill]`).innerText(), new RegExp(`Bán 1 · \\+${want.price} vàng`));
   await checkNoOverflow(friendPage, '390px seller trade preview');
+  assert.ok(await friendPage.locator(`[data-want="${want.id}"] .seed-info`).evaluate((details) => details.getBoundingClientRect().width >= 180),
+    'buyer and item details need readable width above sale controls');
   await auditAccessibility(friendPage, 'market-seller-390');
   await friendPage.locator(`[data-want="${want.id}"]`).scrollIntoViewIfNeeded();
   await friendPage.screenshot({ path: resolve(outputDir, 'trade-sale-preview-390.png') });
