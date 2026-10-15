@@ -270,3 +270,5 @@ The seafood fish-oven batch uses transparent high-resolution sources and 256px e
 The first six raw-snail icons now have distinct shell shapes and patterns, replacing shared emoji in inventory, orders, trades, and recipe ingredients. Sources, export paths, and exact built-in imagegen prompts are recorded in [snail-art-prompts.md](snail-art-prompts.md). All six use 128px game exports with transparent backgrounds.
 
 The first six snail-stall dishes have individual transparent painted icons and 128px exports, matching the existing snack-stall snail bowl. Source/export paths and exact built-in imagegen prompts are recorded in [snail-stall-art-prompts.md](snail-stall-art-prompts.md).
+
+Six more snail-stall products now have matching painted sprites: butter and scallion mud-creeper snails, scallion-grilled and lemongrass-steamed bitter snails, and chili-salt and lemongrass moon snails. Transparent full-resolution sources and 128px exports follow the existing convention; exact built-in imagegen prompts are in [snail-stall-art-prompts.md](snail-stall-art-prompts.md).
