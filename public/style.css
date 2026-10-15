@@ -1942,6 +1942,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .want-catalog-search { display: flex; flex-direction: column; gap: .35rem; color: #4a2810; font-size: .9rem; font-weight: 700; }
 .want-catalog-search input { width: 100%; box-sizing: border-box; min-height: 44px; border: 2px solid #b4814a; border-radius: 10px; padding: .5rem; background: #fff8e6; color: #4a2810; font: inherit; }
 .inv-row[data-want] { flex-wrap: wrap; }
+.inv-row[data-want][hidden] { display: none; }
 .inv-row[data-want] > .btn-group { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: .4rem; }
 .inv-row[data-want] [data-want-fill] { min-height: 44px; white-space: normal; }
 .want-field { display: flex; flex-direction: column; gap: .2rem; color: #5b3e1d; font-size: .8rem; font-weight: 800; }
