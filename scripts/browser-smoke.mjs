@@ -217,7 +217,7 @@ try {
   assert.equal(await page.locator('.seed-card[data-seed-name="Ngô"]').isDisabled(), true);
   assert.equal(await page.locator('.seed-future').getAttribute('open'), '',
     'search should reveal a locked matching seed with its unlock level');
-  const futureCorn = page.locator('.seed-card[data-seed-name="Ngô"] img');
+  const futureCorn = page.locator('.seed-card[data-seed-name="Ngô"] > img.seed-sprite');
   await futureCorn.scrollIntoViewIfNeeded();
   await futureCorn.evaluate((image) => image.decode());
   assert.ok(await futureCorn.evaluate((image) => image.naturalWidth > 0),
@@ -551,7 +551,7 @@ try {
   await checkNoOverflow(page, '320px seed finder');
   await auditAccessibility(page, 'seed-finder-320');
   await page.locator('.seed-card[data-seed-name="Cà phê"]').scrollIntoViewIfNeeded();
-  await page.locator('.seed-card[data-seed-name="Cà phê"] img').evaluate((image) => image.decode());
+  await page.locator('.seed-card[data-seed-name="Cà phê"] > img.seed-sprite').evaluate((image) => image.decode());
   await page.screenshot({ path: resolve(outputDir, 'seed-finder-320.png') });
   await page.locator('#seed-search').fill('');
   await page.locator('[data-seed-sort="time"]').click();
