@@ -606,7 +606,9 @@ try {
   await auditAccessibility(page, 'fishing-320');
   await page.locator('#fish-preview').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'fishing-stock-320.png') });
+  const pondStockResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/fish-stock') && response.request().method() === 'POST');
   await page.locator('#btn-fish-stock').click();
+  assert.equal((await pondStockResponse).status(), 200);
   assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, 50);
   const stockedBatch = db.prepare("SELECT id, qty FROM fish_batches WHERE owner_id = 1 AND species = 'luon' ORDER BY id DESC LIMIT 1").get();
   assert.equal(stockedBatch.qty, 2, 'stocking should match the capped preview');
