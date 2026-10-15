@@ -1172,6 +1172,7 @@
 
     if (t === 'shop') {
       const feed = goods().thucan;
+      const chickenCount = m.animals.filter((animal) => animal.kind === 'ga').length;
       const seedRows = Object.values(crops()).filter((c) => m.level >= c.level).slice(-4).reverse()
         .map((c) => `<div class="seed-meta">· ${c.name}: hạt ${c.seed} ${COIN}, bán ${c.sell} ${COIN}</div>`).join('');
       return sheetShell(
@@ -1181,7 +1182,7 @@
            <span class="seed-info"><span class="seed-name">Mua kim cương bằng vàng</span>
              <div class="seed-meta">Dùng để tăng tốc, mua năng lượng, hoàn điểm kỹ năng · vàng mua bị đốt khỏi kinh tế làng</div></span>
            <span class="btn-group">
-             ${(DATA.config.gemPacks || []).map((p) => `<button class="gbtn ${p.gems >= 100 ? 'gbtn--gold' : 'gbtn--green'} btn-mini" data-buy-gems="${p.id}" ${m.gold >= p.gold ? '' : 'disabled'} title="${p.gold.toLocaleString('vi')} vàng">${p.gems} ${GEM}<br><small>${(p.gold / 1000000).toLocaleString('vi', { maximumFractionDigits: 1 })}tr</small></button>`).join('')}
+             ${(DATA.config.gemPacks || []).map((p) => `<button class="gbtn ${p.gems >= 100 ? 'gbtn--gold' : 'gbtn--green'} btn-mini" data-buy-gems="${p.id}" ${m.gold >= p.gold ? '' : 'disabled'} aria-label="Mua ${p.gems} kim cương với ${p.gold.toLocaleString('vi')} vàng">${p.gems} ${GEM}<small>${p.gold.toLocaleString('vi')} vàng</small></button>`).join('')}
            </span>
          </div>
          <div class="inv-row">
@@ -1189,9 +1190,7 @@
            <span class="seed-info"><span class="seed-name">Thức ăn gia súc</span>
              <div class="seed-meta">${feed.buy} ${COIN}/túi · gà ăn 1 túi cho 1 trứng</div></span>
            <span class="btn-group">
-             <button class="gbtn gbtn--green btn-mini" data-buy="thucan" data-qty="1" title="Mua 1 túi">1</button>
-             <button class="gbtn gbtn--gold btn-mini" data-buy="thucan" data-qty="10" title="Mua 10 túi">10</button>
-             <button class="gbtn gbtn--gold btn-mini" data-buy="thucan" data-qty="100" title="Mua 100 túi">100</button>
+             ${[1, 10, 100].map((qty) => `<button class="gbtn ${qty === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-buy="thucan" data-qty="${qty}" ${m.gold >= feed.buy * qty ? '' : 'disabled'} aria-label="Mua ${qty} túi thức ăn với ${(feed.buy * qty).toLocaleString('vi')} vàng">${qty} túi<small>${(feed.buy * qty).toLocaleString('vi')} vàng</small></button>`).join('')}
            </span>
          </div>
          <div class="inv-row">
@@ -1199,15 +1198,15 @@
            <span class="seed-info"><span class="seed-name">Chó canh vườn</span>
              <div class="seed-meta">${DATA.config.dog.pricePerHour.toLocaleString('vi')} ${COIN}/giờ · ${Math.round(DATA.config.dog.catchChance * 100)}% tóm được trộm (+${Math.round((DATA.config.dog.onlineBonus || 0) * 100)}% khi bạn đang online) → kẻ trộm nộp phạt cho bạn ${DATA.config.dog.fine} ${COIN}, bị tóm liên tiếp +${DATA.config.dog.fineStep} mỗi lần (trộm trót lọt thì về ${DATA.config.dog.fine})${m.dog?.active ? ` · <b>đang trực, còn ${fmtTime(m.dog.until - Date.now())}</b>` : ''}</div></span>
            <span class="btn-group">
-             ${DATA.config.dog.hoursOptions.map((h) => `<button class="gbtn ${h === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-dog-hire="${h}" ${m.gold >= DATA.config.dog.pricePerHour * h ? '' : 'disabled'} title="${(DATA.config.dog.pricePerHour * h).toLocaleString('vi')} vàng">${h}h</button>`).join('')}
+             ${DATA.config.dog.hoursOptions.map((h) => `<button class="gbtn ${h === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-dog-hire="${h}" ${m.gold >= DATA.config.dog.pricePerHour * h ? '' : 'disabled'} aria-label="Thuê chó ${h} giờ với ${(DATA.config.dog.pricePerHour * h).toLocaleString('vi')} vàng">${h} giờ<small>${(DATA.config.dog.pricePerHour * h).toLocaleString('vi')} vàng</small></button>`).join('')}
            </span>
          </div>
          ${m.level >= DATA.config.chicken.level ? `
          <div class="inv-row">
            <img src="${A('assets/art/chicken.png')}" alt="" />
            <span class="seed-info"><span class="seed-name">Gà mái</span>
-             <div class="seed-meta">${DATA.config.chicken.price} ${COIN} · đẻ trứng ${fmtDuration(DATA.config.chicken.produceMs)}/quả · chuồng ${m.animals.length}/${m.coop.capacity}</div></span>
-           <button class="gbtn gbtn--green btn-mini" data-buy-animal="ga" ${m.animals.filter((x) => x.kind === 'ga').length >= m.barns.ga.capacity ? 'disabled' : ''}>Mua gà</button>
+             <div class="seed-meta">${DATA.config.chicken.price} ${COIN} · đẻ trứng ${fmtDuration(DATA.config.chicken.produceMs)}/quả · chuồng ${chickenCount}/${m.barns.ga.capacity}</div></span>
+           <button class="gbtn gbtn--green btn-mini" data-buy-animal="ga" ${chickenCount >= m.barns.ga.capacity || m.gold < DATA.config.chicken.price ? 'disabled' : ''}>${chickenCount >= m.barns.ga.capacity ? 'Chuồng đầy' : 'Mua gà'}</button>
          </div>` : ''}
          ${Object.keys(DATA.config.animals).filter((k) => k !== 'ga').sort((x, y) => DATA.config.animals[x].level - DATA.config.animals[y].level).map((k) => {
            const a = DATA.config.animals[k];
@@ -1218,11 +1217,12 @@
              ${barnArtImg(k)}
              <span class="seed-info"><span class="seed-name">${a.name}</span>
                <div class="seed-meta">${a.price.toLocaleString('vi')} ${COIN} · ${info.name} ${itemImg(a.product, 'coin-img')} mỗi ${fmtDuration(a.produceMs)} · chuồng ${herd}/${m.barns[k].capacity}</div></span>
-             <button class="gbtn gbtn--green btn-mini" data-buy-animal="${k}" ${herd >= m.barns[k].capacity ? 'disabled' : ''}>Mua</button>
+             <button class="gbtn gbtn--green btn-mini" data-buy-animal="${k}" aria-label="${herd >= m.barns[k].capacity ? `Chuồng đầy: ${esc(a.name)}` : `Mua ${esc(a.name)} với ${a.price.toLocaleString('vi')} vàng`}" ${herd >= m.barns[k].capacity || m.gold < a.price ? 'disabled' : ''}>${herd >= m.barns[k].capacity ? 'Chuồng đầy' : 'Mua'}</button>
            </div>`;
          }).join('')}
          <p class="sheet-note" style="margin-top:0.6rem">💡 Hạt giống mua ngay lúc gieo (chạm ô đất trống). Giá mới nhất:</p>
          ${seedRows}`,
+        'sheet--shop',
       );
     }
 

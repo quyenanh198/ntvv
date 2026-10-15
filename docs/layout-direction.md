@@ -57,3 +57,7 @@ The pond section separates capacity, free space, and ready batches into three su
 ## Barn feeding and purchase clarity
 
 Barns now separate animal count, hunger, and shared feed stock into summary cards. A product card shows feed per animal per cycle, growth time, sale value, and XP. Hungry animals show the actual number that current feed can support; a shortage panel states missing feed and opens the shop. Bulk animal purchases display the affordable quantity and total cost, capped by barn space. CI covers a two-hungry-quail barn with no feed and enough gold for one purchase, checks accessibility and mobile overflow, and follows the feed shortcut into shop controls.
+
+## Shop purchase decisions
+
+Feed packs, gem packs, and dog hire durations now show exact gold costs on their buttons, with action-specific accessible names. Their action groups wrap as a grid on phones and use 44px minimum targets. Unaffordable feed and animal purchases are disabled, full animal pens are identified, and the chicken capacity counts chickens separately from other animals. CI checks a 400-gold shop with two quails: the 100-feed pack shows 1,200 gold and is disabled, a single feed pack is available, and chickens show 0/3. Mobile overflow, accessibility, and a price screenshot are checked along with the existing desktop shop scan.

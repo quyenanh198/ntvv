@@ -2377,6 +2377,11 @@ button, a, .plot, .side-btn, .gbtn, .hud-round, .coin-pill, .seed-card, .inv-row
 .barn-feed-help { background: #f0f6e6; color: #4a2810; border-left: 3px solid #63864d; padding: .7rem; margin-top: .7rem; }
 .barn-feed-help p { font-size: .9rem; line-height: 1.5; margin: 0 0 .6rem; }
 .barn-feed-help button, .sheet--barn .sheet-actions > button { min-height: 44px; }
+.sheet--shop .inv-row { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: .6rem; padding: .75rem; }
+.sheet--shop .inv-row > .btn-group { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: .5rem; width: 100%; }
+.sheet--shop .inv-row > button { grid-column: 2; justify-self: start; }
+.sheet--shop .inv-row button { min-height: 44px; white-space: normal; }
+.sheet--shop .inv-row button small { display: block; font-size: .8rem; margin-top: .25rem; }
 @media (min-width: 560px) {
   .fish-stock-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .fish-stock-form .want-field--item, .fish-species-detail, .fish-stock-form .want-field--qty { grid-column: 1 / -1; }

@@ -523,6 +523,16 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'barn-feed-help-320.png') });
   await page.locator('.barn-feed-help [data-sheet="shop"]').click();
   assert.equal(await page.locator('[data-buy="thucan"]').count(), 3, 'feed shortcut should open feed purchase controls');
+  const hundredFeed = page.locator('[data-buy="thucan"][data-qty="100"]');
+  assert.match(await hundredFeed.innerText(), /100 túi\s+1\.200 vàng/);
+  assert.equal(await hundredFeed.isDisabled(), true, 'unaffordable feed packs should be disabled');
+  assert.equal(await page.locator('[data-buy="thucan"][data-qty="1"]').isEnabled(), true);
+  assert.match(await page.locator('.inv-row').filter({ has: page.locator('[data-buy-animal="ga"]') }).innerText(), /chuồng 0\/3/,
+    'the chicken count must exclude the two quails');
+  await checkNoOverflow(page, '320px shop purchase prices');
+  await auditAccessibility(page, 'shop-320');
+  await hundredFeed.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'shop-prices-320.png') });
   await page.keyboard.press('Escape');
   for (const id of hungryQuails) db.prepare('DELETE FROM animals WHERE id = ?').run(id);
   db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(barnGoldBefore);
