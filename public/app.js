@@ -1182,7 +1182,7 @@
            <span class="seed-info"><span class="seed-name">Mua kim cương bằng vàng</span>
              <div class="seed-meta">Dùng để tăng tốc, mua năng lượng, hoàn điểm kỹ năng · vàng mua bị đốt khỏi kinh tế làng</div></span>
            <span class="btn-group">
-             ${(DATA.config.gemPacks || []).map((p) => `<button class="gbtn ${p.gems >= 100 ? 'gbtn--gold' : 'gbtn--green'} btn-mini" data-buy-gems="${p.id}" ${m.gold >= p.gold ? '' : 'disabled'} aria-label="Mua ${p.gems} kim cương với ${p.gold.toLocaleString('vi')} vàng">${p.gems} ${GEM}<small>${p.gold.toLocaleString('vi')} vàng</small></button>`).join('')}
+             ${(DATA.config.gemPacks || []).map((p) => `<button class="gbtn ${p.gems >= 100 ? 'gbtn--gold' : 'gbtn--green'} btn-mini" data-buy-gems="${p.id}" ${m.gold >= p.gold ? '' : 'disabled'} aria-label="Mua ${p.gems} kim cương ${p.gold.toLocaleString('vi')} vàng">${p.gems} ${GEM}<small>${p.gold.toLocaleString('vi')} vàng</small></button>`).join('')}
            </span>
          </div>
          <div class="inv-row">
@@ -1190,7 +1190,7 @@
            <span class="seed-info"><span class="seed-name">Thức ăn gia súc</span>
              <div class="seed-meta">${feed.buy} ${COIN}/túi · gà ăn 1 túi cho 1 trứng</div></span>
            <span class="btn-group">
-             ${[1, 10, 100].map((qty) => `<button class="gbtn ${qty === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-buy="thucan" data-qty="${qty}" ${m.gold >= feed.buy * qty ? '' : 'disabled'} aria-label="Mua ${qty} túi thức ăn với ${(feed.buy * qty).toLocaleString('vi')} vàng">${qty} túi<small>${(feed.buy * qty).toLocaleString('vi')} vàng</small></button>`).join('')}
+             ${[1, 10, 100].map((qty) => `<button class="gbtn ${qty === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-buy="thucan" data-qty="${qty}" ${m.gold >= feed.buy * qty ? '' : 'disabled'} aria-label="Mua ${qty} túi ${(feed.buy * qty).toLocaleString('vi')} vàng: thức ăn">${qty} túi<small>${(feed.buy * qty).toLocaleString('vi')} vàng</small></button>`).join('')}
            </span>
          </div>
          <div class="inv-row">
@@ -1198,7 +1198,7 @@
            <span class="seed-info"><span class="seed-name">Chó canh vườn</span>
              <div class="seed-meta">${DATA.config.dog.pricePerHour.toLocaleString('vi')} ${COIN}/giờ · ${Math.round(DATA.config.dog.catchChance * 100)}% tóm được trộm (+${Math.round((DATA.config.dog.onlineBonus || 0) * 100)}% khi bạn đang online) → kẻ trộm nộp phạt cho bạn ${DATA.config.dog.fine} ${COIN}, bị tóm liên tiếp +${DATA.config.dog.fineStep} mỗi lần (trộm trót lọt thì về ${DATA.config.dog.fine})${m.dog?.active ? ` · <b>đang trực, còn ${fmtTime(m.dog.until - Date.now())}</b>` : ''}</div></span>
            <span class="btn-group">
-             ${DATA.config.dog.hoursOptions.map((h) => `<button class="gbtn ${h === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-dog-hire="${h}" ${m.gold >= DATA.config.dog.pricePerHour * h ? '' : 'disabled'} aria-label="Thuê chó ${h} giờ với ${(DATA.config.dog.pricePerHour * h).toLocaleString('vi')} vàng">${h} giờ<small>${(DATA.config.dog.pricePerHour * h).toLocaleString('vi')} vàng</small></button>`).join('')}
+             ${DATA.config.dog.hoursOptions.map((h) => `<button class="gbtn ${h === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-dog-hire="${h}" ${m.gold >= DATA.config.dog.pricePerHour * h ? '' : 'disabled'} aria-label="Thuê chó ${h} giờ ${(DATA.config.dog.pricePerHour * h).toLocaleString('vi')} vàng">${h} giờ<small>${(DATA.config.dog.pricePerHour * h).toLocaleString('vi')} vàng</small></button>`).join('')}
            </span>
          </div>
          ${m.level >= DATA.config.chicken.level ? `
