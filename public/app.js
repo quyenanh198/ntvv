@@ -873,7 +873,7 @@
       return `
         <img class="sb sb-coop" src="${A('assets/scene-v3/chicken_coop_v3.png')}" alt="" />
         <img class="sb sb-hen2" src="${A('assets/art/chicken_v3.png')}" alt="" />
-        <img class="sb sb-mill" src="${A('assets/scene-v3/windmill_v3.png')}" alt="" />
+        <img class="sb sb-mill" src="${A('assets/scene-v3/windmill_v3-224.png')}" alt="" />
         <img class="sb sb-shop" src="${A('assets/scene-v3/market_shop_v3-224.png')}" alt="" />`;
     }
     return `
@@ -887,11 +887,11 @@
       : `<img class="sb sb-coop sb--locked" src="${A('assets/scene-v3/chicken_coop_v3.png')}" alt="" title="Chuồng gà — cần Lv ${DATA.config.chicken.level}" />`}
       ${millUnlocked ? `
         <button class="sb sb-btn sb-mill" data-sheet="mill" title="Cối xay">
-          <img src="${A('assets/scene-v3/windmill_v3.png')}" alt="Cối xay" />
+          <img src="${A('assets/scene-v3/windmill_v3-224.png')}" alt="Cối xay" />
           ${millDone ? '<i class="dot"></i>' : ''}
           <span class="sb-tag">${millDone ? '✅ Xong!' : m.mill ? 'Đang xay…' : 'Cối xay'}</span>
         </button>`
-      : `<img class="sb sb-mill sb--locked" src="${A('assets/scene-v3/windmill_v3.png')}" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
+      : `<img class="sb sb-mill sb--locked" src="${A('assets/scene-v3/windmill_v3-224.png')}" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
       <button class="sb sb-btn sb-shop" data-sheet="shop" title="Cửa hàng">
           <img src="${A('assets/scene-v3/market_shop_v3-224.png')}" alt="Cửa hàng" />
         <span class="sb-tag">Cửa hàng</span>
@@ -1354,12 +1354,14 @@
         `🤝 Thu mua <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
         `<div class="machine-block"><h4>📣 Đăng tin cần mua</h4>
           <p class="sheet-note">Giá thu mua = <b>130%</b> giá bán cho hệ thống. Vàng ký quỹ lúc đăng; huỷ thì hoàn phần chưa nhận. Tối đa 5 tin.</p>
+          <label class="want-catalog-search" for="want-search">Tìm mặt hàng<input id="want-search" type="search" autocomplete="off" placeholder="Ví dụ: lua mi, sữa, ốc" value="${esc(sheet.wantQuery || '')}" /></label>
+          <p class="sheet-note" id="want-search-count" role="status" aria-live="polite"></p>
           <div class="want-form">
             <label class="want-field want-field--item">Mặt hàng<select id="want-item">${options}</select></label>
             <label class="want-field want-field--qty">Số lượng<input id="want-qty" type="number" inputmode="numeric" min="1" max="999" value="10" /></label>
             <button class="gbtn gbtn--gold btn-mini" id="btn-want-create">Đăng tin</button>
           </div>
-          <p class="sheet-note" id="want-preview"></p>
+          <p class="sheet-note" id="want-preview" role="status" aria-live="polite"></p>
         </div>
         <div class="machine-block"><h4>🧾 Tin của tôi</h4>${mine || '<p class="sheet-note">Chưa có tin nào.</p>'}</div>
         <div class="machine-block"><h4>🏘️ Làng đang cần</h4>${others || '<p class="sheet-note">Chưa ai đăng tin — bạn đăng trước đi!</p>'}</div>`,
@@ -2200,13 +2202,36 @@
     const wantPreview = () => {
       const sel = document.getElementById('want-item'); const q = document.getElementById('want-qty'); const p = document.getElementById('want-preview');
       if (!sel || !p) return;
+      const button = document.getElementById('btn-want-create');
+      const n = Number(q?.value);
+      const valid = Number.isSafeInteger(n) && n >= 1 && n <= 999;
       const unit = Math.round((itemInfo(sel.value)?.sell || 0) * 1.3);
-      const n = Math.max(1, Math.min(999, Number(q?.value) || 1));
-      p.innerHTML = `Trả <b>${unit.toLocaleString('vi')}</b> vàng/cái × ${n} = <b>${(unit * n).toLocaleString('vi')}</b> vàng (ký quỹ ngay, hoàn phần chưa nhận khi huỷ).`;
+      const full = (MARKET?.mine.length || 0) >= 5;
+      button.disabled = !valid || !unit || full || me().gold < unit * n;
+      if (!unit) { p.textContent = 'Không có mặt hàng phù hợp. Xóa tìm kiếm hoặc nhập tên khác.'; return; }
+      if (!valid) { p.textContent = 'Nhập số lượng nguyên từ 1 đến 999.'; return; }
+      if (full) { p.textContent = 'Bạn đã có 5 tin. Hủy hoặc hoàn thành một tin trước khi đăng thêm.'; return; }
+      p.innerHTML = `Trả <b>${unit.toLocaleString('vi')}</b> vàng/cái × ${n} = <b>${(unit * n).toLocaleString('vi')}</b> vàng (ký quỹ ngay, hoàn phần chưa nhận khi huỷ).${me().gold < unit * n ? ` Thiếu ${(unit * n - me().gold).toLocaleString('vi')} vàng.` : ''}`;
     };
+    const filterWantCatalog = () => {
+      const select = document.getElementById('want-item');
+      if (!select) return;
+      const query = normalizeSearch(sheet.wantQuery || '').trim();
+      const options = [...select.options];
+      options.forEach((option) => { option.hidden = !normalizeSearch(option.textContent).includes(query); });
+      const matches = options.filter((option) => !option.hidden);
+      if (!matches.some((option) => option.value === select.value)) select.value = matches[0]?.value || '';
+      select.disabled = matches.length === 0;
+      document.getElementById('want-search-count').textContent = `${matches.length} mặt hàng phù hợp`;
+      wantPreview();
+    };
+    document.getElementById('want-search')?.addEventListener('input', (event) => {
+      sheet.wantQuery = event.currentTarget.value;
+      filterWantCatalog();
+    });
     document.getElementById('want-item')?.addEventListener('change', wantPreview);
     document.getElementById('want-qty')?.addEventListener('input', wantPreview);
-    wantPreview();
+    filterWantCatalog();
 
     document.getElementById('btn-lb')?.addEventListener('click', async () => {
       const r = await run(async () => {
