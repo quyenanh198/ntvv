@@ -58,6 +58,8 @@ This is the project plan for the farm game, separate from the older stability au
 - Prototype one small collection and one recurring event; check that rewards serve ordinary play.
 - **Gate:** players have a visible goal for the next session and the next week. **Status:** unlock preview and a persistent two-set [harvest collection](collection-design.md) added, with a farm-toolbar progress prompt, one-time rewards, and replay-safe claims. The recurring festival now has actionable milestone cards, clear progress and reward states, unlock explanations, and a farm prompt for claimable rewards; its [player flow](festival-design.md) is covered by the mobile browser walkthrough. Observed-player validation remains pending.
 
+- **Ready reward hub:** the farm groups claimable daily chests, next star milestones, collections, and festival rewards with links to their claim screens. Mobile coverage follows daily and star claims and checks that claimed entries disappear.
+
 ## 9. Harden the backend and data model
 
 - Finish replay protection for every value-changing endpoint; keep each mutation and its result in one SQLite transaction.
