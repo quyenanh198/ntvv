@@ -187,7 +187,24 @@ try {
   await page.unroute('**/farm/api/state');
 
   const startingGold = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
+  await page.evaluate(() => performance.clearResourceTimings());
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').click();
+  await page.locator('.sheet--seed img').evaluateAll(async (images) => {
+    await Promise.all(images.filter((image) => image.loading !== 'lazy').map((image) => image.decode()));
+  });
+  const seedTransfer = await page.evaluate(() => {
+    const sprites = performance.getEntriesByType('resource').filter((entry) => entry.name.includes('/assets/crops-v3/') || entry.name.includes('/assets/art/trees/'));
+    return {
+      unlockedSeeds: document.querySelectorAll('.sheet--seed [data-seed-unlocked="1"]').length,
+      futureSeeds: document.querySelectorAll('.sheet--seed [data-seed-unlocked="0"]').length,
+      completedSpriteRequests: sprites.length,
+      spriteTransferBytes: sprites.reduce((total, entry) => total + entry.transferSize, 0),
+      largestSprites: [...sprites].sort((a, b) => b.transferSize - a.transferSize).slice(0, 5)
+        .map((entry) => ({ path: new URL(entry.name).pathname, bytes: entry.transferSize })),
+    };
+  });
+  writeFileSync(resolve(outputDir, 'seed-transfer-320.json'), `${JSON.stringify(seedTransfer, null, 2)}\n`);
+  console.log(`320px seed chooser sample: ${JSON.stringify(seedTransfer)}`);
   await auditAccessibility(page, 'seed-320');
   await page.locator('.seed-search-disclosure > summary').click();
   await page.locator('#seed-search').fill('ngo');
