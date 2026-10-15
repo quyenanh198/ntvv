@@ -67,7 +67,8 @@ test('tasks completed after opening the daily chest pay once across retries and 
     db.prepare('UPDATE daily SET counters_json = ? WHERE owner_id = 1')
       .run(JSON.stringify({ harvest: 15, sow: 10, feed: 5, sell: 8 }));
     db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'luami', 3)").run();
-    assert.equal((await post('/quest-chest', {}, 'late-chest-01')).statusCode, 200);
+    const chest = await post('/quest-chest', {}, 'late-daily-chest-01');
+    assert.equal(chest.statusCode, 200, chest.body);
     const quest = DAILY_QUESTS.find((entry) => entry.id === 'sell');
     const before = balance();
     const partial = await post('/sell', { item: 'luami', qty: 1 }, 'late-sale-partial');
@@ -87,7 +88,7 @@ test('tasks completed after opening the daily chest pay once across retries and 
     db = openDb(dataDir); app = makeApp();
     assert.equal((await post('/sell', { item: 'luami', qty: 1 }, 'late-sale-complete')).statusCode, 200);
     assert.deepEqual(balance(), paid, 'restart replay must not pay again');
-    const extra = await post('/sell', { item: 'luami', qty: 1 }, 'late-sale-extra');
+    const extra = await post('/sell', { item: 'luami', qty: 1 }, 'late-daily-sale-extra');
     assert.equal(extra.statusCode, 200, extra.body);
     assert.deepEqual(balance(), { gold: paid.gold + extra.json().gained, xp: paid.xp },
       'further progress after the target must not pay again');
