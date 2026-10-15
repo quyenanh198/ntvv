@@ -1080,6 +1080,27 @@ try {
   await page.locator('.inv-row[data-item="ocluocsa"]').scrollIntoViewIfNeeded();
   await checkNoOverflow(page, '320px snail-stall product sprites');
   await page.screenshot({ path: resolve(outputDir, 'snail-stall-products-320.png') });
+  db.prepare('UPDATE daily SET counters_json = ?, chest_claimed = 0 WHERE owner_id = 1')
+    .run(JSON.stringify({ harvest: 15, sow: 10, feed: 5, sell: 9 }));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-sheet="more"]').first().click();
+  await page.locator('[data-sheet="quests"]').click();
+  assert.equal(await page.locator('#btn-chest').isEnabled(), true);
+  assert.equal(await page.locator('[data-daily-quest="sell"] [role="progressbar"]').getAttribute('aria-valuenow'), '9');
+  await checkNoOverflow(page, '320px daily quests');
+  await auditAccessibility(page, 'quests-320');
+  await page.screenshot({ path: resolve(outputDir, 'daily-quests-320.png') });
+  await page.locator('[data-daily-quest="sell"] [data-sheet="inventory"]').click();
+  assert.equal(await page.locator('.sheet--inventory').count(), 1, 'daily sale shortcut should open inventory');
+  await page.keyboard.press('Escape');
+  await page.locator('[data-sheet="more"]').first().click();
+  await page.locator('[data-sheet="quests"]').click();
+  const chestResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/quest-chest') && response.request().method() === 'POST');
+  await page.locator('#btn-chest').click();
+  assert.equal((await chestResponse).status(), 200);
+  await page.locator('#btn-chest:disabled').waitFor();
+  assert.match(await page.locator('[data-daily-quest="harvest"]').innerText(), /Đã nhận thưởng/);
+  await page.screenshot({ path: resolve(outputDir, 'daily-chest-claimed-320.png') });
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

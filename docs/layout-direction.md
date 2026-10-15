@@ -65,3 +65,7 @@ Feed packs, gem packs, and dog hire durations now show exact gold costs on their
 ## Barn overview filters
 
 The overview now has counted All, Owned, and Needs feed filters. Filtering keeps keyboard focus on the chosen control, updates a live result count, and offers an empty-state explanation. Cards with hungry animals show their count and feed needed for one cycle. Bulk purchase buttons show the affordable quantity and total cost. The pond note is now a direct shortcut. The mobile walkthrough isolates one hungry quail barn, verifies its count, hunger and purchase details, checks focus and accessibility, and captures a 320px screenshot.
+
+## Daily quest actions and rewards
+
+Daily quests now use readable cards with numeric progress, accessible progress bars, reward amounts, activity shortcuts, and unlock explanations. Incomplete tasks appear first and the chest action sits above the list. Opening the chest pays completed tasks and the chest reward. Tasks finished later that day now pay their own reward automatically when crossing the target, in the same transaction as progress. Additional actions and request retries do not pay the task again; persisted counters preserve this after restart, including legacy already-opened chests. Integration coverage checks partial progress, completion, retries, restart, and further actions. Mobile CI checks the quest layout, accessibility, sale shortcut, chest claim, and claimed state.
