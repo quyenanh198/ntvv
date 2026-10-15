@@ -1035,8 +1035,9 @@ try {
   await page.locator('.dock-btn[data-sheet="inventory"]').click();
   const inventorySearch = page.locator('#inventory-search');
   await inventorySearch.fill('pho mai');
-  assert.equal(await page.locator('.sheet--inventory .inv-row[data-item]:visible').count(), 3,
-    'accent-tolerant inventory search should find all three stocked cheeses');
+  assert.deepEqual(await page.locator('.sheet--inventory .inv-row[data-item]:visible').evaluateAll((rows) => rows.map((row) => row.dataset.item).sort()),
+    ['hopphomai', 'ocmitnuongphomai', 'phomaide', 'phomaitrau'],
+    'accent-tolerant inventory search should find stocked cheeses and the cheese snail dish');
   await page.locator('[data-inventory-group="animals"]').click();
   assert.equal(await page.locator('.sheet--inventory .inv-row[data-item]:visible').count(), 0,
     'category filter should combine with inventory search');
