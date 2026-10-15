@@ -1182,7 +1182,7 @@
            <span class="seed-info"><span class="seed-name">Mua kim cương bằng vàng</span>
              <div class="seed-meta">Dùng để tăng tốc, mua năng lượng, hoàn điểm kỹ năng · vàng mua bị đốt khỏi kinh tế làng</div></span>
            <span class="btn-group">
-             ${(DATA.config.gemPacks || []).map((p) => `<button class="gbtn ${p.gems >= 100 ? 'gbtn--gold' : 'gbtn--green'} btn-mini" data-buy-gems="${p.id}" ${m.gold >= p.gold ? '' : 'disabled'} aria-label="Mua ${p.gems} kim cương ${p.gold.toLocaleString('vi')} vàng">${p.gems} ${GEM}<small>${p.gold.toLocaleString('vi')} vàng</small></button>`).join('')}
+             ${(DATA.config.gemPacks || []).map((p) => `<button class="gbtn ${p.gems >= 100 ? 'gbtn--gold' : 'gbtn--green'} btn-mini" data-buy-gems="${p.id}" ${m.gold >= p.gold ? '' : 'disabled'}>Mua ${p.gems} ${GEM} <small>${p.gold.toLocaleString('vi')} vàng</small></button>`).join('')}
            </span>
          </div>
          <div class="inv-row">
@@ -1190,7 +1190,7 @@
            <span class="seed-info"><span class="seed-name">Thức ăn gia súc</span>
              <div class="seed-meta">${feed.buy} ${COIN}/túi · gà ăn 1 túi cho 1 trứng</div></span>
            <span class="btn-group">
-             ${[1, 10, 100].map((qty) => `<button class="gbtn ${qty === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-buy="thucan" data-qty="${qty}" ${m.gold >= feed.buy * qty ? '' : 'disabled'} aria-label="Mua ${qty} túi ${(feed.buy * qty).toLocaleString('vi')} vàng: thức ăn">${qty} túi<small>${(feed.buy * qty).toLocaleString('vi')} vàng</small></button>`).join('')}
+             ${[1, 10, 100].map((qty) => `<button class="gbtn ${qty === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-buy="thucan" data-qty="${qty}" ${m.gold >= feed.buy * qty ? '' : 'disabled'}>${qty} túi<small>${(feed.buy * qty).toLocaleString('vi')} vàng</small></button>`).join('')}
            </span>
          </div>
          <div class="inv-row">
