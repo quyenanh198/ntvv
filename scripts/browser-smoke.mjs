@@ -512,6 +512,17 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('[data-sheet="more"]').first().click();
   await page.locator('[data-sheet="barns"]').click();
+  const hungryBarnFilter = page.locator('[data-barn-filter="hungry"]');
+  assert.match(await hungryBarnFilter.innerText(), /Cần thức ăn \(1\)/);
+  await hungryBarnFilter.click();
+  assert.equal(await page.locator('.barn-card:visible').count(), 1);
+  assert.match(await page.locator('.barn-card:visible .barn-hunger').innerText(), /2 con đói · cần 2 túi/);
+  assert.equal(await hungryBarnFilter.getAttribute('aria-pressed'), 'true');
+  assert.equal(await hungryBarnFilter.evaluate((button) => button === document.activeElement), true);
+  assert.match(await page.locator('.barn-card:visible [data-count="max"]').innerText(), /1 con · 350 vàng/);
+  await checkNoOverflow(page, '320px hungry barn overview');
+  await auditAccessibility(page, 'barns-320');
+  await page.screenshot({ path: resolve(outputDir, 'barns-hungry-320.png') });
   await page.locator('[data-barn="cut"]').click();
   assert.match(await page.locator('.barn-feed-help').innerText(), /Thiếu 2 túi/);
   const maxQuails = page.locator('[data-buy-animal="cut"][data-count="max"]');

@@ -61,3 +61,7 @@ Barns now separate animal count, hunger, and shared feed stock into summary card
 ## Shop purchase decisions
 
 Feed packs, gem packs, and dog hire durations now show exact gold costs on their buttons, with action-specific accessible names. Their action groups wrap as a grid on phones and use 44px minimum targets. Unaffordable feed and animal purchases are disabled, full animal pens are identified, and the chicken capacity counts chickens separately from other animals. CI checks a 400-gold shop with two quails: the 100-feed pack shows 1,200 gold and is disabled, a single feed pack is available, and chickens show 0/3. Mobile overflow, accessibility, and a price screenshot are checked along with the existing desktop shop scan.
+
+## Barn overview filters
+
+The overview now has counted All, Owned, and Needs feed filters. Filtering keeps keyboard focus on the chosen control, updates a live result count, and offers an empty-state explanation. Cards with hungry animals show their count and feed needed for one cycle. Bulk purchase buttons show the affordable quantity and total cost. The pond note is now a direct shortcut. The mobile walkthrough isolates one hungry quail barn, verifies its count, hunger and purchase details, checks focus and accessibility, and captures a 320px screenshot.

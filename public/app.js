@@ -978,23 +978,26 @@
     const m = me();
     const herd = m.animals.filter((x) => x.kind === a.id);
     const readyN = herd.filter((x) => x.ready).length;
+    const hungryN = herd.filter((x) => x.ready_at == null).length;
     const locked = m.level < a.level;
     const info = itemInfo(a.product);
     const barn = m.barns[a.id];
     const full = herd.length >= barn.capacity;
+    const canBuy = Math.max(0, Math.min(barn.capacity - herd.length, Math.floor(m.gold / a.price)));
     const house = 'chuồng';
-    return `<div class="barn-card${locked ? ' barn-card--locked' : ''}">
+    return `<div class="barn-card${locked ? ' barn-card--locked' : ''}${hungryN ? ' barn-card--hungry' : ''}" data-barn-owned="${herd.length > 0}" data-barn-hungry="${hungryN > 0}">
       <div class="barn-head">${barnArtImg(a.id)}
         <span class="seed-info"><span class="seed-name">${a.name}${locked ? '' : ` · ${house} cấp ${barn.level}`}</span>
           <div class="seed-meta">${locked ? `🔒 Mở ở cấp ${a.level}` : `${herd.length}/${barn.capacity} con · ${info.name} ${itemImg(a.product, 'coin-img')} mỗi ${fmtDuration(a.produceMs)}${readyN ? ` · <b>${readyN} sẵn sàng</b>` : ''}`}</div></span>
       </div>
+      ${hungryN ? `<p class="barn-hunger">${hungryN} con đói · cần ${hungryN * a.feedQty} túi cho một lượt</p>` : ''}
       ${locked ? '' : `<div class="barn-actions">
         <button class="gbtn gbtn--green btn-mini" data-buy-animal="${a.id}" ${full || m.gold < a.price ? 'disabled' : ''}>＋ Mua ${a.name.toLowerCase()} · ${a.price.toLocaleString('vi')} ${COIN}</button>
-        <button class="gbtn gbtn--green btn-mini" data-buy-animal="${a.id}" data-count="max" ${full || m.gold < a.price ? 'disabled' : ''}>Mua đầy (${barn.capacity - herd.length})</button>
+        <button class="gbtn gbtn--green btn-mini" data-buy-animal="${a.id}" data-count="max" ${canBuy ? '' : 'disabled'}>Mua tối đa (${canBuy} con · ${(canBuy * a.price).toLocaleString('vi')} vàng)</button>
         ${barn.next
           ? `<button class="gbtn gbtn--gold btn-mini" data-upgrade-barn="${a.id}" ${m.gold >= barn.next.gold ? '' : 'disabled'}>⬆️ Cấp ${barn.next.level} (${barn.next.capacity} con) · ${barn.next.gold.toLocaleString('vi')} ${COIN}</button>`
           : `<span class="seed-meta">${house === 'ao' ? 'Ao' : 'Chuồng'} đã tối đa</span>`}
-        <button class="gbtn btn-mini" data-barn="${a.id}">Mở ${house}</button>
+        <button class="gbtn btn-mini" data-barn="${a.id}" aria-label="Mở ${house} ${esc(a.name)}">Mở ${house}</button>
       </div>`}
     </div>`;
   }
@@ -1351,9 +1354,16 @@
 
     if (t === 'barns') {
       const all = Object.values(DATA.config.animals).sort((x, y) => x.level - y.level);
+      const owned = all.filter((animal) => m.animals.some((entry) => entry.kind === animal.id));
+      const hungry = owned.filter((animal) => m.animals.some((entry) => entry.kind === animal.id && entry.ready_at == null));
       return sheetShell(
         `🐾 Chuồng trại <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
-        `${all.map(barnCard).join('')}<p class="sheet-note" style="margin-top:.5rem">🐟 Nuôi tôm cá: vào <b>Ao cá</b> để thả giống.</p>`,
+        `<p class="sheet-note">${m.animals.length} con trong ${owned.length} chuồng · thức ăn dùng chung: <b>${m.inventory.thucan || 0} túi</b>.</p>
+         <div class="barn-filters" role="group" aria-label="Lọc chuồng trại">${[['all', 'Tất cả', all.length], ['owned', 'Đang nuôi', owned.length], ['hungry', 'Cần thức ăn', hungry.length]].map(([key, label, count]) => `<button class="gbtn btn-mini" data-barn-filter="${key}" aria-pressed="${(sheet.barnFilter || 'all') === key}">${label} (${count})</button>`).join('')}</div>
+         <p class="barn-result-count sheet-note" role="status" aria-live="polite"></p>
+         <p class="barn-filter-empty sheet-note" hidden>Không có chuồng trong nhóm này. Chọn Tất cả để xem các loài khác.</p>
+         ${all.map(barnCard).join('')}<button class="gbtn" data-sheet="fishing">Mở ao nuôi tôm cá</button>`,
+        'sheet--barns',
       );
     }
 
@@ -1965,6 +1975,25 @@
         updateSeedFinder();
       });
       updateSeedFinder();
+    }
+    if (sheet?.type === 'barns') {
+      const updateBarnFilter = () => {
+        const filter = sheet.barnFilter || 'all';
+        let visible = 0;
+        document.querySelectorAll('.sheet--barns .barn-card').forEach((card) => {
+          card.hidden = (filter === 'owned' && card.dataset.barnOwned !== 'true')
+            || (filter === 'hungry' && card.dataset.barnHungry !== 'true');
+          if (!card.hidden) visible += 1;
+        });
+        document.querySelectorAll('[data-barn-filter]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.barnFilter === filter)));
+        document.querySelector('.barn-result-count').textContent = `${visible} chuồng phù hợp`;
+        document.querySelector('.barn-filter-empty').hidden = visible > 0;
+      };
+      document.querySelectorAll('[data-barn-filter]').forEach((button) => button.addEventListener('click', () => {
+        sheet.barnFilter = button.dataset.barnFilter;
+        updateBarnFilter();
+      }));
+      updateBarnFilter();
     }
     if (sheet?.type === 'inventory') {
       const updateInventoryFinder = () => {

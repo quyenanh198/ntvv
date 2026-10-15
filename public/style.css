@@ -1898,6 +1898,12 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   border: 2px solid rgba(180,129,74,.35);
 }
 .barn-card--locked { opacity: .75; }
+.barn-card--hungry { border-color: #90601f; background: #fff2d4; }
+.barn-hunger { margin: .5rem 0; color: #65400c; font-size: .9rem; font-weight: 700; }
+.barn-filters { display: flex; flex-wrap: wrap; gap: .4rem; margin: .7rem 0; }
+.barn-filters button, .sheet--barns button { min-height: 44px; }
+.barn-filters [aria-pressed="true"] { background: #35652e; color: #fff; border-color: #23491e; }
+.sheet--barns .barn-actions .btn-mini { white-space: normal; }
 .barn-head { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: .4rem; align-items: center; }
 .barn-head > img { width: 44px; height: 44px; object-fit: contain; }
 .barn-actions { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .45rem; align-items: center; }
