@@ -565,6 +565,16 @@ try {
   assert.equal(await page.locator('label[for="fish-species"]').isVisible(), true);
   assert.equal(await page.locator('label[for="fish-qty"]').isVisible(), true);
   await page.locator('#fish-species').selectOption('luon');
+  const pondDetail = page.locator('#fish-species-detail');
+  assert.match(await pondDetail.innerText(), /Lươn/);
+  assert.match(await pondDetail.innerText(), /150 vàng/);
+  const pondDetailImage = pondDetail.locator('img[src*="farm-eel.png"]');
+  await pondDetailImage.evaluate((image) => image.decode());
+  assert.equal(await pondDetailImage.evaluate((image) => image.naturalWidth), 128);
+  await pondDetail.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'pond-species-320.png') });
+  const pondControls = await page.locator('.fish-stock-form select, .fish-stock-form input, .fish-stock-form button').evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
+  assert.ok(pondControls.every((height) => height >= 44), 'pond stocking controls need 44px touch targets');
   await page.locator('#fish-qty').fill('10');
   assert.match(await page.locator('#fish-preview').innerText(), /Bạn chọn 10 con.*Sẽ thả 2 con Lươn, tốn 300/);
   assert.match(await page.locator('#btn-fish-stock-max').innerText(), /Thả tối đa \(2\)/);
@@ -825,6 +835,9 @@ try {
   assert.match(await pondPrompt.innerText(), /2 mẻ trong ao đã lớn/);
   await pondPrompt.click();
   const pondHarvestAll = page.locator('#btn-fish-harvest-all');
+  assert.equal(await page.locator('.fish-summary').innerText().then((text) => text.includes('2 mẻ')), true);
+  assert.equal(await page.locator('.fish-batch').first().evaluate((row) => row.classList.contains('fish-batch--ready')), true,
+    'ready pond batches should appear before growing batches');
   assert.equal(await pondHarvestAll.evaluate((button) => button === document.activeElement), true,
     'pond shortcut should focus the harvest action inside its sheet');
   const pondActionBounds = await pondHarvestAll.boundingBox();

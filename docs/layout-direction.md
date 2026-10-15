@@ -49,3 +49,7 @@ The bottom dock remains the main route to management sheets. The scene is decora
 ## Remaining review
 
 Walk through the farm and management sheets with new and returning players. Check touch targets, sheet density, long family lists, landscape phones, and screen-reader reading order before calling the layout redesign complete.
+
+## Pond stocking and harvest layout
+
+The pond section separates capacity, free space, and ready batches into three summary cards. Ready batches come first and have a green treatment. The species selector contains names and unlock levels; a separate illustrated card shows seed cost, grow time, and sale value per animal. The existing capped quantity/cost preview remains below the stocking controls. At 320px these controls stack with 44px minimum heights; wider sheets place the two stocking actions side by side. CI checks the selected species image and price, quantity cap, control sizes, accessibility, batch ordering, and mobile screenshots.
