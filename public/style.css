@@ -711,6 +711,10 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .collection-goal b { display: block; font-size: .8125rem; }
 .collection-goal small { display: block; font-size: .7rem; line-height: 1.25; }
 .collection-goal > span:last-child { font-size: 1.25rem; }
+.reward-goal { background: #fff0c7; color: #5d3c12; border-color: #b9854b; }
+.reward-goal small { font-size: .8125rem; }
+.reward-goal:hover { background: #ffe4a2; }
+.sheet--rewards button { min-height: 44px; }
 .pond-img {
   position: absolute;
   z-index: 3;

@@ -721,8 +721,31 @@
         ${readyN >= 2 ? `<button class="gbtn gbtn--gold btn-mini" id="btn-harvestall-tb">🧺 Thu hết ${readyN}</button>` : ''}
         ${dryN >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-waterall">💧 Tưới hết ${dryN}</button>` : ''}
         ${empty >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-plantall">🌱 Gieo hết ${empty} ô</button>` : ''}
+        ${renderRewardGoal()}
         ${renderCollectionGoal()}
       </div>`;
+  }
+
+  function readyRewardGroups(m = me()) {
+    const groups = [];
+    if (m.daily.done >= m.daily.required && !m.daily.chestClaimed) {
+      groups.push({ type: 'quests', title: 'Rương nhiệm vụ ngày', count: 1, detail: `${m.daily.done} nhiệm vụ đã hoàn tất` });
+    }
+    if (m.starNext && m.stars >= m.starNext.stars) {
+      groups.push({ type: 'stars', title: `Mốc ${m.starNext.stars} sao`, count: 1, detail: `Bạn có ${m.stars} sao` });
+    }
+    const collections = (m.collections || []).filter((collection) => !collection.claimed && collection.items.every((item) => item.found));
+    if (collections.length) groups.push({ type: 'collections', title: 'Bộ sưu tập', count: collections.length, detail: collections.map((collection) => collection.name).join(', ') });
+    const festival = m.festival.milestones.filter((milestone) => !milestone.claimed && milestone.progress >= milestone.target);
+    if (festival.length) groups.push({ type: 'festival', title: 'Quà lễ hội', count: festival.length, detail: m.festival.name });
+    return groups;
+  }
+
+  function renderRewardGoal() {
+    const groups = readyRewardGroups();
+    const count = groups.reduce((sum, group) => sum + group.count, 0);
+    if (!count) return '';
+    return `<button class="collection-goal reward-goal" type="button" data-sheet="rewards"><span aria-hidden="true">🎁</span><span><b>${count} phần thưởng đang chờ</b><small>${groups.map((group) => esc(group.title)).join(' · ')}</small></span><span aria-hidden="true">›</span></button>`;
   }
 
   function renderCollectionGoal() {
@@ -1233,6 +1256,16 @@
          ${seedRows}`,
         'sheet--shop',
       );
+    }
+
+    if (t === 'rewards') {
+      const groups = readyRewardGroups(m);
+      const rows = groups.map((group) => `<article class="festival-card" data-reward-group="${group.type}">
+        <div class="festival-card-heading"><h4>${esc(group.title)}</h4><span class="festival-status">${group.count} quà sẵn sàng</span></div>
+        <p class="festival-hint">${esc(group.detail)}</p>
+        <button class="gbtn gbtn--gold" data-sheet="${group.type}" aria-label="Xem quà: ${esc(group.title)}">Xem quà</button>
+      </article>`).join('');
+      return sheetShell('🎁 Phần thưởng đang chờ', `<p class="sheet-note">Mở từng mục để xem và nhận thưởng.</p>${rows || '<p class="sheet-note">Đã nhận hết quà sẵn sàng. Tiếp tục chăm trại để mở mốc mới.</p>'}`, 'sheet--rewards');
     }
 
     if (t === 'quests') {

@@ -77,3 +77,7 @@ The buy-request form now filters its catalog using accent-insensitive search, re
 ## Seller trade discovery and totals
 
 Village buy requests now put fillable listings first and offer counted All and Can sell filters plus accent-insensitive buyer/item search. Filters combine and report matching counts, with empty guidance. Seller buttons show quantity and total proceeds, update on typing or step controls, and disable invalid fractional or out-of-range quantities. The mobile two-player walkthrough exercises no-match recovery, available filtering, an invalid quantity, step-control recovery, accessibility, and the final transfer with both balances checked.
+
+## Ready reward hub
+
+The farm now shows a reward shortcut whenever a daily chest, next star milestone, collection, or festival milestone is claimable. It counts currently ready rewards and opens a hub with links to their existing claim screens. Claimed rewards leave the hub after state updates; the normal farm next action remains available separately. Mobile CI opens the hub with a ready daily chest and star milestone, checks accessibility and layout, follows both claim screens, and verifies that claimed entries disappear.
