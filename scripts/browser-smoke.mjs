@@ -978,7 +978,7 @@ try {
   for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao', 'mutcam', 'mutgung', 'mutsaurieng', 'siro', 'suachua', 'phomaide', 'phomaitrau', 'kem', 'kemvani', 'kemsaurieng', 'dauoliu', 'nuoccoc', 'vai', 'lua', 'khanlen', 'khanalpaca', 'aolen', 'mulen', 'caphesua', 'socola', 'tratui', 'ruouvang', 'caonhung', 'nuochoa', 'hopphomai', 'aodai', 'buatiec', 'hopqua', 'caphehaohang', 'chaca', 'cakho', 'sushi', 'lauca', 'goicuon', 'tomnuong', 'catrakho', 'calocnuong']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
-  for (const item of ['cadieuhongchien', 'luonxao', 'cuahap', 'mucnuong', 'tom', 'cua', 'luon', 'ech', 'muc', 'lauech', 'oc', 'ochuong', 'ocnhoi', 'oclen', 'ocdang', 'ocmo']) {
+  for (const item of ['cadieuhongchien', 'luonxao', 'cuahap', 'mucnuong', 'tom', 'cua', 'luon', 'ech', 'muc', 'lauech', 'oc', 'ochuong', 'ocnhoi', 'oclen', 'ocdang', 'ocmo', 'ocluocsa', 'ocrangmuoiot', 'ochuongxaotoi', 'ochuongxaosate', 'ocnhoixaome', 'ocnhoixaotoi']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -1023,6 +1023,9 @@ try {
     ['cadieuhongchien', 'fried-red-tilapia'], ['luonxao', 'lemongrass-chili-eel'],
     ['cuahap', 'steamed-lemongrass-crab'], ['mucnuong', 'satay-grilled-squid'],
     ['tom', 'fresh-shrimp'], ['cua', 'freshwater-crab'], ['luon', 'farm-eel'],
+    ['ocluocsa', 'boiled-apple-snails'], ['ocrangmuoiot', 'chili-salt-apple-snails'],
+    ['ochuongxaotoi', 'garlic-babylon-snails'], ['ochuongxaosate', 'satay-babylon-snails'],
+    ['ocnhoixaome', 'tamarind-pond-snails'], ['ocnhoixaotoi', 'garlic-pond-snails'],
     ['oc', 'apple-snail'], ['ochuong', 'spotted-babylon-snail'],
     ['ocnhoi', 'pond-snail'], ['oclen', 'mud-creeper-snail'],
     ['ocdang', 'bitter-snail'], ['ocmo', 'moon-snail'],
@@ -1060,6 +1063,10 @@ try {
   await page.locator('.inv-row[data-item="oc"]').scrollIntoViewIfNeeded();
   await checkNoOverflow(page, '320px snail product sprites');
   await page.screenshot({ path: resolve(outputDir, 'snail-products-320.png') });
+  await page.locator('[data-inventory-group="products"]').click();
+  await page.locator('.inv-row[data-item="ocluocsa"]').scrollIntoViewIfNeeded();
+  await checkNoOverflow(page, '320px snail-stall product sprites');
+  await page.screenshot({ path: resolve(outputDir, 'snail-stall-products-320.png') });
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
