@@ -53,3 +53,7 @@ Walk through the farm and management sheets with new and returning players. Chec
 ## Pond stocking and harvest layout
 
 The pond section separates capacity, free space, and ready batches into three summary cards. Ready batches come first and have a green treatment. The species selector contains names and unlock levels; a separate illustrated card shows seed cost, grow time, and sale value per animal. The existing capped quantity/cost preview remains below the stocking controls. At 320px these controls stack with 44px minimum heights; wider sheets place the two stocking actions side by side. CI checks the selected species image and price, quantity cap, control sizes, accessibility, batch ordering, and mobile screenshots.
+
+## Barn feeding and purchase clarity
+
+Barns now separate animal count, hunger, and shared feed stock into summary cards. A product card shows feed per animal per cycle, growth time, sale value, and XP. Hungry animals show the actual number that current feed can support; a shortage panel states missing feed and opens the shop. Bulk animal purchases display the affordable quantity and total cost, capped by barn space. CI covers a two-hungry-quail barn with no feed and enough gold for one purchase, checks accessibility and mobile overflow, and follows the feed shortcut into shop controls.

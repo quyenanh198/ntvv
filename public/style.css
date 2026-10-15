@@ -2367,6 +2367,16 @@ button, a, .plot, .side-btn, .gbtn, .hud-round, .coin-pill, .seed-card, .inv-row
 .fish-species-detail dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; column-gap: .5rem; margin: .25rem 0; }
 .fish-species-detail dd { margin: 0; font-weight: 700; }
 .fish-preview { padding: .7rem; border-left: 3px solid #63864d; background: #f0f6e6; line-height: 1.6; }
+.barn-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; margin: .6rem 0; color: #4a2810; }
+.barn-summary > div { padding: .6rem .4rem; border: 1px solid #caa76b; border-radius: 12px; background: #fff9ed; }
+.barn-summary span, .barn-summary strong { display: block; font-size: .85rem; }
+.barn-summary strong { margin-top: .3rem; }
+.barn-cycle { display: flex; align-items: center; gap: .7rem; padding: .7rem; background: #fff9ed; border: 1px solid #caa76b; border-radius: 12px; color: #4a2810; }
+.barn-cycle > .seed-sprite { width: 56px; height: 56px; object-fit: contain; flex: 0 0 56px; }
+.barn-cycle p { font-size: .85rem; margin: .35rem 0 0; line-height: 1.5; }
+.barn-feed-help { background: #f0f6e6; color: #4a2810; border-left: 3px solid #63864d; padding: .7rem; margin-top: .7rem; }
+.barn-feed-help p { font-size: .9rem; line-height: 1.5; margin: 0 0 .6rem; }
+.barn-feed-help button, .sheet--barn .sheet-actions > button { min-height: 44px; }
 @media (min-width: 560px) {
   .fish-stock-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .fish-stock-form .want-field--item, .fish-species-detail, .fish-stock-form .want-field--qty { grid-column: 1 / -1; }

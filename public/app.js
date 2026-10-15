@@ -1362,6 +1362,9 @@
       const herd = m.animals.filter((x) => x.kind === kind);
       const readyN = herd.filter((x) => x.ready).length;
       const hungryN = herd.filter((x) => x.ready_at == null).length;
+      const canFeed = Math.min(hungryN, Math.floor(feedQty / a.feedQty));
+      const feedMissing = Math.max(0, hungryN * a.feedQty - feedQty);
+      const canBuy = Math.max(0, Math.min(barn.capacity - herd.length, Math.floor(m.gold / a.price)));
       const productInfo = itemInfo(a.product);
       if (m.level < a.level) {
         return sheetShell(`${a.emoji} Chuồng ${a.name}`, `<p class="sheet-note">🔒 Mở ở <b>cấp ${a.level}</b> — cày thêm chút nữa nhé!</p>`);
@@ -1373,16 +1376,19 @@
         </span>`).join('');
       return sheetShell(
         `${a.emoji} Chuồng ${a.name} cấp ${barn.level} · ${herd.length}/${barn.capacity} <span class="sheet-coins"><img class="coin-img" src="${A('assets/art/feed.png')}" alt=""/> ${feedQty}</span>`,
-        `<p class="sheet-note">🤖 Chuồng tự vận hành: tới giờ là sản phẩm TỰ vào kho và tự ăn tiếp — chỉ cần trữ đủ thức ăn. Mỗi ${a.name.toLowerCase()} ăn ${a.feedQty} 🌰 → ${productInfo.name} ${itemImg(a.product, 'coin-img')} sau ${fmtDuration(a.produceMs)} (bán ${productInfo.sell} ${COIN}, +${a.expCollect} EXP).</p>
+        `<div class="barn-summary"><div><span>Đang nuôi</span><strong>${herd.length}/${barn.capacity} con</strong></div><div><span>Đang đói</span><strong>${hungryN} con</strong></div><div><span>Thức ăn trong kho</span><strong>${feedQty} túi</strong></div></div>
+         <p class="sheet-note">Chuồng tự đưa sản phẩm vào kho và tự ăn tiếp khi đủ thức ăn. Hết thức ăn thì dừng, không mất con vật.</p>
+         <div class="barn-cycle">${itemImg(a.product, 'seed-sprite')}<div><b>${productInfo.name}</b><p>${a.feedQty} túi / con / lượt · ${fmtDuration(a.produceMs)}</p><p>Bán ${productInfo.sell.toLocaleString('vi')} vàng / sản phẩm · +${a.expCollect} EXP</p></div></div>
          ${herd.length === 0 ? `<p class="sheet-note">Chuồng trống — mua ${a.name.toLowerCase()} đầu tiên đi!</p>` : `<div class="hen-row">${pens}</div>`}
          <div class="sheet-actions">
-           ${hungryN ? `<button class="btn gbtn gbtn--green" data-feed-kind="${kind}" ${feedQty >= a.feedQty ? '' : 'disabled'}>🌰 Cho ăn (${hungryN} con đói)</button>` : ''}
+           ${hungryN ? `<button class="btn gbtn gbtn--green" data-feed-kind="${kind}" ${canFeed ? '' : 'disabled'}>🌰 Cho ${canFeed}/${hungryN} con ăn (${canFeed * a.feedQty} túi)</button>` : ''}
            ${readyN ? `<button class="btn gbtn gbtn--gold" data-collect-kind="${kind}">${itemImg(a.product, 'coin-img')} Thu ${readyN}</button>` : ''}
            ${herd.length < barn.capacity ? `<button class="btn btn-ghost" data-buy-animal="${kind}">＋ Mua ${a.name} (${a.price.toLocaleString('vi')} vàng)</button>
-           <button class="btn gbtn gbtn--green" data-buy-animal="${kind}" data-count="max" ${m.gold >= a.price ? '' : 'disabled'}>＋ Mua đầy chuồng (${barn.capacity - herd.length} con · ${((barn.capacity - herd.length) * a.price).toLocaleString('vi')} vàng)</button>` : ''}
+           <button class="btn gbtn gbtn--green" data-buy-animal="${kind}" data-count="max" ${canBuy ? '' : 'disabled'}>＋ Mua tối đa (${canBuy} con · ${(canBuy * a.price).toLocaleString('vi')} vàng)</button>` : ''}
            ${barn.next ? `<button class="btn gbtn gbtn--gold" data-upgrade-barn="${kind}" ${m.gold >= barn.next.gold ? '' : 'disabled'}>⬆️ Nâng chuồng cấp ${barn.next.level} (${barn.next.capacity} con) — ${barn.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}
          </div>
-         ${feedQty < a.feedQty && hungryN ? '<p class="sheet-note">Hết thức ăn: mua ở Cửa hàng (12 vàng/túi) hoặc xay 2 ngô ở Cối xay (Lv 10).</p>' : ''}`,
+         ${feedMissing ? `<div class="barn-feed-help"><p>Thiếu ${feedMissing} túi để cho ${hungryN} con đói ăn một lượt. Thức ăn dùng chung cho mọi chuồng.</p><button class="gbtn gbtn--green" data-sheet="shop">Mua thức ăn</button><p class="sheet-note">Cũng có thể xay 2 ngô ở Cối xay (Lv 10).</p></div>` : ''}`,
+        'sheet--barn',
       );
     }
 
