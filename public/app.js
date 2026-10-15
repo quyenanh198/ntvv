@@ -1002,10 +1002,10 @@
     const cfg = DATA.config.fishFarm;
     const readyN = ff.batches.filter((b) => b.ready).length;
     const room = ff.capacity - ff.used;
-    const batchRows = ff.batches.map((b) => {
+    const batchRows = [...ff.batches].sort((a, b) => Number(b.ready) - Number(a.ready) || a.readyAt - b.readyAt).map((b) => {
       const sp = cfg[b.species];
       const left = b.readyAt - Date.now();
-      return `<div class="inv-row fish-batch">
+      return `<div class="inv-row fish-batch${b.ready ? ' fish-batch--ready' : ''}">
         ${itemImg(sp?.product || b.species, 'seed-sprite')}
         <span class="seed-info"><span class="seed-name">${b.qty} con ${sp?.name || b.species}</span>
           <div class="seed-meta">${b.ready ? '<b>✅ Sẵn sàng thu</b>' : `⏱ còn ${fmtTime(left)}`}</div></span>
@@ -1014,18 +1014,20 @@
     }).join('');
     const species = Object.values(cfg).sort((x, y) => x.level - y.level);
     const options = species.map((sp) => {
-      const info = itemInfo(sp.product);
-      return `<option value="${sp.id}" ${m.level < sp.level ? 'disabled' : ''}>${sp.emoji} ${sp.name}${m.level < sp.level ? ` (Lv ${sp.level})` : ''} — giống ${sp.fry} vàng, ${fmtDuration(sp.growMs)}, bán ${(info?.sell || 0).toLocaleString('vi')}</option>`;
+      return `<option value="${sp.id}" ${m.level < sp.level ? 'disabled' : ''}>${sp.name}${m.level < sp.level ? ` (Lv ${sp.level})` : ''}</option>`;
     }).join('');
-    return `<p class="sheet-note" style="margin-top:.7rem">🐟 <b>Ao nuôi</b> — thả giống theo mẻ, đủ giờ thu cả mẻ (cá là tiêu hao). Sức chứa <b>${ff.used}/${ff.capacity}</b> con (nâng ao câu cá để nuôi nhiều hơn).</p>
+    return `<section class="fish-farm" aria-labelledby="fish-farm-title"><h3 id="fish-farm-title">Ao nuôi</h3>
+      <p class="sheet-note">Thả giống theo mẻ, đủ giờ thu cả mẻ. Nâng ao câu cá để tăng sức chứa.</p>
+      <div class="fish-summary"><div><span>Đang nuôi</span><strong>${ff.used}/${ff.capacity} con</strong></div><div><span>Còn chỗ</span><strong>${room} con</strong></div><div><span>Sẵn sàng thu</span><strong>${readyN} mẻ</strong></div></div>
       ${readyN > 1 ? `<button class="btn gbtn gbtn--gold" id="btn-fish-harvest-all" style="width:100%;margin-bottom:.4rem">✅ Thu hết ${readyN} mẻ</button>` : ''}
       ${batchRows || '<p class="sheet-note">Ao đang trống — thả giống đi!</p>'}
-      ${room > 0 ? `<div class="want-form fish-stock-form">
+      ${room > 0 ? `<h4 class="fish-stock-title">Thả giống mới</h4><div class="want-form fish-stock-form">
         <label class="want-field want-field--item" for="fish-species">Loài nuôi<select id="fish-species">${options}</select></label>
+        <div class="fish-species-detail" id="fish-species-detail"></div>
         <label class="want-field want-field--qty" for="fish-qty">Số con<input id="fish-qty" type="number" inputmode="numeric" min="1" max="${room}" value="1" /></label>
         <button class="gbtn gbtn--green btn-mini" id="btn-fish-stock">🐟 Thả số đã chọn</button>
         <button class="gbtn gbtn--gold btn-mini" id="btn-fish-stock-max">Thả tối đa</button>
-      </div><p class="sheet-note" id="fish-preview" role="status" aria-live="polite"></p>` : '<p class="sheet-note">Ao đã đầy — thu hoạch hoặc nâng cấp ao để thả thêm.</p>'}`;
+      </div><p class="sheet-note fish-preview" id="fish-preview" role="status" aria-live="polite"></p>` : '<p class="sheet-note">Ao đã đầy — thu hoạch hoặc nâng cấp ao để thả thêm.</p>'}</section>`;
   }
 
   function renderSheet() {
@@ -2296,6 +2298,8 @@
       if (stockButton) stockButton.disabled = n < 1;
       if (maxButton) { maxButton.disabled = maxStock < 1; maxButton.textContent = `Thả tối đa (${maxStock})`; }
       const info = itemInfo(sp?.product);
+      const detail = document.getElementById('fish-species-detail');
+      if (detail) detail.innerHTML = `${itemImg(sp.product, 'seed-sprite')}<div><b>${esc(sp.name)}</b><dl><div><dt>Giống / con</dt><dd>${sp.fry.toLocaleString('vi')} vàng</dd></div><div><dt>Thời gian</dt><dd>${fmtDuration(sp.growMs)}</dd></div><div><dt>Bán / con</dt><dd>${(info?.sell || 0).toLocaleString('vi')} vàng</dd></div></dl></div>`;
       if (!valid) { p.textContent = 'Nhập số con nguyên dương để xem chi phí.'; return; }
       if (!maxStock) { p.textContent = `Chưa đủ ${sp.fry.toLocaleString('vi')} vàng để mua giống ${sp.name}.`; return; }
       const limitNote = n < requested ? `Bạn chọn ${requested} con; ao còn ${room} chỗ và đủ vàng cho ${affordable} con. ` : '';

@@ -2348,3 +2348,26 @@ button, a, .plot, .side-btn, .gbtn, .hud-round, .coin-pill, .seed-card, .inv-row
   outline: 3px solid var(--gold, #e9b949);
   outline-offset: 2px;
 }
+
+.fish-farm { margin-top: 1rem; color: #4a2810; }
+.fish-farm h3, .fish-stock-title { margin: .75rem 0 .5rem; }
+.fish-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; margin: .7rem 0; }
+.fish-summary > div { padding: .65rem .4rem; border: 1px solid #caa76b; border-radius: 12px; background: #fff9ed; }
+.fish-summary span, .fish-summary strong { display: block; }
+.fish-summary span { font-size: .8rem; margin-bottom: .3rem; }
+.fish-summary strong { font-size: .9rem; }
+.fish-batch--ready { border-color: #63864d; background: #f0f6e6; }
+.fish-stock-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: .6rem; }
+.fish-stock-form .want-field { width: 100%; min-width: 0; }
+.fish-stock-form select, .fish-stock-form input, .fish-stock-form button { min-height: 44px; width: 100%; box-sizing: border-box; }
+.fish-species-detail { display: flex; align-items: center; gap: .65rem; padding: .7rem; border: 1px solid #caa76b; border-radius: 12px; background: #fff9ed; }
+.fish-species-detail > .seed-sprite { width: 64px; height: 64px; flex: 0 0 64px; object-fit: contain; }
+.fish-species-detail > div { flex: 1; min-width: 0; }
+.fish-species-detail dl { margin: .4rem 0 0; font-size: .85rem; }
+.fish-species-detail dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; column-gap: .5rem; margin: .25rem 0; }
+.fish-species-detail dd { margin: 0; font-weight: 700; }
+.fish-preview { padding: .7rem; border-left: 3px solid #63864d; background: #f0f6e6; line-height: 1.6; }
+@media (min-width: 560px) {
+  .fish-stock-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .fish-stock-form .want-field--item, .fish-species-detail, .fish-stock-form .want-field--qty { grid-column: 1 / -1; }
+}
