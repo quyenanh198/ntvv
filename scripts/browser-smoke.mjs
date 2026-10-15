@@ -403,6 +403,25 @@ try {
 
   await friendPage.locator('[data-sheet="more"]').first().click();
   await friendPage.locator('[data-sheet="market"]').click();
+  await friendPage.locator('[data-want-view="available"]').click();
+  assert.equal(await friendPage.locator('[data-want-view="available"]').getAttribute('aria-pressed'), 'true');
+  await friendPage.locator('#want-board-search').fill('no-such-buyer');
+  assert.equal(await friendPage.locator('[data-want]:visible').count(), 0);
+  assert.equal(await friendPage.locator('#want-board-empty').isVisible(), true);
+  await friendPage.locator('#want-board-search').fill('lua mi');
+  assert.equal(await friendPage.locator('[data-want]:visible').count(), 1);
+  const tradeQuantity = friendPage.locator(`[data-want="${want.id}"] .qty-input`);
+  await tradeQuantity.fill('1.5');
+  assert.equal(await friendPage.locator(`[data-want="${want.id}"] [data-want-fill]`).isDisabled(), true);
+  await friendPage.locator(`[data-want="${want.id}"] [data-qstep="-1"]`).click();
+  assert.equal(await tradeQuantity.inputValue(), '1');
+  assert.match(await friendPage.locator(`[data-want="${want.id}"] [data-want-fill]`).innerText(), new RegExp(`Bán 1 · \\+${want.price} vàng`));
+  await checkNoOverflow(friendPage, '390px seller trade preview');
+  assert.ok(await friendPage.locator(`[data-want="${want.id}"] .seed-info`).evaluate((details) => details.getBoundingClientRect().width >= 180),
+    'buyer and item details need readable width above sale controls');
+  await auditAccessibility(friendPage, 'market-seller-390');
+  await friendPage.locator(`[data-want="${want.id}"]`).scrollIntoViewIfNeeded();
+  await friendPage.screenshot({ path: resolve(outputDir, 'trade-sale-preview-390.png') });
   await friendPage.locator(`[data-want="${want.id}"] [data-want-fill]`).click();
   await friendPage.locator(`[data-want="${want.id}"]`).waitFor({ state: 'detached' });
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM wants WHERE id = ?').get(want.id).n, 0);
