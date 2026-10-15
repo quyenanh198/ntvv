@@ -132,6 +132,7 @@ const MUTATION_TARGET_FIELDS = new Map(Object.entries({
   'order-deliver': { id: positiveId },
   'order-discard': { id: positiveId },
   'collection-claim': { id: catalogKey },
+  'dog-hire': { hours: value => DOG.hoursOptions.includes(value) },
   'gold-give': { toId: positiveId },
   'gold-ask': { toId: positiveId },
   'gold-request-act': { id: positiveId, action: (value) => ['cancel', 'decline', 'pay'].includes(value) },
@@ -344,6 +345,10 @@ export function buildApp({ config, db, logger = true }) {
       return reply.code(400).send({ error: 'bad_request' });
     }
     const route = request.routeOptions.url.split('/').pop();
+    if (['gold-give', 'gold-ask'].includes(route)
+      && (!Number.isSafeInteger(body?.amount) || body.amount < 1 || body.amount > 1_000_000_000)) {
+      return reply.code(400).send({ error: 'bad_amount' });
+    }
     const fields = MUTATION_TARGET_FIELDS.get(route);
     if (fields && Object.entries(fields).some(([field, validate]) => !validate(body?.[field]))) {
       return reply.code(400).send({ error: 'bad_request' });
@@ -1927,7 +1932,7 @@ export function buildApp({ config, db, logger = true }) {
       // ---- Bể hút vàng: nâng cấp nhà máy, xa xỉ phẩm, xổ số làng ----
       // ---- Cho tiền / xin tiền giữa người chơi (chuyển vàng, không tạo vàng mới) ----
       const GOLD_ASK_MAX_OPEN = 5;
-      const parseAmount = (v) => { const n = Math.floor(Number(v)); return Number.isFinite(n) && n >= 1 && n <= 1_000_000_000 ? n : 0; };
+      const parseAmount = (v) => { const n = v; return Number.isSafeInteger(n) && n >= 1 && n <= 1_000_000_000 ? n : 0; };
       api.post('/gold-give', async (request, reply) => {
         const { toId, amount } = request.body ?? {};
         const me = request.farmer;
@@ -2251,7 +2256,7 @@ export function buildApp({ config, db, logger = true }) {
 
       api.post('/dog-hire', async (request, reply) => {
         const me = request.farmer;
-        const hours = Number(request.body?.hours);
+        const hours = request.body?.hours;
         if (!DOG.hoursOptions.includes(hours)) return reply.code(400).send({ error: 'bad_request' });
         const cost = DOG.pricePerHour * hours;
         const hire = runJournaledMutation(request, 'dog-hire', () => {

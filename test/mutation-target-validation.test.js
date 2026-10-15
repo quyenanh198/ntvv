@@ -40,10 +40,10 @@ test('malformed mutation targets are rejected before farmer state changes', asyn
       'mutation_results', 'plot_actions', 'gold_requests', 'wants', 'luxury', 'festival'];
     const snapshot = () => Object.fromEntries(tables.map((table) => [table, db.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all()]));
     const before = snapshot();
-    const reject = async (route, payload) => {
+    const reject = async (route, payload, error = 'bad_request') => {
       const response = await post(route, payload);
       assert.equal(response.statusCode, 400, `${route} ${JSON.stringify(payload)}: ${response.body}`);
-      assert.equal(response.json().error, 'bad_request', `${route}: ${response.body}`);
+      assert.equal(response.json().error, error, `${route}: ${response.body}`);
       assert.deepEqual(snapshot(), before, `${route} changed state for ${JSON.stringify(payload)}`);
     };
     const idTargets = [
@@ -105,6 +105,13 @@ test('malformed mutation targets are rejected before farmer state changes', asyn
     await reject('/speedup', { target: 'plot' });
     await reject('/speedup', { target: 'machine' });
     await reject('/gold-request-act', { id: requestId, action: ['pay'] });
+
+    for (const amount of [undefined, null, '2', true, false, 0, -1, 1.5, {}, [2], 1_000_000_001]) {
+      for (const route of ['/gold-give', '/gold-ask']) await reject(route, { toId: 2, amount }, 'bad_amount');
+    }
+    for (const hours of [undefined, null, '1', true, false, 0, -1, 1.5, {}, [1]]) {
+      await reject('/dog-hire', { hours });
+    }
 
     const ownWater = await post('/water', { idx: 0 });
     assert.equal(ownWater.statusCode, 200, ownWater.body);

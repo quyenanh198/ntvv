@@ -2038,15 +2038,21 @@
     document.getElementById('btn-inspect-mode')?.addEventListener('click', () => { INSPECT = !INSPECT; toast(INSPECT ? '🔍 Bấm vào một ô đang trồng để khám xét' : 'Tắt khám xét'); render(); });
     document.getElementById('btn-gold-give')?.addEventListener('click', async () => {
       const v = window.prompt(`Tặng ${VISIT.farm.name} bao nhiêu vàng? (bạn có ${me().gold.toLocaleString('vi')})`, '');
-      const n = Math.floor(Number(String(v || '').replace(/[^0-9]/g, '')));
-      if (!n) return;
+      if (v === null || !v.trim()) return;
+      const n = Number(v.trim());
+      if (!/^[0-9]+$/.test(v.trim()) || !Number.isSafeInteger(n) || n < 1 || n > 1_000_000_000) {
+        toast('Nhập số vàng nguyên từ 1 đến 1.000.000.000'); return;
+      }
       const r = await run(() => api('/gold-give', { toId: VISIT.ownerId, amount: n }));
       if (r) { updateMe(r); toast(`💝 Đã tặng ${VISIT.farm.name} ${n.toLocaleString('vi')} vàng!`); render(); }
     });
     document.getElementById('btn-gold-ask')?.addEventListener('click', async () => {
       const v = window.prompt(`Xin ${VISIT.farm.name} bao nhiêu vàng?`, '');
-      const n = Math.floor(Number(String(v || '').replace(/[^0-9]/g, '')));
-      if (!n) return;
+      if (v === null || !v.trim()) return;
+      const n = Number(v.trim());
+      if (!/^[0-9]+$/.test(v.trim()) || !Number.isSafeInteger(n) || n < 1 || n > 1_000_000_000) {
+        toast('Nhập số vàng nguyên từ 1 đến 1.000.000.000'); return;
+      }
       const note = window.prompt('Nhắn gì với người ta không? (có thể bỏ trống)', '') || '';
       const r = await run(() => api('/gold-ask', { toId: VISIT.ownerId, amount: n, note }));
       if (r) { updateMe(r); toast(`🙏 Đã gửi lời xin ${n.toLocaleString('vi')} vàng tới ${VISIT.farm.name}`); render(); }
