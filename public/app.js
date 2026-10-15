@@ -1054,7 +1054,7 @@
         const baseProfit = c.sell * DATA.config.harvestYield - c.seed;
         const cycleXp = c.expSow + c.expHarvest;
         return `<button class="seed-card${locked ? ' seed-card--locked' : ''}${sheet.preferredCrop === c.id ? ' seed-card--recommended' : ''}" data-crop="${locked ? '' : c.id}" data-seed-name="${esc(c.name)}" data-seed-unlocked="${lockLevel ? '0' : '1'}" title="${c.name}" ${locked ? 'disabled' : ''}>
-          <img class="seed-sprite" src="${cropSprite(c.id, 3)}" alt="" />
+          <img class="seed-sprite" src="${cropSprite(c.id, 3)}" alt="" loading="${lockLevel ? 'lazy' : 'eager'}" decoding="async" />
           <span class="seed-name">${c.name}</span>
           <span class="seed-meta">⏱ ${fmtDuration(c.growMs)} · ${c.risky ? `${(DATA.config.cansa?.reward || 1000000).toLocaleString('vi')} ${COIN}/cây · bị khám xét = mất trắng` : `~${baseProfit.toLocaleString('vi')} ${COIN}/ô · ${cycleXp} EXP`}</span>
           ${lockLevel ? `<span class="seed-lock">Lv ${c.level}</span>` : `<span class="seed-cost">${c.seed} ${COIN}</span>`}
@@ -1070,7 +1070,7 @@
         const lockLevel = m.level < t.level;
         const locked = lockLevel || m.gold < t.price;
         return `<button class="seed-card seed-card--tree${locked ? ' seed-card--locked' : ''}" data-tree="${locked ? '' : t.id}" data-seed-name="${esc(t.name)}" data-seed-unlocked="${lockLevel ? '0' : '1'}" title="${t.name} — lớn ${fmtDuration(t.growMs)}, rồi ${t.yield} quả mỗi ${fmtDuration(t.cycleMs)}, tàn sau ${fmtDuration(t.lifeMs)}" ${locked ? 'disabled' : ''}>
-          <img class="seed-sprite" src="${treeArt(t.id)}" alt="" />
+          <img class="seed-sprite" src="${treeArt(t.id)}" alt="" loading="${lockLevel ? 'lazy' : 'eager'}" decoding="async" />
           <span class="seed-name">${t.name} ${t.emoji}</span>
           <span class="seed-meta">🌳 lớn ${fmtDuration(t.growMs)} · ${t.yield} quả/${fmtDuration(t.cycleMs)} · sống ${fmtDuration(t.lifeMs)} · ${t.sell.toLocaleString('vi')} ${COIN}</span>
           ${lockLevel ? `<span class="seed-lock">Lv ${t.level}</span>` : `<span class="seed-cost">${t.price.toLocaleString('vi')} ${COIN}</span>`}
