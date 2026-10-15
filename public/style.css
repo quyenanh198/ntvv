@@ -1899,6 +1899,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 }
 .barn-card--locked { opacity: .75; }
 .barn-card--hungry { border-color: #90601f; background: #fff2d4; }
+.barn-card .seed-meta { color: #65400c; font-size: .85rem; }
 .barn-hunger { margin: .5rem 0; color: #65400c; font-size: .9rem; font-weight: 700; }
 .barn-filters { display: flex; flex-wrap: wrap; gap: .4rem; margin: .7rem 0; }
 .barn-filters button, .sheet--barns button { min-height: 44px; }
