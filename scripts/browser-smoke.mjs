@@ -1124,9 +1124,16 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'snail-stall-butter-products-320.png') });
   db.prepare('UPDATE daily SET counters_json = ?, chest_claimed = 0 WHERE owner_id = 1')
     .run(JSON.stringify({ harvest: 15, sow: 10, feed: 5, sell: 9 }));
+  db.prepare('UPDATE farmers SET stars = 50 WHERE user_id = 1').run();
+  db.prepare('DELETE FROM star_claims WHERE owner_id = 1').run();
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.locator('[data-sheet="more"]').first().click();
-  await page.locator('[data-sheet="quests"]').click();
+  await page.locator('.reward-goal').click();
+  assert.equal(await page.locator('[data-reward-group="quests"]').count(), 1);
+  assert.equal(await page.locator('[data-reward-group="stars"]').count(), 1);
+  await checkNoOverflow(page, '320px ready reward hub');
+  await auditAccessibility(page, 'rewards-320');
+  await page.screenshot({ path: resolve(outputDir, 'rewards-320.png') });
+  await page.locator('[data-reward-group="quests"] [data-sheet="quests"]').click();
   assert.equal(await page.locator('#btn-chest').isEnabled(), true);
   assert.equal(await page.locator('[data-daily-quest="sell"] [role="progressbar"]').getAttribute('aria-valuenow'), '9');
   await checkNoOverflow(page, '320px daily quests');
@@ -1143,6 +1150,19 @@ try {
   await page.locator('#btn-chest:disabled').waitFor();
   assert.match(await page.locator('[data-daily-quest="harvest"]').innerText(), /Đã nhận thưởng/);
   await page.screenshot({ path: resolve(outputDir, 'daily-chest-claimed-320.png') });
+  await page.keyboard.press('Escape');
+  await page.locator('.reward-goal').click();
+  assert.equal(await page.locator('[data-reward-group="quests"]').count(), 0, 'claimed daily chest should leave the reward hub');
+  await page.locator('[data-reward-group="stars"] [data-sheet="stars"]').click();
+  const starResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/star-claim') && response.request().method() === 'POST');
+  await page.locator('#btn-star-claim').click();
+  assert.equal((await starResponse).status(), 200);
+  await page.locator('#btn-star-claim:disabled').waitFor();
+  await page.keyboard.press('Escape');
+  if (await page.locator('.reward-goal').count()) {
+    await page.locator('.reward-goal').click();
+    assert.equal(await page.locator('[data-reward-group="stars"]').count(), 0, 'claimed star milestone should leave the reward hub');
+  }
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
