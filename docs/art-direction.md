@@ -272,3 +272,5 @@ The first six raw-snail icons now have distinct shell shapes and patterns, repla
 The first six snail-stall dishes have individual transparent painted icons and 128px exports, matching the existing snack-stall snail bowl. Source/export paths and exact built-in imagegen prompts are recorded in [snail-stall-art-prompts.md](snail-stall-art-prompts.md).
 
 Six more snail-stall products now have matching painted sprites: butter and scallion mud-creeper snails, scallion-grilled and lemongrass-steamed bitter snails, and chili-salt and lemongrass moon snails. Transparent full-resolution sources and 128px exports follow the existing convention; exact built-in imagegen prompts are in [snail-stall-art-prompts.md](snail-stall-art-prompts.md).
+
+The next six snail-stall icons cover coconut and butter rice snails, lemongrass and coconut-sauce coconut snails, and satay and cheese jackfruit snails. Transparent full-resolution sources and 128px game exports follow the existing convention; exact built-in imagegen prompts and the style reference are in [snail-stall-art-prompts.md](snail-stall-art-prompts.md).
