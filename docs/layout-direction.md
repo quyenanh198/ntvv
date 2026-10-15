@@ -69,3 +69,7 @@ The overview now has counted All, Owned, and Needs feed filters. Filtering keeps
 ## Daily quest actions and rewards
 
 Daily quests now use readable cards with numeric progress, accessible progress bars, reward amounts, activity shortcuts, and unlock explanations. Incomplete tasks appear first and the chest action sits above the list. Opening the chest pays completed tasks and the chest reward. Tasks finished later that day now pay their own reward automatically when crossing the target, in the same transaction as progress. Additional actions and request retries do not pay the task again; persisted counters preserve this after restart, including legacy already-opened chests. Integration coverage checks partial progress, completion, retries, restart, and further actions. Mobile CI checks the quest layout, accessibility, sale shortcut, chest claim, and claimed state.
+
+## Trade catalog search and escrow preview
+
+The buy-request form now filters its catalog using accent-insensitive search, reports a live matching count, and selects the first matching item when needed. No matches disable the selector and submission with recovery guidance. The escrow preview accepts only whole quantities from 1 to 999, shows missing gold, and explains the five-listing limit. CI exercises unaccented wheat search, invalid quantities, unaffordable escrow, no results, recovery to a valid listing, and the existing two-player transfer. A mobile filtered-catalog screenshot is saved for review.
