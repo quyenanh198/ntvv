@@ -187,7 +187,28 @@ try {
   await page.unroute('**/farm/api/state');
 
   const startingGold = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
+  await page.evaluate(() => performance.clearResourceTimings());
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').click();
+  await page.locator('.sheet--seed img').evaluateAll(async (images) => {
+    await Promise.all(images.filter((image) => image.loading !== 'lazy').map((image) => image.decode()));
+  });
+  const seedTransfer = await page.evaluate(() => {
+    const sprites = performance.getEntriesByType('resource').filter((entry) => entry.name.includes('/assets/crops-v3/') || entry.name.includes('/assets/art/trees/'));
+    return {
+      unlockedSeeds: document.querySelectorAll('.sheet--seed [data-seed-unlocked="1"]').length,
+      futureSeeds: document.querySelectorAll('.sheet--seed [data-seed-unlocked="0"]').length,
+      completedSpriteRequests: sprites.length,
+      spriteTransferBytes: sprites.reduce((total, entry) => total + entry.transferSize, 0),
+      largestSprites: [...sprites].sort((a, b) => b.transferSize - a.transferSize).slice(0, 5)
+        .map((entry) => ({ path: new URL(entry.name).pathname, bytes: entry.transferSize })),
+    };
+  });
+  writeFileSync(resolve(outputDir, 'seed-transfer-320.json'), `${JSON.stringify(seedTransfer, null, 2)}\n`);
+  console.log(`320px seed chooser sample: ${JSON.stringify(seedTransfer)}`);
+  assert.equal(seedTransfer.completedSpriteRequests, seedTransfer.unlockedSeeds,
+    'a closed future-unlock section should not download its hidden sprites');
+  assert.ok(seedTransfer.spriteTransferBytes <= 300_000,
+    `starter seed sprites exceed 300 KB: ${seedTransfer.spriteTransferBytes}`);
   await auditAccessibility(page, 'seed-320');
   await page.locator('.seed-search-disclosure > summary').click();
   await page.locator('#seed-search').fill('ngo');
@@ -196,6 +217,11 @@ try {
   assert.equal(await page.locator('.seed-card[data-seed-name="Ngô"]').isDisabled(), true);
   assert.equal(await page.locator('.seed-future').getAttribute('open'), '',
     'search should reveal a locked matching seed with its unlock level');
+  const futureCorn = page.locator('.seed-card[data-seed-name="Ngô"] > img.seed-sprite');
+  await futureCorn.scrollIntoViewIfNeeded();
+  await futureCorn.evaluate((image) => image.decode());
+  assert.ok(await futureCorn.evaluate((image) => image.naturalWidth > 0),
+    'revealing a future seed should still load its deferred sprite');
   await page.locator('#seed-search').fill('ca rot');
   assert.equal(await page.locator('.sheet--seed .seed-card:visible').count(), 1,
     'seed search should ignore Vietnamese accents');
@@ -525,6 +551,7 @@ try {
   await checkNoOverflow(page, '320px seed finder');
   await auditAccessibility(page, 'seed-finder-320');
   await page.locator('.seed-card[data-seed-name="Cà phê"]').scrollIntoViewIfNeeded();
+  await page.locator('.seed-card[data-seed-name="Cà phê"] > img.seed-sprite').evaluate((image) => image.decode());
   await page.screenshot({ path: resolve(outputDir, 'seed-finder-320.png') });
   await page.locator('#seed-search').fill('');
   await page.locator('[data-seed-sort="time"]').click();
