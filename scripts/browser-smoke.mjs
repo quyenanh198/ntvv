@@ -504,6 +504,30 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'quail-barn-320.png') });
   await page.keyboard.press('Escape');
 
+  const barnGoldBefore = db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold;
+  const barnFeedBefore = db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'thucan'").get()?.qty || 0;
+  db.prepare('UPDATE farmers SET gold = 400 WHERE user_id = 1').run();
+  db.prepare("DELETE FROM inventory WHERE owner_id = 1 AND item = 'thucan'").run();
+  const hungryQuails = [1, 2].map(() => Number(db.prepare("INSERT INTO animals (owner_id, kind, ready_at) VALUES (1, 'cut', NULL)").run().lastInsertRowid));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-sheet="more"]').first().click();
+  await page.locator('[data-sheet="barns"]').click();
+  await page.locator('[data-barn="cut"]').click();
+  assert.match(await page.locator('.barn-feed-help').innerText(), /Thiếu 2 túi/);
+  const maxQuails = page.locator('[data-buy-animal="cut"][data-count="max"]');
+  assert.match(await maxQuails.innerText(), /1 con · 350 vàng/);
+  assert.equal(await page.locator('[data-feed-kind="cut"]').isDisabled(), true);
+  await checkNoOverflow(page, '320px hungry barn');
+  await auditAccessibility(page, 'barn-320');
+  await page.locator('.barn-feed-help').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'barn-feed-help-320.png') });
+  await page.locator('.barn-feed-help [data-sheet="shop"]').click();
+  assert.equal(await page.locator('[data-buy="thucan"]').count(), 3, 'feed shortcut should open feed purchase controls');
+  await page.keyboard.press('Escape');
+  for (const id of hungryQuails) db.prepare('DELETE FROM animals WHERE id = ?').run(id);
+  db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(barnGoldBefore);
+  if (barnFeedBefore) db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'thucan', ?)").run(barnFeedBefore);
+
   const levelTwentyXp = Array.from({ length: 19 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, xp) => sum + xp, 0);
   db.prepare('UPDATE farmers SET xp = ? WHERE user_id = 1').run(levelTwentyXp);
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -582,7 +606,9 @@ try {
   await auditAccessibility(page, 'fishing-320');
   await page.locator('#fish-preview').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'fishing-stock-320.png') });
+  const pondStockResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/fish-stock') && response.request().method() === 'POST');
   await page.locator('#btn-fish-stock').click();
+  assert.equal((await pondStockResponse).status(), 200);
   assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, 50);
   const stockedBatch = db.prepare("SELECT id, qty FROM fish_batches WHERE owner_id = 1 AND species = 'luon' ORDER BY id DESC LIMIT 1").get();
   assert.equal(stockedBatch.qty, 2, 'stocking should match the capped preview');
