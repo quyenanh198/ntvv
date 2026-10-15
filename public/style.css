@@ -1903,7 +1903,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .barn-hunger { margin: .5rem 0; color: #65400c; font-size: .9rem; font-weight: 700; }
 .barn-filters { display: flex; flex-wrap: wrap; gap: .4rem; margin: .7rem 0; }
 .barn-filters button, .sheet--barns button { min-height: 44px; }
-.barn-filters [aria-pressed="true"] { background: #35652e; color: #fff; border-color: #23491e; }
+.barn-filters button.gbtn[aria-pressed="true"] { background: #35652e; color: #fff; border-color: #23491e; }
 .sheet--barns .barn-actions .btn-mini { white-space: normal; }
 .barn-head { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: .4rem; align-items: center; }
 .barn-head > img { width: 44px; height: 44px; object-fit: contain; }

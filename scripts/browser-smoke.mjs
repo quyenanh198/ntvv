@@ -518,6 +518,8 @@ try {
   assert.equal(await page.locator('.barn-card:visible').count(), 1);
   assert.match(await page.locator('.barn-card:visible .barn-hunger').innerText(), /2 con đói · cần 2 túi/);
   assert.equal(await hungryBarnFilter.getAttribute('aria-pressed'), 'true');
+  assert.equal(await hungryBarnFilter.evaluate((button) => getComputedStyle(button).backgroundColor), 'rgb(53, 101, 46)',
+    'the selected barn filter must have its visible green treatment');
   assert.equal(await hungryBarnFilter.evaluate((button) => button === document.activeElement), true);
   assert.match(await page.locator('.barn-card:visible [data-count="max"]').innerText(), /1 con · 350 vàng/);
   await checkNoOverflow(page, '320px hungry barn overview');
