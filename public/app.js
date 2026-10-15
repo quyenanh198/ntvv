@@ -1234,24 +1234,35 @@
 
     if (t === 'quests') {
       const d = m.daily;
-      const rows = d.quests.map((q) => {
+      const activities = {
+        harvest: { farm: true, label: 'Ra ruộng' }, sow: { farm: true, label: 'Ra ruộng' },
+        deliver: { sheet: 'orders', level: DATA.config.orderUnlockLevel, label: 'Xem đơn hàng' },
+        process: { sheet: 'mill', level: Math.min(...Object.values(DATA.config.machines).map((machine) => machine.level)), label: 'Mở chế biến' },
+        feed: { sheet: 'barns', level: DATA.config.chicken.level, label: 'Xem chuồng trại' },
+        sell: { sheet: 'inventory', label: 'Mở kho bán hàng' },
+        fish: { sheet: 'fishing', level: DATA.config.fishing.level, label: 'Đi câu cá' },
+      };
+      const rows = [...d.quests].sort((a, b) => Number(a.progress >= a.target) - Number(b.progress >= b.target)).map((q) => {
         const done = q.progress >= q.target;
-        return `<div class="quest-row${done ? ' quest-row--done' : ''}">
-          <span class="q-emoji">${q.emoji}</span>
-          <span class="seed-info">
-            <span class="seed-name">${q.name}</span>
-            <div class="q-track"><i style="width:${Math.round((q.progress / q.target) * 100)}%"></i></div>
-          </span>
-          <span class="q-right">${done ? '✅' : `${q.progress}/${q.target}`}<div class="seed-meta">${q.gold} ${COIN} +${q.exp}EXP${q.stars ? ` ${q.stars}${STAR}` : ''}</div></span>
-        </div>`;
+        const activity = activities[q.id];
+        const action = done ? `<span class="festival-claimed">${d.chestClaimed ? 'Đã nhận thưởng' : 'Đã hoàn tất'}</span>`
+          : m.level < (activity.level || 1) ? `<button class="gbtn" disabled>Mở ở cấp ${activity.level}</button>`
+          : `<button class="gbtn gbtn--green" ${activity.farm ? 'data-festival-farm' : `data-sheet="${activity.sheet}"`}>${activity.label}</button>`;
+        return `<article class="festival-card${done ? ' festival-card--claimed' : ''}" data-daily-quest="${q.id}" aria-labelledby="daily-${q.id}">
+          <div class="festival-card-heading"><h4 id="daily-${q.id}"><span aria-hidden="true">${q.emoji}</span> ${esc(q.name)}</h4><span class="festival-status">${q.progress}/${q.target}</span></div>
+          <div class="q-track" role="progressbar" aria-label="Tiến độ ${esc(q.name)}" aria-valuemin="0" aria-valuemax="${q.target}" aria-valuenow="${Math.min(q.progress, q.target)}"><i style="width:${Math.min(100, Math.round((q.progress / q.target) * 100))}%"></i></div>
+          <div class="festival-card-footer"><span class="festival-reward">Thưởng: ${q.gold.toLocaleString('vi')} ${COIN} +${q.exp} EXP${q.stars ? ` +${q.stars}${STAR}` : ''}</span>${action}</div>
+        </article>`;
       }).join('');
       const canChest = d.done >= d.required && !d.chestClaimed;
       return sheetShell(
         `🧾 Nhiệm vụ ngày <span class="sheet-coins">${d.done}/${d.required} ✅</span>`,
-        `${rows}
-         <button class="btn gbtn ${canChest ? 'gbtn--gold' : 'gbtn--green'}" id="btn-chest" ${canChest ? '' : 'disabled'} style="width:100%;margin-top:0.5rem">
+        `<p class="festival-summary">Đã xong ${d.done} nhiệm vụ · ${d.chestClaimed ? 'Đã mở rương hôm nay' : `cần ${Math.max(0, d.required - d.done)} nhiệm vụ nữa để mở rương`}.</p>
+         <p class="sheet-note">Mở rương nhận thưởng các nhiệm vụ đã xong. Sau khi mở, mỗi nhiệm vụ còn lại tự trả thưởng khi hoàn tất.</p>
+         <button class="btn gbtn ${canChest ? 'gbtn--gold' : 'gbtn--green'}" id="btn-chest" ${canChest ? '' : 'disabled'} style="width:100%;margin-bottom:.7rem">
            ${d.chestClaimed ? 'Mai lại có rương mới 🎁' : canChest ? '🎁 Mở rương ngày!' : `🎁 Xong ${d.required} nhiệm vụ để mở rương`}
-         </button>`,
+         </button>${rows}`,
+        'sheet--quests',
       );
     }
 

@@ -554,10 +554,17 @@ export function buildApp({ config, db, logger = true }) {
   }
 
   function bumpQuest(userId, questId, by = 1) {
-    const d = getDaily(userId);
-    d.counters[questId] = (d.counters[questId] || 0) + by;
-    db.prepare('UPDATE daily SET counters_json = ? WHERE owner_id = ? AND day = ?')
-      .run(JSON.stringify(d.counters), userId, d.day);
+    db.transaction(() => {
+      const d = getDaily(userId);
+      const before = d.counters[questId] || 0;
+      d.counters[questId] = before + by;
+      db.prepare('UPDATE daily SET counters_json = ? WHERE owner_id = ? AND day = ?')
+        .run(JSON.stringify(d.counters), userId, d.day);
+      const quest = DAILY_QUESTS.find((entry) => entry.id === questId);
+      if (d.chest_claimed && quest && before < quest.target && d.counters[questId] >= quest.target) {
+        grant(userId, { gold: quest.gold * GOLD_MULT, xp: quest.exp, stars: quest.stars || 0 });
+      }
+    })();
   }
 
   // ---- Chuồng trại: cột cấp theo loại ------------------------------------
