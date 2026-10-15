@@ -1335,11 +1335,12 @@
             <div class="seed-meta">đã nhận ${w.filled}/${w.qty} · trả ${w.price.toLocaleString('vi')} ${COIN}/cái</div></span>
           <button class="gbtn btn-mini" data-want-cancel="${w.id}">Huỷ · hoàn ${((w.qty - w.filled) * w.price).toLocaleString('vi')}</button>
         </div>`).join('');
-      const others = mk.others.map((w) => {
+      const fillable = mk.others.filter((want) => (m.inventory[want.item] || 0) > 0).length;
+      const others = [...mk.others].sort((a, b) => Number((m.inventory[b.item] || 0) > 0) - Number((m.inventory[a.item] || 0) > 0)).map((w) => {
         const have = m.inventory[w.item] || 0;
         const rem = w.qty - w.filled;
         const can = Math.min(have, rem);
-        return `<div class="inv-row" data-want="${w.id}">${itemImg(w.item)}
+        return `<div class="inv-row" data-want="${w.id}" data-want-price="${w.price}" data-want-can="${can > 0}">${itemImg(w.item)}
           <span class="seed-info"><span class="seed-name">${esc(w.ownerName)} cần ${itemInfo(w.item)?.name || w.item}</span>
             <div class="seed-meta">còn ${rem}/${w.qty} · trả <b>${w.price.toLocaleString('vi')}</b> ${COIN}/cái · bạn có ${have}</div></span>
           ${can > 0 ? `<span class="btn-group"><span class="qty-ctl">
@@ -1364,7 +1365,12 @@
           <p class="sheet-note" id="want-preview" role="status" aria-live="polite"></p>
         </div>
         <div class="machine-block"><h4>🧾 Tin của tôi</h4>${mine || '<p class="sheet-note">Chưa có tin nào.</p>'}</div>
-        <div class="machine-block"><h4>🏘️ Làng đang cần</h4>${others || '<p class="sheet-note">Chưa ai đăng tin — bạn đăng trước đi!</p>'}</div>`,
+        <div class="machine-block"><h4>🏘️ Làng đang cần</h4>
+          <label class="want-catalog-search" for="want-board-search">Tìm người mua hoặc mặt hàng<input id="want-board-search" type="search" value="${esc(sheet.wantBoardQuery || '')}" /></label>
+          <div class="inv-groups" role="group" aria-label="Lọc tin thu mua"><button type="button" data-want-view="all" aria-pressed="${!sheet.wantBoardView || sheet.wantBoardView === 'all'}">Tất cả (${mk.others.length})</button><button type="button" data-want-view="available" aria-pressed="${sheet.wantBoardView === 'available'}">Có thể bán (${fillable})</button></div>
+          <p class="sheet-note" id="want-board-count" role="status" aria-live="polite"></p>
+          <p class="sheet-note" id="want-board-empty" hidden>Không có tin phù hợp. Xóa tìm kiếm hoặc chọn Tất cả.</p>
+          ${others || '<p class="sheet-note">Chưa ai đăng tin — bạn đăng trước đi!</p>'}</div>`,
       );
     }
 
@@ -2232,6 +2238,40 @@
     document.getElementById('want-item')?.addEventListener('change', wantPreview);
     document.getElementById('want-qty')?.addEventListener('input', wantPreview);
     filterWantCatalog();
+    const filterWantBoard = () => {
+      const count = document.getElementById('want-board-count');
+      if (!count) return;
+      const query = normalizeSearch(sheet.wantBoardQuery || '').trim();
+      let visible = 0;
+      const rows = document.querySelectorAll('[data-want]');
+      rows.forEach((row) => {
+        row.hidden = (sheet.wantBoardView === 'available' && row.dataset.wantCan !== 'true')
+          || !normalizeSearch(row.querySelector('.seed-name').textContent).includes(query);
+        if (!row.hidden) visible += 1;
+      });
+      document.querySelectorAll('[data-want-view]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.wantView === (sheet.wantBoardView || 'all'))));
+      count.textContent = `${visible} tin phù hợp`;
+      document.getElementById('want-board-empty').hidden = visible > 0 || rows.length === 0;
+    };
+    document.getElementById('want-board-search')?.addEventListener('input', (event) => {
+      sheet.wantBoardQuery = event.currentTarget.value; filterWantBoard();
+    });
+    document.querySelectorAll('[data-want-view]').forEach((button) => button.addEventListener('click', () => {
+      sheet.wantBoardView = button.dataset.wantView; filterWantBoard();
+    }));
+    filterWantBoard();
+    document.querySelectorAll('[data-want] .qty-input').forEach((input) => {
+      const update = () => {
+        const row = input.closest('[data-want]');
+        const button = row.querySelector('[data-want-fill]');
+        const n = Number(input.value);
+        const valid = Number.isSafeInteger(n) && n >= 1 && n <= Number(input.max);
+        button.disabled = !valid;
+        button.textContent = valid ? `Bán ${n} · +${(n * Number(row.dataset.wantPrice)).toLocaleString('vi')} vàng` : `Nhập từ 1 đến ${input.max}`;
+      };
+      input.addEventListener('input', update);
+      update();
+    });
 
     document.getElementById('btn-lb')?.addEventListener('click', async () => {
       const r = await run(async () => {
@@ -2578,6 +2618,7 @@
         const input = row.querySelector('.qty-input');
         const max = Number(input.max) || 999;
         input.value = Math.max(1, Math.min(max, (Number(input.value) || 1) + Number(el.dataset.qstep)));
+        input.dispatchEvent(new Event('input'));
         const btn = row.querySelector('[data-sell]:not([data-qty])');
         if (btn) btn.textContent = `Bán ${input.value}`;
       }));

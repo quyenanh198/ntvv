@@ -73,3 +73,7 @@ Daily quests now use readable cards with numeric progress, accessible progress b
 ## Trade catalog search and escrow preview
 
 The buy-request form now filters its catalog using accent-insensitive search, reports a live matching count, and selects the first matching item when needed. No matches disable the selector and submission with recovery guidance. The escrow preview accepts only whole quantities from 1 to 999, shows missing gold, and explains the five-listing limit. CI exercises unaccented wheat search, invalid quantities, unaffordable escrow, no results, recovery to a valid listing, and the existing two-player transfer. A mobile filtered-catalog screenshot is saved for review.
+
+## Seller trade discovery and totals
+
+Village buy requests now put fillable listings first and offer counted All and Can sell filters plus accent-insensitive buyer/item search. Filters combine and report matching counts, with empty guidance. Seller buttons show quantity and total proceeds, update on typing or step controls, and disable invalid fractional or out-of-range quantities. The mobile two-player walkthrough exercises no-match recovery, available filtering, an invalid quantity, step-control recovery, accessibility, and the final transfer with both balances checked.
