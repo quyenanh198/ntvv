@@ -104,6 +104,52 @@ const COLLECTIONS = [
   { id: 'first_harvests', name: 'Vụ mùa đầu tiên', items: ['luami', 'carot', 'ngo'], gold: 400, gems: 0 },
   { id: 'village_flavors', name: 'Hương vị làng quê', items: ['rauthom', 'toi', 'sa', 'cachua', 'ot'], gold: 2000, gems: 2 },
 ];
+const positiveId = (value) => Number.isSafeInteger(value) && value > 0;
+const plotIndex = (value) => Number.isSafeInteger(value) && value >= 0 && value < MAX_PLOTS;
+const catalogKey = (value) => typeof value === 'string' && value.length > 0;
+const optional = (validate) => (value) => value === undefined || validate(value);
+const MUTATION_TARGET_FIELDS = new Map(Object.entries({
+  plant: { idx: plotIndex, crop: catalogKey },
+  'plant-all': { crop: catalogKey },
+  harvest: { idx: plotIndex },
+  water: { idx: plotIndex, ownerId: optional(positiveId) },
+  poach: { ownerId: positiveId, idx: plotIndex },
+  'poach-all': { ownerId: positiveId },
+  inspect: { ownerId: positiveId, idx: plotIndex },
+  'harvest-help': { ownerId: positiveId, idx: optional(plotIndex), all: optional((value) => typeof value === 'boolean') },
+  'water-help-all': { ownerId: positiveId },
+  sell: { item: catalogKey },
+  buy: { item: catalogKey },
+  'want-create': { item: catalogKey },
+  'want-cancel': { id: positiveId },
+  'want-fill': { id: positiveId },
+  'buy-animal': { kind: catalogKey },
+  feed: { kind: optional(catalogKey) },
+  collect: { kind: optional(catalogKey) },
+  'machine-run': { machine: catalogKey, recipe: catalogKey },
+  'machine-collect': { machine: catalogKey, recipe: optional(catalogKey) },
+  mill: { recipe: catalogKey },
+  'order-deliver': { id: positiveId },
+  'order-discard': { id: positiveId },
+  'collection-claim': { id: catalogKey },
+  'gold-give': { toId: positiveId },
+  'gold-ask': { toId: positiveId },
+  'gold-request-act': { id: positiveId, action: (value) => ['cancel', 'decline', 'pay'].includes(value) },
+  'machine-upgrade': { machine: catalogKey },
+  'luxury-buy': { item: catalogKey },
+  'luxury-equip': { item: optional((value) => typeof value === 'string'), kind: optional(catalogKey) },
+  speedup: { target: (value) => ['plot', 'machine', 'mill'].includes(value), idx: optional(plotIndex), kind: optional(catalogKey), recipe: optional(catalogKey) },
+  'skill-learn': { id: catalogKey },
+  'poach-animal': { ownerId: positiveId },
+  'poach-machine': { ownerId: positiveId },
+  'plant-help': { ownerId: positiveId },
+  'plant-tree': { idx: plotIndex, tree: catalogKey },
+  'remove-tree': { idx: plotIndex },
+  'upgrade-barn': { kind: catalogKey },
+  'fish-stock': { species: catalogKey },
+  'fish-harvest': { id: optional(positiveId) },
+  'fest-claim': { id: positiveId },
+}));
 
 export function buildApp({ config, db, logger = true }) {
   const app = Fastify({ logger, trustProxy: true });
@@ -289,6 +335,24 @@ export function buildApp({ config, db, logger = true }) {
       // Invalid Origin and Host values fail closed.
     }
     return reply.code(403).send({ error: 'cross_origin_request' });
+  }
+
+  async function requireMutationTargets(request, reply) {
+    if (request.method !== 'POST') return;
+    const body = request.body;
+    if (body === null || (body !== undefined && (typeof body !== 'object' || Array.isArray(body)))) {
+      return reply.code(400).send({ error: 'bad_request' });
+    }
+    const route = request.routeOptions.url.split('/').pop();
+    const fields = MUTATION_TARGET_FIELDS.get(route);
+    if (fields && Object.entries(fields).some(([field, validate]) => !validate(body?.[field]))) {
+      return reply.code(400).send({ error: 'bad_request' });
+    }
+    if ((route === 'harvest-help' && body?.all !== true && !plotIndex(body?.idx))
+      || (route === 'speedup' && body?.target === 'plot' && !plotIndex(body?.idx))
+      || (route === 'speedup' && body?.target === 'machine' && !catalogKey(body?.kind))) {
+      return reply.code(400).send({ error: 'bad_request' });
+    }
   }
 
   // ---- Push qua Chat ------------------------------------------------------
@@ -945,6 +1009,7 @@ export function buildApp({ config, db, logger = true }) {
   app.register(
     async (api) => {
       api.addHook('preHandler', requireSameOriginMutation);
+      api.addHook('preHandler', requireMutationTargets);
       api.addHook('preHandler', requireFarmer);
 
       api.get('/state', async (request) => {
@@ -1176,7 +1241,7 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/water', async (request, reply) => {
         const { ownerId: rawOwner, idx } = request.body ?? {};
         const me = request.farmer;
-        const ownerId = Number.isInteger(rawOwner) ? rawOwner : me.user_id;
+        const ownerId = rawOwner ?? me.user_id;
         const water = runJournaledMutation(request, 'water', () => {
           const owner = getFarmer.get(ownerId);
           const plot = owner && getPlot.get(ownerId, idx);
@@ -1313,7 +1378,7 @@ export function buildApp({ config, db, logger = true }) {
           if (ownerId === me.user_id) return { error: 'own_farm' };
           const owner = getFarmer.get(ownerId);
           if (!owner) return { error: 'no_farm' };
-          const plot = getPlot.get(ownerId, Number(idx));
+          const plot = getPlot.get(ownerId, idx);
           if (!plot || !plot.crop || plot.tree) return { error: 'no_plot' };
           const now = Date.now();
           if (lastAction.get(ownerId, plot.idx, plot.planted_at, me.user_id, 'inspect')) return { error: 'already_inspected' };
@@ -1349,7 +1414,7 @@ export function buildApp({ config, db, logger = true }) {
           if (!owner) return { error: 'no_farm' };
           const now = Date.now();
           let plots = ripePlotsOf(owner, now);
-          if (!all) plots = plots.filter((p) => p.idx === Number(idx));
+          if (!all) plots = plots.filter((p) => p.idx === idx);
           if (!plots.length) return { error: 'nothing_ready' };
           const got = {};
           let riskyN = 0;
@@ -1867,7 +1932,7 @@ export function buildApp({ config, db, logger = true }) {
         const { toId, amount } = request.body ?? {};
         const me = request.farmer;
         const n = parseAmount(amount);
-        const to = getFarmer.get(Number(toId));
+        const to = getFarmer.get(toId);
         if (!to || to.user_id === me.user_id) return reply.code(400).send({ error: 'no_farm' });
         if (!n) return reply.code(400).send({ error: 'bad_amount' });
         const transfer = runJournaledMutation(request, 'gold-give', () => {
@@ -1889,7 +1954,7 @@ export function buildApp({ config, db, logger = true }) {
         const n = parseAmount(amount);
         if (!n) return reply.code(400).send({ error: 'bad_amount' });
         const ask = runJournaledMutation(request, 'gold-ask', () => {
-          const to = getFarmer.get(Number(toId));
+          const to = getFarmer.get(toId);
           if (!to || to.user_id === me.user_id) return { error: 'no_farm' };
           const open = db.prepare("SELECT COUNT(*) n FROM gold_requests WHERE from_id = ? AND status = 'open'").get(me.user_id).n;
           if (open >= GOLD_ASK_MAX_OPEN) return { error: 'too_many_requests' };
@@ -1914,7 +1979,7 @@ export function buildApp({ config, db, logger = true }) {
         const { id, action } = request.body ?? {};
         const me = request.farmer;
         const act = runJournaledMutation(request, 'gold-request-act', () => {
-          const row = db.prepare('SELECT * FROM gold_requests WHERE id = ?').get(Number(id));
+          const row = db.prepare('SELECT * FROM gold_requests WHERE id = ?').get(id);
           if (!row || row.status !== 'open') return { error: 'request_closed' };
           const now = Date.now();
           if (action === 'cancel') {
@@ -2506,7 +2571,7 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/fest-claim', async (request, reply) => {
         const { id } = request.body ?? {};
         const me = request.farmer;
-        const ms = FESTIVAL.milestones.find((x) => x.id === Number(id));
+        const ms = FESTIVAL.milestones.find((x) => x.id === id);
         if (!ms) return reply.code(400).send({ error: 'bad_request' });
         const claim = runJournaledMutation(request, 'fest-claim', () => {
           const f = getFest(me.user_id);
