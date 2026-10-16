@@ -276,3 +276,5 @@ Six more snail-stall products now have matching painted sprites: butter and scal
 The next six snail-stall icons cover coconut and butter rice snails, lemongrass and coconut-sauce coconut snails, and satay and cheese jackfruit snails. Transparent full-resolution sources and 128px game exports follow the existing convention; exact built-in imagegen prompts and the style reference are in [snail-stall-art-prompts.md](snail-stall-art-prompts.md).
 
 Six more snail-stall products use distinct painted icons: cheese and tamarind striped snails, lemongrass and chili-salt flower snails, and garlic and satay stone snails. Transparent generated sources and 128px exports follow the established convention. Exact built-in imagegen prompts and style reference are in [snail-stall-art-prompts.md](snail-stall-art-prompts.md).
+
+The spiny-snail, razor-clam, and conch batch adds six dish icons with distinct shell silhouettes and cooking treatments. Transparent generated sources and 128px exports follow the existing convention. Exact built-in imagegen prompts and the style reference are recorded in [snail-stall-art-prompts.md](snail-stall-art-prompts.md).
