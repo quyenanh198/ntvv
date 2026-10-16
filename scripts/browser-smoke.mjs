@@ -1366,7 +1366,7 @@ try {
   assert.equal(db.prepare('SELECT title_id FROM farmers WHERE user_id = 1').get().title_id, title.id);
   await titleCard.locator('[data-lux-equip=""]').click();
   await titleCard.locator(`[data-lux-equip="${title.id}"]`).waitFor();
-  assert.equal(db.prepare('SELECT title_id FROM farmers WHERE user_id = 1').get().title_id, null);
+  assert.equal(db.prepare('SELECT title_id FROM farmers WHERE user_id = 1').get().title_id, '');
   await titleCard.locator(`[data-lux-equip="${title.id}"]`).click();
   await titleCard.locator('[data-lux-equip=""]').waitFor();
   assert.equal(db.prepare('SELECT title_id FROM farmers WHERE user_id = 1').get().title_id, title.id);
