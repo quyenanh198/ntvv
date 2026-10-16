@@ -56,6 +56,11 @@ const staticRows = staticPaths.map((path) => {
 const completeCrops = cropRows.filter((row) => row.includes('| v3 PNG | v3 PNG |')).length;
 const picturedFruit = Object.values(TREES).filter((tree) => asset(`assets/art/trees/${tree.id}-qua.png`)).length;
 const picturedProducts = Object.values(GOODS).filter((good) => productPaths[good.id] && asset(productPaths[good.id])).length;
+const familyRows = Object.values(MACHINES).map((machine) => {
+  const products = Object.values(GOODS).filter((good) => good.source === machine.id);
+  const pictured = products.filter((good) => productPaths[good.id] && asset(productPaths[good.id])).length;
+  return `| ${machine.name} | ${machine.id} | ${pictured}/${products.length} |`;
+});
 const lines = [
   '# Farm art inventory',
   '',
@@ -71,6 +76,8 @@ const lines = [
   '| Animal | ID | Unlock | Current art |', '| --- | --- | ---: | --- |', ...animalRows,
   '', '## Machines', '',
   '| Machine | ID | Unlock | Current art |', '| --- | --- | ---: | --- |', ...machineRows,
+  '', '## Processed product families', '',
+  '| Family | Source ID | Products with icons |', '| --- | --- | ---: |', ...familyRows,
   '', '## Products', '',
   '| Product | ID | Source | Current art |', '| --- | --- | --- | --- |', ...productRows,
   '', '## Static client asset references', '',

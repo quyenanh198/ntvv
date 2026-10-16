@@ -280,3 +280,5 @@ Six more snail-stall products use distinct painted icons: cheese and tamarind st
 The spiny-snail, razor-clam, and conch batch adds six dish icons with distinct shell silhouettes and cooking treatments. Transparent generated sources and 128px exports follow the existing convention. Exact built-in imagegen prompts and the style reference are recorded in [snail-stall-art-prompts.md](snail-stall-art-prompts.md).
 
 The next six snail-stall icons cover chili-salt and lemongrass garlic-shell snails, coconut and butter jumping snails, and lemongrass and coconut olive snails. Transparent sources and 128px game exports follow the established convention. Exact built-in imagegen prompts and style reference are recorded in [snail-stall-art-prompts.md](snail-stall-art-prompts.md).
+
+The final six snail-stall icons cover satay and cheese spider conch, cheese and tamarind limpets, and lemongrass and chili-salt trumpet snails. All 42 snail-stall products now have individual icons. Transparent sources and 128px exports follow the established convention; exact prompts are in [snail-stall-art-prompts.md](snail-stall-art-prompts.md).
