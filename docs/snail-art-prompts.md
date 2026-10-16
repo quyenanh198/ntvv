@@ -2,6 +2,19 @@
 
 Built-in imagegen generated these six inventory icons. Full-resolution sources are in `asset/source_products/v3/`; matching 128px transparent game exports are in `public/assets/products-v3/`. The shared item renderer uses them for inventory, orders, trades, and recipe ingredients.
 
+## Second raw-shell batch
+
+These six additional icons use built-in imagegen and the same source/export directories. Each exact prompt consists of this shared prefix followed by its subject below:
+
+> Use case: stylized-concept. Asset type: single inventory sprite for a cozy Vietnamese farm game. Hand-painted watercolor/gouache, softly shaded warm upper-left light, subtle dark contour, clean readable silhouette at 48px, three-quarter view, centered with generous padding in a square composition. True transparent background right to shell edges, no glow, floor, or ground shadow. No scene, text, plate, garnish, watermark, face, or tentacles. Primary request:
+
+- `spider-conch-shell.png`: one tan spider-conch shell with a broad flared fan-shaped lip and five finger-like projections; visible cream opening, modest spiral body
+- `limpet-shell.png`: one low conical limpet shell, oval base, radial chocolate-brown ribs on warm ivory, viewed slightly from above; no spiral, no soft body
+- `trumpet-snail-shell.png`: one large tan trumpet snail shell with a long pointed stepped spiral spire, broad ivory opening and dark brown mottled bands
+- `razor-clam-shell.png`: two long narrow paired razor-clam shells grouped closely, warm olive-brown outer valves with ivory inner edge, distinctive straight elongated rounded-rectangle silhouette
+- `spiny-snail-shell.png`: one small warm brown murex-like spiny sea snail shell, compact spiral body with several thick rounded branching spines, ivory opening
+- `conch-shell.png`: one large peach and cream conch shell with a broad smooth flared lip, short knobby spiral spire, warm pink inner opening
+
 ## Exact generation prompts
 
 - `apple-snail.png`: Use case: stylized-concept. Asset type: single inventory sprite for a cozy Vietnamese farm game. Hand-painted watercolor/gouache, softly shaded warm upper-left light, subtle dark contour, clean readable silhouette at 48px, three-quarter view, centered with generous padding. True transparent background, no scene, no text, no plate, no garnish, no watermark. Primary request: one freshwater apple snail shell, round olive-brown globular shell with a short spiral spire and broad dark opening, no cartoon face or tentacles.

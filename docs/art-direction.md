@@ -267,7 +267,7 @@ The next fish-oven batch follows the same transparent source and 256px export co
 
 The seafood fish-oven batch uses transparent high-resolution sources and 256px exports with matching stems: `fried-red-tilapia.png` (whole golden fried fish with red fins on a plate), `lemongrass-chili-eel.png` (stir-fried eel strips in a dark bowl), `steamed-lemongrass-crab.png` (orange crab in a bamboo steamer), and `satay-grilled-squid.png` (scored grilled squid with red chili glaze). Built-in imagegen prompts requested a single centered watercolor/gouache inventory icon, warm upper-left light, clear 80px silhouette, and no scene or lettering. All four were visually inspected before export.
 
-The first six raw-snail icons now have distinct shell shapes and patterns, replacing shared emoji in inventory, orders, trades, and recipe ingredients. Sources, export paths, and exact built-in imagegen prompts are recorded in [snail-art-prompts.md](snail-art-prompts.md). All six use 128px game exports with transparent backgrounds.
+The raw-snail icons use distinct shell shapes and patterns, replacing shared emoji in inventory, orders, trades, and recipe ingredients. Sources, export paths, and exact built-in imagegen prompts are recorded in [snail-art-prompts.md](snail-art-prompts.md). All use 128px game exports with transparent backgrounds. The second batch covers spider conch, limpets, trumpet snails, razor clams, spiny snails, and conch.
 
 The first six snail-stall dishes have individual transparent painted icons and 128px exports, matching the existing snack-stall snail bowl. Source/export paths and exact built-in imagegen prompts are recorded in [snail-stall-art-prompts.md](snail-stall-art-prompts.md).
 
