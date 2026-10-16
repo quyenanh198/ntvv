@@ -1656,28 +1656,32 @@
     if (t === 'skills') {
       const sk = m.skills;
       const tree = DATA.config.skillTree;
+      const allNodes = tree.branches.flatMap((branch) => branch.nodes);
+      const available = allNodes.filter((node) => sk.unlocked && (sk.learned[node.id] || 0) < tree.maxRank && sk.points >= node.cost * ((sk.learned[node.id] || 0) + 1)).length;
       const branches = tree.branches.map((b) => {
         const nodes = b.nodes.map((n) => {
           const rank = sk.learned[n.id] || 0;
           const maxed = rank >= tree.maxRank;
           const cost = n.cost * (rank + 1);
-          const can = !maxed && sk.points >= cost;
-          const pips = Array.from({ length: tree.maxRank }, (_, i) => `<i class="pip${i < rank ? ' pip--on' : ''}"></i>`).join('');
-          return `<div class="quest-row${maxed ? ' quest-row--done' : ''}">
-            <span class="q-emoji">${maxed ? '🏅' : rank ? '📗' : '🎓'}</span>
-            <span class="seed-info"><span class="seed-name">${n.name} <span class="pips">${pips}</span></span><div class="seed-meta">${n.desc}</div></span>
-            <span class="q-right">${maxed ? 'Tối đa' : can
-              ? `<button class="gbtn gbtn--gold btn-mini" data-skill-learn="${n.id}">${rank ? `Bậc ${rank + 1}` : 'Học'} (${cost}đ)</button>`
-              : `Bậc ${rank + 1}: ${cost} điểm`}</span>
-          </div>`;
+          const can = sk.unlocked && !maxed && sk.points >= cost;
+          return `<article class="festival-card skill-card" data-skill="${n.id}" data-skill-can="${can}" aria-labelledby="skill-${n.id}">
+            <div class="festival-card-heading"><h4 id="skill-${n.id}">${esc(n.name)}</h4><span class="festival-status">Bậc ${rank}/${tree.maxRank}</span></div>
+            <p class="festival-hint">${esc(n.desc)}</p>
+            <div class="festival-card-footer"><span class="festival-reward">${maxed ? 'Đã đạt bậc tối đa' : `Bậc kế: ${rank + 1} · ${cost} điểm`}</span>
+              ${maxed ? '' : `<button class="gbtn gbtn--gold" data-skill-learn="${n.id}" aria-label="Học bậc ${rank + 1}: ${esc(n.name)}, ${cost} điểm" ${can ? '' : 'disabled'}>Học bậc ${rank + 1}</button>`}</div>
+            ${maxed || can ? '' : `<p class="festival-hint">${!sk.unlocked ? `Mở ở cấp ${tree.unlockLevel}.` : `Thiếu ${cost - sk.points} điểm. Lên cấp để nhận thêm điểm.`}</p>`}
+          </article>`;
         }).join('');
-        return `<div class="machine-block"><h4>${b.emoji} ${b.name}</h4>${nodes}</div>`;
+        return `<section class="skill-branch"><h4>${b.emoji} ${b.name}</h4>${nodes}</section>`;
       }).join('');
       const canRespec = Date.now() >= sk.nextRespecAt;
       return sheetShell(
         `🎓 Kỹ năng <span class="sheet-coins">✨ ${sk.points} điểm</span>`,
-        `<p class="sheet-note">Mỗi cấp sau cấp ${tree.unlockLevel} tặng 1 điểm kỹ năng. Mỗi kỹ năng nâng được ${tree.maxRank} bậc, bậc sau tốn nhiều điểm hơn.</p>${branches}
-         ${Object.keys(sk.learned).length ? `<button class="btn btn-ghost" id="btn-skill-respec" ${canRespec && m.gems >= tree.respecGems ? '' : 'disabled'} style="width:100%">♻️ Hoàn trả toàn bộ điểm — ${tree.respecGems} ${GEM}${canRespec ? '' : ' (chờ đủ 7 ngày)'}</button>` : ''}`,
+        `<p class="sheet-note">Mỗi cấp sau cấp ${tree.unlockLevel} tặng 1 điểm kỹ năng. Mỗi kỹ năng nâng được ${tree.maxRank} bậc, bậc sau tốn nhiều điểm hơn.</p>
+         <div class="inv-groups" role="group" aria-label="Lọc kỹ năng"><button type="button" data-skill-view="all" aria-pressed="${!sheet.skillView || sheet.skillView === 'all'}">Tất cả (${allNodes.length})</button><button type="button" data-skill-view="available" aria-pressed="${sheet.skillView === 'available'}">Có thể học (${available})</button></div>
+         <p class="sheet-note skill-empty" hidden>Chưa đủ điểm cho kỹ năng nào. Lên cấp để nhận thêm điểm hoặc chọn Tất cả để xem các bậc tiếp theo.</p>${branches}
+         ${Object.keys(sk.learned).length ? `<div class="skill-respec"><button class="btn btn-ghost" id="btn-skill-respec" ${canRespec && m.gems >= tree.respecGems ? '' : 'disabled'}>♻️ Hoàn trả toàn bộ điểm — ${tree.respecGems} ${GEM}</button><p class="sheet-note">${!canRespec ? `Có thể hoàn điểm sau ${fmtDuration(sk.nextRespecAt - Date.now())}.` : m.gems < tree.respecGems ? `Thiếu ${tree.respecGems - m.gems} kim cương để hoàn điểm.` : 'Hoàn trả tất cả bậc đã học để chọn lại kỹ năng.'}</p></div>` : ''}`,
+        'sheet--skills',
       );
     }
 
@@ -2039,6 +2043,25 @@
         updateSeedFinder();
       });
       updateSeedFinder();
+    }
+    if (sheet?.type === 'skills') {
+      const updateSkillView = () => {
+        let visible = 0;
+        document.querySelectorAll('.skill-branch').forEach((branch) => {
+          let branchVisible = 0;
+          branch.querySelectorAll('[data-skill]').forEach((card) => {
+            card.hidden = sheet.skillView === 'available' && card.dataset.skillCan !== 'true';
+            if (!card.hidden) { visible += 1; branchVisible += 1; }
+          });
+          branch.hidden = branchVisible === 0;
+        });
+        document.querySelector('.skill-empty').hidden = visible > 0;
+        document.querySelectorAll('[data-skill-view]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.skillView === (sheet.skillView || 'all'))));
+      };
+      document.querySelectorAll('[data-skill-view]').forEach((button) => button.addEventListener('click', () => {
+        sheet.skillView = button.dataset.skillView; updateSkillView();
+      }));
+      updateSkillView();
     }
     if (sheet?.type === 'barns') {
       const updateBarnFilter = () => {
