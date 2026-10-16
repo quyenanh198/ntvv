@@ -380,6 +380,45 @@ try {
   await friendPage.reload({ waitUntil: 'domcontentloaded' });
   assert.match(await friendPage.locator('.coin-pill').first().innerText(), new RegExp(String(afterGift[1].gold)));
 
+  await page.locator('#btn-gold-ask').click();
+  assert.equal(await page.locator('#btn-gift-send').isDisabled(), true);
+  await page.locator('#gift-amount').fill('1.5');
+  assert.equal(await page.locator('#btn-gift-send').isDisabled(), true);
+  await page.locator('#gift-amount').fill(String(afterGift[0].gold + 1));
+  assert.equal(await page.locator('#btn-gift-send').isDisabled(), false, 'Requesting gold does not spend the requester balance');
+  await page.locator('#gift-amount').fill('7');
+  await page.locator('#gift-note').fill('Mua hạt giống');
+  assert.equal(await page.locator('#gift-note').getAttribute('maxlength'), '80');
+  assert.match(await page.locator('#gift-preview').innerText(), /chưa chuyển vàng/);
+  await checkNoOverflow(page, '320px gold request');
+  await auditAccessibility(page, 'gold-request-320');
+  await page.screenshot({ path: resolve(outputDir, 'gold-request-320.png') });
+  await page.locator('.sheet--gift [data-close]').last().click();
+  assert.equal(db.prepare('SELECT COUNT(*) n FROM gold_requests').get().n, 0, 'Cancelling creates no request');
+  await page.locator('#btn-gold-ask').click();
+  await page.locator('#gift-amount').fill('7');
+  await page.locator('#gift-note').fill('Mua hạt giống');
+  await page.locator('#btn-gift-send').click();
+  await page.locator('.sheet--gift').waitFor({ state: 'hidden' });
+  const goldRequest = db.prepare('SELECT * FROM gold_requests WHERE from_id = 1 AND to_id = 2').get();
+  assert.equal(goldRequest.amount, 7);
+  assert.equal(goldRequest.note, 'Mua hạt giống');
+  assert.equal(goldRequest.status, 'open');
+  assert.deepEqual(db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all(), afterGift,
+    'Sending a request must not move gold');
+  await friendPage.locator('[data-sheet="more"]').first().click();
+  await friendPage.locator('[data-sheet="money"]').click();
+  await friendPage.locator(`[data-gr-id="${goldRequest.id}"][data-gr-act="pay"]`).waitFor();
+  assert.match(await friendPage.locator('.sheet').innerText(), /Mua hạt giống/);
+  friendPage.once('dialog', (dialog) => dialog.accept());
+  await friendPage.locator(`[data-gr-id="${goldRequest.id}"][data-gr-act="pay"]`).click();
+  await friendPage.locator(`[data-gr-id="${goldRequest.id}"][data-gr-act="pay"]`).waitFor({ state: 'hidden' });
+  assert.equal(db.prepare('SELECT status FROM gold_requests WHERE id = ?').get(goldRequest.id).status, 'paid');
+  const afterRequest = db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all();
+  assert.equal(afterRequest[0].gold, afterGift[0].gold + 7);
+  assert.equal(afterRequest[1].gold, afterGift[1].gold - 7);
+  await friendPage.locator('.sheet [data-close]').first().click();
+
   await friendPage.locator('.plot[data-idx="0"][data-kind="harvest"]').click();
   await friendPage.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
   const friendWheatBeforeTrade = db.prepare("SELECT qty FROM inventory WHERE owner_id = 2 AND item = 'luami'").get().qty;
@@ -415,7 +454,7 @@ try {
   await page.locator('[data-want-cancel]').waitFor();
   const want = db.prepare("SELECT id, price FROM wants WHERE owner_id = 1 AND item = 'luami'").get();
   assert.ok(want);
-  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, afterGift[0].gold - want.price);
+  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, afterRequest[0].gold - want.price);
   await page.screenshot({ path: resolve(outputDir, 'trade-buyer-320.png') });
 
   await friendPage.locator('[data-sheet="more"]').first().click();
@@ -444,7 +483,7 @@ try {
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM wants WHERE id = ?').get(want.id).n, 0);
   assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 2 AND item = 'luami'").get().qty, friendWheatBeforeTrade - 1);
   assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty, 1);
-  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 2').get().gold, afterGift[1].gold + want.price);
+  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 2').get().gold, afterRequest[1].gold + want.price);
   await friendPage.screenshot({ path: resolve(outputDir, 'trade-seller-390.png') });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.dock-btn[data-sheet="inventory"]').click();
