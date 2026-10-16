@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 153/186 catalog products have PNG or SVG icons. 290 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 159/186 catalog products have PNG or SVG icons. 296 static asset paths appear in the client.
 
 ## Crops
 
@@ -213,14 +213,14 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Ốc đắng hấp sả | ocdanghapsa | quanoc | PNG art |
 | Ốc đắng nướng mỡ hành | ocdangnuongmohanh | quanoc | PNG art |
 | Ốc gai | ocgai | ocgai | emoji |
-| Ốc gai xào me | ocgaixaome | quanoc | emoji |
-| Ốc gai xào tỏi | ocgaixaotoi | quanoc | emoji |
+| Ốc gai xào me | ocgaixaome | quanoc | PNG art |
+| Ốc gai xào tỏi | ocgaixaotoi | quanoc | PNG art |
 | Ốc gạo | ocgao | ocgao | emoji |
 | Ốc gạo xào bơ | ocgaoxaobo | quanoc | PNG art |
 | Ốc gạo xào dừa | ocgaoxaodua | quanoc | PNG art |
 | Ốc giác | ocgiac | ocgiac | emoji |
-| Ốc giác hấp sả | ocgiachapsa | quanoc | emoji |
-| Ốc giác nướng mỡ hành | ocgiacnuongmohanh | quanoc | emoji |
+| Ốc giác hấp sả | ocgiachapsa | quanoc | PNG art |
+| Ốc giác nướng mỡ hành | ocgiacnuongmohanh | quanoc | PNG art |
 | Ốc hương | ochuong | ochuong | PNG art |
 | Ốc hương xào sa tế | ochuongxaosate | quanoc | PNG art |
 | Ốc hương xào tỏi | ochuongxaotoi | quanoc | PNG art |
@@ -235,8 +235,8 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Ốc mít nướng phô mai | ocmitnuongphomai | quanoc | PNG art |
 | Ốc mít xào sa tế | ocmitxaosate | quanoc | PNG art |
 | Ốc móng tay | ocmongtay | ocmongtay | emoji |
-| Ốc móng tay nướng mỡ hành | ocmongtaynuongmohanh | quanoc | emoji |
-| Ốc móng tay xào bơ | ocmongtayxaobo | quanoc | emoji |
+| Ốc móng tay nướng mỡ hành | ocmongtaynuongmohanh | quanoc | PNG art |
+| Ốc móng tay xào bơ | ocmongtayxaobo | quanoc | PNG art |
 | Ốc mỡ | ocmo | ocmo | PNG art |
 | Ốc mỡ luộc sả | ocmoluocsa | quanoc | PNG art |
 | Ốc mỡ rang muối ớt | ocmorangmuoiot | quanoc | PNG art |
@@ -436,6 +436,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/buffalo-cheese.png` | 79 KB |
 | `assets/products-v3/buffalo-milk.png` | 66 KB |
 | `assets/products-v3/butter-mud-creeper-snails.png` | 28 KB |
+| `assets/products-v3/butter-razor-clams.png` | 30 KB |
 | `assets/products-v3/butter-rice-snails.png` | 30 KB |
 | `assets/products-v3/butter.png` | 78 KB |
 | `assets/products-v3/buttered-corn.png` | 20 KB |
@@ -486,6 +487,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/garden-salad.png` | 22 KB |
 | `assets/products-v3/garlic-babylon-snails.png` | 24 KB |
 | `assets/products-v3/garlic-pond-snails.png` | 23 KB |
+| `assets/products-v3/garlic-spiny-snails.png` | 32 KB |
 | `assets/products-v3/garlic-stone-snails.png` | 31 KB |
 | `assets/products-v3/ginger-cake.png` | 89 KB |
 | `assets/products-v3/ginger-preserve.png` | 95 KB |
@@ -506,6 +508,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/lemongrass-moon-snails.png` | 30 KB |
 | `assets/products-v3/lemongrass-snails.png` | 24 KB |
 | `assets/products-v3/lemongrass-steamed-bitter-snails.png` | 26 KB |
+| `assets/products-v3/lemongrass-steamed-conch.png` | 30 KB |
 | `assets/products-v3/mango-smoothie.png` | 61 KB |
 | `assets/products-v3/milk-chocolate.png` | 78 KB |
 | `assets/products-v3/milk-tea.png` | 20 KB |
@@ -542,7 +545,9 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/satay-jackfruit-snails.png` | 30 KB |
 | `assets/products-v3/satay-stone-snails.png` | 27 KB |
 | `assets/products-v3/scallion-grilled-bitter-snails.png` | 30 KB |
+| `assets/products-v3/scallion-grilled-conch.png` | 31 KB |
 | `assets/products-v3/scallion-grilled-mud-creeper-snails.png` | 25 KB |
+| `assets/products-v3/scallion-grilled-razor-clams.png` | 32 KB |
 | `assets/products-v3/shrimp-fritters.png` | 27 KB |
 | `assets/products-v3/silk-ao-dai.png` | 77 KB |
 | `assets/products-v3/silk-fabric.png` | 102 KB |
@@ -554,6 +559,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/strawberry-yogurt.png` | 98 KB |
 | `assets/products-v3/sweet-potato-fritters.png` | 20 KB |
 | `assets/products-v3/tamarind-pond-snails.png` | 25 KB |
+| `assets/products-v3/tamarind-spiny-snails.png` | 29 KB |
 | `assets/products-v3/tamarind-striped-snails.png` | 29 KB |
 | `assets/products-v3/tea-bags.png` | 99 KB |
 | `assets/products-v3/tomato-sauce.png` | 20 KB |
