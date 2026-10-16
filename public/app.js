@@ -1592,7 +1592,7 @@
           <p class="festival-hint">${r.note ? `“${esc(r.note)}” · ` : ''}${fmtT(r.createdAt)}</p>
           <p class="festival-hint">${m.gold >= r.amount ? `Sau khi cho: còn ${(m.gold - r.amount).toLocaleString('vi')} vàng.` : `Thiếu ${(r.amount - m.gold).toLocaleString('vi')} vàng để cho. Bạn vẫn có thể từ chối.`}</p>
           <div class="festival-card-footer">
-            <button class="gbtn gbtn--gold btn-mini" data-gr-act="pay" data-gr-id="${r.id}" aria-label="Cho ${esc(r.fromName)} ${r.amount.toLocaleString('vi')} vàng" ${m.gold >= r.amount ? '' : 'disabled'}>Cho ${r.amount.toLocaleString('vi')} vàng</button>
+            <button class="gbtn gbtn--gold btn-mini" data-gr-act="pay" data-gr-id="${r.id}" aria-label="Cho ${r.amount.toLocaleString('vi')} vàng" ${m.gold >= r.amount ? '' : 'disabled'}>Cho ${r.amount.toLocaleString('vi')} vàng</button>
             <button class="gbtn btn-mini" data-gr-act="decline" data-gr-id="${r.id}" aria-label="Từ chối lời xin của ${esc(r.fromName)}">Từ chối</button>
           </div>
         </article>`).join('') : '<p class="sheet-note">Chưa ai xin tiền bạn 😌</p>';
