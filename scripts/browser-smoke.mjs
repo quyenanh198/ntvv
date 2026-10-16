@@ -1252,8 +1252,10 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'snail-stall-razor-clam-products-320.png') });
   await page.locator('.inv-row[data-item="ocnhayxaodua"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'snail-stall-jumping-products-320.png') });
+  await page.locator('[data-inventory-group="all"]').click();
   await page.locator('.inv-row[data-item="ocvunang"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'raw-shell-products-320.png') });
+  await page.locator('[data-inventory-group="products"]').click();
   await page.locator('.inv-row[data-item="ocvunangnuongphomai"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'snail-stall-limpet-products-320.png') });
   db.prepare('UPDATE daily SET counters_json = ?, chest_claimed = 0 WHERE owner_id = 1')
