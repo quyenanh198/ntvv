@@ -2368,6 +2368,10 @@ button, a, .plot, .side-btn, .gbtn, .hud-round, .coin-pill, .seed-card, .inv-row
 }
 
 .fish-farm { margin-top: 1rem; color: #4a2810; }
+.fishing-energy { padding: .7rem; margin-bottom: .6rem; background: #f0f6e6; color: #345130; border: 1px solid #a4b990; border-radius: 12px; }
+.fishing-energy p { font-size: .85rem; line-height: 1.5; margin: .35rem 0 0; }
+.fishing-energy-purchase { margin-top: .6rem; }
+.fishing-energy-purchase button { width: 100%; min-height: 44px; }
 .fish-farm h3, .fish-stock-title { margin: .75rem 0 .5rem; }
 .fish-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; margin: .7rem 0; }
 .fish-summary > div { padding: .65rem .4rem; border: 1px solid #caa76b; border-radius: 12px; background: #fff9ed; }

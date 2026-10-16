@@ -81,3 +81,7 @@ Village buy requests now put fillable listings first and offer counted All and C
 ## Ready reward hub
 
 The farm now shows a reward shortcut whenever a daily chest, next star milestone, collection, or festival milestone is claimable. It counts currently ready rewards and opens a hub with links to their existing claim screens. Claimed rewards leave the hub after state updates; the normal farm next action remains available separately. Mobile CI opens the hub with a ready daily chest and star milestone, checks accessibility and layout, follows both claim screens, and verifies that claimed entries disappear.
+
+## Fishing energy decisions
+
+Fishing now reads its regeneration interval from server state, including fast mode, instead of advertising three minutes when normal regeneration is one minute. The panel shows available casts and the wait until one cast is affordable. Energy purchases preview the actual amount allowed by the purchase cap, explain missing gems, and disable at the cap. The confirmation reports resulting energy instead of always claiming a 30-point gain. API tests cover normal and fast intervals; mobile CI checks empty energy with no gems and a capped purchase from 115 to 120, including the exact gem debit.

@@ -1626,6 +1626,11 @@
       const en = m.energy;
       const locked = m.level < cfg.level;
       const canFish = !locked && en.current >= cfg.energyCost;
+      const casts = Math.floor(en.current / cfg.energyCost);
+      const missingEnergy = Math.max(0, cfg.energyCost - en.current);
+      const waitForCast = missingEnergy ? (en.nextRegenMs || en.regenMs) + (missingEnergy - 1) * en.regenMs : 0;
+      const energyGain = Math.max(0, Math.min(DATA.config.energy.buyAmount, DATA.config.energy.buyCap - en.current));
+      const canBuyEnergy = energyGain > 0 && m.gems >= en.buyGems;
       const lootRows = cfg.loot.map((l) => {
         const info = itemInfo(l.id);
         return `<div class="inv-row">
@@ -1638,10 +1643,11 @@
       return sheetShell(
         `🎣 Hồ câu cá cấp ${m.pond.level} <span class="sheet-coins">⚡ ${en.current}/${en.max}${en.current > en.max ? '+' : ''}</span>`,
         `${locked ? `<p class="sheet-note">🔒 Hồ câu mở ở <b>cấp ${cfg.level}</b> — chăm ruộng thêm chút nữa nhé!</p>` : `
-          <p class="sheet-note">Mỗi lượt câu tốn <b>${cfg.energyCost}⚡</b> · năng lượng tự hồi 1⚡ mỗi ${DATA.config.fast ? '3 giây' : '3 phút'}${en.nextRegenMs ? ` (tiếp theo sau ${fmtTime(en.nextRegenMs)})` : ''}.</p>
+          <div class="fishing-energy"><b>${casts} lượt câu có thể dùng</b><p>Mỗi lượt tốn ${cfg.energyCost} năng lượng · nhận ${m.pond.fishPerCast} cá.</p><p>Tự hồi 1 năng lượng mỗi ${fmtDuration(en.regenMs)}${waitForCast ? ` · đủ một lượt sau ${fmtTime(waitForCast)}` : ''}.</p></div>
           <button class="btn gbtn gbtn--green" id="btn-fish" ${canFish ? '' : 'disabled'} style="width:100%;margin-bottom:0.55rem">🎣 Quăng cần (${cfg.energyCost}⚡${m.pond.fishPerCast > 1 ? ` · ${m.pond.fishPerCast} cá` : ''})</button>`}
         ${lootRows}
-        <button class="btn btn-ghost" id="btn-buy-energy" style="width:100%;margin-top:0.3rem">⚡ Mua ${DATA.config.energy.buyAmount} năng lượng — ${DATA.config.energy.buyGems} ${GEM}</button>
+        <div class="fishing-energy-purchase"><button class="btn btn-ghost" id="btn-buy-energy" ${canBuyEnergy ? '' : 'disabled'}>⚡ Mua ${energyGain} năng lượng — ${en.buyGems} ${GEM}</button>
+        <p class="sheet-note">${!energyGain ? `Đã đạt giới hạn mua ${DATA.config.energy.buyCap} năng lượng.` : m.gems < en.buyGems ? `Thiếu ${en.buyGems - m.gems} kim cương. Bạn có thể chờ năng lượng tự hồi.` : `Sau khi mua: ${en.current + energyGain}/${DATA.config.energy.buyCap} năng lượng · trừ ${en.buyGems} kim cương.`}</p></div>
         ${!locked && m.pond.next ? `<button class="btn gbtn gbtn--gold" id="btn-upgrade-pond" ${m.gold >= m.pond.next.gold ? '' : 'disabled'} style="width:100%;margin-top:0.3rem">⬆️ Nâng ao cấp ${m.pond.next.level} (${m.pond.next.fishPerCast} cá/lượt) — ${m.pond.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}
         ${renderFishFarm(m)}`,
       );
@@ -2534,7 +2540,7 @@
     simple('btn-chest', '/quest-chest', (r) => { sfx('playSuccess'); sfx('playCoin'); toast(r.gem ? '🎁 Rương ngày + 1 kim cương! 💎' : '🎁 Đã mở rương ngày!'); });
     simple('btn-star-claim', '/star-claim', (r) => { sfx('playLevelUp'); toast(`🌟 Nhận thưởng mốc ${r.claimed.stars} sao!`); });
     simple('btn-waterall', '/water-all', (r) => { sfx('playWater'); toast(`💧 Đã tưới ${r.watered} ô!`); });
-    simple('btn-buy-energy', '/buy-energy', () => { sfx('playCoin'); toast('⚡ +30 năng lượng!'); });
+    simple('btn-buy-energy', '/buy-energy', (r) => { sfx('playCoin'); toast(`⚡ Đang có ${r.me.energy.current} năng lượng!`); });
     simple('btn-skill-respec', '/skill-respec', () => { sfx('playTap'); toast('♻️ Đã hoàn trả toàn bộ điểm kỹ năng!'); });
     document.querySelectorAll('[data-skill-learn]').forEach((el) =>
       el.addEventListener('click', async () => {
