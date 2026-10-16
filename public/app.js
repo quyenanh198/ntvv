@@ -1081,6 +1081,16 @@
     const m = me();
     const t = sheet.type;
 
+    if (t === 'gold-give') {
+      return sheetShell('💝 Tặng vàng', `<p class="sheet-note">Người nhận: <b>${esc(sheet.recipientName)}</b></p>
+        <p class="sheet-note">Bạn có ${m.gold.toLocaleString('vi')} vàng. Vàng đã tặng được chuyển ngay cho người nhận.</p>
+        <div class="mc-finder"><label for="gift-amount">Số vàng muốn tặng</label>
+          <input id="gift-amount" type="number" inputmode="numeric" min="1" max="1000000000" step="1" value="${esc(sheet.amount || '')}" aria-describedby="gift-preview" /></div>
+        <p class="sheet-note" id="gift-preview" role="status" aria-live="polite"></p>
+        <div class="sheet-actions"><button class="btn btn-ghost" data-close="1">Hủy</button>
+          <button class="btn gbtn gbtn--green" id="btn-gift-send" disabled>Tặng vàng</button></div>`, 'sheet--gift');
+    }
+
     if (t === 'seed') {
       // Lưới thẻ: cây trồng + cây ăn quả; chế độ gieo hết không hiện số ô/tổng giá.
       // Sắp xếp theo thời gian (mặc định), giá trị hoặc cấp — nhớ lựa chọn.
@@ -2178,15 +2188,39 @@
       plot?.focus({ preventScroll: true });
     }));
     document.getElementById('btn-inspect-mode')?.addEventListener('click', () => { INSPECT = !INSPECT; toast(INSPECT ? '🔍 Bấm vào một ô đang trồng để khám xét' : 'Tắt khám xét'); render(); });
-    document.getElementById('btn-gold-give')?.addEventListener('click', async () => {
-      const v = window.prompt(`Tặng ${VISIT.farm.name} bao nhiêu vàng? (bạn có ${me().gold.toLocaleString('vi')})`, '');
-      if (v === null || !v.trim()) return;
-      const n = Number(v.trim());
-      if (!/^[0-9]+$/.test(v.trim()) || !Number.isSafeInteger(n) || n < 1 || n > 1_000_000_000) {
-        toast('Nhập số vàng nguyên từ 1 đến 1.000.000.000'); return;
+    document.getElementById('btn-gold-give')?.addEventListener('click', () => {
+      sheet = { type: 'gold-give', recipientId: VISIT.ownerId, recipientName: VISIT.farm.name, amount: '' };
+      render();
+    });
+    const giftPreview = () => {
+      const input = document.getElementById('gift-amount');
+      const preview = document.getElementById('gift-preview');
+      const send = document.getElementById('btn-gift-send');
+      if (!input || !preview || !send) return false;
+      sheet.amount = input.value;
+      const amount = Number(input.value);
+      const valid = /^[0-9]+$/.test(input.value) && Number.isSafeInteger(amount) && amount >= 1 && amount <= 1_000_000_000;
+      const affordable = valid && amount <= me().gold;
+      send.disabled = !affordable;
+      send.textContent = affordable ? `Tặng ${amount.toLocaleString('vi')} vàng` : 'Tặng vàng';
+      preview.textContent = !valid ? 'Nhập số vàng nguyên từ 1 đến 1.000.000.000.'
+        : !affordable ? `Thiếu ${(amount - me().gold).toLocaleString('vi')} vàng.`
+          : `${sheet.recipientName} nhận ${amount.toLocaleString('vi')} vàng · bạn còn ${(me().gold - amount).toLocaleString('vi')} vàng.`;
+      return affordable;
+    };
+    document.getElementById('gift-amount')?.addEventListener('input', giftPreview);
+    giftPreview();
+    document.getElementById('btn-gift-send')?.addEventListener('click', async () => {
+      if (!giftPreview()) return;
+      const actionSheet = sheet;
+      const n = Number(actionSheet.amount);
+      const r = await run(() => api('/gold-give', { toId: actionSheet.recipientId, amount: n }));
+      if (r) {
+        updateMe(r);
+        if (sheet === actionSheet) sheet = null;
+        toast(`💝 Đã tặng ${actionSheet.recipientName} ${n.toLocaleString('vi')} vàng!`);
+        render();
       }
-      const r = await run(() => api('/gold-give', { toId: VISIT.ownerId, amount: n }));
-      if (r) { updateMe(r); toast(`💝 Đã tặng ${VISIT.farm.name} ${n.toLocaleString('vi')} vàng!`); render(); }
     });
     document.getElementById('btn-gold-ask')?.addEventListener('click', async () => {
       const v = window.prompt(`Xin ${VISIT.farm.name} bao nhiêu vàng?`, '');
