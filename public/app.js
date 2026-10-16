@@ -1587,21 +1587,22 @@
       const g = MONEY || { incoming: [], outgoing: [] };
       const fmtT = (t2) => new Date(t2).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
       const statusText = { open: '⏳ Đang chờ', paid: '✅ Đã cho', declined: '🙅 Từ chối', cancelled: '↩️ Đã huỷ' };
-      const incoming = g.incoming.length ? g.incoming.map((r) => `<div class="quest-row">
-          <span class="q-emoji">🙏</span>
-          <span class="seed-info"><span class="seed-name">${esc(r.fromName)} xin <b>${r.amount.toLocaleString('vi')}</b> ${COIN}</span><div class="seed-meta">${r.note ? `“${esc(r.note)}” · ` : ''}${fmtT(r.createdAt)}</div></span>
-          <span class="btn-group">
-            <button class="gbtn gbtn--gold btn-mini" data-gr-act="pay" data-gr-id="${r.id}" ${m.gold >= r.amount ? '' : 'disabled'}>Cho luôn</button>
-            <button class="gbtn btn-mini" data-gr-act="decline" data-gr-id="${r.id}">Từ chối</button>
-          </span>
-        </div>`).join('') : '<p class="sheet-note">Chưa ai xin tiền bạn 😌</p>';
-      const outgoing = g.outgoing.length ? g.outgoing.map((r) => `<div class="quest-row${r.status === 'open' ? '' : ' quest-row--done'}">
-          <span class="q-emoji">${r.status === 'paid' ? '💝' : '🙏'}</span>
-          <span class="seed-info"><span class="seed-name">Xin ${esc(r.toName)} <b>${r.amount.toLocaleString('vi')}</b> ${COIN}</span><div class="seed-meta">${statusText[r.status] || r.status} · ${fmtT(r.createdAt)}${r.note ? ` · “${esc(r.note)}”` : ''}</div></span>
-          ${r.status === 'open' ? `<button class="gbtn btn-mini" data-gr-act="cancel" data-gr-id="${r.id}">Huỷ</button>` : ''}
-        </div>`).join('') : '<p class="sheet-note">Bạn chưa xin ai. Vào ruộng người nhà, bấm 🙏 Xin tiền hoặc 💝 Cho tiền.</p>';
+      const incoming = g.incoming.length ? g.incoming.map((r) => `<article class="festival-card" data-gold-request="${r.id}" aria-labelledby="request-in-${r.id}">
+          <div class="festival-card-heading"><h4 id="request-in-${r.id}">${esc(r.fromName)} xin ${r.amount.toLocaleString('vi')} vàng</h4></div>
+          <p class="festival-hint">${r.note ? `“${esc(r.note)}” · ` : ''}${fmtT(r.createdAt)}</p>
+          <p class="festival-hint">${m.gold >= r.amount ? `Sau khi cho: còn ${(m.gold - r.amount).toLocaleString('vi')} vàng.` : `Thiếu ${(r.amount - m.gold).toLocaleString('vi')} vàng để cho. Bạn vẫn có thể từ chối.`}</p>
+          <div class="festival-card-footer">
+            <button class="gbtn gbtn--gold btn-mini" data-gr-act="pay" data-gr-id="${r.id}" aria-label="Cho ${r.amount.toLocaleString('vi')} vàng" ${m.gold >= r.amount ? '' : 'disabled'}>Cho ${r.amount.toLocaleString('vi')} vàng</button>
+            <button class="gbtn btn-mini" data-gr-act="decline" data-gr-id="${r.id}" aria-label="Từ chối lời xin của ${esc(r.fromName)}">Từ chối</button>
+          </div>
+        </article>`).join('') : '<p class="sheet-note">Chưa ai xin tiền bạn 😌</p>';
+      const outgoing = g.outgoing.length ? g.outgoing.map((r) => `<article class="festival-card${r.status === 'paid' ? ' festival-card--claimed' : ''}" aria-labelledby="request-out-${r.id}">
+          <div class="festival-card-heading"><h4 id="request-out-${r.id}">Xin ${esc(r.toName)} ${r.amount.toLocaleString('vi')} vàng</h4><span class="festival-status">${statusText[r.status] || esc(r.status)}</span></div>
+          <p class="festival-hint">${fmtT(r.createdAt)}${r.note ? ` · “${esc(r.note)}”` : ''}</p>
+          ${r.status === 'open' ? `<div class="festival-card-footer"><button class="gbtn btn-mini" data-gr-act="cancel" data-gr-id="${r.id}" aria-label="Hủy lời xin ${r.amount.toLocaleString('vi')} vàng từ ${esc(r.toName)}">Hủy lời xin</button></div>` : ''}
+        </article>`).join('') : '<p class="sheet-note">Bạn chưa xin ai. Vào ruộng người nhà, bấm 🙏 Xin tiền hoặc 💝 Cho tiền.</p>';
       return sheetShell(`💌 Xin / Cho tiền <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
-        `<h4 class="lb-sec">🙏 Người nhà xin bạn</h4>${incoming}<h4 class="lb-sec">📨 Bạn đã xin</h4>${outgoing}<p class="sheet-note">Cho tiền là chuyển vàng thẳng từ kho bạn sang người kia, không tính kinh tế làng.</p>`);
+        `<h4 class="lb-sec">🙏 Người nhà xin bạn (${g.incoming.length})</h4>${incoming}<h4 class="lb-sec">📨 Bạn đã xin (${g.outgoing.length})</h4>${outgoing}<p class="sheet-note">Cho tiền là chuyển vàng thẳng từ kho bạn sang người kia, không tính kinh tế làng.</p>`, 'sheet--money');
     }
 
     if (t === 'luxury') {
@@ -2234,7 +2235,11 @@
     });
     document.querySelectorAll('[data-gr-act]').forEach((el) => el.addEventListener('click', async () => {
       const act = el.dataset.grAct;
-      if (act === 'pay' && !window.confirm('Cho số vàng này luôn?')) return;
+      if (act === 'pay') {
+        const request = MONEY?.incoming.find((entry) => entry.id === Number(el.dataset.grId));
+        if (!request || me().gold < request.amount) return;
+        if (!window.confirm(`Cho ${request.fromName} ${request.amount.toLocaleString('vi')} vàng? Bạn còn ${(me().gold - request.amount).toLocaleString('vi')} vàng sau khi cho.`)) return;
+      }
       const r = await run(() => api('/gold-request-act', { id: Number(el.dataset.grId), action: act }));
       if (r) { updateMe(r); MONEY = r.requests; toast(act === 'pay' ? '💝 Đã cho!' : act === 'decline' ? '🙅 Đã từ chối' : '↩️ Đã huỷ'); render(); }
     }));

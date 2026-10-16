@@ -97,3 +97,5 @@ Gold gifting now uses a sheet instead of a browser prompt. It names the recipien
 ## Gold request decisions
 
 Gold requests share the labeled amount sheet, with an optional 80-character note. They name the requested player and explain that sending does not move gold; that player can pay or decline from Xin / Cho tiền. Valid requests may exceed the requester's balance. Cancelling creates no request. CI checks invalid amounts, the note limit, mobile layout and accessibility, cancellation, request creation without balance changes, and payment from the second browser account with both balances verified. The screenshot is `gold-request-320.png`.
+
+The inbox and request history use full-width cards with separate names, notes, status, and 44px actions. Incoming cards show the exact payment and remaining balance or gold shortfall. Payment confirmation repeats the recipient, amount, and remaining balance. The two-player walkthrough also covers an unaffordable request, refusal without transferring value, cancelling payment confirmation, and the completed payment. It audits inbox accessibility and mobile overflow and saves `gold-request-inbox-390.png`.
