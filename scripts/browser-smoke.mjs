@@ -328,14 +328,17 @@ try {
   await friendPage.locator('.plot[data-idx="0"][data-kind="empty"]').click();
   await friendPage.locator('.seed-card[data-crop="luami"]').click();
   await friendPage.locator('.plot[data-idx="0"][data-kind="waterplot"]').waitFor();
-  const decorationArt = [['vuonhoa', 'flower-garden'], ['denlong', 'garden-lantern'], ['daiphunnuoc', 'stone-fountain'], ['caugo', 'wooden-bridge']];
+  const decorationArt = [['vuonhoa', 'flower-garden'], ['denlong', 'garden-lantern'], ['daiphunnuoc', 'stone-fountain'], ['caugo', 'wooden-bridge'],
+    ['xekeo', 'wooden-handcart'], ['tuongga', 'golden-rooster-statue'], ['hosen', 'lotus-pond'],
+    ['conglang', 'village-gate'], ['gheda', 'stone-garden-bench'], ['bangten', 'farm-sign'],
+    ['coixaygio', 'windmill_v3-224', 'scene-v3']];
   for (const [id] of decorationArt) db.prepare('INSERT INTO luxury (owner_id, item, at) VALUES (2, ?, ?)').run(id, Date.now());
   await friendPage.reload({ waitUntil: 'domcontentloaded' });
   await friendPage.locator('.lux-strip summary').waitFor();
   assert.equal(await friendPage.locator('details.lux-strip').getAttribute('open'), null);
   await friendPage.locator('.lux-strip summary').click();
-  for (const [id, file] of decorationArt) {
-    const art = friendPage.locator(`[data-decor="${id}"] img[src*="decor-v3/${file}.png"]`);
+  for (const [id, file, folder = 'decor-v3'] of decorationArt) {
+    const art = friendPage.locator(`[data-decor="${id}"] img[src*="${folder}/${file}.png"]`);
     await art.scrollIntoViewIfNeeded();
     await art.evaluate((img) => img.decode());
     assert.ok(await art.evaluate((img) => img.naturalWidth > 0));
@@ -348,8 +351,8 @@ try {
   await friendPage.locator('[data-sheet="more"]').first().click();
   await friendPage.locator('[data-sheet="luxury"]').click();
   await friendPage.locator('[data-lux-view="owned"]').click();
-  for (const [id, file] of decorationArt) {
-    const art = friendPage.locator(`[data-lux-item="${id}"] img[src*="decor-v3/${file}.png"]`);
+  for (const [id, file, folder = 'decor-v3'] of decorationArt) {
+    const art = friendPage.locator(`[data-lux-item="${id}"] img[src*="${folder}/${file}.png"]`);
     await art.scrollIntoViewIfNeeded();
     await art.evaluate((img) => img.decode());
   }

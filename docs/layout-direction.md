@@ -107,3 +107,5 @@ The inbox and request history use full-width cards with separate names, notes, s
 ## Owned decoration gallery
 
 Owned decorations and pets now appear in a named, collapsible gallery above the field for the owner and visiting players. It starts closed to keep plots nearby, supports keyboard activation, and preserves its open state during farm refreshes. The shop and gallery share individual painted art for the flower garden, lantern, fountain, bridge, and the existing scarecrow. Other items retain named emoji previews while their art is pending. Mobile checks cover owner and visitor galleries, image loading, overflow, accessibility, and continuity after helping water a plot.
+
+The decoration walkthrough now stocks eleven owned items, checks all images in the owner gallery and shop, and verifies the same gallery from a visiting account. It includes the handcart, golden-rooster statue, lotus pond, village gate, stone bench, farm sign, and reused painted windmill. The generated inventory now shows 12/22 decoration previews with PNG art.

@@ -962,6 +962,10 @@
     vuonhoa: 'assets/decor-v3/flower-garden.png', denlong: 'assets/decor-v3/garden-lantern.png',
     daiphunnuoc: 'assets/decor-v3/stone-fountain.png', caugo: 'assets/decor-v3/wooden-bridge.png',
     bunhin: 'assets/decor-v3/scarecrow.png',
+    coixaygio: 'assets/scene-v3/windmill_v3-224.png', xekeo: 'assets/decor-v3/wooden-handcart.png',
+    tuongga: 'assets/decor-v3/golden-rooster-statue.png', hosen: 'assets/decor-v3/lotus-pond.png',
+    conglang: 'assets/decor-v3/village-gate.png', gheda: 'assets/decor-v3/stone-garden-bench.png',
+    bangten: 'assets/decor-v3/farm-sign.png',
   };
   const luxuryArt = (id) => DECOR_ART[id]
     ? `<img class="lux-art" src="${A(DECOR_ART[id])}" alt="" loading="lazy" />`

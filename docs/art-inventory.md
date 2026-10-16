@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 186/186 catalog products have PNG or SVG icons. 327 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 186/186 catalog products have PNG or SVG icons. 333 static asset paths appear in the client.
 
 ## Crops
 
@@ -310,22 +310,22 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 
 ## Owned farm decorations
 
-5/22 decorations have individual PNG art. The gallery and shop share these sprites.
+12/22 decorations have individual PNG art. The gallery and shop share these sprites.
 
 | Decoration | ID | Current art |
 | --- | --- | --- |
 | Vườn hoa | vuonhoa | PNG art |
 | Bù nhìn cao cấp | bunhin | PNG art |
-| Cối xay gió | coixaygio | emoji |
+| Cối xay gió | coixaygio | PNG art |
 | Đèn lồng | denlong | PNG art |
 | Đài phun nước | daiphunnuoc | PNG art |
 | Cầu gỗ | caugo | PNG art |
-| Xe kéo | xekeo | emoji |
-| Tượng gà vàng | tuongga | emoji |
-| Hồ sen | hosen | emoji |
-| Cổng làng | conglang | emoji |
-| Ghế đá | gheda | emoji |
-| Bảng tên nông trại | bangten | emoji |
+| Xe kéo | xekeo | PNG art |
+| Tượng gà vàng | tuongga | PNG art |
+| Hồ sen | hosen | PNG art |
+| Cổng làng | conglang | PNG art |
+| Ghế đá | gheda | PNG art |
+| Bảng tên nông trại | bangten | PNG art |
 | Chuồng bồ câu | chuongbocau | emoji |
 | Cây thông | caythong | emoji |
 | Thuyền gỗ | thuyen | emoji |
@@ -449,11 +449,17 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops-v3/wheat-growing.png` | 54 KB |
 | `assets/crops-v3/wheat-ripe.png` | 85 KB |
 | `assets/crops/seed-1.svg` | <1 KB |
+| `assets/decor-v3/farm-sign.png` | 26 KB |
 | `assets/decor-v3/flower-garden.png` | 27 KB |
 | `assets/decor-v3/garden-lantern.png` | 14 KB |
+| `assets/decor-v3/golden-rooster-statue.png` | 21 KB |
+| `assets/decor-v3/lotus-pond.png` | 25 KB |
 | `assets/decor-v3/scarecrow.png` | 36 KB |
 | `assets/decor-v3/stone-fountain.png` | 25 KB |
+| `assets/decor-v3/stone-garden-bench.png` | 18 KB |
+| `assets/decor-v3/village-gate.png` | 21 KB |
 | `assets/decor-v3/wooden-bridge.png` | 21 KB |
+| `assets/decor-v3/wooden-handcart.png` | 18 KB |
 | `assets/machines-v3/bakery-oven.png` | 38 KB |
 | `assets/machines-v3/coffee-roaster.png` | 29 KB |
 | `assets/machines-v3/dairy-workshop.png` | 39 KB |
