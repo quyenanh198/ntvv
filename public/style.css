@@ -715,6 +715,10 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .reward-goal small { font-size: .8125rem; }
 .reward-goal:hover { background: #ffe4a2; }
 .sheet--rewards button { min-height: 44px; }
+.sheet--skills .skill-card[hidden], .sheet--skills .skill-branch[hidden], .sheet--skills .skill-empty[hidden] { display: none; }
+.skill-branch > h4 { color: #4a2810; margin: 1rem 0 .6rem; }
+.sheet--skills button { min-height: 44px; }
+.skill-respec > button { width: 100%; }
 .pond-img {
   position: absolute;
   z-index: 3;

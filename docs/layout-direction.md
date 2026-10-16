@@ -85,3 +85,7 @@ The farm now shows a reward shortcut whenever a daily chest, next star milestone
 ## Fishing energy decisions
 
 Fishing now reads its regeneration interval from server state, including fast mode, instead of advertising three minutes when normal regeneration is one minute. The panel shows available casts and the wait until one cast is affordable. Energy purchases preview the actual amount allowed by the purchase cap, explain missing gems, and disable at the cap. The confirmation reports resulting energy instead of always claiming a 30-point gain. API tests cover normal and fast intervals; mobile CI checks empty energy with no gems and a capped purchase from 115 to 120, including the exact gem debit.
+
+## Skill learning decisions
+
+Skills now use readable cards with explicit rank, description, next-rank cost, missing points, and skill-specific action names. All and Can learn filters keep keyboard focus and hide empty branches; a zero-point view explains how to progress. Respec explains missing gems or remaining cooldown using state values. The mobile walkthrough spends one of two points, verifies rank 1/10 and the two-point next rank, checks the one-point shortage and missing respec gems, audits accessibility, and covers the zero-point empty state.
