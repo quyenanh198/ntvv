@@ -5,6 +5,24 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
+import { ENERGY, scaleMs } from '../server/src/game.js';
+
+test('energy state exposes the actual normal and fast regeneration interval', async () => {
+  for (const fast of [false, true]) {
+    const db = openDb(':memory:');
+    const app = buildApp({ db, logger: false, config: { fast,
+      mockChatUser: { id: 1, username: 'energy-timing', display_name: 'Energy Timing' } } });
+    try {
+      await app.inject({ method: 'GET', url: '/farm/api/state' });
+      db.prepare('UPDATE farmers SET energy = 0, energy_at = ? WHERE user_id = 1').run(Date.now());
+      const state = await app.inject({ method: 'GET', url: '/farm/api/state' });
+      assert.equal(state.statusCode, 200, state.body);
+      const energy = state.json().me.energy;
+      assert.equal(energy.regenMs, scaleMs(ENERGY.regenMs, fast));
+      assert.ok(energy.nextRegenMs > 0 && energy.nextRegenMs <= energy.regenMs);
+    } finally { await app.close(); db.close(); }
+  }
+});
 
 test('fishing, fish farming, and currency purchases survive lost responses', async () => {
   const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-fish-economy-replay-'));

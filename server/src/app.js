@@ -640,6 +640,7 @@ export function buildApp({ config, db, logger = true }) {
     return {
       current: cur,
       max: ENERGY.max,
+      regenMs: energyStep(),
       nextRegenMs: cur >= ENERGY.max ? null : energyStep() - ((now - f.energy_at) % energyStep()),
       buyGems: ENERGY.buyGems,
       buyAmount: ENERGY.buyAmount,
