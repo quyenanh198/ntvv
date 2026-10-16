@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 165/186 catalog products have PNG or SVG icons. 302 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 171/186 catalog products have PNG or SVG icons. 308 static asset paths appear in the client.
 
 ## Crops
 
@@ -100,6 +100,23 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Xưởng dệt | xuongdet | 25 | unique PNG |
 | Xưởng cao cấp | xuongcaocap | 26 | unique PNG |
 
+## Processed product families
+
+| Family | Source ID | Products with icons |
+| --- | --- | ---: |
+| Bếp gia đình | bepan | 11/11 |
+| Lò nướng cá | lonuong | 14/14 |
+| Xưởng cao cấp | xuongcaocap | 8/8 |
+| Quán ăn vặt | quanvat | 14/14 |
+| Quán ốc | quanoc | 42/42 |
+| Cối xay bột | coixay | 4/4 |
+| Máy ép nước | mayep | 8/8 |
+| Nồi mứt | noimut | 6/6 |
+| Nhà máy sữa | nhamaysua | 8/8 |
+| Lò bánh | lobanh | 9/9 |
+| Máy rang cà phê | mayrang | 5/5 |
+| Xưởng dệt | xuongdet | 7/7 |
+
 ## Products
 
 | Product | ID | Source | Current art |
@@ -192,8 +209,8 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Nước ép dưa hấu | nuocduahau | mayep | PNG art |
 | Nước hoa hoa hồng | nuochoa | xuongcaocap | PNG art |
 | Ốc bàn tay | ocbantay | ocbantay | emoji |
-| Ốc bàn tay nướng phô mai | ocbantaynuongphomai | quanoc | emoji |
-| Ốc bàn tay xào sa tế | ocbantayxaosate | quanoc | emoji |
+| Ốc bàn tay nướng phô mai | ocbantaynuongphomai | quanoc | PNG art |
+| Ốc bàn tay xào sa tế | ocbantayxaosate | quanoc | PNG art |
 | Ốc bông | ocbong | ocbong | emoji |
 | Ốc bông luộc sả | ocbongluocsa | quanoc | PNG art |
 | Ốc bông rang muối ớt | ocbongrangmuoiot | quanoc | PNG art |
@@ -250,11 +267,11 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Ốc tỏi luộc sả | octoiluocsa | quanoc | PNG art |
 | Ốc tỏi rang muối ớt | octoirangmuoiot | quanoc | PNG art |
 | Ốc tù và | octuva | octuva | emoji |
-| Ốc tù và luộc sả | octuvaluocsa | quanoc | emoji |
-| Ốc tù và rang muối ớt | octuvarangmuoiot | quanoc | emoji |
+| Ốc tù và luộc sả | octuvaluocsa | quanoc | PNG art |
+| Ốc tù và rang muối ớt | octuvarangmuoiot | quanoc | PNG art |
 | Ốc vú nàng | ocvunang | ocvunang | emoji |
-| Ốc vú nàng nướng phô mai | ocvunangnuongphomai | quanoc | emoji |
-| Ốc vú nàng xào me | ocvunangxaome | quanoc | emoji |
+| Ốc vú nàng nướng phô mai | ocvunangnuongphomai | quanoc | PNG art |
+| Ốc vú nàng xào me | ocvunangxaome | quanoc | PNG art |
 | Phô mai | phomai | nhamaysua | PNG art |
 | Phô mai dê | phomaide | nhamaysua | PNG art |
 | Phô mai trâu | phomaitrau | nhamaysua | PNG art |
@@ -445,12 +462,15 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/carrot-cake.png` | 106 KB |
 | `assets/products-v3/carrot-juice.png` | 13 KB |
 | `assets/products-v3/cheese-jackfruit-snails.png` | 28 KB |
+| `assets/products-v3/cheese-limpets.png` | 28 KB |
+| `assets/products-v3/cheese-spider-conch.png` | 33 KB |
 | `assets/products-v3/cheese-striped-snails.png` | 30 KB |
 | `assets/products-v3/chili-ambarella.png` | 24 KB |
 | `assets/products-v3/chili-salt-apple-snails.png` | 22 KB |
 | `assets/products-v3/chili-salt-flower-snails.png` | 29 KB |
 | `assets/products-v3/chili-salt-garlic-snails.png` | 28 KB |
 | `assets/products-v3/chili-salt-moon-snails.png` | 29 KB |
+| `assets/products-v3/chili-salt-trumpet-snails.png` | 35 KB |
 | `assets/products-v3/chili-tamarind.png` | 21 KB |
 | `assets/products-v3/cocoa-powder.png` | 90 KB |
 | `assets/products-v3/coconut-jumping-snails.png` | 32 KB |
@@ -515,6 +535,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/lemongrass-snails.png` | 24 KB |
 | `assets/products-v3/lemongrass-steamed-bitter-snails.png` | 26 KB |
 | `assets/products-v3/lemongrass-steamed-conch.png` | 30 KB |
+| `assets/products-v3/lemongrass-trumpet-snails.png` | 33 KB |
 | `assets/products-v3/mango-smoothie.png` | 61 KB |
 | `assets/products-v3/milk-chocolate.png` | 78 KB |
 | `assets/products-v3/milk-tea.png` | 20 KB |
@@ -549,6 +570,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/satay-babylon-snails.png` | 22 KB |
 | `assets/products-v3/satay-grilled-squid.png` | 112 KB |
 | `assets/products-v3/satay-jackfruit-snails.png` | 30 KB |
+| `assets/products-v3/satay-spider-conch.png` | 31 KB |
 | `assets/products-v3/satay-stone-snails.png` | 27 KB |
 | `assets/products-v3/scallion-grilled-bitter-snails.png` | 30 KB |
 | `assets/products-v3/scallion-grilled-conch.png` | 31 KB |
@@ -564,6 +586,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/strawberry-jam.png` | 18 KB |
 | `assets/products-v3/strawberry-yogurt.png` | 98 KB |
 | `assets/products-v3/sweet-potato-fritters.png` | 20 KB |
+| `assets/products-v3/tamarind-limpets.png` | 34 KB |
 | `assets/products-v3/tamarind-pond-snails.png` | 25 KB |
 | `assets/products-v3/tamarind-spiny-snails.png` | 29 KB |
 | `assets/products-v3/tamarind-striped-snails.png` | 29 KB |
