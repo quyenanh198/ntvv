@@ -1205,7 +1205,10 @@ try {
   assert.equal(await page.locator('[data-skill-can="false"]:visible').count(), 0);
   const learnResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/skill-learn') && response.request().method() === 'POST');
   await page.locator('[data-skill-learn="bantayxanh"]').click();
-  assert.equal((await learnResponse).status(), 200);
+  const learnedResponse = await learnResponse;
+  assert.equal(learnedResponse.status(), 200);
+  assert.equal((await learnedResponse.json()).me.skills.points, 1);
+  await page.waitForFunction(() => document.querySelector('[data-skill="bantayxanh"] .festival-status')?.textContent === 'Bậc 1/10');
   await page.locator('[data-skill-view="all"]').click();
   const learnedSkill = page.locator('[data-skill="bantayxanh"]');
   assert.match(await learnedSkill.innerText(), /Bậc 1\/10/);
