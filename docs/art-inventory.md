@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 159/186 catalog products have PNG or SVG icons. 296 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 165/186 catalog products have PNG or SVG icons. 302 static asset paths appear in the client.
 
 ## Crops
 
@@ -201,8 +201,8 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Ốc bươu luộc sả | ocluocsa | quanoc | PNG art |
 | Ốc bươu rang muối ớt | ocrangmuoiot | quanoc | PNG art |
 | Ốc cà na | occana | occana | emoji |
-| Ốc cà na hấp sả | occanahapsa | quanoc | emoji |
-| Ốc cà na xào dừa | occanaxaodua | quanoc | emoji |
+| Ốc cà na hấp sả | occanahapsa | quanoc | PNG art |
+| Ốc cà na xào dừa | occanaxaodua | quanoc | PNG art |
 | Ốc dừa | ocdua | ocdua | emoji |
 | Ốc dừa hấp sả | ocduahapsa | quanoc | PNG art |
 | Ốc dừa xào dừa | ocduaxaodua | quanoc | PNG art |
@@ -241,14 +241,14 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Ốc mỡ luộc sả | ocmoluocsa | quanoc | PNG art |
 | Ốc mỡ rang muối ớt | ocmorangmuoiot | quanoc | PNG art |
 | Ốc nhảy | ocnhay | ocnhay | emoji |
-| Ốc nhảy xào bơ | ocnhayxaobo | quanoc | emoji |
-| Ốc nhảy xào dừa | ocnhayxaodua | quanoc | emoji |
+| Ốc nhảy xào bơ | ocnhayxaobo | quanoc | PNG art |
+| Ốc nhảy xào dừa | ocnhayxaodua | quanoc | PNG art |
 | Ốc nhồi | ocnhoi | ocnhoi | PNG art |
 | Ốc nhồi xào me | ocnhoixaome | quanoc | PNG art |
 | Ốc nhồi xào tỏi | ocnhoixaotoi | quanoc | PNG art |
 | Ốc tỏi | octoi | octoi | emoji |
-| Ốc tỏi luộc sả | octoiluocsa | quanoc | emoji |
-| Ốc tỏi rang muối ớt | octoirangmuoiot | quanoc | emoji |
+| Ốc tỏi luộc sả | octoiluocsa | quanoc | PNG art |
+| Ốc tỏi rang muối ớt | octoirangmuoiot | quanoc | PNG art |
 | Ốc tù và | octuva | octuva | emoji |
 | Ốc tù và luộc sả | octuvaluocsa | quanoc | emoji |
 | Ốc tù và rang muối ớt | octuvarangmuoiot | quanoc | emoji |
@@ -435,6 +435,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/braised-pangasius.png` | 122 KB |
 | `assets/products-v3/buffalo-cheese.png` | 79 KB |
 | `assets/products-v3/buffalo-milk.png` | 66 KB |
+| `assets/products-v3/butter-jumping-snails.png` | 31 KB |
 | `assets/products-v3/butter-mud-creeper-snails.png` | 28 KB |
 | `assets/products-v3/butter-razor-clams.png` | 30 KB |
 | `assets/products-v3/butter-rice-snails.png` | 30 KB |
@@ -448,9 +449,12 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/chili-ambarella.png` | 24 KB |
 | `assets/products-v3/chili-salt-apple-snails.png` | 22 KB |
 | `assets/products-v3/chili-salt-flower-snails.png` | 29 KB |
+| `assets/products-v3/chili-salt-garlic-snails.png` | 28 KB |
 | `assets/products-v3/chili-salt-moon-snails.png` | 29 KB |
 | `assets/products-v3/chili-tamarind.png` | 21 KB |
 | `assets/products-v3/cocoa-powder.png` | 90 KB |
+| `assets/products-v3/coconut-jumping-snails.png` | 32 KB |
+| `assets/products-v3/coconut-olive-snails.png` | 29 KB |
 | `assets/products-v3/coconut-rice-snails.png` | 31 KB |
 | `assets/products-v3/coconut-sauce-snails.png` | 32 KB |
 | `assets/products-v3/corn-flour.png` | 92 KB |
@@ -505,7 +509,9 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/products-v3/lemongrass-chili-eel.png` | 101 KB |
 | `assets/products-v3/lemongrass-coconut-snails.png` | 31 KB |
 | `assets/products-v3/lemongrass-flower-snails.png` | 30 KB |
+| `assets/products-v3/lemongrass-garlic-snails.png` | 30 KB |
 | `assets/products-v3/lemongrass-moon-snails.png` | 30 KB |
+| `assets/products-v3/lemongrass-olive-snails.png` | 30 KB |
 | `assets/products-v3/lemongrass-snails.png` | 24 KB |
 | `assets/products-v3/lemongrass-steamed-bitter-snails.png` | 26 KB |
 | `assets/products-v3/lemongrass-steamed-conch.png` | 30 KB |
