@@ -1052,7 +1052,7 @@ try {
   for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao', 'mutcam', 'mutgung', 'mutsaurieng', 'siro', 'suachua', 'phomaide', 'phomaitrau', 'kem', 'kemvani', 'kemsaurieng', 'dauoliu', 'nuoccoc', 'vai', 'lua', 'khanlen', 'khanalpaca', 'aolen', 'mulen', 'caphesua', 'socola', 'tratui', 'ruouvang', 'caonhung', 'nuochoa', 'hopphomai', 'aodai', 'buatiec', 'hopqua', 'caphehaohang', 'chaca', 'cakho', 'sushi', 'lauca', 'goicuon', 'tomnuong', 'catrakho', 'calocnuong']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
-  for (const item of ['cadieuhongchien', 'luonxao', 'cuahap', 'mucnuong', 'tom', 'cua', 'luon', 'ech', 'muc', 'lauech', 'oc', 'ochuong', 'ocnhoi', 'oclen', 'ocdang', 'ocmo', 'ocluocsa', 'ocrangmuoiot', 'ochuongxaotoi', 'ochuongxaosate', 'ocnhoixaome', 'ocnhoixaotoi', 'oclenxaobo', 'oclennuongmohanh', 'ocdangnuongmohanh', 'ocdanghapsa', 'ocmorangmuoiot', 'ocmoluocsa', 'ocgaoxaodua', 'ocgaoxaobo', 'ocduahapsa', 'ocduaxaodua', 'ocmitxaosate', 'ocmitnuongphomai']) {
+  for (const item of ['cadieuhongchien', 'luonxao', 'cuahap', 'mucnuong', 'tom', 'cua', 'luon', 'ech', 'muc', 'lauech', 'oc', 'ochuong', 'ocnhoi', 'oclen', 'ocdang', 'ocmo', 'ocluocsa', 'ocrangmuoiot', 'ochuongxaotoi', 'ochuongxaosate', 'ocnhoixaome', 'ocnhoixaotoi', 'oclenxaobo', 'oclennuongmohanh', 'ocdangnuongmohanh', 'ocdanghapsa', 'ocmorangmuoiot', 'ocmoluocsa', 'ocgaoxaodua', 'ocgaoxaobo', 'ocduahapsa', 'ocduaxaodua', 'ocmitxaosate', 'ocmitnuongphomai', 'oclacnuongphomai', 'oclacxaome', 'ocbongluocsa', 'ocbongrangmuoiot', 'ocdaxaotoi', 'ocdaxaosate']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -1060,7 +1060,7 @@ try {
   const inventorySearch = page.locator('#inventory-search');
   await inventorySearch.fill('pho mai');
   assert.deepEqual(await page.locator('.sheet--inventory .inv-row[data-item]:visible').evaluateAll((rows) => rows.map((row) => row.dataset.item).sort()),
-    ['hopphomai', 'ocmitnuongphomai', 'phomaide', 'phomaitrau'],
+    ['hopphomai', 'oclacnuongphomai', 'ocmitnuongphomai', 'phomaide', 'phomaitrau'],
     'accent-tolerant inventory search should find stocked cheeses and the cheese snail dish');
   await page.locator('[data-inventory-group="animals"]').click();
   assert.equal(await page.locator('.sheet--inventory .inv-row[data-item]:visible').count(), 0,
@@ -1107,6 +1107,9 @@ try {
     ['ocgaoxaodua', 'coconut-rice-snails'], ['ocgaoxaobo', 'butter-rice-snails'],
     ['ocduahapsa', 'lemongrass-coconut-snails'], ['ocduaxaodua', 'coconut-sauce-snails'],
     ['ocmitxaosate', 'satay-jackfruit-snails'], ['ocmitnuongphomai', 'cheese-jackfruit-snails'],
+    ['oclacnuongphomai', 'cheese-striped-snails'], ['oclacxaome', 'tamarind-striped-snails'],
+    ['ocbongluocsa', 'lemongrass-flower-snails'], ['ocbongrangmuoiot', 'chili-salt-flower-snails'],
+    ['ocdaxaotoi', 'garlic-stone-snails'], ['ocdaxaosate', 'satay-stone-snails'],
     ['oc', 'apple-snail'], ['ochuong', 'spotted-babylon-snail'],
     ['ocnhoi', 'pond-snail'], ['oclen', 'mud-creeper-snail'],
     ['ocdang', 'bitter-snail'], ['ocmo', 'moon-snail'],
@@ -1152,6 +1155,8 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'snail-stall-butter-products-320.png') });
   await page.locator('.inv-row[data-item="ocduaxaodua"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'snail-stall-coconut-products-320.png') });
+  await page.locator('.inv-row[data-item="ocdaxaotoi"]').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'snail-stall-stone-products-320.png') });
   db.prepare('UPDATE daily SET counters_json = ?, chest_claimed = 0 WHERE owner_id = 1')
     .run(JSON.stringify({ harvest: 15, sow: 10, feed: 5, sell: 9 }));
   db.prepare('UPDATE farmers SET stars = 50 WHERE user_id = 1').run();
