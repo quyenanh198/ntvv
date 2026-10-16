@@ -1081,11 +1081,13 @@
     const m = me();
     const t = sheet.type;
 
-    if (t === 'gold-give') {
-      return sheetShell('💝 Tặng vàng', `<p class="sheet-note">Người nhận: <b>${esc(sheet.recipientName)}</b></p>
-        <p class="sheet-note">Bạn có ${m.gold.toLocaleString('vi')} vàng. Vàng đã tặng được chuyển ngay cho người nhận.</p>
-        <div class="mc-finder"><label for="gift-amount">Số vàng muốn tặng</label>
+    if (t === 'gold-give' || t === 'gold-ask') {
+      const asking = t === 'gold-ask';
+      return sheetShell(asking ? '🙏 Xin vàng' : '💝 Tặng vàng', `<p class="sheet-note">${asking ? 'Xin từ' : 'Người nhận'}: <b>${esc(sheet.recipientName)}</b></p>
+        <p class="sheet-note">${asking ? 'Gửi lời xin chưa chuyển vàng. Người nhà có thể cho hoặc từ chối trong Xin / Cho tiền.' : `Bạn có ${m.gold.toLocaleString('vi')} vàng. Vàng đã tặng được chuyển ngay cho người nhận.`}</p>
+        <div class="mc-finder"><label for="gift-amount">Số vàng muốn ${asking ? 'xin' : 'tặng'}</label>
           <input id="gift-amount" type="number" inputmode="numeric" min="1" max="1000000000" step="1" value="${esc(sheet.amount || '')}" aria-describedby="gift-preview" /></div>
+        ${asking ? `<div class="mc-finder"><label for="gift-note">Lời nhắn (không bắt buộc, tối đa 80 ký tự)</label><input id="gift-note" type="text" maxlength="80" value="${esc(sheet.note || '')}" /></div>` : ''}
         <p class="sheet-note" id="gift-preview" role="status" aria-live="polite"></p>
         <div class="sheet-actions"><button class="btn btn-ghost" data-close="1">Hủy</button>
           <button class="btn gbtn gbtn--green" id="btn-gift-send" disabled>Tặng vàng</button></div>`, 'sheet--gift');
@@ -2200,38 +2202,35 @@
       sheet.amount = input.value;
       const amount = Number(input.value);
       const valid = /^[0-9]+$/.test(input.value) && Number.isSafeInteger(amount) && amount >= 1 && amount <= 1_000_000_000;
-      const affordable = valid && amount <= me().gold;
+      const asking = sheet.type === 'gold-ask';
+      const affordable = valid && (asking || amount <= me().gold);
       send.disabled = !affordable;
-      send.textContent = affordable ? `Tặng ${amount.toLocaleString('vi')} vàng` : 'Tặng vàng';
+      send.textContent = affordable ? `${asking ? 'Gửi lời xin' : 'Tặng'} ${amount.toLocaleString('vi')} vàng` : asking ? 'Gửi lời xin' : 'Tặng vàng';
       preview.textContent = !valid ? 'Nhập số vàng nguyên từ 1 đến 1.000.000.000.'
         : !affordable ? `Thiếu ${(amount - me().gold).toLocaleString('vi')} vàng.`
-          : `${sheet.recipientName} nhận ${amount.toLocaleString('vi')} vàng · bạn còn ${(me().gold - amount).toLocaleString('vi')} vàng.`;
+          : asking ? `Xin ${sheet.recipientName} ${amount.toLocaleString('vi')} vàng · chưa chuyển vàng.`
+            : `${sheet.recipientName} nhận ${amount.toLocaleString('vi')} vàng · bạn còn ${(me().gold - amount).toLocaleString('vi')} vàng.`;
       return affordable;
     };
     document.getElementById('gift-amount')?.addEventListener('input', giftPreview);
     giftPreview();
+    document.getElementById('gift-note')?.addEventListener('input', (event) => { sheet.note = event.target.value; });
     document.getElementById('btn-gift-send')?.addEventListener('click', async () => {
       if (!giftPreview()) return;
       const actionSheet = sheet;
       const n = Number(actionSheet.amount);
-      const r = await run(() => api('/gold-give', { toId: actionSheet.recipientId, amount: n }));
+      const asking = actionSheet.type === 'gold-ask';
+      const r = await run(() => api(asking ? '/gold-ask' : '/gold-give', { toId: actionSheet.recipientId, amount: n, ...(asking ? { note: actionSheet.note || '' } : {}) }), 'global', document.getElementById('btn-gift-send'));
       if (r) {
         updateMe(r);
         if (sheet === actionSheet) sheet = null;
-        toast(`💝 Đã tặng ${actionSheet.recipientName} ${n.toLocaleString('vi')} vàng!`);
+        toast(asking ? `🙏 Đã gửi lời xin ${n.toLocaleString('vi')} vàng tới ${actionSheet.recipientName}` : `💝 Đã tặng ${actionSheet.recipientName} ${n.toLocaleString('vi')} vàng!`);
         render();
       }
     });
-    document.getElementById('btn-gold-ask')?.addEventListener('click', async () => {
-      const v = window.prompt(`Xin ${VISIT.farm.name} bao nhiêu vàng?`, '');
-      if (v === null || !v.trim()) return;
-      const n = Number(v.trim());
-      if (!/^[0-9]+$/.test(v.trim()) || !Number.isSafeInteger(n) || n < 1 || n > 1_000_000_000) {
-        toast('Nhập số vàng nguyên từ 1 đến 1.000.000.000'); return;
-      }
-      const note = window.prompt('Nhắn gì với người ta không? (có thể bỏ trống)', '') || '';
-      const r = await run(() => api('/gold-ask', { toId: VISIT.ownerId, amount: n, note }));
-      if (r) { updateMe(r); toast(`🙏 Đã gửi lời xin ${n.toLocaleString('vi')} vàng tới ${VISIT.farm.name}`); render(); }
+    document.getElementById('btn-gold-ask')?.addEventListener('click', () => {
+      sheet = { type: 'gold-ask', recipientId: VISIT.ownerId, recipientName: VISIT.farm.name, amount: '', note: '' };
+      render();
     });
     document.querySelectorAll('[data-gr-act]').forEach((el) => el.addEventListener('click', async () => {
       const act = el.dataset.grAct;

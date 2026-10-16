@@ -93,3 +93,7 @@ Skills now use readable cards with explicit rank, description, next-rank cost, m
 ## Gold gift decisions
 
 Gold gifting now uses a sheet instead of a browser prompt. It names the recipient, shows the available balance and exact remaining gold, rejects fractional/out-of-range amounts, and explains missing gold before submission. Cancelling transfers nothing. Recipient identity is captured when opening the sheet, and a successful gift closes only that same sheet. The mobile two-player walkthrough checks invalid amounts, shortage guidance, cancellation with unchanged balances, a completed transfer, horizontal fit, and accessibility; it saves `gold-gift-preview-320.png`.
+
+## Gold request decisions
+
+Gold requests share the labeled amount sheet, with an optional 80-character note. They name the requested player and explain that sending does not move gold; that player can pay or decline from Xin / Cho tiền. Valid requests may exceed the requester's balance. Cancelling creates no request. CI checks invalid amounts, the note limit, mobile layout and accessibility, cancellation, request creation without balance changes, and payment from the second browser account with both balances verified. The screenshot is `gold-request-320.png`.
