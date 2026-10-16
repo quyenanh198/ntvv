@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { FESTIVAL, GOLD_MULT, MACHINES, xpNeedFor } from '../server/src/game.js';
+import { FESTIVAL, GOLD_MULT, MACHINES, LUXURY, xpNeedFor } from '../server/src/game.js';
 
 const players = [
   { id: 1, username: 'browser', display_name: 'Browser Farmer' },
@@ -1335,6 +1335,41 @@ try {
   await page.locator('[data-skill-view="available"]').click();
   assert.equal(await page.locator('.skill-card:visible').count(), 0);
   assert.equal(await page.locator('.skill-empty').isVisible(), true);
+  const title = LUXURY.nongdanchamchi;
+  db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(title.price - 1);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-sheet="more"]').first().click();
+  await page.locator('[data-sheet="luxury"]').click();
+  const titleCard = page.locator(`[data-lux-item="${title.id}"]`);
+  await titleCard.waitFor();
+  assert.match(await titleCard.innerText(), /Thiếu 1 vàng/);
+  assert.equal(await titleCard.locator('[data-lux-buy]').isDisabled(), true);
+  await page.locator('[data-lux-view="owned"]').click();
+  assert.equal(await page.locator('[data-lux-item]').count(), 0);
+  assert.equal(await page.locator('[data-lux-view="owned"]').evaluate((button) => button === document.activeElement), true);
+  await page.locator('[data-lux-view="all"]').click();
+  await checkNoOverflow(page, '320px personalization shop');
+  await auditAccessibility(page, 'personalization-320');
+  await titleCard.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'personalization-shop-320.png') });
+  db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(title.price);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-sheet="more"]').first().click();
+  await page.locator('[data-sheet="luxury"]').click();
+  await page.locator('[data-lux-view="available"]').click();
+  assert.equal(await titleCard.isVisible(), true);
+  page.once('dialog', (dialog) => dialog.accept());
+  await titleCard.locator('[data-lux-buy]').click();
+  await page.locator('[data-lux-view="owned"]').click();
+  await titleCard.locator('[data-lux-equip=""]').waitFor();
+  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, 0);
+  assert.equal(db.prepare('SELECT title_id FROM farmers WHERE user_id = 1').get().title_id, title.id);
+  await titleCard.locator('[data-lux-equip=""]').click();
+  await titleCard.locator(`[data-lux-equip="${title.id}"]`).waitFor();
+  assert.equal(db.prepare('SELECT title_id FROM farmers WHERE user_id = 1').get().title_id, '');
+  await titleCard.locator(`[data-lux-equip="${title.id}"]`).click();
+  await titleCard.locator('[data-lux-equip=""]').waitFor();
+  assert.equal(db.prepare('SELECT title_id FROM farmers WHERE user_id = 1').get().title_id, title.id);
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
