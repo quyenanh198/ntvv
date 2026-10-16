@@ -1611,14 +1611,18 @@
     if (t === 'luxury') {
       const L = DATA.config.luxury || {};
       const lux = m.luxury || { owned: [], decor: [] };
-      const section = (kind, title, note) => `<h4 class="lb-sec">${title}</h4><p class="sheet-note">${note}</p><div class="seed-grid lux-grid">${Object.values(L).filter((x) => x.kind === kind).map((x) => {
+      const view = sheet.luxView || 'all';
+      const matches = (x) => view === 'owned' ? lux.owned.includes(x.id) : view === 'available' ? !lux.owned.includes(x.id) && m.gold >= x.price : true;
+      const choices = Object.values(L).filter(matches);
+      const filters = `<div class="inv-groups" role="group" aria-label="Lọc đồ trang trí">${[['all', 'Tất cả', Object.keys(L).length], ['owned', 'Đã có', lux.owned.length], ['available', 'Có thể mua', Object.values(L).filter((x) => !lux.owned.includes(x.id) && m.gold >= x.price).length]].map(([id, name, count]) => `<button data-lux-view="${id}" aria-pressed="${view === id}">${name} (${count})</button>`).join('')}</div>${choices.length ? '' : '<p class="sheet-note">Chưa có món phù hợp. Chọn Tất cả để xem giá và mục tiêu tiết kiệm.</p>'}`;
+      const section = (kind, title, note) => !choices.some((x) => x.kind === kind) ? '' : `<h4 class="lb-sec">${title}</h4><p class="sheet-note">${note}</p>${choices.filter((x) => x.kind === kind).map((x) => {
         const owned = lux.owned.includes(x.id);
         const active = lux.title === x.id || lux.frame === x.id;
         const btn = owned
           ? (kind === 'decor' || kind === 'pet' ? '<span class="lux-owned">✅ Đã có</span>' : active ? `<button class="gbtn btn-mini" data-lux-equip="" data-lux-kind="${kind}">Đang dùng · Bỏ</button>` : `<button class="gbtn gbtn--green btn-mini" data-lux-equip="${x.id}">Dùng</button>`)
-          : `<button class="gbtn gbtn--gold btn-mini" data-lux-buy="${x.id}" ${m.gold >= x.price ? '' : 'data-off="1" aria-disabled="true"'}>${x.price.toLocaleString('vi')} ${COIN}</button>`;
-        return `<div class="seed-card lux-card${owned ? ' lux-card--owned' : ''}"><span class="lux-emoji">${x.emoji}</span><span class="seed-name${kind === 'frame' ? frameCls(x.id) : ''}">${x.name}</span><span class="seed-meta">${x.desc || ''}</span>${btn}</div>`;
-      }).join('')}</div>`;
+          : `<button class="gbtn gbtn--gold btn-mini" data-lux-buy="${x.id}" ${m.gold >= x.price ? '' : 'disabled'}>Mua ${x.price.toLocaleString('vi')} vàng</button>`;
+        return `<article class="festival-card" data-lux-item="${x.id}" aria-labelledby="lux-${x.id}"><div class="festival-card-heading"><h4 id="lux-${x.id}" class="${kind === 'frame' ? frameCls(x.id) : ''}">${x.emoji} ${esc(x.name)}</h4></div><p class="festival-hint">${esc(x.desc || '')}</p>${!owned ? `<p class="festival-hint">${m.gold < x.price ? `Thiếu ${(x.price - m.gold).toLocaleString('vi')} vàng.` : `Sau khi mua: còn ${(m.gold - x.price).toLocaleString('vi')} vàng.`}</p>` : ''}<div class="festival-card-footer">${btn}</div></article>`;
+      }).join('')}`;
       const lot = LOTTERY_DATA;
       const lottery = lot ? `<h4 class="lb-sec">🎟️ Xổ số làng</h4>
         <p class="sheet-note">Vé ${lot.ticket.toLocaleString('vi')} ${COIN}. Hũ tối thiểu <b>${(lot.base || 0).toLocaleString('vi')}</b> ${COIN}, mỗi vé bán ra cộng thêm <b>${(lot.perTicket || 0).toLocaleString('vi')}</b>. Quay lúc <b>9h sáng giờ Los Angeles</b>: <b>3 người may mắn</b> 🥇 ${Math.round((lot.shares?.[0] || .5) * 100)}% · 🥈 ${Math.round((lot.shares?.[1] || .3) * 100)}% · 🥉 ${Math.round((lot.shares?.[2] || .2) * 100)}% hũ (mua nhiều vé, tỉ lệ cao hơn; thiếu người thì dồn về giải 1). Tối đa ${lot.maxPerDay} vé/ngày.</p>
@@ -1626,8 +1630,8 @@
           <span class="btn-group">${[1, 10, 50].map((n) => `<button class="gbtn gbtn--gold btn-mini" data-lottery-buy="${n}">Mua ${n}</button>`).join('')}</span></div>
         ${lot.last ? `<p class="sheet-note">Kỳ trước (${lot.last.day.replace(/^la-/, '')}, hũ ${lot.last.pot.toLocaleString('vi')} ${COIN}, ${lot.last.tickets} vé): ${(lot.last.winners || []).map((w) => `${['🥇', '🥈', '🥉'][w.rank - 1] || ''} <b>${esc(w.name)}</b> +${(w.gold || 0).toLocaleString('vi')}`).join(' · ')}</p>` : ''}` : '';
       return sheetShell(`💎 Xa xỉ <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
-        `<p class="sheet-note">Đồ khoe của — không tăng sức mạnh, chỉ để cả làng trầm trồ. Vàng mua bị đốt khỏi kinh tế làng. Thuế đất: ${(DATA.config.taxPerPlot || 0).toLocaleString('vi')} ${COIN}/ô/ngày (hôm nay ${(m.tax?.today || 0).toLocaleString('vi')} ${COIN}).</p>${section('title', '🏷️ Danh hiệu', 'Hiện cạnh tên (chọn 1 để dùng).')}${section('frame', '🖼️ Khung tên', 'Tô màu tên bạn khắp làng (chọn 1).')}${section('pet', '🐾 Thú cưng', 'Đi theo tên bạn khắp làng.')}${section('decor', '🏡 Trang trí ruộng', 'Hiện trên đầu ruộng, ai ghé cũng thấy.')}${lottery}`,
-        'sheet--factory');
+        `<p class="sheet-note">Đồ khoe của — không tăng sức mạnh, chỉ để cả làng trầm trồ. Vàng mua bị đốt khỏi kinh tế làng. Thuế đất: ${(DATA.config.taxPerPlot || 0).toLocaleString('vi')} ${COIN}/ô/ngày (hôm nay ${(m.tax?.today || 0).toLocaleString('vi')} ${COIN}).</p>${filters}${section('title', '🏷️ Danh hiệu', 'Hiện cạnh tên (chọn 1 để dùng).')}${section('frame', '🖼️ Khung tên', 'Tô màu tên bạn khắp làng (chọn 1).')}${section('pet', '🐾 Thú cưng', 'Đi theo tên bạn khắp làng.')}${section('decor', '🏡 Trang trí ruộng', 'Hiện trên đầu ruộng, ai ghé cũng thấy.')}${lottery}`,
+        'sheet--factory sheet--luxury');
     }
 
     if (t === 'expand') {
@@ -2282,6 +2286,11 @@
       if (!pack || !window.confirm(`Mua ${pack.gems} kim cương với ${pack.gold.toLocaleString('vi')} vàng?`)) return;
       const r = await run(() => api('/buy-gems', { pack: pack.id }));
       if (r) { updateMe(r); toast(`💎 +${r.gems} kim cương!`); render(); }
+    }));
+    document.querySelectorAll('[data-lux-view]').forEach((button) => button.addEventListener('click', () => {
+      sheet.luxView = button.dataset.luxView;
+      render();
+      document.querySelector(`[data-lux-view="${sheet.luxView}"]`)?.focus();
     }));
     document.querySelectorAll('[data-lux-buy]').forEach((el) => el.addEventListener('click', async () => {
       if (el.dataset.off) { toast('Chưa đủ vàng 😅'); return; }
