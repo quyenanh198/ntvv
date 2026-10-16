@@ -1131,7 +1131,7 @@ try {
   for (const item of ['trunggatay', 'totam', 'suatrau', 'longalpaca', 'nhunghuou', 'banhdua', 'banhgung', 'botmi', 'botbap', 'botcacao', 'mutcam', 'mutgung', 'mutsaurieng', 'siro', 'suachua', 'phomaide', 'phomaitrau', 'kem', 'kemvani', 'kemsaurieng', 'dauoliu', 'nuoccoc', 'vai', 'lua', 'khanlen', 'khanalpaca', 'aolen', 'mulen', 'caphesua', 'socola', 'tratui', 'ruouvang', 'caonhung', 'nuochoa', 'hopphomai', 'aodai', 'buatiec', 'hopqua', 'caphehaohang', 'chaca', 'cakho', 'sushi', 'lauca', 'goicuon', 'tomnuong', 'catrakho', 'calocnuong']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
-  for (const item of ['cadieuhongchien', 'luonxao', 'cuahap', 'mucnuong', 'tom', 'cua', 'luon', 'ech', 'muc', 'lauech', 'oc', 'ochuong', 'ocnhoi', 'oclen', 'ocdang', 'ocmo', 'ocluocsa', 'ocrangmuoiot', 'ochuongxaotoi', 'ochuongxaosate', 'ocnhoixaome', 'ocnhoixaotoi', 'oclenxaobo', 'oclennuongmohanh', 'ocdangnuongmohanh', 'ocdanghapsa', 'ocmorangmuoiot', 'ocmoluocsa', 'ocgaoxaodua', 'ocgaoxaobo', 'ocduahapsa', 'ocduaxaodua', 'ocmitxaosate', 'ocmitnuongphomai', 'oclacnuongphomai', 'oclacxaome', 'ocbongluocsa', 'ocbongrangmuoiot', 'ocdaxaotoi', 'ocdaxaosate', 'ocgaixaome', 'ocgaixaotoi', 'ocmongtayxaobo', 'ocmongtaynuongmohanh', 'ocgiacnuongmohanh', 'ocgiachapsa', 'octoirangmuoiot', 'octoiluocsa', 'ocnhayxaodua', 'ocnhayxaobo', 'occanahapsa', 'occanaxaodua', 'ocbantay', 'ocvunang', 'octuva', 'ocmongtay', 'ocgai', 'ocgiac', 'ocbantayxaosate', 'ocbantaynuongphomai', 'ocvunangnuongphomai', 'ocvunangxaome', 'octuvaluocsa', 'octuvarangmuoiot']) {
+  for (const item of ['cadieuhongchien', 'luonxao', 'cuahap', 'mucnuong', 'tom', 'cua', 'luon', 'ech', 'muc', 'lauech', 'oc', 'ochuong', 'ocnhoi', 'oclen', 'ocdang', 'ocmo', 'ocluocsa', 'ocrangmuoiot', 'ochuongxaotoi', 'ochuongxaosate', 'ocnhoixaome', 'ocnhoixaotoi', 'oclenxaobo', 'oclennuongmohanh', 'ocdangnuongmohanh', 'ocdanghapsa', 'ocmorangmuoiot', 'ocmoluocsa', 'ocgaoxaodua', 'ocgaoxaobo', 'ocduahapsa', 'ocduaxaodua', 'ocmitxaosate', 'ocmitnuongphomai', 'oclacnuongphomai', 'oclacxaome', 'ocbongluocsa', 'ocbongrangmuoiot', 'ocdaxaotoi', 'ocdaxaosate', 'ocgaixaome', 'ocgaixaotoi', 'ocmongtayxaobo', 'ocmongtaynuongmohanh', 'ocgiacnuongmohanh', 'ocgiachapsa', 'octoirangmuoiot', 'octoiluocsa', 'ocnhayxaodua', 'ocnhayxaobo', 'occanahapsa', 'occanaxaodua', 'ocbong', 'occana', 'ocdua', 'ocda', 'ocgao', 'oclac', 'ocmit', 'ocnhay', 'octoi', 'ocbantay', 'ocvunang', 'octuva', 'ocmongtay', 'ocgai', 'ocgiac', 'ocbantayxaosate', 'ocbantaynuongphomai', 'ocvunangnuongphomai', 'ocvunangxaome', 'octuvaluocsa', 'octuvarangmuoiot']) {
     db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1').run(item);
   }
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -1204,6 +1204,11 @@ try {
     ['ocbantay', 'spider-conch-shell'], ['ocvunang', 'limpet-shell'],
     ['octuva', 'trumpet-snail-shell'], ['ocmongtay', 'razor-clam-shell'],
     ['ocgai', 'spiny-snail-shell'], ['ocgiac', 'conch-shell'],
+    ['ocbong', 'flower-snail-shell'], ['occana', 'olive-snail-shell'],
+    ['ocdua', 'coconut-snail-shell'], ['ocda', 'stone-snail-shell'],
+    ['ocgao', 'rice-snail-shell'], ['oclac', 'striped-snail-shell'],
+    ['ocmit', 'jackfruit-snail-shell'], ['ocnhay', 'jumping-snail-shell'],
+    ['octoi', 'garlic-snail-shell'],
     ['ech', 'farm-frog'], ['muc', 'fresh-squid'], ['lauech', 'frog-hotpot'],
   ]) {
     const image = page.locator(`.inv-row[data-item="${item}"] img[src*="products-v3/${file}.png"]`);
@@ -1255,6 +1260,8 @@ try {
   await page.locator('[data-inventory-group="all"]').click();
   await page.locator('.inv-row[data-item="ocvunang"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'raw-shell-products-320.png') });
+  await page.locator('.inv-row[data-item="ocnhay"]').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'raw-shell-final-products-320.png') });
   await page.locator('[data-inventory-group="products"]').click();
   await page.locator('.inv-row[data-item="ocvunangnuongphomai"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'snail-stall-limpet-products-320.png') });
