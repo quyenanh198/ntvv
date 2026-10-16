@@ -454,7 +454,7 @@ try {
   await page.locator('[data-want-cancel]').waitFor();
   const want = db.prepare("SELECT id, price FROM wants WHERE owner_id = 1 AND item = 'luami'").get();
   assert.ok(want);
-  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, afterGift[0].gold - want.price);
+  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, afterRequest[0].gold - want.price);
   await page.screenshot({ path: resolve(outputDir, 'trade-buyer-320.png') });
 
   await friendPage.locator('[data-sheet="more"]').first().click();
@@ -483,7 +483,7 @@ try {
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM wants WHERE id = ?').get(want.id).n, 0);
   assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 2 AND item = 'luami'").get().qty, friendWheatBeforeTrade - 1);
   assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty, 1);
-  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 2').get().gold, afterGift[1].gold + want.price);
+  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 2').get().gold, afterRequest[1].gold + want.price);
   await friendPage.screenshot({ path: resolve(outputDir, 'trade-seller-390.png') });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.dock-btn[data-sheet="inventory"]').click();
