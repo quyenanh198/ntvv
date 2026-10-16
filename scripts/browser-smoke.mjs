@@ -354,8 +354,25 @@ try {
   await friendPage.screenshot({ path: resolve(outputDir, 'friend-helped-390.png') });
 
   const beforeGift = db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all();
-  page.once('dialog', (dialog) => dialog.accept('10'));
   await page.locator('#btn-gold-give').click();
+  assert.match(await page.locator('.sheet--gift').innerText(), /Friend Farmer/);
+  assert.equal(await page.locator('#btn-gift-send').isDisabled(), true);
+  for (const invalid of ['0', '-1', '1.5', String(beforeGift[0].gold + 1)]) {
+    await page.locator('#gift-amount').fill(invalid);
+    assert.equal(await page.locator('#btn-gift-send').isDisabled(), true, `Gift ${invalid} must be blocked`);
+  }
+  assert.match(await page.locator('#gift-preview').innerText(), /Thiếu 1 vàng/);
+  await page.locator('#gift-amount').fill('10');
+  assert.match(await page.locator('#gift-preview').innerText(), /Friend Farmer nhận 10 vàng/);
+  await checkNoOverflow(page, '320px gold gift preview');
+  await auditAccessibility(page, 'gold-gift-320');
+  await page.screenshot({ path: resolve(outputDir, 'gold-gift-preview-320.png') });
+  await page.locator('.sheet--gift [data-close]').last().click();
+  assert.deepEqual(db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all(), beforeGift,
+    'Cancelling a gift must preserve both balances');
+  await page.locator('#btn-gold-give').click();
+  await page.locator('#gift-amount').fill('10');
+  await page.locator('#btn-gift-send').click();
   await page.waitForFunction((expected) => document.querySelector('.coin-pill b')?.textContent.replaceAll('.', '') === String(expected), beforeGift[0].gold - 10);
   const afterGift = db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all();
   assert.equal(afterGift[0].gold, beforeGift[0].gold - 10);

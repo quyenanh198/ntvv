@@ -89,3 +89,7 @@ Fishing now reads its regeneration interval from server state, including fast mo
 ## Skill learning decisions
 
 Skills now use readable cards with explicit rank, description, next-rank cost, missing points, and skill-specific action names. All and Can learn filters keep keyboard focus and hide empty branches; a zero-point view explains how to progress. Respec explains missing gems or remaining cooldown using state values. The mobile walkthrough spends one of two points, verifies rank 1/10 and the two-point next rank, checks the one-point shortage and missing respec gems, audits accessibility, and covers the zero-point empty state.
+
+## Gold gift decisions
+
+Gold gifting now uses a sheet instead of a browser prompt. It names the recipient, shows the available balance and exact remaining gold, rejects fractional/out-of-range amounts, and explains missing gold before submission. Cancelling transfers nothing. Recipient identity is captured when opening the sheet, and a successful gift closes only that same sheet. The mobile two-player walkthrough checks invalid amounts, shortage guidance, cancellation with unchanged balances, a completed transfer, horizontal fit, and accessibility; it saves `gold-gift-preview-320.png`.
