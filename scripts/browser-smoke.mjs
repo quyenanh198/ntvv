@@ -328,12 +328,49 @@ try {
   await friendPage.locator('.plot[data-idx="0"][data-kind="empty"]').click();
   await friendPage.locator('.seed-card[data-crop="luami"]').click();
   await friendPage.locator('.plot[data-idx="0"][data-kind="waterplot"]').waitFor();
+  const decorationArt = [['vuonhoa', 'flower-garden'], ['denlong', 'garden-lantern'], ['daiphunnuoc', 'stone-fountain'], ['caugo', 'wooden-bridge']];
+  for (const [id] of decorationArt) db.prepare('INSERT INTO luxury (owner_id, item, at) VALUES (2, ?, ?)').run(id, Date.now());
+  await friendPage.reload({ waitUntil: 'domcontentloaded' });
+  await friendPage.locator('.lux-strip summary').waitFor();
+  assert.equal(await friendPage.locator('details.lux-strip').getAttribute('open'), null);
+  await friendPage.locator('.lux-strip summary').click();
+  for (const [id, file] of decorationArt) {
+    const art = friendPage.locator(`[data-decor="${id}"] img[src*="decor-v3/${file}.png"]`);
+    await art.scrollIntoViewIfNeeded();
+    await art.evaluate((img) => img.decode());
+    assert.ok(await art.evaluate((img) => img.naturalWidth > 0));
+  }
+  await checkNoOverflow(friendPage, '390px owned decoration gallery');
+  await auditAccessibility(friendPage, 'decoration-gallery-390');
+  await friendPage.locator('.lux-strip').scrollIntoViewIfNeeded();
+  await friendPage.screenshot({ path: resolve(outputDir, 'decoration-gallery-owner-390.png') });
+  await friendPage.locator('.lux-strip summary').click();
+  await friendPage.locator('[data-sheet="more"]').first().click();
+  await friendPage.locator('[data-sheet="luxury"]').click();
+  await friendPage.locator('[data-lux-view="owned"]').click();
+  for (const [id, file] of decorationArt) {
+    const art = friendPage.locator(`[data-lux-item="${id}"] img[src*="decor-v3/${file}.png"]`);
+    await art.scrollIntoViewIfNeeded();
+    await art.evaluate((img) => img.decode());
+  }
+  await checkNoOverflow(friendPage, '390px owned decoration shop');
+  await auditAccessibility(friendPage, 'decoration-shop-390');
+  await friendPage.screenshot({ path: resolve(outputDir, 'decoration-shop-390.png') });
+  await friendPage.locator('.sheet [data-close]').first().click();
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.dock-btn[data-sheet="more"]').click();
   await page.locator('.sheet .more-card[data-sheet="family"]').click();
   await page.locator('.sheet--family .family-search').fill('Friend');
   await page.locator('.sheet--family .family-member[data-visit="2"]').click();
   await page.locator('.visit-bar').waitFor();
+  await page.locator('.lux-strip summary').focus();
+  await page.keyboard.press('Enter');
+  assert.notEqual(await page.locator('details.lux-strip').getAttribute('open'), null);
+  assert.equal(await page.locator('.lux-gallery [data-decor]').count(), decorationArt.length);
+  for (const [id] of decorationArt) await page.locator(`[data-decor="${id}"] img`).evaluate((img) => img.decode());
+  await checkNoOverflow(page, '320px visitor decoration gallery');
+  await page.locator('.lux-strip').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'decoration-gallery-visitor-320.png') });
   const visitLayout = await page.locator('.visit-bar').evaluate((bar) => ({
     barWidth: bar.getBoundingClientRect().width,
     ownerWidth: bar.firstElementChild.getBoundingClientRect().width,
@@ -348,6 +385,7 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'visit-friend-320.png') });
   await page.locator('.plot[data-idx="0"][data-kind="water"]').click();
   await page.locator('.plot[data-idx="0"].plot--ready').waitFor();
+  assert.notEqual(await page.locator('details.lux-strip').getAttribute('open'), null, 'Decoration gallery should stay open after watering refresh');
   assert.equal(db.prepare('SELECT watered FROM plots WHERE owner_id = 2 AND idx = 0').get().watered, 1);
   await friendPage.reload({ waitUntil: 'domcontentloaded' });
   await friendPage.locator('.plot[data-idx="0"][data-kind="harvest"]').waitFor();

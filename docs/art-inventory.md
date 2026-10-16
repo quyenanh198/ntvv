@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 186/186 catalog products have PNG or SVG icons. 323 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 186/186 catalog products have PNG or SVG icons. 327 static asset paths appear in the client.
 
 ## Crops
 
@@ -308,6 +308,35 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Xôi đậu phộng | xoidauphong | quanvat | PNG art |
 | Xúc xích | xucxich | bepan | PNG art |
 
+## Owned farm decorations
+
+5/22 decorations have individual PNG art. The gallery and shop share these sprites.
+
+| Decoration | ID | Current art |
+| --- | --- | --- |
+| Vườn hoa | vuonhoa | PNG art |
+| Bù nhìn cao cấp | bunhin | PNG art |
+| Cối xay gió | coixaygio | emoji |
+| Đèn lồng | denlong | PNG art |
+| Đài phun nước | daiphunnuoc | PNG art |
+| Cầu gỗ | caugo | PNG art |
+| Xe kéo | xekeo | emoji |
+| Tượng gà vàng | tuongga | emoji |
+| Hồ sen | hosen | emoji |
+| Cổng làng | conglang | emoji |
+| Ghế đá | gheda | emoji |
+| Bảng tên nông trại | bangten | emoji |
+| Chuồng bồ câu | chuongbocau | emoji |
+| Cây thông | caythong | emoji |
+| Thuyền gỗ | thuyen | emoji |
+| Lâu đài cát | laudaicat | emoji |
+| Tượng bò vàng | tuongbovang | emoji |
+| Vườn bonsai | vuonbonsai | emoji |
+| Pháo hoa | phaohoa | emoji |
+| Tháp đồng hồ | thapdongho | emoji |
+| Tượng đá cổ | tuongda | emoji |
+| Biệt thự | biethu | emoji |
+
 ## Static client asset references
 
 This list includes scene buildings, backgrounds, UI icons, and product art named directly in `public/app.js`. Crop, tree, and animal IDs generated at runtime are covered by the catalog tables above.
@@ -420,7 +449,11 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops-v3/wheat-growing.png` | 54 KB |
 | `assets/crops-v3/wheat-ripe.png` | 85 KB |
 | `assets/crops/seed-1.svg` | <1 KB |
+| `assets/decor-v3/flower-garden.png` | 27 KB |
+| `assets/decor-v3/garden-lantern.png` | 14 KB |
 | `assets/decor-v3/scarecrow.png` | 36 KB |
+| `assets/decor-v3/stone-fountain.png` | 25 KB |
+| `assets/decor-v3/wooden-bridge.png` | 21 KB |
 | `assets/machines-v3/bakery-oven.png` | 38 KB |
 | `assets/machines-v3/coffee-roaster.png` | 29 KB |
 | `assets/machines-v3/dairy-workshop.png` | 39 KB |
@@ -620,7 +653,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/scene-v3/farmhouse_v3.png` | 63 KB |
 | `assets/scene-v3/fishing_pond_v3.png` | 82 KB |
 | `assets/scene-v3/greenhouse_v3.png` | 67 KB |
-| `assets/scene-v3/market_shop_v3-224.png` | 89 KB |
+| `assets/scene-v3/market_shop_v3-208.png` | 78 KB |
 | `assets/scene-v3/red_barn_v3.png` | 63 KB |
 | `assets/scene-v3/windmill_v3-224.png` | 69 KB |
 | `assets/ui/coin.svg` | <1 KB |

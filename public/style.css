@@ -2100,6 +2100,13 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 .lux-strip { display: flex; flex-wrap: wrap; gap: .3rem .35rem; align-items: center; justify-content: center; padding: .25rem .5rem .1rem; position: relative; z-index: 2; }
 .lux-item { font-size: 1.6rem; line-height: 1; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .25)); }
+details.lux-strip { display: block; text-align: left; }
+.lux-strip summary { min-height: 44px; padding: .5rem; cursor: pointer; color: #503818; font-size: .8rem; font-weight: 800; }
+.lux-strip summary:focus-visible { outline: 3px solid #284f7d; outline-offset: 2px; }
+.lux-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: .4rem; padding: .4rem; margin: 0; list-style: none; }
+.lux-gallery li { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .25rem; padding: .4rem; background: #fff7dc; border: 1px solid #aa8147; border-radius: 12px; color: #503818; text-align: center; font-size: .75rem; line-height: 1.35; }
+.lux-art { width: 64px; height: 64px; object-fit: contain; flex: 0 0 auto; }
+.sheet--luxury .festival-card-heading h4 { display: flex; align-items: center; gap: .5rem; }
 .lux-title-badge { background: rgba(60, 35, 15, .78); color: #ffe9a8; border-radius: 999px; padding: .12rem .55rem; font-size: .78rem; font-weight: 800; white-space: nowrap; }
 
 .away-thief { display: inline-block; margin: .1rem .25rem .1rem 0; background: rgba(255,255,255,.55); border-radius: 999px; padding: .1rem .5rem; font-size: .8rem; }
