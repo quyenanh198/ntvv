@@ -406,14 +406,37 @@ try {
   assert.equal(goldRequest.status, 'open');
   assert.deepEqual(db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all(), afterGift,
     'Sending a request must not move gold');
+  await page.locator('#btn-gold-ask').click();
+  await page.locator('#gift-amount').fill(String(afterGift[1].gold + 1));
+  await page.locator('#btn-gift-send').click();
+  await page.locator('.sheet--gift').waitFor({ state: 'hidden' });
+  const unaffordableRequest = db.prepare('SELECT id FROM gold_requests WHERE amount = ? AND from_id = 1').get(afterGift[1].gold + 1);
   await friendPage.locator('[data-sheet="more"]').first().click();
   await friendPage.locator('[data-sheet="money"]').click();
   await friendPage.locator(`[data-gr-id="${goldRequest.id}"][data-gr-act="pay"]`).waitFor();
   assert.match(await friendPage.locator('.sheet').innerText(), /Mua hạt giống/);
-  friendPage.once('dialog', (dialog) => dialog.accept());
+  const expensiveCard = friendPage.locator(`[data-gold-request="${unaffordableRequest.id}"]`);
+  assert.match(await expensiveCard.innerText(), /Thiếu 1 vàng/);
+  assert.equal(await expensiveCard.locator('[data-gr-act="pay"]').isDisabled(), true);
+  await checkNoOverflow(friendPage, '390px request inbox');
+  await auditAccessibility(friendPage, 'gold-inbox-390');
+  await friendPage.screenshot({ path: resolve(outputDir, 'gold-request-inbox-390.png') });
+  await expensiveCard.locator('[data-gr-act="decline"]').click();
+  await expensiveCard.waitFor({ state: 'hidden' });
+  assert.equal(db.prepare('SELECT status FROM gold_requests WHERE id = ?').get(unaffordableRequest.id).status, 'declined');
+  assert.deepEqual(db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all(), afterGift,
+    'Declining a request must not move gold');
+  friendPage.once('dialog', (dialog) => dialog.dismiss());
+  await friendPage.locator(`[data-gr-id="${goldRequest.id}"][data-gr-act="pay"]`).click();
+  assert.equal(db.prepare('SELECT status FROM gold_requests WHERE id = ?').get(goldRequest.id).status, 'open');
+  assert.deepEqual(db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all(), afterGift,
+    'Cancelling payment confirmation must not move gold');
+  let paymentConfirmation;
+  friendPage.once('dialog', (dialog) => { paymentConfirmation = dialog.message(); return dialog.accept(); });
   await friendPage.locator(`[data-gr-id="${goldRequest.id}"][data-gr-act="pay"]`).click();
   await friendPage.locator(`[data-gr-id="${goldRequest.id}"][data-gr-act="pay"]`).waitFor({ state: 'hidden' });
   assert.equal(db.prepare('SELECT status FROM gold_requests WHERE id = ?').get(goldRequest.id).status, 'paid');
+  assert.match(paymentConfirmation, /Cho Browser Farmer 7 vàng/);
   const afterRequest = db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all();
   assert.equal(afterRequest[0].gold, afterGift[0].gold + 7);
   assert.equal(afterRequest[1].gold, afterGift[1].gold - 7);
