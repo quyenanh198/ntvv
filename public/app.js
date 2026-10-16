@@ -23,6 +23,7 @@
   let modalReturnFocus = null;
   let modalReturnFocusId = null;
   const pendingResources = new Set();
+  const openDecorOwners = new Set();
   let familyFilter = '';
   let lastLevel = null;
   let critterTimer = null;
@@ -920,7 +921,7 @@
         <img class="sb sb-coop" src="${A('assets/scene-v3/chicken_coop_v3.png')}" alt="" />
         <img class="sb sb-hen2" src="${A('assets/art/chicken_v3.png')}" alt="" />
         <img class="sb sb-mill" src="${A('assets/scene-v3/windmill_v3-224.png')}" alt="" />
-        <img class="sb sb-shop" src="${A('assets/scene-v3/market_shop_v3-224.png')}" alt="" />`;
+        <img class="sb sb-shop" src="${A('assets/scene-v3/market_shop_v3-208.png')}" alt="" />`;
     }
     return `
       ${coopUnlocked ? `
@@ -939,7 +940,7 @@
         </button>`
       : `<img class="sb sb-mill sb--locked" src="${A('assets/scene-v3/windmill_v3-224.png')}" alt="" title="Cối xay — cần Lv ${DATA.config.mill.level}" />`}
       <button class="sb sb-btn sb-shop" data-sheet="shop" title="Cửa hàng">
-          <img src="${A('assets/scene-v3/market_shop_v3-224.png')}" alt="Cửa hàng" />
+          <img src="${A('assets/scene-v3/market_shop_v3-208.png')}" alt="Cửa hàng" />
         <span class="sb-tag">Cửa hàng</span>
       </button>`;
   }
@@ -957,6 +958,14 @@
   // ---------- sheets ----------
   // Xa xỉ phẩm: khung tên (class) + dòng danh hiệu/trang trí dưới tên.
   const frameCls = (id) => (id ? ` nf nf-${id}` : '');
+  const DECOR_ART = {
+    vuonhoa: 'assets/decor-v3/flower-garden.png', denlong: 'assets/decor-v3/garden-lantern.png',
+    daiphunnuoc: 'assets/decor-v3/stone-fountain.png', caugo: 'assets/decor-v3/wooden-bridge.png',
+    bunhin: 'assets/decor-v3/scarecrow.png',
+  };
+  const luxuryArt = (id) => DECOR_ART[id]
+    ? `<img class="lux-art" src="${A(DECOR_ART[id])}" alt="" loading="lazy" />`
+    : `<span aria-hidden="true">${DATA.config.luxury[id]?.emoji || ''}</span>`;
   function luxLine(l) {
     if (!l || !DATA.config.luxury) return '';
     const t = l.title ? DATA.config.luxury[l.title] : null;
@@ -972,7 +981,10 @@
     const t = l.title ? L[l.title] : null;
     const items = [...(l.pets || []), ...(l.decor || [])].filter((id) => L[id]);
     if (!t && !items.length) return '';
-    return `<div class="lux-strip">${t ? `<span class="lux-title-badge">${t.emoji} ${t.name}</span>` : ''}${items.map((id) => `<span class="lux-item" title="${L[id].name}">${L[id].emoji}</span>`).join('')}</div>`;
+    const ownerId = VISIT?.ownerId || me().id;
+    const title = t ? `<span class="lux-title-badge">${t.emoji} ${esc(t.name)}</span>` : '';
+    if (!items.length) return `<div class="lux-strip">${title}</div>`;
+    return `<details class="lux-strip" data-decor-owner="${ownerId}" ${openDecorOwners.has(String(ownerId)) ? 'open' : ''}><summary>${title}<span>Bộ sưu tập (${items.length})</span></summary><ul class="lux-gallery">${items.map((id) => `<li data-decor="${id}">${luxuryArt(id)}<span>${esc(L[id].name)}</span></li>`).join('')}</ul></details>`;
   }
 
   // Chấm đỏ Kỹ năng chỉ khi điểm hiện có đủ nâng ít nhất một kỹ năng.
@@ -1626,7 +1638,7 @@
         const btn = owned
           ? (kind === 'decor' || kind === 'pet' ? '<span class="lux-owned">✅ Đã có</span>' : active ? `<button class="gbtn btn-mini" data-lux-equip="" data-lux-kind="${kind}">Đang dùng · Bỏ</button>` : `<button class="gbtn gbtn--green btn-mini" data-lux-equip="${x.id}">Dùng</button>`)
           : `<button class="gbtn gbtn--gold btn-mini" data-lux-buy="${x.id}" ${m.gold >= x.price ? '' : 'disabled'}>Mua ${x.price.toLocaleString('vi')} vàng</button>`;
-        return `<article class="festival-card" data-lux-item="${x.id}" aria-labelledby="lux-${x.id}"><div class="festival-card-heading"><h4 id="lux-${x.id}" class="${kind === 'frame' ? frameCls(x.id) : ''}">${x.emoji} ${esc(x.name)}</h4></div><p class="festival-hint">${esc(x.desc || '')}</p>${!owned ? `<p class="festival-hint">${m.gold < x.price ? `Thiếu ${(x.price - m.gold).toLocaleString('vi')} vàng.` : `Sau khi mua: còn ${(m.gold - x.price).toLocaleString('vi')} vàng.`}</p>` : ''}<div class="festival-card-footer">${btn}</div></article>`;
+        return `<article class="festival-card" data-lux-item="${x.id}" aria-labelledby="lux-${x.id}"><div class="festival-card-heading"><h4 id="lux-${x.id}" class="${kind === 'frame' ? frameCls(x.id) : ''}">${luxuryArt(x.id)} ${esc(x.name)}</h4></div><p class="festival-hint">${esc(x.desc || '')}</p>${!owned ? `<p class="festival-hint">${m.gold < x.price ? `Thiếu ${(x.price - m.gold).toLocaleString('vi')} vàng.` : `Sau khi mua: còn ${(m.gold - x.price).toLocaleString('vi')} vàng.`}</p>` : ''}<div class="festival-card-footer">${btn}</div></article>`;
       }).join('')}`;
       const lot = LOTTERY_DATA;
       const lottery = lot ? `<h4 class="lb-sec">🎟️ Xổ số làng</h4>
@@ -2292,6 +2304,10 @@
       const r = await run(() => api('/buy-gems', { pack: pack.id }));
       if (r) { updateMe(r); toast(`💎 +${r.gems} kim cương!`); render(); }
     }));
+    document.querySelector('[data-decor-owner]')?.addEventListener('toggle', (event) => {
+      const owner = event.currentTarget.dataset.decorOwner;
+      if (event.currentTarget.open) openDecorOwners.add(owner); else openDecorOwners.delete(owner);
+    });
     document.querySelectorAll('[data-lux-view]').forEach((button) => button.addEventListener('click', () => {
       sheet.luxView = button.dataset.luxView;
       render();
