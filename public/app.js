@@ -1654,10 +1654,18 @@
         return `<article class="festival-card" data-lux-item="${x.id}" aria-labelledby="lux-${x.id}"><div class="festival-card-heading"><h4 id="lux-${x.id}" class="${kind === 'frame' ? frameCls(x.id) : ''}">${luxuryArt(x.id)} ${esc(x.name)}</h4></div><p class="festival-hint">${esc(x.desc || '')}</p>${!owned ? `<p class="festival-hint">${m.gold < x.price ? `Thiếu ${(x.price - m.gold).toLocaleString('vi')} vàng.` : `Sau khi mua: còn ${(m.gold - x.price).toLocaleString('vi')} vàng.`}</p>` : ''}<div class="festival-card-footer">${btn}</div></article>`;
       }).join('')}`;
       const lot = LOTTERY_DATA;
+      const lotteryRemaining = lot ? Math.max(0, lot.maxPerDay - lot.mine) : 0;
       const lottery = lot ? `<h4 class="lb-sec">🎟️ Xổ số làng</h4>
         <p class="sheet-note">Vé ${lot.ticket.toLocaleString('vi')} ${COIN}. Hũ tối thiểu <b>${(lot.base || 0).toLocaleString('vi')}</b> ${COIN}, mỗi vé bán ra cộng thêm <b>${(lot.perTicket || 0).toLocaleString('vi')}</b>. Quay lúc <b>9h sáng giờ Los Angeles</b>: <b>3 người may mắn</b> 🥇 ${Math.round((lot.shares?.[0] || .5) * 100)}% · 🥈 ${Math.round((lot.shares?.[1] || .3) * 100)}% · 🥉 ${Math.round((lot.shares?.[2] || .2) * 100)}% hũ (mua nhiều vé, tỉ lệ cao hơn; thiếu người thì dồn về giải 1). Tối đa ${lot.maxPerDay} vé/ngày.</p>
         <div class="lux-lottery"><span>Hũ hôm nay: <b>${lot.pot.toLocaleString('vi')}</b> ${COIN} · ${lot.tickets} vé / ${lot.players} người · bạn có <b>${lot.mine}</b> vé</span>
-          <span class="btn-group">${[1, 10, 50].map((n) => `<button class="gbtn gbtn--gold btn-mini" data-lottery-buy="${n}">Mua ${n}</button>`).join('')}</span></div>
+          <div class="lottery-options">${[1, 10, 50].map((n) => {
+            const cost = n * lot.ticket;
+            const allowed = n <= lotteryRemaining;
+            const affordable = m.gold >= cost;
+            const hint = !allowed ? lotteryRemaining ? `Còn ${lotteryRemaining} vé có thể mua hôm nay.` : 'Đã đạt giới hạn vé hôm nay.'
+              : !affordable ? `Thiếu ${(cost - m.gold).toLocaleString('vi')} vàng.` : `Sau khi mua: còn ${(m.gold - cost).toLocaleString('vi')} vàng.`;
+            return `<div class="lottery-option"><button class="gbtn gbtn--gold btn-mini" data-lottery-buy="${n}" aria-describedby="lottery-hint-${n}" ${allowed && affordable ? '' : 'disabled'}><span>Mua ${n} vé</span> <small>${cost.toLocaleString('vi')} vàng</small></button><p class="festival-hint" id="lottery-hint-${n}">${hint}</p></div>`;
+          }).join('')}</div></div>
         ${lot.last ? `<p class="sheet-note">Kỳ trước (${lot.last.day.replace(/^la-/, '')}, hũ ${lot.last.pot.toLocaleString('vi')} ${COIN}, ${lot.last.tickets} vé): ${(lot.last.winners || []).map((w) => `${['🥇', '🥈', '🥉'][w.rank - 1] || ''} <b>${esc(w.name)}</b> +${(w.gold || 0).toLocaleString('vi')}`).join(' · ')}</p>` : ''}` : '';
       return sheetShell(`💎 Xa xỉ <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
         `<p class="sheet-note">Đồ khoe của — không tăng sức mạnh, chỉ để cả làng trầm trồ. Vàng mua bị đốt khỏi kinh tế làng. Thuế đất: ${(DATA.config.taxPerPlot || 0).toLocaleString('vi')} ${COIN}/ô/ngày (hôm nay ${(m.tax?.today || 0).toLocaleString('vi')} ${COIN}).</p>${filters}${section('title', '🏷️ Danh hiệu', 'Hiện cạnh tên (chọn 1 để dùng).')}${section('frame', '🖼️ Khung tên', 'Tô màu tên bạn khắp làng (chọn 1).')}${section('pet', '🐾 Thú cưng', 'Đi theo tên bạn khắp làng.')}${section('decor', '🏡 Trang trí ruộng', 'Hiện trên đầu ruộng, ai ghé cũng thấy.')}${lottery}`,

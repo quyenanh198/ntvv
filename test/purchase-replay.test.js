@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { xpNeedFor } from '../server/src/game.js';
+import { LOTTERY, xpNeedFor } from '../server/src/game.js';
 
 test('animal and lottery purchases do not repeat after a lost response', async () => {
   const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-purchases-'));
@@ -55,6 +55,26 @@ test('animal and lottery purchases do not repeat after a lost response', async (
     assert.equal(gold(), afterTicket);
     assert.equal(replay.json().lottery.mine, ticket.json().lottery.mine);
     assert.equal(db.prepare('SELECT qty FROM lottery_tickets WHERE owner_id = 1').get().qty, 2);
+    const lotterySnapshot = () => ({
+      ...db.prepare('SELECT gold, sunk_gold, mutation_version FROM farmers WHERE user_id = 1').get(),
+      qty: db.prepare('SELECT qty FROM lottery_tickets WHERE owner_id = 1').get().qty,
+    });
+    for (const capRace of [false, true]) {
+      db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(LOTTERY.ticket * (capRace ? 2 : 1));
+      if (capRace) db.prepare('UPDATE lottery_tickets SET qty = ? WHERE owner_id = 1').run(LOTTERY.maxPerDay - 1);
+      const before = lotterySnapshot();
+      const keys = [0, 1].map((index) => `lottery-${capRace ? 'cap' : 'balance'}-race-${index}`);
+      const responses = await Promise.all(keys.map((key) => post('/lottery-buy', { qty: 1 }, key)));
+      assert.deepEqual(responses.map((response) => response.statusCode).sort(), [200, 400]);
+      const winner = responses.findIndex((response) => response.statusCode === 200);
+      assert.equal(responses[1 - winner].json().error, capRace ? 'lottery_max' : 'not_enough_gold');
+      const after = lotterySnapshot();
+      assert.equal(after.gold, before.gold - LOTTERY.ticket);
+      assert.equal(after.sunk_gold, before.sunk_gold + LOTTERY.ticket);
+      assert.equal(after.qty, before.qty + 1);
+      assert.equal((await post('/lottery-buy', { qty: 1 }, keys[winner])).statusCode, 200);
+      assert.deepEqual(lotterySnapshot(), after, 'The winning purchase must replay without charging or granting again');
+    }
   } finally {
     await app.close();
     db.close();

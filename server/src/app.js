@@ -2111,7 +2111,7 @@ export function buildApp({ config, db, logger = true }) {
           const mine = db.prepare('SELECT qty FROM lottery_tickets WHERE day = ? AND owner_id = ?').get(day, me.user_id)?.qty || 0;
           if (mine + n > LOTTERY.maxPerDay) return { error: 'lottery_max' };
           const cost = n * LOTTERY.ticket;
-          if (me.gold < cost) return { error: 'not_enough_gold' };
+          if (getFarmer.get(me.user_id).gold < cost) return { error: 'not_enough_gold' };
           grant(me.user_id, { gold: -cost });
           db.prepare('UPDATE farmers SET sunk_gold = sunk_gold + ? WHERE user_id = ?').run(cost, me.user_id);
           db.prepare('INSERT INTO lottery_tickets (day, owner_id, qty) VALUES (?, ?, ?) ON CONFLICT(day, owner_id) DO UPDATE SET qty = qty + excluded.qty').run(day, me.user_id, n);

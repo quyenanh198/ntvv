@@ -2087,6 +2087,10 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .sheet--luxury .festival-card-heading:has(.nf) { background: #3b2a1a; padding: .3rem .45rem; border-radius: 8px; }
 .sheet--luxury .nf-khunghackim { background: #fff5cf; border-radius: 4px; padding: .1rem .25rem; }
 .lux-lottery { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, .5); border-radius: 10px; padding: .45rem .6rem; font-size: .85rem; }
+.lottery-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: .5rem; width: 100%; }
+.lottery-option button { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 44px; width: 100%; }
+.lottery-option small { font-size: .75rem; }
+.lottery-option .festival-hint { margin-bottom: .2rem; }
 .mc-upgrade { width: 100%; margin-top: .35rem; font-size: .8rem; }
 .lb-title { font-style: normal; font-size: .75em; color: #8a5a1a; }
 .sat { font-style: normal; color: #b3462b; font-weight: 700; }
