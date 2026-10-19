@@ -631,7 +631,7 @@
 
           ${visiting ? `
             <div class="visit-bar">
-              <span>👀 Ruộng của <b class="${frameCls(visiting.farm.luxury?.frame)}">${esc(visiting.farm.name)}</b>${visiting.farm.luxury?.title && DATA.config.luxury?.[visiting.farm.luxury.title] ? ` <i class="vis-title">${DATA.config.luxury[visiting.farm.luxury.title].emoji} ${DATA.config.luxury[visiting.farm.luxury.title].name}</i>` : ''}${[...(visiting.farm.luxury?.pets || []), ...(visiting.farm.luxury?.decor || [])].length ? ` <span class="hud-decor">${[...(visiting.farm.luxury.pets || []), ...(visiting.farm.luxury.decor || [])].map((id) => DATA.config.luxury?.[id]?.emoji || '').join('')}</span>` : ''} · Lv ${visiting.farm.level}${visiting.farm.online ? ' <span class="online-dot" title="Chủ vườn đang online">🟢 online</span>' : ''}${visiting.farm.dogUntil > Date.now() ? ` <span class="dog-warn">🐕 Có chó canh — ${visiting.farm.dogChance || 20}% bị tóm${visiting.farm.online ? ' (chủ đang online +10%)' : ''}!</span>` : ''}</span>
+              <span>👀 Ruộng của <b class="${frameCls(visiting.farm.luxury?.frame)}">${esc(visiting.farm.name)}</b>${visiting.farm.luxury?.title && DATA.config.luxury?.[visiting.farm.luxury.title] ? ` <i class="vis-title">${DATA.config.luxury[visiting.farm.luxury.title].emoji} ${DATA.config.luxury[visiting.farm.luxury.title].name}</i>` : ''}${[...(visiting.farm.luxury?.pets || []), ...(visiting.farm.luxury?.decor || [])].length ? ` <span class="hud-decor">${([...(visiting.farm.luxury.pets || []), ...(visiting.farm.luxury.decor || [])].length + ' món trưng bày')}</span>` : ''} · Lv ${visiting.farm.level}${visiting.farm.online ? ' <span class="online-dot" title="Chủ vườn đang online">🟢 online</span>' : ''}${visiting.farm.dogUntil > Date.now() ? ` <span class="dog-warn">🐕 Có chó canh — ${visiting.farm.dogChance || 20}% bị tóm${visiting.farm.online ? ' (chủ đang online +10%)' : ''}!</span>` : ''}</span>
           ${(() => {
             // Một nút trộm tất cả: ruộng + chuồng + máy (phần nào đang trong giờ chờ thì hiện đồng hồ).
             const loot = visiting.farm.loot || {};
@@ -978,9 +978,9 @@
   function luxLine(l) {
     if (!l || !DATA.config.luxury) return '';
     const t = l.title ? DATA.config.luxury[l.title] : null;
-    const d = [...(l.pets || []), ...(l.decor || [])].map((id) => DATA.config.luxury[id]?.emoji || '').join('');
+    const d = (l.pets?.length || 0) + (l.decor?.length || 0);
     if (!t && !d) return '';
-    return `<span class="hud-title">${t ? `${t.emoji} ${t.name}` : ''}${d ? ` <span class="hud-decor">${d}</span>` : ''}</span>`;
+    return `<span class="hud-title">${t ? `${t.emoji} ${esc(t.name)}` : ''}${d ? ` <span class="hud-decor">${d} món trưng bày</span>` : ''}</span>`;
   }
 
   // Dải xa xỉ trên đầu ruộng (mình và khi thăm): danh hiệu + thú cưng + trang trí.

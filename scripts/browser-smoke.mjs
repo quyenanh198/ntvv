@@ -385,6 +385,7 @@ try {
   await page.locator('.sheet--family .family-search').fill('Friend');
   await page.locator('.sheet--family .family-member[data-visit="2"]').click();
   await page.locator('.visit-bar').waitFor();
+  assert.equal(await page.locator('.visit-bar .hud-decor').innerText(), `${decorationArt.length} món trưng bày`);
   await page.locator('.lux-strip summary').focus();
   await page.keyboard.press('Enter');
   assert.notEqual(await page.locator('details.lux-strip').getAttribute('open'), null);

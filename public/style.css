@@ -2072,7 +2072,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 /* ---- Xa xỉ phẩm / thuế / xổ số ---- */
 .hud-title { display: block; font-size: .58rem; color: #ffe9a8; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hud-decor { letter-spacing: -.1em; }
+.hud-decor { letter-spacing: normal; }
 .vis-title { font-style: normal; font-size: .8em; color: #ffe9a8; }
 .nf-khungdong { color: #e8a56d !important; text-shadow: 0 0 6px rgba(232, 165, 109, .8) !important; }
 .nf-khungbac { color: #eef3f9 !important; text-shadow: 0 0 6px rgba(205, 220, 240, .95) !important; }
