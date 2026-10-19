@@ -2941,7 +2941,12 @@
       const left = Number(el.dataset.ready) - now;
       const total = Number(el.dataset.total);
       const timer = el.querySelector('.plot-timer');
-      if (timer) timer.textContent = fmtTime(left);
+      if (timer) {
+        const remaining = fmtTime(left);
+        timer.textContent = remaining;
+        const label = el.getAttribute('aria-label');
+        if (label) el.setAttribute('aria-label', label.replace(/, còn .+$/, `, còn ${remaining}`));
+      }
       const pct = ((total - left) / total) * 100;
       const bar = el.querySelector('.plot-progress i');
       if (bar) bar.style.width = `${Math.min(100, Math.max(3, Math.round(pct)))}%`;

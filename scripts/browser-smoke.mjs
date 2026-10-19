@@ -358,6 +358,11 @@ try {
     assert.ok(await art.evaluate((img) => img.naturalWidth > 0));
   }
   await checkNoOverflow(friendPage, '390px owned decoration gallery');
+  const beforeCountdownTick = await friendPage.locator('.plot--growing .plot-timer').first().innerText();
+  await friendPage.waitForFunction((before) => document.querySelector('.plot--growing .plot-timer')?.textContent !== before, beforeCountdownTick);
+  const growingPlotName = await friendPage.locator('.plot--growing').first().getAttribute('aria-label');
+  assert.ok(growingPlotName.includes(await friendPage.locator('.plot--growing .plot-timer').first().innerText()),
+    'A growing plot accessible name must follow its visible countdown');
   await auditAccessibility(friendPage, 'decoration-gallery-390');
   await friendPage.locator('.lux-strip').scrollIntoViewIfNeeded();
   await friendPage.screenshot({ path: resolve(outputDir, 'decoration-gallery-owner-390.png') });
