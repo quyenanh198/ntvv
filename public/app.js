@@ -958,7 +958,7 @@
   // ---------- sheets ----------
   // Xa xỉ phẩm: khung tên (class) + dòng danh hiệu/trang trí dưới tên.
   const frameCls = (id) => (id ? ` nf nf-${id}` : '');
-  const DECOR_ART = {
+  const LUXURY_ART = {
     vuonhoa: 'assets/decor-v3/flower-garden.png', denlong: 'assets/decor-v3/garden-lantern.png',
     daiphunnuoc: 'assets/decor-v3/stone-fountain.png', caugo: 'assets/decor-v3/wooden-bridge.png',
     bunhin: 'assets/decor-v3/scarecrow.png',
@@ -971,9 +971,13 @@
     tuongbovang: 'assets/decor-v3/golden-cow-statue.png', vuonbonsai: 'assets/decor-v3/bonsai-garden.png',
     phaohoa: 'assets/decor-v3/fireworks-display.png', thapdongho: 'assets/decor-v3/village-clock-tower.png',
     tuongda: 'assets/decor-v3/ancient-stone-statue.png', biethu: 'assets/decor-v3/garden-villa.png',
+    petcho: 'assets/pets-v3/companion-dog.png', petmeo: 'assets/pets-v3/companion-cat.png',
+    pettho: 'assets/art/rabbit_v3.png', petvet: 'assets/pets-v3/companion-parrot.png',
+    petrua: 'assets/pets-v3/golden-turtle.png', petkylan: 'assets/pets-v3/gentle-unicorn.png',
+    petrong: 'assets/pets-v3/baby-dragon.png',
   };
-  const luxuryArt = (id) => DECOR_ART[id]
-    ? `<img class="lux-art" src="${A(DECOR_ART[id])}" alt="" loading="lazy" />`
+  const luxuryArt = (id) => LUXURY_ART[id]
+    ? `<img class="lux-art" src="${A(LUXURY_ART[id])}" alt="" loading="lazy" />`
     : `<span aria-hidden="true">${DATA.config.luxury[id]?.emoji || ''}</span>`;
   function luxLine(l) {
     if (!l || !DATA.config.luxury) return '';
@@ -993,7 +997,7 @@
     const ownerId = VISIT?.ownerId || me().id;
     const title = t ? `<span class="lux-title-badge">${t.emoji} ${esc(t.name)}</span>` : '';
     if (!items.length) return `<div class="lux-strip">${title}</div>`;
-    return `<details class="lux-strip" data-decor-owner="${ownerId}" ${openDecorOwners.has(String(ownerId)) ? 'open' : ''}><summary>${title}<span>Bộ sưu tập (${items.length})</span></summary><ul class="lux-gallery" tabindex="0" aria-label="Trang trí đã sở hữu">${items.map((id) => `<li data-decor="${id}">${luxuryArt(id)}<span>${esc(L[id].name)}</span></li>`).join('')}</ul></details>`;
+    return `<details class="lux-strip" data-decor-owner="${ownerId}" ${openDecorOwners.has(String(ownerId)) ? 'open' : ''}><summary>${title}<span>Bộ sưu tập (${items.length})</span></summary><ul class="lux-gallery" tabindex="0" aria-label="Trang trí và thú cưng đã sở hữu">${items.map((id) => `<li data-decor="${id}">${luxuryArt(id)}<span>${esc(L[id].name)}</span></li>`).join('')}</ul></details>`;
   }
 
   // Chấm đỏ Kỹ năng chỉ khi điểm hiện có đủ nâng ít nhất một kỹ năng.

@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 186/186 catalog products have PNG or SVG icons. 343 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 186/186 catalog products have PNG or SVG icons. 349 static asset paths appear in the client.
 
 ## Crops
 
@@ -337,6 +337,20 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Tượng đá cổ | tuongda | PNG art |
 | Biệt thự | biethu | PNG art |
 
+## Owned farm pets
+
+7/7 pets have individual PNG art. The gallery and shop share these sprites.
+
+| Pet | ID | Current art |
+| --- | --- | --- |
+| Chó cưng | petcho | PNG art |
+| Mèo cưng | petmeo | PNG art |
+| Thỏ | pettho | PNG art |
+| Vẹt | petvet | PNG art |
+| Rùa vàng | petrua | PNG art |
+| Kỳ lân | petkylan | PNG art |
+| Rồng con | petrong | PNG art |
+
 ## Static client asset references
 
 This list includes scene buildings, backgrounds, UI icons, and product art named directly in `public/app.js`. Crop, tree, and animal IDs generated at runtime are covered by the catalog tables above.
@@ -489,6 +503,12 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/pack/tree_01.png` | 10 KB |
 | `assets/pack/tree_02.png` | 14 KB |
 | `assets/pack/well.png` | 17 KB |
+| `assets/pets-v3/baby-dragon.png` | 28 KB |
+| `assets/pets-v3/companion-cat.png` | 22 KB |
+| `assets/pets-v3/companion-dog.png` | 21 KB |
+| `assets/pets-v3/companion-parrot.png` | 22 KB |
+| `assets/pets-v3/gentle-unicorn.png` | 27 KB |
+| `assets/pets-v3/golden-turtle.png` | 23 KB |
 | `assets/products-v3/aged-grape-wine.png` | 79 KB |
 | `assets/products-v3/alpaca-fleece.png` | 89 KB |
 | `assets/products-v3/alpaca-scarf.png` | 88 KB |

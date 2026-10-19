@@ -336,9 +336,15 @@ try {
     ['laudaicat', 'sandcastle'], ['tuongbovang', 'golden-cow-statue'], ['vuonbonsai', 'bonsai-garden'],
     ['phaohoa', 'fireworks-display'], ['thapdongho', 'village-clock-tower'],
     ['tuongda', 'ancient-stone-statue'], ['biethu', 'garden-villa']];
+  const petArt = [['petcho', 'companion-dog', 'pets-v3'], ['petmeo', 'companion-cat', 'pets-v3'],
+    ['pettho', 'rabbit_v3', 'art'], ['petvet', 'companion-parrot', 'pets-v3'],
+    ['petrua', 'golden-turtle', 'pets-v3'], ['petkylan', 'gentle-unicorn', 'pets-v3'], ['petrong', 'baby-dragon', 'pets-v3']];
+  const ownedArt = [...decorationArt, ...petArt];
+  assert.deepEqual(petArt.map(([id]) => id).sort(), Object.values(LUXURY).filter((item) => item.kind === 'pet').map((item) => item.id).sort(),
+    'The gallery walkthrough must cover every catalog pet');
   assert.deepEqual(decorationArt.map(([id]) => id).sort(), Object.values(LUXURY).filter((item) => item.kind === 'decor').map((item) => item.id).sort(),
     'The gallery walkthrough must cover every catalog decoration');
-  for (const [id] of decorationArt) db.prepare('INSERT INTO luxury (owner_id, item, at) VALUES (2, ?, ?)').run(id, Date.now());
+  for (const [id] of ownedArt) db.prepare('INSERT INTO luxury (owner_id, item, at) VALUES (2, ?, ?)').run(id, Date.now());
   await friendPage.reload({ waitUntil: 'domcontentloaded' });
   await friendPage.locator('.lux-strip summary').waitFor();
   assert.equal(await friendPage.locator('details.lux-strip').getAttribute('open'), null);
@@ -351,7 +357,7 @@ try {
   await friendPage.locator('.lux-gallery').evaluate((gallery) => { gallery.scrollTop = 0; });
   await friendPage.keyboard.press('ArrowDown');
   await friendPage.waitForFunction(() => document.querySelector('.lux-gallery')?.scrollTop > 0);
-  for (const [id, file, folder = 'decor-v3'] of decorationArt) {
+  for (const [id, file, folder = 'decor-v3'] of ownedArt) {
     const art = friendPage.locator(`[data-decor="${id}"] img[src*="${folder}/${file}.png"]`);
     await art.scrollIntoViewIfNeeded();
     await art.evaluate((img) => img.decode());
@@ -366,11 +372,12 @@ try {
   await auditAccessibility(friendPage, 'decoration-gallery-390');
   await friendPage.locator('.lux-strip').scrollIntoViewIfNeeded();
   await friendPage.screenshot({ path: resolve(outputDir, 'decoration-gallery-owner-390.png') });
+  await friendPage.screenshot({ path: resolve(outputDir, 'owned-pets-390.png') });
   await friendPage.locator('.lux-strip summary').click();
   await friendPage.locator('[data-sheet="more"]').first().click();
   await friendPage.locator('[data-sheet="luxury"]').click();
   await friendPage.locator('[data-lux-view="owned"]').click();
-  for (const [id, file, folder = 'decor-v3'] of decorationArt) {
+  for (const [id, file, folder = 'decor-v3'] of ownedArt) {
     const art = friendPage.locator(`[data-lux-item="${id}"] img[src*="${folder}/${file}.png"]`);
     await art.scrollIntoViewIfNeeded();
     await art.evaluate((img) => img.decode());
@@ -385,12 +392,12 @@ try {
   await page.locator('.sheet--family .family-search').fill('Friend');
   await page.locator('.sheet--family .family-member[data-visit="2"]').click();
   await page.locator('.visit-bar').waitFor();
-  assert.equal(await page.locator('.visit-bar .hud-decor').innerText(), `${decorationArt.length} món trưng bày`);
+  assert.equal(await page.locator('.visit-bar .hud-decor').innerText(), `${ownedArt.length} món trưng bày`);
   await page.locator('.lux-strip summary').focus();
   await page.keyboard.press('Enter');
   assert.notEqual(await page.locator('details.lux-strip').getAttribute('open'), null);
-  assert.equal(await page.locator('.lux-gallery [data-decor]').count(), decorationArt.length);
-  for (const [id] of decorationArt) {
+  assert.equal(await page.locator('.lux-gallery [data-decor]').count(), ownedArt.length);
+  for (const [id] of ownedArt) {
     const art = page.locator(`[data-decor="${id}"] img`);
     await art.scrollIntoViewIfNeeded();
     await art.evaluate((img) => img.decode());
