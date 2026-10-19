@@ -2105,6 +2105,8 @@ details.lux-strip { display: block; text-align: left; }
 .lux-strip summary:focus-visible { outline: 3px solid #284f7d; outline-offset: 2px; }
 .lux-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: .4rem; padding: .4rem; margin: 0; list-style: none; }
 .lux-gallery li { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .25rem; padding: .4rem; background: #fff7dc; border: 1px solid #aa8147; border-radius: 12px; color: #503818; text-align: center; font-size: .75rem; line-height: 1.35; }
+.lux-gallery { max-height: min(36vh, 288px); overflow-y: auto; overscroll-behavior: contain; }
+.lux-gallery:focus-visible { outline: 3px solid #284f7d; outline-offset: 2px; }
 .lux-art { width: 64px; height: 64px; object-fit: contain; flex: 0 0 auto; }
 .sheet--luxury .festival-card-heading h4 { display: flex; align-items: center; gap: .5rem; }
 .lux-title-badge { background: rgba(60, 35, 15, .78); color: #ffe9a8; border-radius: 999px; padding: .12rem .55rem; font-size: .78rem; font-weight: 800; white-space: nowrap; }

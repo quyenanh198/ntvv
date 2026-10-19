@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 186/186 catalog products have PNG or SVG icons. 333 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 186/186 catalog products have PNG or SVG icons. 343 static asset paths appear in the client.
 
 ## Crops
 
@@ -310,7 +310,7 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 
 ## Owned farm decorations
 
-12/22 decorations have individual PNG art. The gallery and shop share these sprites.
+22/22 decorations have individual PNG art. The gallery and shop share these sprites.
 
 | Decoration | ID | Current art |
 | --- | --- | --- |
@@ -326,16 +326,16 @@ Generated from `server/src/game.js` and the current asset directory by `npm run 
 | Cổng làng | conglang | PNG art |
 | Ghế đá | gheda | PNG art |
 | Bảng tên nông trại | bangten | PNG art |
-| Chuồng bồ câu | chuongbocau | emoji |
-| Cây thông | caythong | emoji |
-| Thuyền gỗ | thuyen | emoji |
-| Lâu đài cát | laudaicat | emoji |
-| Tượng bò vàng | tuongbovang | emoji |
-| Vườn bonsai | vuonbonsai | emoji |
-| Pháo hoa | phaohoa | emoji |
-| Tháp đồng hồ | thapdongho | emoji |
-| Tượng đá cổ | tuongda | emoji |
-| Biệt thự | biethu | emoji |
+| Chuồng bồ câu | chuongbocau | PNG art |
+| Cây thông | caythong | PNG art |
+| Thuyền gỗ | thuyen | PNG art |
+| Lâu đài cát | laudaicat | PNG art |
+| Tượng bò vàng | tuongbovang | PNG art |
+| Vườn bonsai | vuonbonsai | PNG art |
+| Pháo hoa | phaohoa | PNG art |
+| Tháp đồng hồ | thapdongho | PNG art |
+| Tượng đá cổ | tuongda | PNG art |
+| Biệt thự | biethu | PNG art |
 
 ## Static client asset references
 
@@ -449,17 +449,27 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/crops-v3/wheat-growing.png` | 54 KB |
 | `assets/crops-v3/wheat-ripe.png` | 85 KB |
 | `assets/crops/seed-1.svg` | <1 KB |
+| `assets/decor-v3/ancient-stone-statue.png` | 21 KB |
+| `assets/decor-v3/bonsai-garden.png` | 27 KB |
+| `assets/decor-v3/decorative-pine.png` | 17 KB |
 | `assets/decor-v3/farm-sign.png` | 26 KB |
+| `assets/decor-v3/fireworks-display.png` | 23 KB |
 | `assets/decor-v3/flower-garden.png` | 27 KB |
+| `assets/decor-v3/garden-dovecote.png` | 21 KB |
 | `assets/decor-v3/garden-lantern.png` | 14 KB |
+| `assets/decor-v3/garden-villa.png` | 35 KB |
+| `assets/decor-v3/golden-cow-statue.png` | 25 KB |
 | `assets/decor-v3/golden-rooster-statue.png` | 21 KB |
 | `assets/decor-v3/lotus-pond.png` | 25 KB |
+| `assets/decor-v3/sandcastle.png` | 26 KB |
 | `assets/decor-v3/scarecrow.png` | 36 KB |
 | `assets/decor-v3/stone-fountain.png` | 25 KB |
 | `assets/decor-v3/stone-garden-bench.png` | 18 KB |
+| `assets/decor-v3/village-clock-tower.png` | 18 KB |
 | `assets/decor-v3/village-gate.png` | 21 KB |
 | `assets/decor-v3/wooden-bridge.png` | 21 KB |
 | `assets/decor-v3/wooden-handcart.png` | 18 KB |
+| `assets/decor-v3/wooden-rowboat.png` | 21 KB |
 | `assets/machines-v3/bakery-oven.png` | 38 KB |
 | `assets/machines-v3/coffee-roaster.png` | 29 KB |
 | `assets/machines-v3/dairy-workshop.png` | 39 KB |
