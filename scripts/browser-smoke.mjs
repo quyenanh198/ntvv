@@ -331,12 +331,26 @@ try {
   const decorationArt = [['vuonhoa', 'flower-garden'], ['denlong', 'garden-lantern'], ['daiphunnuoc', 'stone-fountain'], ['caugo', 'wooden-bridge'],
     ['xekeo', 'wooden-handcart'], ['tuongga', 'golden-rooster-statue'], ['hosen', 'lotus-pond'],
     ['conglang', 'village-gate'], ['gheda', 'stone-garden-bench'], ['bangten', 'farm-sign'],
-    ['coixaygio', 'windmill_v3-224', 'scene-v3']];
+    ['coixaygio', 'windmill_v3-224', 'scene-v3'], ['bunhin', 'scarecrow'],
+    ['chuongbocau', 'garden-dovecote'], ['caythong', 'decorative-pine'], ['thuyen', 'wooden-rowboat'],
+    ['laudaicat', 'sandcastle'], ['tuongbovang', 'golden-cow-statue'], ['vuonbonsai', 'bonsai-garden'],
+    ['phaohoa', 'fireworks-display'], ['thapdongho', 'village-clock-tower'],
+    ['tuongda', 'ancient-stone-statue'], ['biethu', 'garden-villa']];
+  assert.deepEqual(decorationArt.map(([id]) => id).sort(), Object.values(LUXURY).filter((item) => item.kind === 'decor').map((item) => item.id).sort(),
+    'The gallery walkthrough must cover every catalog decoration');
   for (const [id] of decorationArt) db.prepare('INSERT INTO luxury (owner_id, item, at) VALUES (2, ?, ?)').run(id, Date.now());
   await friendPage.reload({ waitUntil: 'domcontentloaded' });
   await friendPage.locator('.lux-strip summary').waitFor();
   assert.equal(await friendPage.locator('details.lux-strip').getAttribute('open'), null);
   await friendPage.locator('.lux-strip summary').click();
+  const gallerySize = await friendPage.locator('.lux-gallery').evaluate((gallery) => ({ height: gallery.getBoundingClientRect().height, viewport: gallery.clientHeight, content: gallery.scrollHeight }));
+  assert.ok(gallerySize.height <= 310 && gallerySize.content > gallerySize.viewport,
+    'A complete collection should scroll inside a bounded gallery');
+  await friendPage.keyboard.press('Tab');
+  assert.equal(await friendPage.locator('.lux-gallery').evaluate((gallery) => gallery === document.activeElement), true);
+  await friendPage.locator('.lux-gallery').evaluate((gallery) => { gallery.scrollTop = 0; });
+  await friendPage.keyboard.press('ArrowDown');
+  await friendPage.waitForFunction(() => document.querySelector('.lux-gallery')?.scrollTop > 0);
   for (const [id, file, folder = 'decor-v3'] of decorationArt) {
     const art = friendPage.locator(`[data-decor="${id}"] img[src*="${folder}/${file}.png"]`);
     await art.scrollIntoViewIfNeeded();
@@ -344,6 +358,11 @@ try {
     assert.ok(await art.evaluate((img) => img.naturalWidth > 0));
   }
   await checkNoOverflow(friendPage, '390px owned decoration gallery');
+  const beforeCountdownTick = await friendPage.locator('.plot--growing .plot-timer').first().innerText();
+  await friendPage.waitForFunction((before) => document.querySelector('.plot--growing .plot-timer')?.textContent !== before, beforeCountdownTick);
+  const growingCountdown = await friendPage.locator('.plot--growing').first().evaluate((plot) => ({ label: plot.getAttribute('aria-label'), timer: plot.querySelector('.plot-timer').textContent }));
+  assert.ok(growingCountdown.label.includes(growingCountdown.timer),
+    'A growing plot accessible name must follow its visible countdown');
   await auditAccessibility(friendPage, 'decoration-gallery-390');
   await friendPage.locator('.lux-strip').scrollIntoViewIfNeeded();
   await friendPage.screenshot({ path: resolve(outputDir, 'decoration-gallery-owner-390.png') });
@@ -366,11 +385,16 @@ try {
   await page.locator('.sheet--family .family-search').fill('Friend');
   await page.locator('.sheet--family .family-member[data-visit="2"]').click();
   await page.locator('.visit-bar').waitFor();
+  assert.equal(await page.locator('.visit-bar .hud-decor').innerText(), `${decorationArt.length} món trưng bày`);
   await page.locator('.lux-strip summary').focus();
   await page.keyboard.press('Enter');
   assert.notEqual(await page.locator('details.lux-strip').getAttribute('open'), null);
   assert.equal(await page.locator('.lux-gallery [data-decor]').count(), decorationArt.length);
-  for (const [id] of decorationArt) await page.locator(`[data-decor="${id}"] img`).evaluate((img) => img.decode());
+  for (const [id] of decorationArt) {
+    const art = page.locator(`[data-decor="${id}"] img`);
+    await art.scrollIntoViewIfNeeded();
+    await art.evaluate((img) => img.decode());
+  }
   await checkNoOverflow(page, '320px visitor decoration gallery');
   await page.locator('.lux-strip').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'decoration-gallery-visitor-320.png') });

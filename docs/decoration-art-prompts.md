@@ -1,6 +1,23 @@
 # Owned farm decoration art
 
-Built-in imagegen created these sprites. Full-resolution transparent originals are saved in `asset/source_decor/v3/`; matching 128px exports are in `public/assets/decor-v3/`. The farm gallery and personalization shop share the exports. The existing scarecrow is also reused for the owned premium scarecrow. Other decoration art remains pending in the generated inventory.
+Built-in imagegen created these sprites. Full-resolution transparent originals are saved in `asset/source_decor/v3/`; matching 128px exports are in `public/assets/decor-v3/`. The farm gallery and personalization shop share the exports. The existing scarecrow is also reused for the owned premium scarecrow. All 22 decoration previews now have painted art; the generated inventory tracks them separately from product icons.
+
+## Final decoration batch
+
+These ten built-in imagegen sprites complete all 22 decoration previews, following the source/export paths above. Each exact prompt is the following shared prefix plus its subject:
+
+> Use case: stylized-concept. Asset type: single farm decoration sprite for a cozy Vietnamese farm game. Warm hand-painted gouache, rounded inviting shapes, subtle dark contour, three-quarter isometric view from above, warm upper-left light, ochre wood, muted leaf green and warm terracotta palette. Strong readable silhouette at 64px. Center with generous transparent padding in a square composition. True transparent background to object edges. No scene, floor, cast shadow, glow, lettering, watermark, people, or extra loose objects. Primary request:
+
+- `garden-dovecote.png`: a small honey-brown wooden dovecote on a short stout pedestal with a square base, terracotta pitched roof, two round entry holes and two small white doves perched on its ledge
+- `decorative-pine.png`: a compact lush evergreen pine with three rounded layered tiers of muted green needles, short brown trunk planted in a small round terracotta pot, no ornaments
+- `wooden-rowboat.png`: a small empty honey-brown wooden rowboat with rounded bow, visible interior planks, two simple cross seats and one short oar resting neatly across the hull, no water
+- `sandcastle.png`: a compact warm golden-sand castle sculpture with three round turrets, rounded crenellations and a small arched doorway, all attached to a thin oval sand base, no flags
+- `golden-cow-statue.png`: a small polished golden dairy-cow statue with four sturdy legs, short curved horns and rounded body standing on a low square warm sandstone plinth, clearly a decorative metal sculpture
+- `bonsai-garden.png`: one miniature bonsai tree with a thick curved brown trunk, three rounded pads of muted green foliage, moss and two tiny stones all contained in a shallow rectangular glazed terracotta planter
+- `fireworks-display.png`: a festive decorative wooden stand holding three sealed colorful paper firework rockets upright, rounded red teal and gold bodies with simple gold star ornaments, no flame, smoke, sparks, fuses, labels or mechanisms
+- `village-clock-tower.png`: a compact rustic village clock tower with warm pale stone lower walls, honey-brown timber upper section, a simple cream clock face with two dark hands and no numbers, and a terracotta pointed roof
+- `ancient-stone-statue.png`: a small weathered pale sandstone face bust on a squat square plinth, simple serene eyes, broad rounded nose and closed mouth, a few small moss patches, clearly a garden sculpture
+- `garden-villa.png`: a charming compact two-story garden villa with warm cream plaster, honey-brown timber trim, terracotta tiled roof, tiny muted-green shutters and a small front porch, no yard or surrounding ground
 
 ## Second decoration batch
 

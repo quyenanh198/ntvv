@@ -631,7 +631,7 @@
 
           ${visiting ? `
             <div class="visit-bar">
-              <span>👀 Ruộng của <b class="${frameCls(visiting.farm.luxury?.frame)}">${esc(visiting.farm.name)}</b>${visiting.farm.luxury?.title && DATA.config.luxury?.[visiting.farm.luxury.title] ? ` <i class="vis-title">${DATA.config.luxury[visiting.farm.luxury.title].emoji} ${DATA.config.luxury[visiting.farm.luxury.title].name}</i>` : ''}${[...(visiting.farm.luxury?.pets || []), ...(visiting.farm.luxury?.decor || [])].length ? ` <span class="hud-decor">${[...(visiting.farm.luxury.pets || []), ...(visiting.farm.luxury.decor || [])].map((id) => DATA.config.luxury?.[id]?.emoji || '').join('')}</span>` : ''} · Lv ${visiting.farm.level}${visiting.farm.online ? ' <span class="online-dot" title="Chủ vườn đang online">🟢 online</span>' : ''}${visiting.farm.dogUntil > Date.now() ? ` <span class="dog-warn">🐕 Có chó canh — ${visiting.farm.dogChance || 20}% bị tóm${visiting.farm.online ? ' (chủ đang online +10%)' : ''}!</span>` : ''}</span>
+              <span>👀 Ruộng của <b class="${frameCls(visiting.farm.luxury?.frame)}">${esc(visiting.farm.name)}</b>${visiting.farm.luxury?.title && DATA.config.luxury?.[visiting.farm.luxury.title] ? ` <i class="vis-title">${DATA.config.luxury[visiting.farm.luxury.title].emoji} ${DATA.config.luxury[visiting.farm.luxury.title].name}</i>` : ''}${[...(visiting.farm.luxury?.pets || []), ...(visiting.farm.luxury?.decor || [])].length ? ` <span class="hud-decor">${([...(visiting.farm.luxury.pets || []), ...(visiting.farm.luxury.decor || [])].length + ' món trưng bày')}</span>` : ''} · Lv ${visiting.farm.level}${visiting.farm.online ? ' <span class="online-dot" title="Chủ vườn đang online">🟢 online</span>' : ''}${visiting.farm.dogUntil > Date.now() ? ` <span class="dog-warn">🐕 Có chó canh — ${visiting.farm.dogChance || 20}% bị tóm${visiting.farm.online ? ' (chủ đang online +10%)' : ''}!</span>` : ''}</span>
           ${(() => {
             // Một nút trộm tất cả: ruộng + chuồng + máy (phần nào đang trong giờ chờ thì hiện đồng hồ).
             const loot = visiting.farm.loot || {};
@@ -966,6 +966,11 @@
     tuongga: 'assets/decor-v3/golden-rooster-statue.png', hosen: 'assets/decor-v3/lotus-pond.png',
     conglang: 'assets/decor-v3/village-gate.png', gheda: 'assets/decor-v3/stone-garden-bench.png',
     bangten: 'assets/decor-v3/farm-sign.png',
+    chuongbocau: 'assets/decor-v3/garden-dovecote.png', caythong: 'assets/decor-v3/decorative-pine.png',
+    thuyen: 'assets/decor-v3/wooden-rowboat.png', laudaicat: 'assets/decor-v3/sandcastle.png',
+    tuongbovang: 'assets/decor-v3/golden-cow-statue.png', vuonbonsai: 'assets/decor-v3/bonsai-garden.png',
+    phaohoa: 'assets/decor-v3/fireworks-display.png', thapdongho: 'assets/decor-v3/village-clock-tower.png',
+    tuongda: 'assets/decor-v3/ancient-stone-statue.png', biethu: 'assets/decor-v3/garden-villa.png',
   };
   const luxuryArt = (id) => DECOR_ART[id]
     ? `<img class="lux-art" src="${A(DECOR_ART[id])}" alt="" loading="lazy" />`
@@ -973,9 +978,9 @@
   function luxLine(l) {
     if (!l || !DATA.config.luxury) return '';
     const t = l.title ? DATA.config.luxury[l.title] : null;
-    const d = [...(l.pets || []), ...(l.decor || [])].map((id) => DATA.config.luxury[id]?.emoji || '').join('');
+    const d = (l.pets?.length || 0) + (l.decor?.length || 0);
     if (!t && !d) return '';
-    return `<span class="hud-title">${t ? `${t.emoji} ${t.name}` : ''}${d ? ` <span class="hud-decor">${d}</span>` : ''}</span>`;
+    return `<span class="hud-title">${t ? `${t.emoji} ${esc(t.name)}` : ''}${d ? ` <span class="hud-decor">${d} món trưng bày</span>` : ''}</span>`;
   }
 
   // Dải xa xỉ trên đầu ruộng (mình và khi thăm): danh hiệu + thú cưng + trang trí.
@@ -988,7 +993,7 @@
     const ownerId = VISIT?.ownerId || me().id;
     const title = t ? `<span class="lux-title-badge">${t.emoji} ${esc(t.name)}</span>` : '';
     if (!items.length) return `<div class="lux-strip">${title}</div>`;
-    return `<details class="lux-strip" data-decor-owner="${ownerId}" ${openDecorOwners.has(String(ownerId)) ? 'open' : ''}><summary>${title}<span>Bộ sưu tập (${items.length})</span></summary><ul class="lux-gallery">${items.map((id) => `<li data-decor="${id}">${luxuryArt(id)}<span>${esc(L[id].name)}</span></li>`).join('')}</ul></details>`;
+    return `<details class="lux-strip" data-decor-owner="${ownerId}" ${openDecorOwners.has(String(ownerId)) ? 'open' : ''}><summary>${title}<span>Bộ sưu tập (${items.length})</span></summary><ul class="lux-gallery" tabindex="0" aria-label="Trang trí đã sở hữu">${items.map((id) => `<li data-decor="${id}">${luxuryArt(id)}<span>${esc(L[id].name)}</span></li>`).join('')}</ul></details>`;
   }
 
   // Chấm đỏ Kỹ năng chỉ khi điểm hiện có đủ nâng ít nhất một kỹ năng.
@@ -2936,7 +2941,12 @@
       const left = Number(el.dataset.ready) - now;
       const total = Number(el.dataset.total);
       const timer = el.querySelector('.plot-timer');
-      if (timer) timer.textContent = fmtTime(left);
+      if (timer) {
+        const remaining = fmtTime(left);
+        timer.textContent = remaining;
+        const label = el.getAttribute('aria-label');
+        if (label) el.setAttribute('aria-label', label.replace(/, còn .+$/, `, còn ${remaining}`));
+      }
       const pct = ((total - left) / total) * 100;
       const bar = el.querySelector('.plot-progress i');
       if (bar) bar.style.width = `${Math.min(100, Math.max(3, Math.round(pct)))}%`;
