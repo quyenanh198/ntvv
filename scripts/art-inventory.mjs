@@ -43,11 +43,13 @@ const clientSource = readFileSync(resolve(publicDir, 'app.js'), 'utf8');
 const itemIconSource = clientSource.match(/const ITEM_ICON = \{([\s\S]*?)\n  \};/)?.[1];
 if (!itemIconSource) throw new Error('Could not find the client item icon map');
 const productPaths = Object.fromEntries([...itemIconSource.matchAll(/(\w+): '([^']+)'/g)].map((match) => [match[1], match[2]]));
-const decorSource = clientSource.match(/const DECOR_ART = \{([\s\S]*?)\n  \};/)?.[1];
-if (!decorSource) throw new Error('Could not find the client decoration art map');
-const decorPaths = Object.fromEntries([...decorSource.matchAll(/(\w+): '([^']+)'/g)].map((match) => [match[1], match[2]]));
+const luxurySource = clientSource.match(/const LUXURY_ART = \{([\s\S]*?)\n  \};/)?.[1];
+if (!luxurySource) throw new Error('Could not find the client luxury art map');
+const luxuryPaths = Object.fromEntries([...luxurySource.matchAll(/(\w+): '([^']+)'/g)].map((match) => [match[1], match[2]]));
 const decorations = Object.values(LUXURY).filter((item) => item.kind === 'decor');
-const decorationRows = decorations.map((item) => `| ${item.name} | ${item.id} | ${decorPaths[item.id] ? status(decorPaths[item.id], 'PNG art') : 'emoji'} |`);
+const decorationRows = decorations.map((item) => `| ${item.name} | ${item.id} | ${luxuryPaths[item.id] ? status(luxuryPaths[item.id], 'PNG art') : 'emoji'} |`);
+const pets = Object.values(LUXURY).filter((item) => item.kind === 'pet');
+const petRows = pets.map((item) => `| ${item.name} | ${item.id} | ${luxuryPaths[item.id] ? status(luxuryPaths[item.id], 'PNG art') : 'emoji'} |`);
 const productRows = Object.values(GOODS).sort((a, b) => a.name.localeCompare(b.name, 'vi')).map((good) => {
   const path = productPaths[good.id];
   return `| ${good.name} | ${good.id} | ${good.source} | ${path ? status(path, path.endsWith('.svg') ? 'SVG icon' : 'PNG art') : 'emoji'} |`;
@@ -86,8 +88,11 @@ const lines = [
   '', '## Products', '',
   '| Product | ID | Source | Current art |', '| --- | --- | --- | --- |', ...productRows,
   '', '## Owned farm decorations', '',
-  `${decorations.filter((item) => decorPaths[item.id] && asset(decorPaths[item.id])).length}/${decorations.length} decorations have individual PNG art. The gallery and shop share these sprites.`, '',
+  `${decorations.filter((item) => luxuryPaths[item.id] && asset(luxuryPaths[item.id])).length}/${decorations.length} decorations have individual PNG art. The gallery and shop share these sprites.`, '',
   '| Decoration | ID | Current art |', '| --- | --- | --- |', ...decorationRows,
+  '', '## Owned farm pets', '',
+  `${pets.filter((item) => luxuryPaths[item.id] && asset(luxuryPaths[item.id])).length}/${pets.length} pets have individual PNG art. The gallery and shop share these sprites.`, '',
+  '| Pet | ID | Current art |', '| --- | --- | --- |', ...petRows,
   '', '## Static client asset references', '',
   'This list includes scene buildings, backgrounds, UI icons, and product art named directly in `public/app.js`. Crop, tree, and animal IDs generated at runtime are covered by the catalog tables above.',
   '', '| Path | Size |', '| --- | ---: |', ...staticRows,
