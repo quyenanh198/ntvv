@@ -1,5 +1,11 @@
 # Farm layout direction
 
+## Lottery purchase decisions
+
+Ticket buttons now show quantity and total gold cost, with 44px targets. Each option explains the remaining balance, exact shortfall, or remaining daily allowance. Unaffordable purchases and quantities above that allowance are disabled. The mobile walkthrough checks a one-gold shortage, a one-ticket purchase with exact debit, a final purchase at the daily cap, accessibility, and horizontal fit. The capture is `lottery-costs-320.png`.
+
+The backend reads current gold inside the journal transaction. Integration checks submit distinct purchase keys concurrently when only one ticket is affordable and when only one daily slot remains; only one succeeds. Gold, sunk gold, and ticket quantities change once, and replaying the winning key preserves the settled state.
+
 The farm is the primary task surface. Keep the next useful action and the plots visible before secondary navigation on phones. Place family search after the plots in document order so keyboard navigation follows the visual order.
 
 ## Responsive structure
