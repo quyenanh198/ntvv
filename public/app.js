@@ -575,24 +575,24 @@
         </header>
         <nav class="bottom-dock" aria-label="Điều hướng nông trại">
           <button class="dock-btn${!visiting && !sheet && !showLb ? ' dock-btn--active' : ''}" id="btn-dock-farm" title="Nông trại">
-            <span class="dock-icon">🏡</span>
+            <span class="dock-icon"><img src="${A('assets/ui/dock-farm.svg')}" alt="" /></span>
             <span class="dock-label">Trại</span>
           </button>
           <button class="dock-btn dock-btn--gold" id="btn-harvestall" title="Thu hoạch tất cả">
-            <span class="dock-icon"><img src="${A('assets/art/basket.png')}" alt="" /></span>
+            <span class="dock-icon"><img src="${A('assets/ui/dock-harvest.svg')}" alt="" /></span>
             ${m.plots.some((p) => p.crop && p.ready) ? '<i class="dot"></i>' : ''}
             <span class="dock-label">Thu hoạch</span>
           </button>
           <button class="dock-btn${sheet?.type === 'shop' ? ' dock-btn--active' : ''}" data-sheet="shop" title="Cửa hàng">
-            <span class="dock-icon">🏪</span>
+            <span class="dock-icon"><img src="${A('assets/ui/dock-shop.svg')}" alt="" /></span>
             <span class="dock-label">Cửa hàng</span>
           </button>
           <button class="dock-btn${sheet?.type === 'inventory' ? ' dock-btn--active' : ''}" data-sheet="inventory" title="Kho đồ">
-            <span class="dock-icon">🎒</span>
+            <span class="dock-icon"><img src="${A('assets/ui/dock-inventory.svg')}" alt="" /></span>
             <span class="dock-label">Kho đồ</span>
           </button>
           <button class="dock-btn${sheet?.type === 'more' ? ' dock-btn--active' : ''}" data-sheet="more" title="Thêm tính năng">
-            <span class="dock-icon">☰</span>
+            <span class="dock-icon"><img src="${A('assets/ui/dock-more.svg')}" alt="" /></span>
             ${(questsReady || ordersReady || festReady || canLearnAnySkill(m) || m.animals.some((x) => x.ready) || Object.values(m.machines).some((jobs) => Object.values(jobs || {}).some((j) => j.ready)) || hasDebts) ? '<i class="dot"></i>' : ''}
             <span class="dock-label">Thêm</span>
           </button>
