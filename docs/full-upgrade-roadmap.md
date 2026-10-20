@@ -60,6 +60,8 @@ This is the project plan for the farm game, separate from the older stability au
 
 - **Ready reward hub:** the farm groups claimable daily chests, next star milestones, collections, and festival rewards with links to their claim screens. Mobile coverage follows daily and star claims and checks that claimed entries disappear.
 
+- **Star milestone decisions:** the next claim and missing-star summary now appear above readable progress/reward cards. Named progress bars and claimed/ready/locked states explain sequential rewards, with direct quest and unlocked-order shortcuts. Mobile coverage verifies a ready claim, next-milestone progress, both activity routes, accessibility, and layout.
+
 ## 9. Harden the backend and data model
 
 - Finish replay protection for every value-changing endpoint; keep each mutation and its result in one SQLite transaction.
