@@ -1676,12 +1676,22 @@
       const e = m.expandNext;
       if (!e) return '';
       const can = m.level >= e.level && m.gold >= e.gold;
+      const added = e.plots || 4;
+      const afterPlots = m.plotsCount + added;
+      const taxLevel = m.tax?.unlockLevel || 20;
+      const taxPerPlot = m.tax?.perPlot ?? DATA.config.taxPerPlot ?? 0;
       return sheetShell('🧱 Mở rộng nông trại', `
-        <p class="sheet-note">Thêm <b>4 ô đất</b>: ${e.gold.toLocaleString('vi')} ${COIN}, cần <b>Lv ${e.level}</b>.</p>
+        <article class="festival-card" aria-labelledby="expansion-title">
+          <div class="festival-card-heading"><h4 id="expansion-title">${m.plotsCount} → ${afterPlots} ô đất</h4><span class="festival-status">Thêm ${added} ô</span></div>
+          <p class="festival-hint">Giá mở đất: ${e.gold.toLocaleString('vi')} vàng · Cần cấp ${e.level}.</p>
+          <p class="festival-hint expansion-level">${m.level >= e.level ? 'Đã đủ cấp để mở rộng.' : `Cần thêm ${e.level - m.level} cấp để mở rộng.`}</p>
+          <p class="festival-hint expansion-balance">${m.gold >= e.gold ? `Sau khi mở: còn ${(m.gold - e.gold).toLocaleString('vi')} vàng.` : `Thiếu ${(e.gold - m.gold).toLocaleString('vi')} vàng. Bạn có ${m.gold.toLocaleString('vi')} vàng.`}</p>
+          <p class="festival-hint expansion-tax">${m.level < taxLevel ? `Đang miễn thuế đến cấp ${taxLevel}. ` : ''}Thuế dự kiến sau mở đất: ${(afterPlots * taxPerPlot).toLocaleString('vi')} vàng/ngày (tăng ${(added * taxPerPlot).toLocaleString('vi')} vàng/ngày).</p>
+        </article>
         <div class="sheet-actions">
-          <button class="btn btn-ghost" data-close="1">Thôi</button>
-          <button class="btn gbtn gbtn--green" id="btn-expand" ${can ? '' : 'disabled'}>${can ? 'Mở luôn!' : m.level < e.level ? `Cần Lv ${e.level}` : 'Thiếu vàng'}</button>
-        </div>`);
+          <button class="btn btn-ghost" data-close="1">Để sau</button>
+          <button class="btn gbtn gbtn--green" id="btn-expand" ${can ? '' : 'disabled'}>Mở ${added} ô · ${e.gold.toLocaleString('vi')} vàng</button>
+        </div>`, 'sheet--expand');
     }
 
     if (t === 'events') {

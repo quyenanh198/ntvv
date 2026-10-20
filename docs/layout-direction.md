@@ -123,3 +123,7 @@ The backend reads current gold inside the journal transaction. Integration check
 ## Star milestone rewards
 
 The star screen now puts the next claim and missing-star summary above readable milestone cards. Every card shows numeric progress, a named progress bar, exact rewards, and claimed/ready/sequentially locked states. The screen explains that stars are cumulative and adds direct quest and unlocked-order shortcuts. The mobile walkthrough audits accessibility and overflow, captures the ready milestone, claims it, verifies the next milestone progress and missing count, and follows both earning routes. The capture is `star-milestones-ready-320.png`.
+
+## Land expansion decisions
+
+The expansion sheet now shows current and resulting plot counts, exact cost, independent level and gold requirements, remaining cash or shortfall, and projected daily tax after expansion. Starter tax immunity is named alongside the future tax level. The confirmation repeats the plot quantity and gold cost. Mobile coverage checks a locked level, a one-gold shortage, the affordable state, accessibility and horizontal fit, then purchases four plots and verifies the exact balance and newly usable empty land. Captures are `expansion-shortfall-320.png` and `expansion-affordable-320.png`.
