@@ -298,3 +298,7 @@ The five dock controls now use a shared SVG family in `public/assets/ui/dock-*.s
 ## Feature menu interface icons
 
 All fourteen feature-menu controls now use the same rounded brown-outline vector language as the dock. Thirteen original SVGs are generated from editable path sources in `scripts/build-menu-icons.mjs`; the market reuses `dock-shop.svg`. Regenerate with `node scripts/build-menu-icons.mjs`, then refresh the art inventory. Menu icons display at 36px, retain empty decorative alternatives, and leave labels, unlock rules and notification dots intact. The fully unlocked 320px browser check decodes all fourteen icons, checks labels and size, scans accessibility and captures the top and bottom of the menu.
+
+## Header controls
+
+Energy, sound on/off and village news now use original SVG paths in the same generator and palette as the feature menu. Leaderboard and ledger controls reuse their feature-menu artwork. Header action icons display at 24px; energy follows the existing resource-icon sizing. Sound keeps the stable accessible name Am thanh (Vietnamese in the UI) and exposes enabled state with aria-pressed; its tooltip gives the next action. Browser coverage toggles sound, reloads to verify persistence and icon state, and decodes the header artwork. Review capture: `header-sound-state-320.png`.

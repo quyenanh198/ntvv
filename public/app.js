@@ -561,15 +561,15 @@
           <div class="hud-right" role="group" aria-label="Tài nguyên và công cụ">
             <button class="coin-pill" data-sheet="inventory" aria-label="${m.gold.toLocaleString('vi')} vàng, mở kho đồ" title="Vàng ${m.gold.toLocaleString('vi')} · Tài sản ước tính (vàng + kho) ${(m.netWorth ?? m.gold).toLocaleString('vi')} — mở kho để bán đồ">${COIN}<b>${m.gold.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
             <button class="coin-pill coin-pill--gem" data-sheet="stars" aria-label="${m.gems.toLocaleString('vi')} kim cương, mở mốc sao" title="Kim cương — nhận từ mốc sao và rương">${GEM}<b>${m.gems.toLocaleString('vi')}</b><span class="pill-plus">＋</span></button>
-            <button class="coin-pill coin-pill--energy" data-sheet="fishing" aria-label="${m.energy.current} năng lượng, mở hồ câu cá" title="Năng lượng — mở Hồ câu cá">⚡<b>${m.energy.current}</b><span class="pill-plus">＋</span></button>
+            <button class="coin-pill coin-pill--energy" data-sheet="fishing" aria-label="${m.energy.current} năng lượng, mở hồ câu cá" title="Năng lượng — mở Hồ câu cá"><img class="coin-img" src="${A('assets/ui/menu-energy.svg')}" alt="" /><b>${m.energy.current}</b><span class="pill-plus">＋</span></button>
             ${m.dog?.active ? `<button class="coin-pill coin-pill--dog" data-sheet="shop" aria-label="Chó canh vườn đang trực, còn ${fmtTime(m.dog.until - Date.now())}, mở cửa hàng" title="Chó canh vườn đang trực">🐕<b>${fmtTime(m.dog.until - Date.now())}</b></button>` : ''}
             <button class="coin-pill coin-pill--star" data-sheet="stars" aria-label="${m.stars.toLocaleString('vi')} sao nông trại, mở mốc sao" title="Sao Nông Trại">${STAR}<b>${m.stars.toLocaleString('vi')}</b>${starReady ? '<i class="dot"></i>' : ''}</button>
             ${hasDebts ? `<button class="coin-pill coin-pill--debt" data-sheet="ledger" aria-label="${((m.tax?.owed || 0) + (m.debts?.owe || 0)).toLocaleString('vi')} vàng nợ và thuế, mở sổ nông thôn" title="Sổ nợ & thuế đất — bấm để xem">${m.tax?.owed > 0 ? '🏛️' : '💸'}<b>${((m.tax?.owed || 0) + (m.debts?.owe || 0)).toLocaleString('vi')}</b><i class="dot"></i></button>` : ''}
             <span class="hud-rounds">
-              <button class="hud-round" id="btn-audio-toggle" aria-label="${window.NTVVAudio?.isMuted() ? 'Bật âm thanh' : 'Tắt âm thanh'}" title="Âm thanh">${window.NTVVAudio?.isMuted() ? '🔇' : '🔊'}</button>
-              <button class="hud-round" data-sheet="events" aria-label="Mở bản tin làng" title="Bản tin làng">✉️</button>
-              <button class="hud-round" id="btn-lb" aria-label="Mở bảng xếp hạng" title="Bảng xếp hạng">🏆</button>
-              <button class="hud-round${hasDebts ? ' hud-round--warn' : ''}" data-sheet="ledger" aria-label="Mở sổ nông thôn" title="Sổ nông thôn">📋${hasDebts ? '<i class="dot"></i>' : ''}</button>
+              <button class="hud-round" id="btn-audio-toggle" aria-label="Âm thanh" aria-pressed="${!window.NTVVAudio?.isMuted()}" title="${window.NTVVAudio?.isMuted() ? 'Bật âm thanh' : 'Tắt âm thanh'}"><img class="hud-icon" src="${A(window.NTVVAudio?.isMuted() ? 'assets/ui/menu-audio-off.svg' : 'assets/ui/menu-audio-on.svg')}" alt="" /></button>
+              <button class="hud-round" data-sheet="events" aria-label="Mở bản tin làng" title="Bản tin làng"><img class="hud-icon" src="${A('assets/ui/menu-events.svg')}" alt="" /></button>
+              <button class="hud-round" id="btn-lb" aria-label="Mở bảng xếp hạng" title="Bảng xếp hạng"><img class="hud-icon" src="${A('assets/ui/menu-leaderboard.svg')}" alt="" /></button>
+              <button class="hud-round${hasDebts ? ' hud-round--warn' : ''}" data-sheet="ledger" aria-label="Mở sổ nông thôn" title="Sổ nông thôn"><img class="hud-icon" src="${A('assets/ui/menu-ledger.svg')}" alt="" />${hasDebts ? '<i class="dot"></i>' : ''}</button>
             </span>
           </div>
         </header>
@@ -2331,8 +2331,9 @@
       sfx('playTap');
       const btn = document.getElementById('btn-audio-toggle');
       if (btn) {
-        btn.textContent = muted ? '🔇' : '🔊';
-        btn.setAttribute('aria-label', muted ? 'Bật âm thanh' : 'Tắt âm thanh');
+        btn.innerHTML = `<img class="hud-icon" src="${A(muted ? 'assets/ui/menu-audio-off.svg' : 'assets/ui/menu-audio-on.svg')}" alt="" />`;
+        btn.setAttribute('aria-pressed', String(!muted));
+        btn.title = muted ? 'Bật âm thanh' : 'Tắt âm thanh';
       }
       toast(muted ? '🔇 Đã tắt âm thanh' : '🔊 Đã bật âm thanh');
     });
