@@ -155,3 +155,7 @@ Overview upgrade controls now open the species barn for review. The detail card 
 ## Gem exchange decisions
 
 The gem category now uses full-width pack cards with total price, gold per gem and the resulting gold/gem balances or exact shortage. Native purchase confirmation remains, so reviewing a pack does not spend currency. Mobile coverage checks a one-gold shortage, exact-budget balances, cancellation without any currency changes, and an accepted exchange with exact gold debit, gem credit and sunk-gold accounting. The category remains selected after purchase. Review capture: `gem-exchange-320.png`.
+
+## Animal and pond skill timing
+
+Animal cycle labels in barn summaries, barn details and the shop now include the learned animal-speed bonus. Pond species details and the stocking preview use the same modifier. Duration labels preserve seconds for fractional-minute bonuses and include machine-readable time values. Mobile coverage checks a rank-two quail cycle at 13 minutes 30 seconds against its automatically started server deadline, checks the shop agrees, then stocks a pond batch and verifies the persisted 27-minute duration matches both preview locations. Review captures: `barn-skilled-time-320.png` and `pond-skilled-time-320.png`.
