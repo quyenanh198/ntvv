@@ -131,3 +131,5 @@ This is the project plan for the farm game, separate from the older stability au
 - **Barn upgrade decisions (step 5):** overview upgrades open a detailed capacity and balance preview before spending. The card explains added places and separate animal purchases. Mobile coverage verifies shortage, exact debit, increased quail capacity, persisted upgrade level and preserved animals/production timestamps.
 
 - **Gem exchange decisions (step 5):** pack cards now preview per-gem value, exact cost, resulting balances and shortages. Mobile coverage verifies blocked and affordable states, cancellation, confirmed exchange accounting and category continuity, alongside accessibility and overflow checks.
+
+- **Upgrade unlock enforcement (step 9):** machine and barn upgrades now enforce catalog unlock levels inside the journal transaction, including the legacy coop route. Integration coverage checks all catalog entries reject a funded starter without spending or recording a mutation, then verifies exact-unlock purchases and safe retries for machine, JSON-backed barn and legacy paths.

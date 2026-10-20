@@ -19,3 +19,7 @@ The upgrade case checks both routes share the same persisted chicken-barn level.
 ## Factory speed across overlapping requests
 
 Factory queueing and collection now read current farmer state inside the journal transaction, including machine upgrades and learned production skills. `test/factory-speed-contention.test.js` holds a request after authentication, commits an upgrade through the real API, then releases the older request. It covers individual and bulk queueing/collection plus both legacy mill shortcuts. Queue checks verify the new ready time and ingredient debit; collection checks distinguish two completed batches at the new speed from one at the old speed. Winning retries preserve inventory, jobs, gold, XP and mutation version. This verifies committed upgrade ordering in the single-process transaction model.
+
+## Upgrade unlock enforcement
+
+Machine and barn upgrades, including the legacy chicken shortcut, now compare the current transaction row against the catalog unlock level before checking upgrade cost. `test/upgrade-unlocks.test.js` verifies every machine and animal catalog entry rejects a funded level-one caller without changing gold, sunk gold, XP, mutation version, upgrade state or journal records. It then upgrades a machine, a JSON-backed quail barn and the legacy coop at their exact unlock levels, reusing their previously rejected keys, and verifies exact debit, new level and unchanged retries. This aligns direct API calls with the locked controls in the UI.
