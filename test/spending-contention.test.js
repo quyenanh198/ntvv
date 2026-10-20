@@ -5,9 +5,9 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { ANIMALS, CROPS, xpNeedFor } from '../server/src/game.js';
+import { ANIMALS, BARN_UPGRADE_GOLD, CROPS, FISH_FARM, FISH_STOCK_BY_LEVEL, xpNeedFor } from '../server/src/game.js';
 
-test('distinct planting and animal purchases cannot spend the same request snapshot twice', { timeout: 20000 }, async () => {
+test('competing purchases and upgrades conserve balances and shared capacity', { timeout: 30000 }, async () => {
   const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-spending-contention-'));
   const db = openDb(dataDir);
   const app = buildApp({ db, logger: false, config: {
@@ -17,7 +17,7 @@ test('distinct planting and animal purchases cannot spend the same request snaps
   // Hold both requests after their farmer snapshots load, before either route
   // handler enters its transaction. This reproduces the stale-balance window.
   app.addHook('onRoute', (route) => {
-    if (!['plant', 'buy-animal', 'buy-chicken'].includes(route.url.split('/').pop())) return;
+    if (!['plant', 'buy-animal', 'buy-chicken', 'upgrade-barn', 'upgrade-coop', 'fish-stock'].includes(route.url.split('/').pop())) return;
     const hooks = route.preHandler ? (Array.isArray(route.preHandler) ? route.preHandler : [route.preHandler]) : [];
     route.preHandler = [...hooks, async (request) => {
       const group = request.headers['x-spending-race'];
@@ -40,9 +40,10 @@ test('distinct planting and animal purchases cannot spend the same request snaps
     headers: { 'idempotency-key': key, ...(group ? { 'x-spending-race': group } : {}) },
   });
   const state = () => ({
-    farmer: db.prepare('SELECT gold, xp, mutation_version FROM farmers WHERE user_id = 1').get(),
+    farmer: db.prepare('SELECT gold, xp, mutation_version, coop_level, pond_level FROM farmers WHERE user_id = 1').get(),
     plots: db.prepare('SELECT idx, crop FROM plots WHERE owner_id = 1 ORDER BY idx').all(),
     animals: db.prepare('SELECT id, kind FROM animals WHERE owner_id = 1 ORDER BY id').all(),
+    fish: db.prepare('SELECT id, species, qty FROM fish_batches WHERE owner_id = 1 ORDER BY id').all(),
   });
   const seed = CROPS.luami.seed;
   const chicken = ANIMALS.ga.price;
@@ -81,6 +82,48 @@ test('distinct planting and animal purchases cannot spend the same request snaps
       assert.equal(replay.statusCode, 200, replay.body);
       assert.deepEqual(state(), settled, 'A winning retry must preserve the settled balance, XP, and ownership');
     }
+
+    const upgradeBudget = BARN_UPGRADE_GOLD[0];
+    db.prepare('UPDATE farmers SET gold = ?, coop_level = 1 WHERE user_id = 1').run(upgradeBudget);
+    const upgrades = [
+      { route: '/upgrade-barn', payload: { kind: 'ga' } },
+      { route: '/upgrade-coop', payload: {} },
+    ];
+    const upgraded = await Promise.all(upgrades.map((action, index) => post(action.route, action.payload, `upgrade-contention-${index}`, 'upgrade-aliases')));
+    assert.deepEqual(gates.get('upgrade-aliases').snapshots, [upgradeBudget, upgradeBudget]);
+    assert.deepEqual(upgraded.map((response) => response.statusCode).sort(), [200, 400], upgraded.map((response) => response.body).join(String.fromCharCode(10)));
+    const upgradeWinner = upgraded.findIndex((response) => response.statusCode === 200);
+    assert.equal(upgraded[1 - upgradeWinner].json().error, 'not_enough_gold');
+    const afterUpgrade = state();
+    assert.equal(afterUpgrade.farmer.gold, 0);
+    assert.equal(afterUpgrade.farmer.coop_level, 2, 'Alias routes must upgrade the same barn only once');
+    const upgradeReplay = await post(upgrades[upgradeWinner].route, upgrades[upgradeWinner].payload, `upgrade-contention-${upgradeWinner}`);
+    assert.equal(upgradeReplay.statusCode, 200, upgradeReplay.body);
+    assert.deepEqual(state(), afterUpgrade);
+
+    const species = Object.values(FISH_FARM)[0];
+    const fishXp = Array.from({ length: species.level - 1 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, need) => sum + need, 0);
+    const fishBudget = species.fry * 2;
+    const capacity = FISH_STOCK_BY_LEVEL[0];
+    db.prepare('UPDATE farmers SET gold = ?, xp = ?, pond_level = 1 WHERE user_id = 1').run(fishBudget, fishXp);
+    const now = Date.now();
+    db.prepare('INSERT INTO fish_batches (owner_id, species, qty, planted_at, ready_at) VALUES (?, ?, ?, ?, ?)')
+      .run(1, species.id, capacity - 1, now, now + 86400000);
+    const beforeStock = state();
+    const stocked = await Promise.all([1, 'max'].map((qty, index) => post('/fish-stock', { species: species.id, qty }, `stock-contention-${index}`, 'last-pond-slot')));
+    assert.deepEqual(gates.get('last-pond-slot').snapshots, [fishBudget, fishBudget]);
+    assert.deepEqual(stocked.map((response) => response.statusCode).sort(), [200, 400], stocked.map((response) => response.body).join('\n'));
+    const stockWinner = stocked.findIndex((response) => response.statusCode === 200);
+    assert.equal(stocked[1 - stockWinner].json().error, 'pond_full');
+    assert.equal(stocked[stockWinner].json().stocked, 1);
+    assert.equal(stocked[stockWinner].json().cost, species.fry);
+    const afterStock = state();
+    assert.equal(afterStock.farmer.gold, fishBudget - species.fry);
+    assert.equal(afterStock.fish.reduce((sum, batch) => sum + batch.qty, 0), capacity);
+    assert.equal(afterStock.fish.length, beforeStock.fish.length + 1);
+    const stockReplay = await post('/fish-stock', { species: species.id, qty: [1, 'max'][stockWinner] }, `stock-contention-${stockWinner}`);
+    assert.equal(stockReplay.statusCode, 200, stockReplay.body);
+    assert.deepEqual(state(), afterStock, 'Retrying a successful stocking must not add fish or spend gold again');
   } finally {
     for (const gate of gates.values()) clearTimeout(gate.timer);
     await app.close();

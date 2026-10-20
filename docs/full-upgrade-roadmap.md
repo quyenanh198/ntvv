@@ -80,6 +80,8 @@ This is the project plan for the farm game, separate from the older stability au
 
 - **Concurrent planting and animal spending:** these routes now read current farmer state inside the journal transaction. A deterministic two-request barrier test covers separate plots sharing one seed budget, the two chicken purchase routes sharing one animal budget, and mixed planting/bulk-animal purchases. It verifies one winner, exact debit and ownership, and unchanged winning retries; details are in [spending-consistency.md](spending-consistency.md).
 
+- **Shared capacity contention:** the same deterministic barrier now covers the generic and legacy chicken-barn upgrade routes sharing one upgrade budget, plus single/max fish stocking competing for the final pond slot. It verifies one winner, exact debit, the resulting barn level or total pond occupancy, and unchanged winning retries.
+
 ## 10. Improve speed and accessibility
 
 - Measure mobile startup, image payload, rendering work, and state polling. Optimize the measured bottlenecks.
