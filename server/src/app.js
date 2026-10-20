@@ -1151,6 +1151,7 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         if (!crop && !tree) return reply.code(400).send({ error: 'bad_request' });
         const plant = runJournaledMutation(request, 'plant-all', () => {
+          const me = getFarmer.get(request.farmer.user_id);
           if (me.tax_owed > 0) return { error: 'tax_due' };
           if (levelFor(me.xp) < (crop || tree).level) return { error: 'level_too_low' };
           const occupied = new Set(db.prepare('SELECT idx FROM plots WHERE owner_id = ?').all(me.user_id).map((r) => r.idx));
@@ -1656,11 +1657,12 @@ export function buildApp({ config, db, logger = true }) {
         const kind = requestedKind ?? 'ga';
         const a = ANIMALS[kind];
         const feed = runJournaledMutation(request, 'feed', () => {
+          const me = getFarmer.get(request.farmer.user_id);
           const hungry = db.prepare('SELECT * FROM animals WHERE owner_id = ? AND kind = ? AND ready_at IS NULL').all(me.user_id, kind);
           if (hungry.length === 0) return { error: 'no_hungry_animal' };
           const canFeed = Math.min(hungry.length, Math.floor(invQty(me.user_id, FEED_ITEM) / a.feedQty));
           if (canFeed === 0) return { error: 'not_enough_feed' };
-          const readyAt = Date.now() + scaleMs(a.produceMs, config.fast);
+          const readyAt = Date.now() + animalTime(me, scaleMs(a.produceMs, config.fast));
           invTake(me.user_id, FEED_ITEM, canFeed * a.feedQty);
           const upd = db.prepare('UPDATE animals SET ready_at = ? WHERE id = ?');
           for (const row of hungry.slice(0, canFeed)) upd.run(readyAt, row.id);

@@ -137,3 +137,5 @@ This is the project plan for the farm game, separate from the older stability au
 - **Animal and pond skill timing (step 5):** production previews now include learned animal-speed ranks across barn overview/detail, animal shop and pond stocking. Mobile coverage verifies skill-adjusted labels against real automatic animal production and persisted pond-batch deadlines, including fractional-minute display precision.
 
 - **Crop and tree skill timing (step 5):** seed and tree previews now include learned growth-speed ranks for initial growth and fruit cycles, preserve short-duration seconds and keep tree lifespan unchanged. Mobile coverage verifies actual planting deadlines, tree lifespan and a settled fruit cycle against the displayed values.
+
+- **Production mutation consistency (step 9):** bulk planting now authorizes against current transactional farmer state, and manual feeding uses current animal-speed modifiers. Deterministic contention coverage checks individual/bulk crop and tree spending; production coverage verifies every species at zero/two speed ranks with exact feed use, adjusted deadlines and safe retries.

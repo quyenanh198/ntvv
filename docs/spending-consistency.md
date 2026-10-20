@@ -23,3 +23,7 @@ Factory queueing and collection now read current farmer state inside the journal
 ## Upgrade unlock enforcement
 
 Machine and barn upgrades, including the legacy chicken shortcut, now compare the current transaction row against the catalog unlock level before checking upgrade cost. `test/upgrade-unlocks.test.js` verifies every machine and animal catalog entry rejects a funded level-one caller without changing gold, sunk gold, XP, mutation version, upgrade state or journal records. It then upgrades a machine, a JSON-backed quail barn and the legacy coop at their exact unlock levels, reusing their previously rejected keys, and verifies exact debit, new level and unchanged retries. This aligns direct API calls with the locked controls in the UI.
+
+## Bulk planting and manual production
+
+Bulk crop/tree planting now reads current balance, tax, level, plot capacity and skills inside its journal transaction. The held-request spending test includes individual versus bulk crop planting with one seed budget and individual versus bulk tree planting with one tree budget; only one request may spend or plant, and winning retries preserve value. Manual feeding also reads current farmer state and applies the same animal-speed formula used by automatic tending. The production test covers all fifteen species with zero and two speed ranks, two animals per request, exact feed consumption, shared adjusted deadlines and unchanged retries.
