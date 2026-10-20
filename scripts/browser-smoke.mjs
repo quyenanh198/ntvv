@@ -97,6 +97,10 @@ try {
   console.log(`320px startup sample: ${JSON.stringify(startup)}`);
   assert.ok(startup.imageTransferBytes <= 900_000, `320px image transfer exceeds 900 KB: ${startup.imageTransferBytes}`);
   assert.ok(startup.localTransferBytes <= 1_200_000, `320px local transfer exceeds 1.2 MB: ${startup.localTransferBytes}`);
+  const pondScene = page.locator('.pond-img img');
+  await pondScene.evaluate((image) => image.decode());
+  assert.equal(await pondScene.evaluate((image) => image.naturalWidth), 224);
+  assert.ok((await pondScene.getAttribute('src')).includes('fishing_pond_v3-224.png'));
   await checkNoOverflow(page, '320px farm');
   const scarecrow = page.locator('.scarecrow-img');
   assert.match(await scarecrow.getAttribute('src'), /assets\/decor-v3\/scarecrow\.png\?v=/);

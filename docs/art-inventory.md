@@ -687,7 +687,7 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/scene-v3/chicken_coop_v3.png` | 66 KB |
 | `assets/scene-v3/farmer_v3.png` | 63 KB |
 | `assets/scene-v3/farmhouse_v3.png` | 63 KB |
-| `assets/scene-v3/fishing_pond_v3.png` | 82 KB |
+| `assets/scene-v3/fishing_pond_v3-224.png` | 62 KB |
 | `assets/scene-v3/greenhouse_v3.png` | 67 KB |
 | `assets/scene-v3/market_shop_v3-208.png` | 78 KB |
 | `assets/scene-v3/red_barn_v3.png` | 63 KB |

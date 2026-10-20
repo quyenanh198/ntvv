@@ -119,3 +119,5 @@ This is the project plan for the farm game, separate from the older stability au
 - **Shop navigation (step 5):** category controls now separate feed/seeds, animal purchases, gem exchange and guard services while retaining an All view. Mobile coverage verifies each category, keyboard focus, 44px targets, and an exact-budget feed purchase that preserves the selected category.
 
 - **Barn feed round trip (step 5):** hungry-barn shortcuts now open supplies directly and provide a return-to-barn action preserved across purchases and category changes. Mobile coverage completes purchase and feeding for two hungry quails, verifying gold, feed inventory and both production timers.
+
+- **Startup headroom (step 10):** after the measured local-transfer sample reached 1,199,213 B, the largest first-screen image (pond) received a 224px export saving 19,949 B. Its source and earlier export remain. Browser coverage verifies the served size and retains the same performance budgets and mobile/desktop farm captures.
