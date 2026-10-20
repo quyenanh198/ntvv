@@ -2257,6 +2257,7 @@ button, a, .plot, .side-btn, .gbtn, .hud-round, .coin-pill, .seed-card, .inv-row
   top: -2px;
   right: -6px;
 }
+.more-card .mc-icon img { display: block; width: 36px; height: 36px; }
 .mc-name {
   font-size: 0.85rem;
   font-weight: 800;

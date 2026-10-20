@@ -1710,6 +1710,22 @@ try {
   await checkNoOverflow(page, '320px shop categories');
   await auditAccessibility(page, 'shop-categories-320');
   await page.screenshot({ path: resolve(outputDir, 'shop-supplies-320.png') });
+  db.prepare('UPDATE farmers SET xp = 1000000000 WHERE user_id = 1').run();
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  const featureIcons = page.locator('.more-card .mc-icon img');
+  assert.equal(await featureIcons.count(), 14, 'Every unlocked feature should have matching navigation artwork');
+  for (const icon of await featureIcons.all()) await icon.evaluate((image) => image.decode());
+  const featureArt = await featureIcons.evaluateAll((images) => images.map((image) => ({
+    loaded: image.naturalWidth > 0, alt: image.alt, width: image.getBoundingClientRect().width,
+    label: image.closest('button').querySelector('.mc-name').textContent,
+  })));
+  assert.ok(featureArt.every((icon) => icon.loaded && icon.alt === '' && icon.width === 36 && icon.label));
+  await checkNoOverflow(page, '320px feature menu artwork');
+  await auditAccessibility(page, 'feature-menu-320');
+  await page.screenshot({ path: resolve(outputDir, 'feature-menu-top-320.png') });
+  await page.locator('.more-card[data-action="leaderboard"]').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'feature-menu-bottom-320.png') });
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

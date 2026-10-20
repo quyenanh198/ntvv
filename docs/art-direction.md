@@ -294,3 +294,7 @@ All seven owned-pet previews now use painted art. The dog, cat, parrot, golden t
 ## Dock interface icons
 
 The five dock controls now use a shared SVG family in `public/assets/ui/dock-*.svg`: farm house, harvest basket, shop stall, inventory sack and menu plaque. Each uses a 64-unit view box, rounded three-unit brown outlines, warm cream/gold surfaces, terracotta roofs and muted green accents; the dock displays them at 28 CSS pixels. These are original code-native vector assets, not generated bitmaps. Decorative image alternatives stay empty because visible button labels supply the accessible names. Browser coverage decodes all five, checks file identity and display width, and retains mobile/desktop farm captures and accessibility scans.
+
+## Feature menu interface icons
+
+All fourteen feature-menu controls now use the same rounded brown-outline vector language as the dock. Thirteen original SVGs are generated from editable path sources in `scripts/build-menu-icons.mjs`; the market reuses `dock-shop.svg`. Regenerate with `node scripts/build-menu-icons.mjs`, then refresh the art inventory. Menu icons display at 36px, retain empty decorative alternatives, and leave labels, unlock rules and notification dots intact. The fully unlocked 320px browser check decodes all fourteen icons, checks labels and size, scans accessibility and captures the top and bottom of the menu.
