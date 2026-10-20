@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { EXPANSIONS, FESTIVAL, FISHING, FISH_STOCK_BY_LEVEL, GOLD_MULT, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
+import { EXPANSIONS, FESTIVAL, FISHING, FISH_STOCK_BY_LEVEL, GOLD_MULT, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
 
 const players = [
   { id: 1, username: 'browser', display_name: 'Browser Farmer' },
@@ -1562,6 +1562,55 @@ try {
   assert.equal(upgradedPond.me.fishFarm.capacity, FISH_STOCK_BY_LEVEL[1]);
   assert.deepEqual(db.prepare('SELECT * FROM fish_batches WHERE owner_id = 1 ORDER BY id').all(), batchesBeforeUpgrade);
   assert.deepEqual(db.prepare('SELECT gold, pond_level FROM farmers WHERE user_id = 1').get(), { gold: 0, pond_level: 2 });
+  const millUnlockXp = Array.from({ length: MACHINES.coixay.level - 1 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, need) => sum + need, 0);
+  const factoryUpgradeCost = MACHINE_UPGRADE_GOLD[0];
+  db.prepare('UPDATE farmers SET xp = ?, gold = ?, machine_levels_json = ?, skills_json = ? WHERE user_id = 1')
+    .run(millUnlockXp, factoryUpgradeCost - 1, '{}', JSON.stringify({ lamnhanh: 1 }));
+  db.prepare('DELETE FROM machine_jobs WHERE owner_id = 1').run();
+  const runningReadyAt = Date.now() + 3600000;
+  db.prepare('INSERT INTO machine_jobs (owner_id, kind, recipe, ready_at, queue_count) VALUES (1, ?, ?, ?, 2)').run('coixay', 'botmi', runningReadyAt);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await page.locator('.more-card[data-sheet="mill"]').click();
+  const factoryPreview = page.locator('[data-upgrade-preview="coixay"]');
+  const flourDuration = page.locator('[data-recipe-output="botmi"] .mc-duration');
+  assert.equal(Number(await flourDuration.getAttribute('data-duration-ms')), Math.round(MACHINES.coixay.recipes.botmi.ms * 0.95));
+  assert.match(await flourDuration.innerText(), /9:30/);
+  assert.match(await factoryPreview.locator('.mc-upgrade-balance').innerText(), /Thiếu 1 vàng/);
+  assert.equal(await page.locator('[data-machine-upgrade="coixay"]').isDisabled(), true);
+  await factoryPreview.scrollIntoViewIfNeeded();
+  await checkNoOverflow(page, '320px factory upgrade shortfall');
+  await page.screenshot({ path: resolve(outputDir, 'factory-upgrade-shortfall-320.png') });
+  db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(factoryUpgradeCost);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await page.locator('.more-card[data-sheet="mill"]').click();
+  assert.match(await factoryPreview.locator('.mc-upgrade-balance').innerText(), /Sau khi nâng: còn 0 vàng/);
+  await factoryPreview.scrollIntoViewIfNeeded();
+  await auditAccessibility(page, 'factory-upgrade-320');
+  await page.screenshot({ path: resolve(outputDir, 'factory-upgrade-affordable-320.png') });
+  const factoryUpgradeResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/machine-upgrade') && response.request().method() === 'POST');
+  await page.locator('[data-machine-upgrade="coixay"]').click();
+  assert.equal((await factoryUpgradeResponse).status(), 200);
+  await page.locator('[data-upgrade-preview="coixay"] p').filter({ hasText: 'Cấp máy 1' }).waitFor();
+  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, 0);
+  assert.deepEqual(db.prepare('SELECT ready_at, queue_count FROM machine_jobs WHERE owner_id = 1 AND kind = ? AND recipe = ?').get('coixay', 'botmi'), { ready_at: runningReadyAt, queue_count: 2 });
+  const upgradedDuration = Math.round(MACHINES.coixay.recipes.botmi.ms * 0.95 * 0.9);
+  assert.equal(Number(await flourDuration.getAttribute('data-duration-ms')), upgradedDuration);
+  assert.match(await flourDuration.innerText(), /8:33/);
+  db.prepare('DELETE FROM machine_jobs WHERE owner_id = 1').run();
+  db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'luami', 2) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 2").run();
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await page.locator('.more-card[data-sheet="mill"]').click();
+  const queuedAfterUpgrade = page.waitForResponse((response) => response.url().endsWith('/farm/api/machine-run') && response.request().method() === 'POST');
+  const queueStartedAt = Date.now();
+  await page.locator('[data-machine-run="coixay"][data-recipe="botmi"][data-count="1"]').first().click();
+  assert.equal((await queuedAfterUpgrade).status(), 200);
+  const queueFinishedAt = Date.now();
+  const newReadyAt = db.prepare('SELECT ready_at FROM machine_jobs WHERE owner_id = 1 AND kind = ? AND recipe = ?').get('coixay', 'botmi').ready_at;
+  assert.ok(newReadyAt >= queueStartedAt + upgradedDuration && newReadyAt <= queueFinishedAt + upgradedDuration,
+    'The server must schedule the new batch using the duration displayed with both speed bonuses');
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

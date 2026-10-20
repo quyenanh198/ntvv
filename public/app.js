@@ -1541,7 +1541,10 @@
         } else {
           head = '<div class="mc-status mc-status--idle">💤 Rảnh — bấm ＋ để nấu, mỗi món chạy riêng</div>';
         }
+        const ml = (m.machineLevels || {})[mc.id] || 0;
+        const speedSkill = m.skills?.learned?.lamnhanh || 0;
         const rows = Object.values(mc.recipes).map((r) => {
+          const duration = Math.round(r.ms * (1 - 0.05 * speedSkill) * (1 - 0.1 * ml));
           const job = jobs[r.id];
           const room = QMAX - (job ? job.queue : 0);
           const maxBatches = Math.max(0, Math.min(room, ...Object.entries(r.in).map(([iid, q]) => Math.floor((m.inventory[iid] || 0) / q))));
@@ -1574,7 +1577,7 @@
             <span class="seed-info"><span class="seed-name">${r.name} <small>×${Object.values(r.out)[0]}</small></span></span>
             <div class="seed-meta mc-recipe-meta">
               <span><b>Cần:</b> ${ins}</span>
-              <span>⏱ ${fmtDuration(r.ms)} · Bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp} EXP</span>
+              <span><span class="mc-duration" data-duration-ms="${duration}">⏱ ${fmtTime(duration)} /mẻ</span> · Bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp} EXP</span>
             </div>${missing ? `<small class="mc-missing">Thiếu ${esc(missingText)} · Bấm 🛒 để đăng mua</small>` : ''}
             <span class="mc-add">
               ${state}
@@ -1584,11 +1587,15 @@
           </div>`;
         }).join('');
         if (factoryView !== 'all' && !rows) return '';
-        const ml = (m.machineLevels || {})[mc.id] || 0;
         const ug = DATA.config.machineUpgradeGold || [];
         const up = ml >= ug.length
           ? `<div class="mc-status">⚙️ Cấp ${ml} tối đa · −${ml * 10}% thời gian</div>`
-          : `<button class="btn btn-ghost mc-upgrade" data-machine-upgrade="${mc.id}" ${m.gold >= ug[ml] ? '' : 'disabled'}>⚙️ Nâng cấp ${ml + 1} — ${ug[ml].toLocaleString('vi')} ${COIN} (−${(ml + 1) * 10}% thời gian)</button>`;
+          : `<div class="festival-card mc-upgrade-preview" data-upgrade-preview="${mc.id}">
+            <p class="festival-hint">Cấp máy ${ml} → ${ml + 1} · Giảm thời gian gốc: ${ml * 10}% → ${(ml + 1) * 10}%.</p>
+            <p class="festival-hint">Thời gian công thức đã tính kỹ năng và cấp máy. Mẻ đang chạy giữ mốc hoàn thành; mẻ tiếp theo dùng tốc độ mới.</p>
+            <p class="festival-hint mc-upgrade-balance">${m.gold >= ug[ml] ? `Sau khi nâng: còn ${(m.gold - ug[ml]).toLocaleString('vi')} vàng.` : `Thiếu ${(ug[ml] - m.gold).toLocaleString('vi')} vàng.`}</p>
+            <div class="festival-card-footer"><button class="btn btn-ghost mc-upgrade" data-machine-upgrade="${mc.id}" ${m.gold >= ug[ml] ? '' : 'disabled'}>Nâng cấp ${ml + 1} · ${ug[ml].toLocaleString('vi')} vàng</button></div>
+          </div>`;
         return `<div class="machine-block"><h4>${machineIcon(mc)}<span>${mc.name}</span>${ml ? ` <small>⚙️${ml}</small>` : ''}</h4>${head}${rows}${up}</div>`;
       }).join('');
       const readyTotal = Object.values(m.machines).reduce((acc, jobs) => acc + Object.values(jobs || {}).reduce((n, j) => n + (j.completed || 0), 0), 0);

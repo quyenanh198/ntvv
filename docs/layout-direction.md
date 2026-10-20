@@ -131,3 +131,7 @@ The expansion sheet now shows current and resulting plot counts, exact cost, ind
 ## Pond upgrade decisions
 
 The fishing sheet now separates fish per cast from stocking capacity when explaining an upgrade. An unchanged fishing yield is explicit, alongside the new capacity, preservation of existing batches, exact price, and remaining gold or shortfall. Mobile coverage checks a one-gold shortage and exact-budget purchase, confirms level two and increased capacity without changing the fish per cast, and verifies existing batches are unchanged. Review captures: `pond-upgrade-shortfall-320.png` and `pond-upgrade-affordable-320.png`.
+
+## Factory timing and upgrade decisions
+
+Recipe durations now include both the learned production-speed skill and the machine upgrade level, using minutes and seconds so fractional-minute bonuses remain visible. Upgrade summaries explain current and next machine reduction, exact cost, remaining gold or shortfall, and the unchanged completion time of a running batch. The mobile walkthrough verifies a one-gold shortfall, an exact-budget upgrade, preservation of the running queue, and a newly queued batch scheduled by the server for the displayed adjusted duration. Review captures: `factory-upgrade-shortfall-320.png` and `factory-upgrade-affordable-320.png`.
