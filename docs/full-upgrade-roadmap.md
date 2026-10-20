@@ -125,3 +125,5 @@ This is the project plan for the farm game, separate from the older stability au
 - **Dock interface art (steps 2 and 10):** farm, harvest, shop, inventory and More now share one original SVG icon family with consistent outlines and colors, replacing mixed platform emoji, text and bitmap art. Browser coverage checks all five decoded icons at 28px with visible control labels; mobile/desktop capture and accessibility review remain part of CI.
 
 - **Feature menu interface art (step 2):** all fourteen More-menu destinations now use original SVG artwork matching the dock palette and outlines. Editable path sources and a regeneration command are committed. Browser coverage verifies every unlocked icon, visible labels, 36px display size, accessibility and both halves of the mobile menu.
+
+- **Header art and sound state (steps 2 and 10):** energy, sound, news, leaderboard and ledger now use the shared vector style. The sound button has a stable accessible name and explicit pressed state. Mobile coverage checks toggle behavior, persisted preference after reload, corresponding artwork and decoded header icons.

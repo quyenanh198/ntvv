@@ -152,8 +152,23 @@ try {
   await auditAccessibility(page, 'farm-320');
   const audioButton = page.locator('#btn-audio-toggle');
   const audioNameBefore = await audioButton.getAttribute('aria-label');
+  const soundBefore = await audioButton.getAttribute('aria-pressed');
+  const soundAfter = soundBefore === 'true' ? 'false' : 'true';
   await audioButton.click();
-  assert.notEqual(await audioButton.getAttribute('aria-label'), audioNameBefore, 'Audio control should announce its next action after toggling');
+  assert.equal(await audioButton.getAttribute('aria-label'), audioNameBefore, 'Sound toggle must keep a stable accessible name');
+  assert.equal(await audioButton.getAttribute('aria-pressed'), soundAfter);
+  const expectedAudioIcon = soundAfter === 'true' ? 'menu-audio-on.svg' : 'menu-audio-off.svg';
+  assert.ok((await audioButton.locator('img').getAttribute('src')).includes(expectedAudioIcon));
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await audioButton.waitFor();
+  assert.equal(await audioButton.getAttribute('aria-pressed'), soundAfter, 'Sound preference must survive reload');
+  assert.equal(await audioButton.getAttribute('aria-label'), audioNameBefore);
+  assert.ok((await audioButton.locator('img').getAttribute('src')).includes(expectedAudioIcon));
+  const headerIcons = page.locator('.hud-round .hud-icon, .coin-pill--energy img');
+  assert.equal(await headerIcons.count(), 5);
+  for (const icon of await headerIcons.all()) await icon.evaluate((image) => image.decode());
+  assert.ok((await headerIcons.evaluateAll((images) => images.map((image) => image.alt === '' && image.naturalWidth > 0))).every(Boolean));
+  await page.screenshot({ path: resolve(outputDir, 'header-sound-state-320.png') });
   await page.locator('.dock-btn[data-sheet="more"]').click();
   assert.equal(await page.locator('.sheet .more-card[data-action="leaderboard"]').count(), 1,
     'leaderboard should remain available from More on narrow phones');

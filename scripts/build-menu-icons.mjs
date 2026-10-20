@@ -3,6 +3,10 @@ import { fileURLToPath } from 'node:url';
 
 // Original vector sources. Palette and rounded outlines match the dock family.
 const icons = {
+  'audio-on': '<path d="M9 25h13l15-13v40L22 39H9V25Z" fill="#e8b95f"/><path d="M44 23c6 5 6 13 0 18M50 15c12 10 12 24 0 34"/>',
+  'audio-off': '<path d="M9 25h13l15-13v40L22 39H9V25Z" fill="#f5d99c"/><path d="m45 25 13 14M58 25 45 39" stroke="#a54c32" stroke-width="4"/>',
+  energy: '<path d="M35 5 13 35h17l-2 24 23-34H35V5Z" fill="#e8b95f"/>',
+  events: '<rect x="6" y="17" width="52" height="38" rx="5" fill="#f5d99c"/><path d="m7 20 25 18 25-18M7 53l17-17M57 53 41 36"/><path d="M25 8h14M29 3h14" stroke="#b07e3b"/>',
   quests: '<path d="M16 8h32v49l-6-4-5 4-5-4-5 4-5-4-6 4V8Z" fill="#f5d99c"/><path d="m23 23 4 4 10-10M23 37h17M23 44h12"/>',
   orders: '<path d="M6 17h33v29H6z" fill="#f5d99c"/><path d="M39 27h10l9 11v8H39z" fill="#c96841"/><path d="M44 31h4l5 7h-9z" fill="#a7d5d5"/><circle cx="17" cy="48" r="7" fill="#e8b95f"/><circle cx="48" cy="48" r="7" fill="#e8b95f"/><path d="M13 26h17M13 33h11"/>',
   festival: '<path d="M10 29h44v25H10z" fill="#f5d99c"/><path d="m5 29 27-19 27 19H5Z" fill="#c96841"/><path d="m22 29 10-19 10 19M32 10V3l13 4-13 4" fill="#e8b95f"/><path d="M24 54V37h16v17" fill="#9a643b"/>',
