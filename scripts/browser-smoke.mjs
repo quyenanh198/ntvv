@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { DOG, EXPANSIONS, FESTIVAL, FISHING, FISH_STOCK_BY_LEVEL, GOLD_MULT, GOODS, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
+import { ANIMALS, BARN_UPGRADE_GOLD, DOG, EXPANSIONS, FESTIVAL, FISHING, FISH_STOCK_BY_LEVEL, GOLD_MULT, GOODS, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
 
 const players = [
   { id: 1, username: 'browser', display_name: 'Browser Farmer' },
@@ -1741,6 +1741,42 @@ try {
   await page.screenshot({ path: resolve(outputDir, 'feature-menu-top-320.png') });
   await page.locator('.more-card[data-action="leaderboard"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'feature-menu-bottom-320.png') });
+  db.prepare('DELETE FROM animals WHERE owner_id = 1').run();
+  db.prepare("DELETE FROM inventory WHERE owner_id = 1 AND item = 'thucan'").run();
+  db.prepare('INSERT INTO animals (owner_id, kind, ready_at) VALUES (1, ?, ?)').run('cut', Date.now() + 3600000);
+  const upgradeAnimalsBefore = db.prepare('SELECT * FROM animals WHERE owner_id = 1 ORDER BY id').all();
+  db.prepare('UPDATE farmers SET xp = ?, gold = ?, barn_levels_json = ? WHERE user_id = 1')
+    .run(levelSixXp, BARN_UPGRADE_GOLD[0] - 1, '{}');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await page.locator('.more-card[data-sheet="barns"]').click();
+  await page.locator('[data-preview-barn="cut"]').click();
+  assert.equal(await page.locator('[data-upgrade-barn="cut"]').isDisabled(), true);
+  assert.match(await page.locator('.barn-upgrade-balance').innerText(), /Thiếu 1 vàng/);
+  assert.match(await page.locator('.barn-upgrade-capacity').innerText(), new RegExp(`${ANIMALS.cut.capacities[0]} → ${ANIMALS.cut.capacities[1]} con`));
+  await page.locator('.barn-upgrade-preview').scrollIntoViewIfNeeded();
+  await checkNoOverflow(page, '320px barn upgrade shortage');
+  await page.screenshot({ path: resolve(outputDir, 'barn-upgrade-shortfall-320.png') });
+  db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(BARN_UPGRADE_GOLD[0]);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await page.locator('.more-card[data-sheet="barns"]').click();
+  await page.locator('[data-preview-barn="cut"]').click();
+  assert.match(await page.locator('.barn-upgrade-balance').innerText(), /Sau khi nâng: còn 0 vàng/);
+  await page.locator('.barn-upgrade-preview').scrollIntoViewIfNeeded();
+  await auditAccessibility(page, 'barn-upgrade-320');
+  await page.screenshot({ path: resolve(outputDir, 'barn-upgrade-affordable-320.png') });
+  const barnUpgradeResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/upgrade-barn') && response.request().method() === 'POST');
+  await page.locator('[data-upgrade-barn="cut"]').click();
+  const barnUpgradeResult = await barnUpgradeResponse;
+  assert.equal(barnUpgradeResult.status(), 200);
+  const upgradedBarnState = (await barnUpgradeResult.json()).me;
+  assert.equal(upgradedBarnState.gold, 0);
+  assert.equal(upgradedBarnState.barns.cut.level, 2);
+  assert.equal(upgradedBarnState.barns.cut.capacity, ANIMALS.cut.capacities[1]);
+  assert.deepEqual(db.prepare('SELECT * FROM animals WHERE owner_id = 1 ORDER BY id').all(), upgradeAnimalsBefore,
+    'Barn upgrades must preserve animals and their running production schedule');
+  assert.equal(JSON.parse(db.prepare('SELECT barn_levels_json FROM farmers WHERE user_id = 1').get().barn_levels_json).cut, 2);
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

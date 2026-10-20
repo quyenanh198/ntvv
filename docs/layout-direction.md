@@ -147,3 +147,7 @@ The shop now offers All, Feed and seeds, Animals, Gems, and Guard controls above
 ## Barn feed round trip
 
 A hungry barn opens the supplies category directly and carries a return action naming the originating animal. Buying feed and switching shop categories retain that return action. Mobile coverage starts with two hungry quails and no feed, opens supplies, buys ten bags with the exact debit, returns to the quail barn and feeds both animals. It verifies eight bags remain and both production timers start. Review capture: `barn-fed-roundtrip-320.png`.
+
+## Barn upgrade decisions
+
+Overview upgrade controls now open the species barn for review. The detail card shows current and resulting capacity, added places, price and remaining gold or shortfall, and explains that animals must be bought separately. Mobile coverage checks a one-gold shortage and an exact-budget upgrade for quails, verifies the new level/capacity and exact debit, and confirms all existing animals and production timestamps remain unchanged. Review captures: `barn-upgrade-shortfall-320.png` and `barn-upgrade-affordable-320.png`.
