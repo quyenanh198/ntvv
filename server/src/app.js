@@ -1126,6 +1126,7 @@ export function buildApp({ config, db, logger = true }) {
           return reply.code(400).send({ error: 'bad_request' });
         }
         const plant = runJournaledMutation(request, 'plant', () => {
+          const me = getFarmer.get(request.farmer.user_id);
           if (me.tax_owed > 0) return { error: 'tax_due' };
           if (levelFor(me.xp) < crop.level) return { error: 'level_too_low' };
           if (me.gold < crop.seed) return { error: 'not_enough_gold' };
@@ -1626,6 +1627,7 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         if (!a || (want !== 'max' && (!Number.isSafeInteger(want) || want < 1))) return reply.code(400).send({ error: 'bad_request' });
         const purchase = runJournaledMutation(request, route, () => {
+          const me = getFarmer.get(request.farmer.user_id);
           if (levelFor(me.xp) < a.level) return { error: 'level_too_low' };
           const count = db.prepare('SELECT COUNT(*) c FROM animals WHERE owner_id = ? AND kind = ?').get(me.user_id, kind).c;
           const space = a.capacities[barnLevel(me, kind) - 1] - count;
