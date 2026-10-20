@@ -121,3 +121,5 @@ This is the project plan for the farm game, separate from the older stability au
 - **Barn feed round trip (step 5):** hungry-barn shortcuts now open supplies directly and provide a return-to-barn action preserved across purchases and category changes. Mobile coverage completes purchase and feeding for two hungry quails, verifying gold, feed inventory and both production timers.
 
 - **Startup headroom (step 10):** after the measured local-transfer sample reached 1,199,213 B, the largest first-screen image (pond) received a 224px export saving 19,949 B. Its source and earlier export remain. Browser coverage verifies the served size and retains the same performance budgets and mobile/desktop farm captures.
+
+- **Dock interface art (steps 2 and 10):** farm, harvest, shop, inventory and More now share one original SVG icon family with consistent outlines and colors, replacing mixed platform emoji, text and bitmap art. Browser coverage checks all five decoded icons at 28px with visible control labels; mobile/desktop capture and accessibility review remain part of CI.

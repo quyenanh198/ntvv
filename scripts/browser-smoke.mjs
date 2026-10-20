@@ -101,6 +101,17 @@ try {
   await pondScene.evaluate((image) => image.decode());
   assert.equal(await pondScene.evaluate((image) => image.naturalWidth), 224);
   assert.ok((await pondScene.getAttribute('src')).includes('fishing_pond_v3-224.png'));
+  const dockIcons = page.locator('.bottom-dock .dock-icon img');
+  assert.equal(await dockIcons.count(), 5);
+  for (const icon of await dockIcons.all()) await icon.evaluate((image) => image.decode());
+  const dockArt = await dockIcons.evaluateAll((images) => images.map((image) => ({
+    path: new URL(image.src).pathname.split('/').pop(), alt: image.alt,
+    loaded: image.naturalWidth > 0, width: image.getBoundingClientRect().width,
+    label: image.closest('button').querySelector('.dock-label').textContent,
+  })));
+  assert.deepEqual(dockArt.map((icon) => icon.path), ['dock-farm.svg', 'dock-harvest.svg', 'dock-shop.svg', 'dock-inventory.svg', 'dock-more.svg']);
+  assert.ok(dockArt.every((icon) => icon.loaded && icon.alt === '' && icon.label && icon.width === 28),
+    'Dock artwork must decode at the intended size while visible labels name each control');
   await checkNoOverflow(page, '320px farm');
   const scarecrow = page.locator('.scarecrow-img');
   assert.match(await scarecrow.getAttribute('src'), /assets\/decor-v3\/scarecrow\.png\?v=/);
