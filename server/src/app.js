@@ -2039,6 +2039,7 @@ export function buildApp({ config, db, logger = true }) {
         if (!Object.hasOwn(MACHINES, machine)) return reply.code(400).send({ error: 'bad_request' });
         const upgrade = runJournaledMutation(request, 'machine-upgrade', () => {
           const current = getFarmer.get(me.user_id);
+          if (levelFor(current.xp) < MACHINES[machine].level) return { error: 'level_too_low' };
           const lv = machineLevel(current, machine);
           if (lv >= MACHINE_UPGRADE_GOLD.length) return { error: 'max_level' };
           const cost = MACHINE_UPGRADE_GOLD[lv];
@@ -2500,6 +2501,7 @@ export function buildApp({ config, db, logger = true }) {
         if (!a) return reply.code(400).send({ error: 'bad_request' });
         const upgrade = runJournaledMutation(request, route, () => {
           const current = getFarmer.get(me.user_id);
+          if (levelFor(current.xp) < a.level) return { error: 'level_too_low' };
           const lv = barnLevel(current, kind);
           if (lv >= a.capacities.length) return { error: 'max_level' };
           const gold = BARN_UPGRADE_GOLD[lv - 1];
