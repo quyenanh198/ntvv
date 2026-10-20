@@ -1285,14 +1285,18 @@
              ${[1, 10, 100].map((qty) => `<button class="gbtn ${qty === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-buy="thucan" data-qty="${qty}" ${m.gold >= feed.buy * qty ? '' : 'disabled'}>${qty} túi<small>${(feed.buy * qty).toLocaleString('vi')} vàng</small></button>`).join('')}
            </span>
          </div>
-         <div class="inv-row">
-           <span class="emoji-ic emoji-ic--barn">🐕</span>
-           <span class="seed-info"><span class="seed-name">Chó canh vườn</span>
-             <div class="seed-meta">${DATA.config.dog.pricePerHour.toLocaleString('vi')} ${COIN}/giờ · ${Math.round(DATA.config.dog.catchChance * 100)}% tóm được trộm (+${Math.round((DATA.config.dog.onlineBonus || 0) * 100)}% khi bạn đang online) → kẻ trộm nộp phạt cho bạn ${DATA.config.dog.fine} ${COIN}, bị tóm liên tiếp +${DATA.config.dog.fineStep} mỗi lần (trộm trót lọt thì về ${DATA.config.dog.fine})${m.dog?.active ? ` · <b>đang trực, còn ${fmtTime(m.dog.until - Date.now())}</b>` : ''}</div></span>
-           <span class="btn-group">
-             ${DATA.config.dog.hoursOptions.map((h) => `<button class="gbtn ${h === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-dog-hire="${h}" ${m.gold >= DATA.config.dog.pricePerHour * h ? '' : 'disabled'} aria-label="Thuê chó ${h} giờ ${(DATA.config.dog.pricePerHour * h).toLocaleString('vi')} vàng">${h} giờ<small>${(DATA.config.dog.pricePerHour * h).toLocaleString('vi')} vàng</small></button>`).join('')}
-           </span>
-         </div>
+         <section class="festival-card dog-hire" aria-labelledby="dog-hire-heading">
+           <div class="festival-card-heading"><img class="lux-art" src="${A('assets/pets-v3/companion-dog.png')}" alt="" loading="lazy" /><h3 id="dog-hire-heading">Chó canh vườn</h3></div>
+           <p class="festival-hint dog-hire-status">${m.dog?.active ? `Đang trực, còn ${fmtTime(m.dog.until - Date.now())}. Mua thêm sẽ nối tiếp ca hiện tại.` : 'Chưa có ca trực. Ca mới bắt đầu ngay khi thuê.'}</p>
+           <p class="festival-hint">Tỷ lệ bắt trộm ${Math.round(DATA.config.dog.catchChance * 100)}%, thêm ${Math.round((DATA.config.dog.onlineBonus || 0) * 100)} điểm phần trăm khi bạn online. Không đảm bảo chặn mọi lần trộm.</p>
+           <p class="festival-hint">Kẻ trộm bị bắt nộp ${DATA.config.dog.fine.toLocaleString('vi')} vàng cho bạn; mỗi lần bị bắt liên tiếp tăng ${DATA.config.dog.fineStep.toLocaleString('vi')} vàng. Trộm trót lọt thì mức phạt trở về ban đầu.</p>
+           ${DATA.config.dog.hoursOptions.map((h) => {
+             const cost = DATA.config.dog.pricePerHour * h;
+             return `<article class="festival-card" data-dog-option="${h}"><div class="festival-card-heading"><h4>${m.dog?.active ? 'Thêm' : 'Thuê'} ${h} giờ</h4><span>${cost.toLocaleString('vi')} vàng</span></div>
+               <p class="festival-hint dog-hire-balance">${m.gold >= cost ? `Sau khi thuê: còn ${(m.gold - cost).toLocaleString('vi')} vàng.` : `Thiếu ${(cost - m.gold).toLocaleString('vi')} vàng.`}</p>
+               <div class="festival-card-footer"><button class="gbtn gbtn--green" data-dog-hire="${h}" ${m.gold >= cost ? '' : 'disabled'}>Thuê ${h} giờ · ${cost.toLocaleString('vi')} vàng</button></div></article>`;
+           }).join('')}
+         </section>
          ${m.level >= DATA.config.chicken.level ? `
          <div class="inv-row">
            <img src="${A('assets/art/chicken.png')}" alt="" />

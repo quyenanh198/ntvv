@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { EXPANSIONS, FESTIVAL, FISHING, FISH_STOCK_BY_LEVEL, GOLD_MULT, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
+import { DOG, EXPANSIONS, FESTIVAL, FISHING, FISH_STOCK_BY_LEVEL, GOLD_MULT, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
 
 const players = [
   { id: 1, username: 'browser', display_name: 'Browser Farmer' },
@@ -1611,6 +1611,41 @@ try {
   const newReadyAt = db.prepare('SELECT ready_at FROM machine_jobs WHERE owner_id = 1 AND kind = ? AND recipe = ?').get('coixay', 'botmi').ready_at;
   assert.ok(newReadyAt >= queueStartedAt + upgradedDuration && newReadyAt <= queueFinishedAt + upgradedDuration,
     'The server must schedule the new batch using the duration displayed with both speed bonuses');
+  db.prepare('UPDATE farmers SET gold = ?, dog_until = 0 WHERE user_id = 1').run(DOG.pricePerHour - 1);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="shop"]').click();
+  const dogOption = page.locator('[data-dog-option="1"]');
+  await dogOption.scrollIntoViewIfNeeded();
+  assert.match(await dogOption.locator('.dog-hire-balance').innerText(), /Thiếu 1 vàng/);
+  assert.equal(await page.locator('[data-dog-hire="1"]').isDisabled(), true);
+  assert.match(await page.locator('.dog-hire-status').innerText(), /bắt đầu ngay/);
+  const dogSprite = page.locator('.dog-hire img');
+  await dogSprite.evaluate((image) => image.decode());
+  assert.equal(await dogSprite.evaluate((image) => image.naturalWidth), 128);
+  await checkNoOverflow(page, '320px guard dog shortage');
+  db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(DOG.pricePerHour);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="shop"]').click();
+  await dogOption.scrollIntoViewIfNeeded();
+  assert.match(await dogOption.locator('.dog-hire-balance').innerText(), /Sau khi thuê: còn 0 vàng/);
+  await auditAccessibility(page, 'guard-dog-320');
+  await page.screenshot({ path: resolve(outputDir, 'guard-dog-affordable-320.png') });
+  const hireResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/dog-hire') && response.request().method() === 'POST');
+  const hireStarted = Date.now();
+  await page.locator('[data-dog-hire="1"]').click();
+  assert.equal((await hireResponse).status(), 200);
+  const hireFinished = Date.now();
+  const firstDogShift = db.prepare('SELECT gold, dog_until FROM farmers WHERE user_id = 1').get();
+  assert.equal(firstDogShift.gold, 0);
+  assert.ok(firstDogShift.dog_until >= hireStarted + 3600000 && firstDogShift.dog_until <= hireFinished + 3600000);
+  await page.locator('.dog-hire-status').filter({ hasText: 'nối tiếp ca hiện tại' }).waitFor();
+  db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(DOG.pricePerHour);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="shop"]').click();
+  const extensionResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/dog-hire') && response.request().method() === 'POST');
+  await page.locator('[data-dog-hire="1"]').click();
+  assert.equal((await extensionResponse).status(), 200);
+  assert.deepEqual(db.prepare('SELECT gold, dog_until FROM farmers WHERE user_id = 1').get(), { gold: 0, dog_until: firstDogShift.dog_until + 3600000 });
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
