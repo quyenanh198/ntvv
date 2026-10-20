@@ -1289,7 +1289,7 @@
              ${[1, 10, 100].map((qty) => `<button class="gbtn ${qty === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-buy="thucan" data-qty="${qty}" ${m.gold >= feed.buy * qty ? '' : 'disabled'}>${qty} túi<small>${(feed.buy * qty).toLocaleString('vi')} vàng</small></button>`).join('')}
            </span>
          </div>
-         ${sheet.returnBarn ? `<button class="btn gbtn gbtn--green" data-barn="${esc(sheet.returnBarn)}">Về chuồng ${esc(DATA.config.animals[sheet.returnBarn]?.name || '')} để cho ăn</button>` : ''}
+         ${sheet.returnBarn ? `<p class="sheet-note">Có thức ăn, chuồng tự cho ăn và chạy tiếp.</p><button class="btn gbtn gbtn--green" data-barn="${esc(sheet.returnBarn)}">Về chuồng ${esc(DATA.config.animals[sheet.returnBarn]?.name || '')}</button>` : ''}
          <p class="sheet-note">Hạt giống mua ngay lúc gieo: chạm ô đất trống.</p>${seedRows}</section>
          <section data-shop-section="guard" ${categoryHidden('guard')}><section class="festival-card dog-hire" aria-labelledby="dog-hire-heading">
            <div class="festival-card-heading"><img class="lux-art" src="${A('assets/pets-v3/companion-dog.png')}" alt="" loading="lazy" /><h3 id="dog-hire-heading">Chó canh vườn</h3></div>

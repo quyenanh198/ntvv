@@ -742,14 +742,12 @@ try {
   await page.locator('[data-buy="thucan"][data-qty="10"]').click();
   assert.equal((await feedRoundTripResponse).status(), 200);
   assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, 400 - GOODS.thucan.buy * 10);
-  assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'thucan'").get().qty, 10);
+  assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'thucan'").get().qty, 8,
+    'Buying feed should automatically feed both hungry quails');
+  await page.locator('[data-shop-section="supplies"] [data-barn="cut"]').waitFor();
   await page.locator('[data-shop-section="supplies"] [data-barn="cut"]').click();
-  assert.match(await page.locator('[data-feed-kind="cut"]').innerText(), /Cho 2\/2 con ăn/);
+  assert.equal(await page.locator('[data-feed-kind="cut"]').count(), 0);
   assert.equal(await page.locator('.barn-feed-help').count(), 0);
-  const feedAnimalsResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/feed') && response.request().method() === 'POST');
-  await page.locator('[data-feed-kind="cut"]').click();
-  assert.equal((await feedAnimalsResponse).status(), 200);
-  await page.locator('[data-feed-kind="cut"]').waitFor({ state: 'detached' });
   assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'thucan'").get().qty, 8);
   assert.ok(hungryQuails.every((id) => db.prepare('SELECT ready_at FROM animals WHERE id = ?').get(id).ready_at > Date.now()));
   await checkNoOverflow(page, '320px barn feed round trip');
