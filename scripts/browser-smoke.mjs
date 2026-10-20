@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { ANIMALS, BARN_UPGRADE_GOLD, DOG, EXPANSIONS, FESTIVAL, FISHING, FISH_FARM, FISH_STOCK_BY_LEVEL, GEM_PACKS, GOLD_MULT, GOODS, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
+import { ANIMALS, BARN_UPGRADE_GOLD, CROPS, DOG, EXPANSIONS, FESTIVAL, FISHING, FISH_FARM, FISH_STOCK_BY_LEVEL, GEM_PACKS, GOLD_MULT, GOODS, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, TREES, xpNeedFor } from '../server/src/game.js';
 
 const players = [
   { id: 1, username: 'browser', display_name: 'Browser Farmer' },
@@ -1847,6 +1847,43 @@ try {
   const skilledBatch = db.prepare('SELECT planted_at, ready_at FROM fish_batches WHERE owner_id = 1').get();
   assert.equal(skilledBatch.ready_at - skilledBatch.planted_at, skilledFishMs,
     'Pond stocking must use the same skill-adjusted time shown in its preview');
+  db.prepare('UPDATE farmers SET gold = 10000, skills_json = ? WHERE user_id = 1').run(JSON.stringify({ bantayxanh: 2 }));
+  db.prepare('DELETE FROM plots WHERE owner_id = 1').run();
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.plot[data-idx="0"]').click();
+  const skilledWheat = page.locator('.seed-card[data-crop="luami"]');
+  const wheatDuration = Math.round(CROPS.luami.growMs * 0.9);
+  assert.equal(Number(await skilledWheat.locator('[data-crop-duration-ms]').getAttribute('data-crop-duration-ms')), wheatDuration);
+  assert.match(await skilledWheat.innerText(), /54 giây/);
+  await page.screenshot({ path: resolve(outputDir, 'crop-skilled-time-320.png') });
+  const skilledPlantResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/plant') && response.request().method() === 'POST');
+  await skilledWheat.click();
+  assert.equal((await skilledPlantResponse).status(), 200);
+  const plantedSkillWheat = db.prepare('SELECT planted_at, ready_at FROM plots WHERE owner_id = 1 AND idx = 0').get();
+  assert.equal(plantedSkillWheat.ready_at - plantedSkillWheat.planted_at, wheatDuration);
+  await page.locator('.plot[data-idx="0"][data-kind="waterplot"]').waitFor();
+  await page.locator('.plot[data-idx="1"]').click();
+  const skilledOrange = page.locator('.seed-card[data-tree="cam"]');
+  const treeGrowthMs = Math.round(TREES.cam.growMs * 0.9);
+  const fruitCycleMs = Math.max(1000, Math.round(TREES.cam.cycleMs * 0.9));
+  assert.deepEqual(await skilledOrange.locator('[data-crop-duration-ms]').evaluateAll((times) => times.map((time) => Number(time.dataset.cropDurationMs))), [treeGrowthMs, fruitCycleMs]);
+  assert.match(await skilledOrange.getAttribute('title'), /lớn 54 phút.*mỗi 18 phút.*tàn sau 10 giờ/);
+  await skilledOrange.scrollIntoViewIfNeeded();
+  await checkNoOverflow(page, '320px skilled tree timing');
+  await page.screenshot({ path: resolve(outputDir, 'tree-skilled-time-320.png') });
+  const skilledTreeResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/plant-tree') && response.request().method() === 'POST');
+  await skilledOrange.click();
+  const skilledTreeResult = await skilledTreeResponse;
+  assert.equal(skilledTreeResult.status(), 200);
+  const skillTreeMe = (await skilledTreeResult.json()).me;
+  const plantedSkillTree = db.prepare('SELECT planted_at, ready_at FROM plots WHERE owner_id = 1 AND idx = 1').get();
+  assert.equal(plantedSkillTree.ready_at - plantedSkillTree.planted_at, treeGrowthMs);
+  assert.equal(skillTreeMe.plots.find((plot) => plot.idx === 1).treeEndsAt - plantedSkillTree.planted_at, TREES.cam.lifeMs);
+  const firstFruitAt = Date.now() - 1000;
+  db.prepare('UPDATE plots SET ready_at = ? WHERE owner_id = 1 AND idx = 1').run(firstFruitAt);
+  const settledSkillTree = await (await fetch(`${base}/farm/api/state`)).json();
+  assert.equal(settledSkillTree.me.plots.find((plot) => plot.idx === 1).fruits, TREES.cam.yield);
+  assert.equal(db.prepare('SELECT ready_at FROM plots WHERE owner_id = 1 AND idx = 1').get().ready_at, firstFruitAt + fruitCycleMs);
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

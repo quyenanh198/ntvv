@@ -159,3 +159,7 @@ The gem category now uses full-width pack cards with total price, gold per gem a
 ## Animal and pond skill timing
 
 Animal cycle labels in barn summaries, barn details and the shop now include the learned animal-speed bonus. Pond species details and the stocking preview use the same modifier. Duration labels preserve seconds for fractional-minute bonuses and include machine-readable time values. Mobile coverage checks a rank-two quail cycle at 13 minutes 30 seconds against its automatically started server deadline, checks the shop agrees, then stocks a pond batch and verifies the persisted 27-minute duration matches both preview locations. Review captures: `barn-skilled-time-320.png` and `pond-skilled-time-320.png`.
+
+## Crop and tree skill timing
+
+Seed cards now include the learned crop-growth bonus, including seconds for short crops. Tree cards and tooltips apply that bonus to establishment and fruit cycles while leaving lifespan unchanged; the fruit-cycle minimum matches the server. Mobile coverage plants rank-two wheat and orange trees, compares persisted establishment times with previews, verifies the unchanged ten-hour orange lifespan, then settles a fruit cycle and checks the persisted next deadline against the displayed cycle. Review captures: `crop-skilled-time-320.png` and `tree-skilled-time-320.png`.

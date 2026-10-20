@@ -135,3 +135,5 @@ This is the project plan for the farm game, separate from the older stability au
 - **Upgrade unlock enforcement (step 9):** machine and barn upgrades now enforce catalog unlock levels inside the journal transaction, including the legacy coop route. Integration coverage checks all catalog entries reject a funded starter without spending or recording a mutation, then verifies exact-unlock purchases and safe retries for machine, JSON-backed barn and legacy paths.
 
 - **Animal and pond skill timing (step 5):** production previews now include learned animal-speed ranks across barn overview/detail, animal shop and pond stocking. Mobile coverage verifies skill-adjusted labels against real automatic animal production and persisted pond-batch deadlines, including fractional-minute display precision.
+
+- **Crop and tree skill timing (step 5):** seed and tree previews now include learned growth-speed ranks for initial growth and fruit cycles, preserve short-duration seconds and keep tree lifespan unchanged. Mobile coverage verifies actual planting deadlines, tree lifespan and a settled fruit cycle against the displayed values.
