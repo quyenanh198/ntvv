@@ -135,3 +135,7 @@ The fishing sheet now separates fish per cast from stocking capacity when explai
 ## Factory timing and upgrade decisions
 
 Recipe durations now include both the learned production-speed skill and the machine upgrade level, using minutes and seconds so fractional-minute bonuses remain visible. Upgrade summaries explain current and next machine reduction, exact cost, remaining gold or shortfall, and the unchanged completion time of a running batch. The mobile walkthrough verifies a one-gold shortfall, an exact-budget upgrade, preservation of the running queue, and a newly queued batch scheduled by the server for the displayed adjusted duration. Review captures: `factory-upgrade-shortfall-320.png` and `factory-upgrade-affordable-320.png`.
+
+## Guard dog purchase decisions
+
+The shop uses the existing painted companion-dog sprite in a full-width protection card. It separates current shift status, probabilistic protection and fine rules from the three duration choices. Each choice shows its exact cost and remaining balance or shortfall; an active shift explicitly explains that another purchase extends it. Mobile coverage verifies a one-gold shortage, an exact-budget first shift, decoded artwork, accessibility, and a second purchase that adds exactly one hour to the existing expiry. Review capture: `guard-dog-affordable-320.png`.
