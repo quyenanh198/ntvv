@@ -31,3 +31,7 @@ The matched farmhouse, barn, and greenhouse replaced three older scene assets. T
 After the trade catalog search addition, CI measured 1,201,091 B of startup local transfer, exceeding the unchanged 1.2 MB cap. The windmill scene image now uses a 224x210 export in all scene locations; its original 256x240 export and generated source remain available. The same browser probe verifies the resulting total, and farm screenshots at mobile and desktop sizes are retained for visual review.
 
 The decoration-gallery increment serves a 208px market export (79,757 B) in both scene locations, saving 11,807 B versus the 224px export. The generated source and earlier exports remain available. Gallery sprites load lazily; the normal first-session image and total-transfer budgets remain unchanged and are checked by the same CI probe.
+
+## Pond scene export
+
+At `90c9fa1`, CI measured 1,199,213 B of startup local transfer, leaving only 787 B under the unchanged cap. The pond was the largest first-screen image. Its new 224px transparent export is 63,726 B, saving 19,949 B compared with the 83,675 B 256px export. Both the previous export and 1254px generated source remain in the repo. The source was deterministically resized with high-quality bicubic sampling. Browser coverage decodes the served 224px export and retains the existing 320px and desktop farm captures and transfer budgets. CI measures the resulting startup sample; this file-size reduction is not a mobile timing claim.
