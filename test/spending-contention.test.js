@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { ANIMALS, BARN_UPGRADE_GOLD, CROPS, FISH_FARM, FISH_STOCK_BY_LEVEL, xpNeedFor } from '../server/src/game.js';
+import { ANIMALS, BARN_UPGRADE_GOLD, CROPS, FISH_FARM, FISH_STOCK_BY_LEVEL, TREES, xpNeedFor } from '../server/src/game.js';
 
 test('competing purchases and upgrades conserve balances and shared capacity', { timeout: 30000 }, async () => {
   const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-spending-contention-'));
@@ -17,7 +17,7 @@ test('competing purchases and upgrades conserve balances and shared capacity', {
   // Hold both requests after their farmer snapshots load, before either route
   // handler enters its transaction. This reproduces the stale-balance window.
   app.addHook('onRoute', (route) => {
-    if (!['plant', 'buy-animal', 'buy-chicken', 'upgrade-barn', 'upgrade-coop', 'fish-stock'].includes(route.url.split('/').pop())) return;
+    if (!['plant', 'plant-all', 'plant-tree', 'buy-animal', 'buy-chicken', 'upgrade-barn', 'upgrade-coop', 'fish-stock'].includes(route.url.split('/').pop())) return;
     const hooks = route.preHandler ? (Array.isArray(route.preHandler) ? route.preHandler : [route.preHandler]) : [];
     route.preHandler = [...hooks, async (request) => {
       const group = request.headers['x-spending-race'];
@@ -52,6 +52,14 @@ test('competing purchases and upgrades conserve balances and shared capacity', {
       { route: '/plant', payload: { idx: 0, crop: 'luami' }, cost: seed, kind: 'plot' },
       { route: '/plant', payload: { idx: 1, crop: 'luami' }, cost: seed, kind: 'plot' },
     ] },
+    { name: 'single-and-bulk-crops', budget: seed, actions: [
+      { route: '/plant', payload: { idx: 1, crop: 'luami' }, cost: seed, kind: 'plot' },
+      { route: '/plant-all', payload: { crop: 'luami' }, cost: seed, kind: 'plot' },
+    ] },
+    { name: 'single-and-bulk-trees', budget: TREES.cam.price, level: TREES.cam.level, actions: [
+      { route: '/plant-tree', payload: { idx: 1, tree: 'cam' }, cost: TREES.cam.price, kind: 'plot' },
+      { route: '/plant-all', payload: { crop: 'cam' }, cost: TREES.cam.price, kind: 'plot' },
+    ] },
     { name: 'animal-aliases', budget: chicken, actions: [
       { route: '/buy-animal', payload: { kind: 'ga', count: 1 }, cost: chicken, kind: 'animal' },
       { route: '/buy-chicken', payload: {}, cost: chicken, kind: 'animal' },
@@ -63,8 +71,8 @@ test('competing purchases and upgrades conserve balances and shared capacity', {
   ];
   try {
     assert.equal((await app.inject({ method: 'GET', url: '/farm/api/state' })).statusCode, 200);
-    const xp = xpNeedFor(1) + xpNeedFor(2);
-    for (const { name, budget, actions } of scenarios) {
+    for (const { name, budget, actions, level = 3 } of scenarios) {
+      const xp = Array.from({ length: level - 1 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, need) => sum + need, 0);
       db.prepare('DELETE FROM plots WHERE owner_id = 1').run();
       db.prepare('DELETE FROM animals WHERE owner_id = 1').run();
       db.prepare('UPDATE farmers SET gold = ?, xp = ?, tax_owed = 0 WHERE user_id = 1').run(budget, xp);
@@ -77,7 +85,7 @@ test('competing purchases and upgrades conserve balances and shared capacity', {
       assert.equal(settled.farmer.gold, budget - actions[winner].cost);
       assert.equal(settled.plots.length, Number(actions[winner].kind === 'plot'));
       assert.equal(settled.animals.length, Number(actions[winner].kind === 'animal'));
-      if (settled.plots.length) assert.equal(settled.plots[0].idx, actions[winner].payload.idx);
+      if (settled.plots.length) assert.equal(settled.plots[0].idx, actions[winner].payload.idx ?? 0);
       const replay = await post(actions[winner].route, actions[winner].payload, `spend-${name}-${winner}`);
       assert.equal(replay.statusCode, 200, replay.body);
       assert.deepEqual(state(), settled, 'A winning retry must preserve the settled balance, XP, and ownership');
