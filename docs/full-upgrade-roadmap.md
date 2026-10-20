@@ -123,3 +123,5 @@ This is the project plan for the farm game, separate from the older stability au
 - **Startup headroom (step 10):** after the measured local-transfer sample reached 1,199,213 B, the largest first-screen image (pond) received a 224px export saving 19,949 B. Its source and earlier export remain. Browser coverage verifies the served size and retains the same performance budgets and mobile/desktop farm captures.
 
 - **Dock interface art (steps 2 and 10):** farm, harvest, shop, inventory and More now share one original SVG icon family with consistent outlines and colors, replacing mixed platform emoji, text and bitmap art. Browser coverage checks all five decoded icons at 28px with visible control labels; mobile/desktop capture and accessibility review remain part of CI.
+
+- **Feature menu interface art (step 2):** all fourteen More-menu destinations now use original SVG artwork matching the dock palette and outlines. Editable path sources and a regeneration command are committed. Browser coverage verifies every unlocked icon, visible labels, 36px display size, accessibility and both halves of the mobile menu.

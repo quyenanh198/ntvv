@@ -1925,77 +1925,77 @@
         '✨ Tính Năng Nông Trại',
         `<div class="more-grid">
           <button class="more-card" data-sheet="quests">
-            <span class="mc-icon">🧾${qReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-icon"><img src="${A('assets/ui/menu-quests.svg')}" alt="" />${qReady ? '<i class="dot"></i>' : ''}</span>
             <span class="mc-name">Nhiệm vụ</span>
             <span class="mc-sub">${m.daily.done}/${m.daily.required} hôm nay</span>
           </button>
           ${m.level >= DATA.config.orderUnlockLevel ? `
           <button class="more-card" data-sheet="orders">
-            <span class="mc-icon">🚚${oReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-icon"><img src="${A('assets/ui/menu-orders.svg')}" alt="" />${oReady ? '<i class="dot"></i>' : ''}</span>
             <span class="mc-name">Đơn hàng</span>
             <span class="mc-sub">${m.orders.filter((o) => canDeliver(o)).length} đơn sẵn sàng</span>
           </button>` : ''}
           <button class="more-card" data-sheet="festival">
-            <span class="mc-icon">🎪${fReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-icon"><img src="${A('assets/ui/menu-festival.svg')}" alt="" />${fReady ? '<i class="dot"></i>' : ''}</span>
             <span class="mc-name">Sự kiện</span>
             <span class="mc-sub">Mùa lễ hội</span>
           </button>
           <button class="more-card" data-sheet="collections">
-            <span class="mc-icon">📒${(m.collections || []).some((c) => !c.claimed && c.items.every((i) => i.found)) ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-icon"><img src="${A('assets/ui/menu-collections.svg')}" alt="" />${(m.collections || []).some((c) => !c.claimed && c.items.every((i) => i.found)) ? '<i class="dot"></i>' : ''}</span>
             <span class="mc-name">Sổ mùa vụ</span>
             <span class="mc-sub">Mục tiêu lâu dài</span>
           </button>
           ${m.skills.unlocked ? `
           <button class="more-card" data-sheet="skills">
-            <span class="mc-icon">🎓${canSkill ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-icon"><img src="${A('assets/ui/menu-skills.svg')}" alt="" />${canSkill ? '<i class="dot"></i>' : ''}</span>
             <span class="mc-name">Kỹ năng</span>
             <span class="mc-sub">${m.skills.points} điểm</span>
           </button>` : ''}
           ${m.level >= DATA.config.animals.vit.level ? `
           <button class="more-card" data-sheet="barns">
-            <span class="mc-icon">🐾${aReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-icon"><img src="${A('assets/ui/menu-barns.svg')}" alt="" />${aReady ? '<i class="dot"></i>' : ''}</span>
             <span class="mc-name">Chuồng trại</span>
             <span class="mc-sub">Vật nuôi</span>
           </button>` : ''}
           ${m.level >= Math.min(...Object.values(DATA.config.machines).map((x) => x.level)) ? `
           <button class="more-card" data-sheet="mill">
-            <span class="mc-icon">🏭${mReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-icon"><img src="${A('assets/ui/menu-mill.svg')}" alt="" />${mReady ? '<i class="dot"></i>' : ''}</span>
             <span class="mc-name">Nhà máy</span>
             <span class="mc-sub">Chế biến</span>
           </button>` : ''}
           ${m.level >= DATA.config.fishing.level ? `
           <button class="more-card" data-sheet="fishing">
-            <span class="mc-icon">🎣${fishReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-icon"><img src="${A('assets/ui/menu-fishing.svg')}" alt="" />${fishReady ? '<i class="dot"></i>' : ''}</span>
             <span class="mc-name">Hồ câu & Ao</span>
             <span class="mc-sub">Cá tươi</span>
           </button>` : ''}
           <button class="more-card" data-sheet="market">
-            <span class="mc-icon">🤝${wantsReady ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-icon"><img src="${A('assets/ui/dock-shop.svg')}" alt="" />${wantsReady ? '<i class="dot"></i>' : ''}</span>
             <span class="mc-name">Chợ thu mua</span>
             <span class="mc-sub">Giao dịch</span>
           </button>
           <button class="more-card" data-sheet="family">
-            <span class="mc-icon">👥</span>
+            <span class="mc-icon"><img src="${A('assets/ui/menu-family.svg')}" alt="" /></span>
             <span class="mc-name">Người nhà</span>
             <span class="mc-sub">${DATA.family.length} nông dân · ghé thăm</span>
           </button>
           <button class="more-card" data-sheet="luxury">
-            <span class="mc-icon">💎</span>
+            <span class="mc-icon"><img src="${A('assets/ui/menu-luxury.svg')}" alt="" /></span>
             <span class="mc-name">Đồ xa xỉ</span>
             <span class="mc-sub">Trang trí & Khung</span>
           </button>
           <button class="more-card" data-sheet="money">
-            <span class="mc-icon">💌${hasMail ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-icon"><img src="${A('assets/ui/menu-money.svg')}" alt="" />${hasMail ? '<i class="dot"></i>' : ''}</span>
             <span class="mc-name">Xin / Cho vàng</span>
             <span class="mc-sub">Tương trợ</span>
           </button>
           <button class="more-card" data-sheet="ledger">
-            <span class="mc-icon">📋${deb ? '<i class="dot"></i>' : ''}</span>
+            <span class="mc-icon"><img src="${A('assets/ui/menu-ledger.svg')}" alt="" />${deb ? '<i class="dot"></i>' : ''}</span>
             <span class="mc-name">Sổ Nông Thôn</span>
             <span class="mc-sub">Tài chính & Nợ</span>
           </button>
           <button class="more-card" data-action="leaderboard">
-            <span class="mc-icon">🏆</span>
+            <span class="mc-icon"><img src="${A('assets/ui/menu-leaderboard.svg')}" alt="" /></span>
             <span class="mc-name">Bảng xếp hạng</span>
             <span class="mc-sub">Vinh danh làng</span>
           </button>

@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 186/186 catalog products have PNG or SVG icons. 353 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 186/186 catalog products have PNG or SVG icons. 366 static asset paths appear in the client.
 
 ## Crops
 
@@ -708,6 +708,19 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/ui/fish-catra.svg` | <1 KB |
 | `assets/ui/fish-dieuhong.svg` | <1 KB |
 | `assets/ui/gem.svg` | <1 KB |
+| `assets/ui/menu-barns.svg` | <1 KB |
+| `assets/ui/menu-collections.svg` | <1 KB |
+| `assets/ui/menu-family.svg` | <1 KB |
+| `assets/ui/menu-festival.svg` | <1 KB |
+| `assets/ui/menu-fishing.svg` | <1 KB |
+| `assets/ui/menu-leaderboard.svg` | <1 KB |
+| `assets/ui/menu-ledger.svg` | <1 KB |
+| `assets/ui/menu-luxury.svg` | <1 KB |
+| `assets/ui/menu-mill.svg` | <1 KB |
+| `assets/ui/menu-money.svg` | <1 KB |
+| `assets/ui/menu-orders.svg` | <1 KB |
+| `assets/ui/menu-quests.svg` | <1 KB |
+| `assets/ui/menu-skills.svg` | <1 KB |
 | `assets/ui/star.svg` | <1 KB |
 | `assets/ui/wool.svg` | <1 KB |
 
