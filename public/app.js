@@ -1792,21 +1792,26 @@
 
     if (t === 'stars') {
       const next = m.starNext;
+      const can = next && m.stars >= next.stars;
       const rows = DATA.config.starMilestones.map((ms) => {
         const claimed = !next || ms.stars < next.stars;
-        const reward = [ms.gold ? `${ms.gold.toLocaleString('vi')} ${COIN}` : '', ms.gems ? `${ms.gems} ${GEM}` : ''].filter(Boolean).join(' + ');
-        return `<div class="quest-row${claimed ? ' quest-row--done' : ''}">
-          <span class="q-emoji">${STAR}</span>
-          <span class="seed-info"><span class="seed-name">${ms.stars} sao</span><div class="seed-meta">${reward}</div></span>
-          <span class="q-right">${claimed ? '✅' : next && ms.stars === next.stars ? `${m.stars}/${ms.stars}` : '🔒'}</span>
-        </div>`;
+        const current = next?.stars === ms.stars;
+        const progress = Math.min(m.stars, ms.stars);
+        const status = claimed ? 'Đã nhận' : current ? can ? 'Sẵn sàng nhận' : `Còn ${ms.stars - progress} sao` : 'Nhận mốc trước';
+        const reward = [ms.gold ? `${ms.gold.toLocaleString('vi')} vàng` : '', ms.gems ? `${ms.gems} kim cương` : ''].filter(Boolean).join(' + ');
+        return `<article class="festival-card${claimed ? ' festival-card--claimed' : current && can ? ' festival-card--ready' : ''}" data-star-milestone="${ms.stars}" data-star-state="${claimed ? 'claimed' : current && can ? 'ready' : 'pending'}" aria-labelledby="star-${ms.stars}">
+          <div class="festival-card-heading"><h4 id="star-${ms.stars}">Mốc ${ms.stars} sao</h4><span class="festival-status">${status}</span></div>
+          <p class="festival-hint">${progress}/${ms.stars} sao · Thưởng: ${reward}</p>
+          <div class="q-track" role="progressbar" aria-label="Tiến độ mốc ${ms.stars} sao" aria-valuemin="0" aria-valuemax="${ms.stars}" aria-valuenow="${progress}"><i style="width:${100 * progress / ms.stars}%"></i></div>
+        </article>`;
       }).join('');
-      const can = next && m.stars >= next.stars;
       return sheetShell(
         `${STAR} Sao Nông Trại — ${m.stars}`,
-        `<p class="sheet-note">Giao đơn và làm nhiệm vụ để nhận sao.</p>${rows}
-         ${next ? `<button class="btn gbtn gbtn--gold" id="btn-star-claim" ${can ? '' : 'disabled'} style="width:100%;margin-top:0.5rem">
-           ${can ? `🎉 Nhận mốc ${next.stars} sao!` : `Mốc kế: ${next.stars} sao`}</button>` : ''}`,
+        `<p class="festival-summary">${next ? can ? `Đã đủ sao cho mốc ${next.stars}. Nhận thưởng để mở mốc kế tiếp.` : `Còn ${next.stars - m.stars} sao để nhận mốc ${next.stars}.` : 'Đã nhận tất cả phần thưởng sao.'}</p>
+         ${next ? `<button class="btn gbtn gbtn--gold" id="btn-star-claim" ${can ? '' : 'disabled'} style="width:100%;margin-bottom:0.5rem">${can ? `🎉 Nhận mốc ${next.stars} sao!` : `Mốc kế: ${next.stars} sao`}</button>` : ''}
+         <p class="sheet-note">Sao tích lũy không mất khi nhận thưởng. Giao đơn và làm nhiệm vụ để nhận thêm sao.</p>
+         <div class="festival-card-footer"><button class="gbtn gbtn--green" data-sheet="quests">Làm nhiệm vụ</button>${m.level >= DATA.config.orderUnlockLevel ? '<button class="gbtn gbtn--gold" data-sheet="orders">Giao đơn</button>' : `<span class="festival-hint">Đơn hàng mở ở cấp ${DATA.config.orderUnlockLevel}.</span>`}</div>${rows}`,
+        'sheet--stars',
       );
     }
 

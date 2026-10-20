@@ -119,3 +119,7 @@ Owned pets now share painted previews with the personalization shop and farm gal
 Ticket buttons now show quantity and total gold cost, with 44px targets. Each option explains the remaining balance, exact shortfall, or remaining daily allowance. Unaffordable purchases and quantities above that allowance are disabled. The mobile walkthrough checks a one-gold shortage, a one-ticket purchase with exact debit, a final purchase at the daily cap, accessibility, and horizontal fit. The capture is `lottery-costs-320.png`.
 
 The backend reads current gold inside the journal transaction. Integration checks submit distinct purchase keys concurrently when only one ticket is affordable and when only one daily slot remains; only one succeeds. Gold, sunk gold, and ticket quantities change once, and replaying the winning key preserves the settled state.
+
+## Star milestone rewards
+
+The star screen now puts the next claim and missing-star summary above readable milestone cards. Every card shows numeric progress, a named progress bar, exact rewards, and claimed/ready/sequentially locked states. The screen explains that stars are cumulative and adds direct quest and unlocked-order shortcuts. The mobile walkthrough audits accessibility and overflow, captures the ready milestone, claims it, verifies the next milestone progress and missing count, and follows both earning routes. The capture is `star-milestones-ready-320.png`.

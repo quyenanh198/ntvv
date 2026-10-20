@@ -1369,10 +1369,25 @@ try {
   await page.locator('.reward-goal').click();
   assert.equal(await page.locator('[data-reward-group="quests"]').count(), 0, 'claimed daily chest should leave the reward hub');
   await page.locator('[data-reward-group="stars"] [data-sheet="stars"]').click();
+  assert.equal(await page.locator('[data-star-milestone="50"]').getAttribute('data-star-state'), 'ready');
+  assert.equal(await page.locator('[data-star-milestone="50"] [role="progressbar"]').getAttribute('aria-valuenow'), '50');
+  await checkNoOverflow(page, '320px star milestone rewards');
+  await auditAccessibility(page, 'star-milestones-320');
+  await page.screenshot({ path: resolve(outputDir, 'star-milestones-ready-320.png') });
   const starResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/star-claim') && response.request().method() === 'POST');
   await page.locator('#btn-star-claim').click();
   assert.equal((await starResponse).status(), 200);
   await page.locator('#btn-star-claim:disabled').waitFor();
+  assert.equal(await page.locator('[data-star-milestone="50"]').getAttribute('data-star-state'), 'claimed');
+  const currentStars = db.prepare('SELECT stars FROM farmers WHERE user_id = 1').get().stars;
+  assert.equal(await page.locator('[data-star-milestone="100"] [role="progressbar"]').getAttribute('aria-valuenow'), String(currentStars));
+  assert.match(await page.locator('.sheet--stars .festival-summary').innerText(), new RegExp(`Còn ${100 - currentStars} sao`));
+  await page.locator('.sheet--stars [data-sheet="quests"]').click();
+  await page.locator('.sheet--quests').waitFor();
+  await page.keyboard.press('Escape');
+  await page.locator('.coin-pill--gem[data-sheet="stars"]').click();
+  await page.locator('.sheet--stars [data-sheet="orders"]').click();
+  assert.match(await page.locator('.sheet').innerText(), /Đơn hàng/);
   await page.keyboard.press('Escape');
   if (await page.locator('.reward-goal').count()) {
     await page.locator('.reward-goal').click();
