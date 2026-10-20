@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { ANIMALS, BARN_UPGRADE_GOLD, DOG, EXPANSIONS, FESTIVAL, FISHING, FISH_STOCK_BY_LEVEL, GEM_PACKS, GOLD_MULT, GOODS, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
+import { ANIMALS, BARN_UPGRADE_GOLD, DOG, EXPANSIONS, FESTIVAL, FISHING, FISH_FARM, FISH_STOCK_BY_LEVEL, GEM_PACKS, GOLD_MULT, GOODS, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
 
 const players = [
   { id: 1, username: 'browser', display_name: 'Browser Farmer' },
@@ -1808,6 +1808,45 @@ try {
     gold: 0, gems: 7 + exchangePack.gems, sunk_gold: exchangeBefore.sunk_gold + exchangePack.gold,
   });
   assert.equal(await page.locator('[data-shop-category="gems"]').getAttribute('aria-pressed'), 'true');
+  const animalSkillXp = Array.from({ length: 18 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, need) => sum + need, 0);
+  db.prepare('UPDATE farmers SET xp = ?, gold = 5000, skills_json = ? WHERE user_id = 1').run(animalSkillXp, JSON.stringify({ nguoibannho: 2 }));
+  db.prepare('DELETE FROM animals WHERE owner_id = 1').run();
+  db.prepare('DELETE FROM fish_batches WHERE owner_id = 1').run();
+  db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'thucan', 1) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 1").run();
+  const skilledQuailId = db.prepare("INSERT INTO animals (owner_id, kind, ready_at) VALUES (1, 'cut', NULL)").run().lastInsertRowid;
+  const animalCycleMs = Math.round(ANIMALS.cut.produceMs * 0.9);
+  const productionStartedAt = Date.now();
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await page.locator('.more-card[data-sheet="barns"]').click();
+  await page.locator('[data-barn="cut"]').click();
+  const animalReadyAt = db.prepare('SELECT ready_at FROM animals WHERE id = ?').get(skilledQuailId).ready_at;
+  assert.ok(animalReadyAt >= productionStartedAt + animalCycleMs && animalReadyAt <= Date.now() + animalCycleMs);
+  const barnDuration = page.locator('.barn-cycle [data-animal-duration-ms]');
+  assert.equal(Number(await barnDuration.getAttribute('data-animal-duration-ms')), animalCycleMs);
+  assert.match(await barnDuration.innerText(), /13 phút 30 giây/);
+  await page.screenshot({ path: resolve(outputDir, 'barn-skilled-time-320.png') });
+  await page.keyboard.press('Escape');
+  await page.locator('.dock-btn[data-sheet="shop"]').click();
+  await page.locator('[data-shop-category="animals"]').click();
+  const shopQuailTime = page.locator('.inv-row').filter({ has: page.locator('[data-buy-animal="cut"]') }).locator('[data-animal-duration-ms]');
+  assert.equal(Number(await shopQuailTime.getAttribute('data-animal-duration-ms')), animalCycleMs);
+  await page.keyboard.press('Escape');
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await page.locator('.more-card[data-sheet="fishing"]').click();
+  await page.locator('#fish-species').selectOption('oc');
+  const skilledFishMs = Math.round(FISH_FARM.oc.growMs * 0.9);
+  assert.equal(Number(await page.locator('#fish-species-detail [data-animal-duration-ms]').getAttribute('data-animal-duration-ms')), skilledFishMs);
+  assert.equal(Number(await page.locator('#fish-preview [data-animal-duration-ms]').getAttribute('data-animal-duration-ms')), skilledFishMs);
+  await page.locator('#fish-preview').scrollIntoViewIfNeeded();
+  await checkNoOverflow(page, '320px skilled pond timing');
+  await page.screenshot({ path: resolve(outputDir, 'pond-skilled-time-320.png') });
+  const skilledStockResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/fish-stock') && response.request().method() === 'POST');
+  await page.locator('#btn-fish-stock').click();
+  assert.equal((await skilledStockResponse).status(), 200);
+  const skilledBatch = db.prepare('SELECT planted_at, ready_at FROM fish_batches WHERE owner_id = 1').get();
+  assert.equal(skilledBatch.ready_at - skilledBatch.planted_at, skilledFishMs,
+    'Pond stocking must use the same skill-adjusted time shown in its preview');
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

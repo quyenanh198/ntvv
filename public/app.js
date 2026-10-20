@@ -325,6 +325,14 @@
     const rm = m % 60;
     return rm ? `${h}g${rm}p` : `${h} giờ`;
   }
+  function animalDuration(ms) {
+    const duration = Math.round(ms * (1 - 0.05 * (me().skills?.learned?.nguoibannho || 0)));
+    const seconds = Math.round(duration / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainder = seconds % 60;
+    const label = minutes && remainder ? `${minutes} phút ${remainder} giây` : fmtDuration(duration);
+    return `<time data-animal-duration-ms="${duration}" datetime="PT${duration / 1000}S" title="Đã tính kỹ năng chăm nuôi">${label}</time>`;
+  }
   function timeAgo(at) {
     const s = Math.floor((Date.now() - at) / 1000);
     if (s < 60) return 'vừa xong';
@@ -1062,7 +1070,7 @@
     return `<div class="barn-card${locked ? ' barn-card--locked' : ''}${hungryN ? ' barn-card--hungry' : ''}" data-barn-owned="${herd.length > 0}" data-barn-hungry="${hungryN > 0}">
       <div class="barn-head">${barnArtImg(a.id)}
         <span class="seed-info"><span class="seed-name">${a.name}${locked ? '' : ` · ${house} cấp ${barn.level}`}</span>
-          <div class="seed-meta">${locked ? `🔒 Mở ở cấp ${a.level}` : `${herd.length}/${barn.capacity} con · ${info.name} ${itemImg(a.product, 'coin-img')} mỗi ${fmtDuration(a.produceMs)}${readyN ? ` · <b>${readyN} sẵn sàng</b>` : ''}`}</div></span>
+          <div class="seed-meta">${locked ? `🔒 Mở ở cấp ${a.level}` : `${herd.length}/${barn.capacity} con · ${info.name} ${itemImg(a.product, 'coin-img')} mỗi ${animalDuration(a.produceMs)}${readyN ? ` · <b>${readyN} sẵn sàng</b>` : ''}`}</div></span>
       </div>
       ${hungryN ? `<p class="barn-hunger">${hungryN} con đói · cần ${hungryN * a.feedQty} túi cho một lượt</p>` : ''}
       ${locked ? '' : `<div class="barn-actions">
@@ -1308,7 +1316,7 @@
          <div class="inv-row">
            <img src="${A('assets/art/chicken.png')}" alt="" />
            <span class="seed-info"><span class="seed-name">Gà mái</span>
-             <div class="seed-meta">${DATA.config.chicken.price} ${COIN} · đẻ trứng ${fmtDuration(DATA.config.chicken.produceMs)}/quả · chuồng ${chickenCount}/${m.barns.ga.capacity}</div></span>
+             <div class="seed-meta">${DATA.config.chicken.price} ${COIN} · đẻ trứng ${animalDuration(DATA.config.chicken.produceMs)}/quả · chuồng ${chickenCount}/${m.barns.ga.capacity}</div></span>
            <button class="gbtn gbtn--green btn-mini" data-buy-animal="ga" ${chickenCount >= m.barns.ga.capacity || m.gold < DATA.config.chicken.price ? 'disabled' : ''}>${chickenCount >= m.barns.ga.capacity ? 'Chuồng đầy' : 'Mua gà'}</button>
          </div>` : ''}
          ${Object.keys(DATA.config.animals).filter((k) => k !== 'ga').sort((x, y) => DATA.config.animals[x].level - DATA.config.animals[y].level).map((k) => {
@@ -1319,7 +1327,7 @@
            return `<div class="inv-row">
              ${barnArtImg(k)}
              <span class="seed-info"><span class="seed-name">${a.name}</span>
-               <div class="seed-meta">${a.price.toLocaleString('vi')} ${COIN} · ${info.name} ${itemImg(a.product, 'coin-img')} mỗi ${fmtDuration(a.produceMs)} · chuồng ${herd}/${m.barns[k].capacity}</div></span>
+               <div class="seed-meta">${a.price.toLocaleString('vi')} ${COIN} · ${info.name} ${itemImg(a.product, 'coin-img')} mỗi ${animalDuration(a.produceMs)} · chuồng ${herd}/${m.barns[k].capacity}</div></span>
              <button class="gbtn gbtn--green btn-mini" data-buy-animal="${k}" aria-label="${herd >= m.barns[k].capacity ? `Chuồng đầy: ${esc(a.name)}` : `Mua ${esc(a.name)} với ${a.price.toLocaleString('vi')} vàng`}" ${herd >= m.barns[k].capacity || m.gold < a.price ? 'disabled' : ''}>${herd >= m.barns[k].capacity ? 'Chuồng đầy' : 'Mua'}</button>
            </div>`;
          }).join('')}
@@ -1516,7 +1524,7 @@
         `${a.emoji} Chuồng ${a.name} cấp ${barn.level} · ${herd.length}/${barn.capacity} <span class="sheet-coins"><img class="coin-img" src="${A('assets/art/feed.png')}" alt=""/> ${feedQty}</span>`,
         `<div class="barn-summary"><div><span>Đang nuôi</span><strong>${herd.length}/${barn.capacity} con</strong></div><div><span>Đang đói</span><strong>${hungryN} con</strong></div><div><span>Thức ăn trong kho</span><strong>${feedQty} túi</strong></div></div>
          <p class="sheet-note">Chuồng tự đưa sản phẩm vào kho và tự ăn tiếp khi đủ thức ăn. Hết thức ăn thì dừng, không mất con vật.</p>
-         <div class="barn-cycle">${itemImg(a.product, 'seed-sprite')}<div><b>${productInfo.name}</b><p>${a.feedQty} túi / con / lượt · ${fmtDuration(a.produceMs)}</p><p>Bán ${productInfo.sell.toLocaleString('vi')} vàng / sản phẩm · +${a.expCollect} EXP</p></div></div>
+         <div class="barn-cycle">${itemImg(a.product, 'seed-sprite')}<div><b>${productInfo.name}</b><p>${a.feedQty} túi / con / lượt · ${animalDuration(a.produceMs)}</p><p>Bán ${productInfo.sell.toLocaleString('vi')} vàng / sản phẩm · +${a.expCollect} EXP</p></div></div>
          ${herd.length === 0 ? `<p class="sheet-note">Chuồng trống — mua ${a.name.toLowerCase()} đầu tiên đi!</p>` : `<div class="hen-row">${pens}</div>`}
          <div class="sheet-actions">
            ${hungryN ? `<button class="btn gbtn gbtn--green" data-feed-kind="${kind}" ${canFeed ? '' : 'disabled'}>🌰 Cho ${canFeed}/${hungryN} con ăn (${canFeed * a.feedQty} túi)</button>` : ''}
@@ -2638,11 +2646,11 @@
       if (maxButton) { maxButton.disabled = maxStock < 1; maxButton.textContent = `Thả tối đa (${maxStock})`; }
       const info = itemInfo(sp?.product);
       const detail = document.getElementById('fish-species-detail');
-      if (detail) detail.innerHTML = `${itemImg(sp.product, 'seed-sprite')}<div><b>${esc(sp.name)}</b><dl><div><dt>Giống / con</dt><dd>${sp.fry.toLocaleString('vi')} vàng</dd></div><div><dt>Thời gian</dt><dd>${fmtDuration(sp.growMs)}</dd></div><div><dt>Bán / con</dt><dd>${(info?.sell || 0).toLocaleString('vi')} vàng</dd></div></dl></div>`;
+      if (detail) detail.innerHTML = `${itemImg(sp.product, 'seed-sprite')}<div><b>${esc(sp.name)}</b><dl><div><dt>Giống / con</dt><dd>${sp.fry.toLocaleString('vi')} vàng</dd></div><div><dt>Thời gian</dt><dd>${animalDuration(sp.growMs)}</dd></div><div><dt>Bán / con</dt><dd>${(info?.sell || 0).toLocaleString('vi')} vàng</dd></div></dl></div>`;
       if (!valid) { p.textContent = 'Nhập số con nguyên dương để xem chi phí.'; return; }
       if (!maxStock) { p.textContent = `Chưa đủ ${sp.fry.toLocaleString('vi')} vàng để mua giống ${sp.name}.`; return; }
       const limitNote = n < requested ? `Bạn chọn ${requested} con; ao còn ${room} chỗ và đủ vàng cho ${affordable} con. ` : '';
-      p.innerHTML = `${limitNote}Sẽ thả <b>${n} con ${sp.name}</b>, tốn <b>${(sp.fry * n).toLocaleString('vi')}</b> vàng · sau ${fmtDuration(sp.growMs)} thu ${n} ${info?.name || ''} (bán ${((info?.sell || 0) * n).toLocaleString('vi')} vàng).`;
+      p.innerHTML = `${limitNote}Sẽ thả <b>${n} con ${sp.name}</b>, tốn <b>${(sp.fry * n).toLocaleString('vi')}</b> vàng · sau ${animalDuration(sp.growMs)} thu ${n} ${info?.name || ''} (bán ${((info?.sell || 0) * n).toLocaleString('vi')} vàng).`;
     };
     document.getElementById('fish-species')?.addEventListener('change', fishPreview);
     document.getElementById('fish-qty')?.addEventListener('input', fishPreview);
