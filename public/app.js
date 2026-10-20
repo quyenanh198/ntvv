@@ -1577,7 +1577,7 @@
             <span class="seed-info"><span class="seed-name">${r.name} <small>×${Object.values(r.out)[0]}</small></span></span>
             <div class="seed-meta mc-recipe-meta">
               <span><b>Cần:</b> ${ins}</span>
-              <span><span class="mc-duration" data-duration-ms="${duration}">⏱ ${fmtTime(duration)} /mẻ</span> · Bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp} EXP</span>
+              <span><time class="mc-duration" datetime="PT${duration / 1000}S" data-duration-ms="${duration}">⏱ ${fmtTime(duration)} /mẻ</time> · Bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp} EXP</span>
             </div>${missing ? `<small class="mc-missing">Thiếu ${esc(missingText)} · Bấm 🛒 để đăng mua</small>` : ''}
             <span class="mc-add">
               ${state}
