@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { FESTIVAL, GOLD_MULT, LOTTERY, MACHINES, LUXURY, xpNeedFor } from '../server/src/game.js';
+import { EXPANSIONS, FESTIVAL, GOLD_MULT, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, LUXURY, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
 
 const players = [
   { id: 1, username: 'browser', display_name: 'Browser Farmer' },
@@ -1500,6 +1500,33 @@ try {
   await titleCard.locator(`[data-lux-equip="${title.id}"]`).click();
   await titleCard.locator('[data-lux-equip=""]').waitFor();
   assert.equal(db.prepare('SELECT title_id FROM farmers WHERE user_id = 1').get().title_id, title.id);
+  const firstExpansion = EXPANSIONS[0];
+  db.prepare('UPDATE farmers SET xp = 0, gold = 0, plots_count = ? WHERE user_id = 1').run(START_PLOTS);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.plot[data-kind="expand"]').click();
+  assert.equal(await page.locator('#btn-expand').isDisabled(), true);
+  assert.match(await page.locator('.expansion-level').innerText(), new RegExp(`Cần thêm ${firstExpansion.level - 1} cấp`));
+  assert.ok((await page.locator('.expansion-tax').innerText()).includes(`miễn thuế đến cấp ${LAND_TAX_UNLOCK_LEVEL}`));
+  assert.ok((await page.locator('.expansion-tax').innerText()).includes(`${((START_PLOTS + 4) * TAX_PER_PLOT).toLocaleString('vi')} vàng/ngày`));
+  const expansionXp = Array.from({ length: firstExpansion.level - 1 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, xp) => sum + xp, 0);
+  db.prepare('UPDATE farmers SET xp = ?, gold = ? WHERE user_id = 1').run(expansionXp, firstExpansion.gold - 1);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.plot[data-kind="expand"]').click();
+  assert.match(await page.locator('.expansion-balance').innerText(), /Thiếu 1 vàng/);
+  assert.equal(await page.locator('#btn-expand').isDisabled(), true);
+  await checkNoOverflow(page, '320px expansion decision');
+  await page.screenshot({ path: resolve(outputDir, 'expansion-shortfall-320.png') });
+  db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(firstExpansion.gold);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.plot[data-kind="expand"]').click();
+  assert.match(await page.locator('.expansion-balance').innerText(), /Sau khi mở: còn 0 vàng/);
+  await auditAccessibility(page, 'expansion-320');
+  await page.screenshot({ path: resolve(outputDir, 'expansion-affordable-320.png') });
+  await page.locator('#btn-expand').click();
+  await page.locator(`.plot[data-idx="${START_PLOTS + 3}"][data-kind="empty"]`).waitFor();
+  const expandedFarmer = db.prepare('SELECT gold, plots_count FROM farmers WHERE user_id = 1').get();
+  assert.equal(expandedFarmer.gold, 0);
+  assert.equal(expandedFarmer.plots_count, START_PLOTS + 4);
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
