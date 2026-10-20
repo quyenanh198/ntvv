@@ -15,3 +15,7 @@ Planting and animal purchases read the farmer's current database row inside the 
 Each scenario verifies the exact remaining balance, plot or animal count, and the winning plot index where applicable. Replaying the winning request must leave gold, XP, mutation version, and ownership unchanged. The test covers the app's single-process SQLite transaction model; multi-process coordination remains outside this check.
 
 The upgrade case checks both routes share the same persisted chicken-barn level. The pond case starts with a batch occupying all but one slot and verifies the resulting total and batch count, so sufficient gold cannot bypass shared capacity. Both winning requests replay without changing balances, upgrade levels, or stocked batches.
+
+## Factory speed across overlapping requests
+
+Factory queueing and collection now read current farmer state inside the journal transaction, including machine upgrades and learned production skills. `test/factory-speed-contention.test.js` holds a request after authentication, commits an upgrade through the real API, then releases the older request. It covers individual and bulk queueing/collection plus both legacy mill shortcuts. Queue checks verify the new ready time and ingredient debit; collection checks distinguish two completed batches at the new speed from one at the old speed. Winning retries preserve inventory, jobs, gold, XP and mutation version. This verifies committed upgrade ordering in the single-process transaction model.

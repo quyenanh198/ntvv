@@ -1723,7 +1723,7 @@ export function buildApp({ config, db, logger = true }) {
       }
       async function machineRun(request, reply, machineId, recipeId, count = 1, route = 'machine-run') {
         if (!Number.isSafeInteger(count) || count < 1 || count > MACHINE_QUEUE_MAX) return reply.code(400).send({ error: 'bad_request' });
-        const run = runJournaledMutation(request, route, () => queueRecipe(request.farmer, machineId, recipeId, count));
+        const run = runJournaledMutation(request, route, () => queueRecipe(getFarmer.get(request.farmer.user_id), machineId, recipeId, count));
         if (run.error) return reply.code(run.error === 'idempotency_conflict' ? 409 : 400).send({ error: run.error });
         return { me: fresh(request.farmer.user_id), queued: run.outcome.n, total: run.outcome.total };
       }
@@ -1733,6 +1733,7 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/machine-run-all', async (request, reply) => {
         const me = request.farmer;
         const run = runJournaledMutation(request, 'machine-run-all', () => {
+          const me = getFarmer.get(request.farmer.user_id);
           const jobs = [];
           let total = 0;
           for (const machine of Object.values(MACHINES)) {
@@ -1785,6 +1786,7 @@ export function buildApp({ config, db, logger = true }) {
         const me = request.farmer;
         if (!machine) return reply.code(400).send({ error: 'bad_request' });
         const collect = runJournaledMutation(request, route, () => {
+          const me = getFarmer.get(request.farmer.user_id);
           const now = Date.now();
           const jobs = recipeId
             ? db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND kind = ? AND recipe = ?').all(me.user_id, machineId, recipeId)
@@ -1802,6 +1804,7 @@ export function buildApp({ config, db, logger = true }) {
       api.post('/machine-collect-all', async (request, reply) => {
         const me = request.farmer;
         const collect = runJournaledMutation(request, 'machine-collect-all', () => {
+          const me = getFarmer.get(request.farmer.user_id);
           const now = Date.now();
           const jobs = db.prepare('SELECT * FROM machine_jobs WHERE owner_id = ? AND ready_at <= ?').all(me.user_id, now);
           if (!jobs.length) return { error: 'not_ready' };
