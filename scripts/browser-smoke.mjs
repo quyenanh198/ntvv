@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { EXPANSIONS, FESTIVAL, GOLD_MULT, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, LUXURY, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
+import { EXPANSIONS, FESTIVAL, FISHING, FISH_STOCK_BY_LEVEL, GOLD_MULT, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
 
 const players = [
   { id: 1, username: 'browser', display_name: 'Browser Farmer' },
@@ -1527,6 +1527,41 @@ try {
   const expandedFarmer = db.prepare('SELECT gold, plots_count FROM farmers WHERE user_id = 1').get();
   assert.equal(expandedFarmer.gold, 0);
   assert.equal(expandedFarmer.plots_count, START_PLOTS + 4);
+  const pondUnlockXp = Array.from({ length: FISHING.level - 1 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, need) => sum + need, 0);
+  const pondUpgradeCost = POND_UPGRADE_GOLD[0];
+  db.prepare('UPDATE farmers SET xp = ?, gold = ?, pond_level = 1 WHERE user_id = 1').run(pondUnlockXp, pondUpgradeCost - 1);
+  db.prepare('INSERT INTO fish_batches (owner_id, species, qty, planted_at, ready_at) VALUES (1, ?, 1, ?, ?)')
+    .run('oc', Date.now(), Date.now() + 86400000);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await page.locator('.more-card[data-sheet="fishing"]').click();
+  await page.locator('.pond-upgrade').scrollIntoViewIfNeeded();
+  assert.equal(await page.locator('#btn-upgrade-pond').isDisabled(), true);
+  assert.match(await page.locator('.pond-upgrade-balance').innerText(), /Thiếu 1 vàng/);
+  assert.match(await page.locator('.pond-upgrade-capacity').innerText(), new RegExp(`${FISH_STOCK_BY_LEVEL[0]} → ${FISH_STOCK_BY_LEVEL[1]} con`));
+  assert.match(await page.locator('.pond-upgrade').innerText(), /giữ nguyên/);
+  await checkNoOverflow(page, '320px pond upgrade shortfall');
+  await page.screenshot({ path: resolve(outputDir, 'pond-upgrade-shortfall-320.png') });
+  const batchesBeforeUpgrade = db.prepare('SELECT * FROM fish_batches WHERE owner_id = 1 ORDER BY id').all();
+  db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(pondUpgradeCost);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await page.locator('.more-card[data-sheet="fishing"]').click();
+  await page.locator('.pond-upgrade').scrollIntoViewIfNeeded();
+  assert.match(await page.locator('.pond-upgrade-balance').innerText(), /Sau khi nâng: còn 0 vàng/);
+  await auditAccessibility(page, 'pond-upgrade-320');
+  await page.screenshot({ path: resolve(outputDir, 'pond-upgrade-affordable-320.png') });
+  const pondUpgradeResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/upgrade-pond') && response.request().method() === 'POST');
+  await page.locator('#btn-upgrade-pond').click();
+  const pondUpgradeResult = await pondUpgradeResponse;
+  assert.equal(pondUpgradeResult.status(), 200);
+  const upgradedPond = await pondUpgradeResult.json();
+  assert.equal(upgradedPond.me.gold, 0);
+  assert.equal(upgradedPond.me.pond.level, 2);
+  assert.equal(upgradedPond.me.pond.fishPerCast, POND_LEVELS[1]);
+  assert.equal(upgradedPond.me.fishFarm.capacity, FISH_STOCK_BY_LEVEL[1]);
+  assert.deepEqual(db.prepare('SELECT * FROM fish_batches WHERE owner_id = 1 ORDER BY id').all(), batchesBeforeUpgrade);
+  assert.deepEqual(db.prepare('SELECT gold, pond_level FROM farmers WHERE user_id = 1').get(), { gold: 0, pond_level: 2 });
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

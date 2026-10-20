@@ -127,3 +127,7 @@ The star screen now puts the next claim and missing-star summary above readable 
 ## Land expansion decisions
 
 The expansion sheet now shows current and resulting plot counts, exact cost, independent level and gold requirements, remaining cash or shortfall, and projected daily tax after expansion. Starter tax immunity is named alongside the future tax level. The confirmation repeats the plot quantity and gold cost. Mobile coverage checks a locked level, a one-gold shortage, the affordable state, accessibility and horizontal fit, then purchases four plots and verifies the exact balance and newly usable empty land. Captures are `expansion-shortfall-320.png` and `expansion-affordable-320.png`.
+
+## Pond upgrade decisions
+
+The fishing sheet now separates fish per cast from stocking capacity when explaining an upgrade. An unchanged fishing yield is explicit, alongside the new capacity, preservation of existing batches, exact price, and remaining gold or shortfall. Mobile coverage checks a one-gold shortage and exact-budget purchase, confirms level two and increased capacity without changing the fish per cast, and verifies existing batches are unchanged. Review captures: `pond-upgrade-shortfall-320.png` and `pond-upgrade-affordable-320.png`.

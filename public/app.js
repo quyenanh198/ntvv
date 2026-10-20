@@ -1711,6 +1711,13 @@
       const waitForCast = missingEnergy ? (en.nextRegenMs || en.regenMs) + (missingEnergy - 1) * en.regenMs : 0;
       const energyGain = Math.max(0, Math.min(DATA.config.energy.buyAmount, DATA.config.energy.buyCap - en.current));
       const canBuyEnergy = energyGain > 0 && m.gems >= en.buyGems;
+      const pondUpgrade = !locked && m.pond.next ? `<article class="festival-card pond-upgrade">
+        <div class="festival-card-heading"><h3>Nâng ao cấp ${m.pond.next.level}</h3></div>
+        <p class="festival-hint">Câu cá: ${m.pond.fishPerCast} → ${m.pond.next.fishPerCast} cá/lượt${m.pond.fishPerCast === m.pond.next.fishPerCast ? ' (giữ nguyên)' : ''}.</p>
+        <p class="festival-hint pond-upgrade-capacity">Sức chứa nuôi: ${m.fishFarm.capacity} → ${DATA.config.fishStockByLevel[m.pond.next.level - 1]} con. Các mẻ đang nuôi được giữ lại.</p>
+        <p class="festival-hint pond-upgrade-balance">${m.gold >= m.pond.next.gold ? `Sau khi nâng: còn ${(m.gold - m.pond.next.gold).toLocaleString('vi')} vàng.` : `Thiếu ${(m.pond.next.gold - m.gold).toLocaleString('vi')} vàng. Bạn có ${m.gold.toLocaleString('vi')} vàng.`}</p>
+        <div class="festival-card-footer"><button class="btn gbtn gbtn--gold" id="btn-upgrade-pond" ${m.gold >= m.pond.next.gold ? '' : 'disabled'}>Nâng ao · ${m.pond.next.gold.toLocaleString('vi')} vàng</button></div>
+      </article>` : '';
       const lootRows = cfg.loot.map((l) => {
         const info = itemInfo(l.id);
         return `<div class="inv-row">
@@ -1728,7 +1735,7 @@
         ${lootRows}
         <div class="fishing-energy-purchase"><button class="btn btn-ghost" id="btn-buy-energy" ${canBuyEnergy ? '' : 'disabled'}>⚡ Mua ${energyGain} năng lượng — ${en.buyGems} ${GEM}</button>
         <p class="sheet-note">${!energyGain ? `Đã đạt giới hạn mua ${DATA.config.energy.buyCap} năng lượng.` : m.gems < en.buyGems ? `Thiếu ${en.buyGems - m.gems} kim cương. Bạn có thể chờ năng lượng tự hồi.` : `Sau khi mua: ${en.current + energyGain}/${DATA.config.energy.buyCap} năng lượng · trừ ${en.buyGems} kim cương.`}</p></div>
-        ${!locked && m.pond.next ? `<button class="btn gbtn gbtn--gold" id="btn-upgrade-pond" ${m.gold >= m.pond.next.gold ? '' : 'disabled'} style="width:100%;margin-top:0.3rem">⬆️ Nâng ao cấp ${m.pond.next.level} (${m.pond.next.fishPerCast} cá/lượt) — ${m.pond.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}
+        ${pondUpgrade}
         ${renderFishFarm(m)}`,
       );
     }
