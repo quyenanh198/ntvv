@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { ANIMALS, BARN_UPGRADE_GOLD, DOG, EXPANSIONS, FESTIVAL, FISHING, FISH_STOCK_BY_LEVEL, GOLD_MULT, GOODS, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
+import { ANIMALS, BARN_UPGRADE_GOLD, DOG, EXPANSIONS, FESTIVAL, FISHING, FISH_STOCK_BY_LEVEL, GEM_PACKS, GOLD_MULT, GOODS, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
 
 const players = [
   { id: 1, username: 'browser', display_name: 'Browser Farmer' },
@@ -1777,6 +1777,37 @@ try {
   assert.deepEqual(db.prepare('SELECT * FROM animals WHERE owner_id = 1 ORDER BY id').all(), upgradeAnimalsBefore,
     'Barn upgrades must preserve animals and their running production schedule');
   assert.equal(JSON.parse(db.prepare('SELECT barn_levels_json FROM farmers WHERE user_id = 1').get().barn_levels_json).cut, 2);
+  const exchangePack = GEM_PACKS[0];
+  db.prepare('UPDATE farmers SET gold = ?, gems = 7 WHERE user_id = 1').run(exchangePack.gold - 1);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="shop"]').click();
+  await page.locator('[data-shop-category="gems"]').click();
+  const exchangeCard = page.locator(`[data-gem-pack="${exchangePack.id}"]`);
+  const exchangeButton = page.locator(`[data-buy-gems="${exchangePack.id}"]`);
+  assert.match(await exchangeCard.locator('.gem-exchange-balance').innerText(), /Thiếu 1 vàng/);
+  assert.equal(await exchangeButton.isDisabled(), true);
+  db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(exchangePack.gold);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="shop"]').click();
+  await page.locator('[data-shop-category="gems"]').click();
+  assert.match(await exchangeCard.locator('.gem-exchange-balance').innerText(), new RegExp(`còn 0 vàng · có ${7 + exchangePack.gems} kim cương`));
+  await checkNoOverflow(page, '320px gem exchange');
+  await auditAccessibility(page, 'gem-exchange-320');
+  await page.screenshot({ path: resolve(outputDir, 'gem-exchange-320.png') });
+  const exchangeBefore = db.prepare('SELECT gold, gems, sunk_gold FROM farmers WHERE user_id = 1').get();
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await exchangeButton.click();
+  assert.deepEqual(db.prepare('SELECT gold, gems, sunk_gold FROM farmers WHERE user_id = 1').get(), exchangeBefore,
+    'Cancelling the gem exchange must preserve currency');
+  const exchangeResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/buy-gems') && response.request().method() === 'POST');
+  page.once('dialog', (dialog) => dialog.accept());
+  await exchangeButton.click();
+  assert.equal((await exchangeResponse).status(), 200);
+  await exchangeCard.locator('.gem-exchange-balance').filter({ hasText: 'Thiếu' }).waitFor();
+  assert.deepEqual(db.prepare('SELECT gold, gems, sunk_gold FROM farmers WHERE user_id = 1').get(), {
+    gold: 0, gems: 7 + exchangePack.gems, sunk_gold: exchangeBefore.sunk_gold + exchangePack.gold,
+  });
+  assert.equal(await page.locator('[data-shop-category="gems"]').getAttribute('aria-pressed'), 'true');
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
