@@ -89,15 +89,15 @@ test('competing purchases and upgrades conserve balances and shared capacity', {
       { route: '/upgrade-barn', payload: { kind: 'ga' } },
       { route: '/upgrade-coop', payload: {} },
     ];
-    const upgraded = await Promise.all(upgrades.map((action, index) => post(action.route, action.payload, `upgrade-race-${index}`, 'upgrade-aliases')));
+    const upgraded = await Promise.all(upgrades.map((action, index) => post(action.route, action.payload, `upgrade-contention-${index}`, 'upgrade-aliases')));
     assert.deepEqual(gates.get('upgrade-aliases').snapshots, [upgradeBudget, upgradeBudget]);
-    assert.deepEqual(upgraded.map((response) => response.statusCode).sort(), [200, 400]);
+    assert.deepEqual(upgraded.map((response) => response.statusCode).sort(), [200, 400], upgraded.map((response) => response.body).join(String.fromCharCode(10)));
     const upgradeWinner = upgraded.findIndex((response) => response.statusCode === 200);
     assert.equal(upgraded[1 - upgradeWinner].json().error, 'not_enough_gold');
     const afterUpgrade = state();
     assert.equal(afterUpgrade.farmer.gold, 0);
     assert.equal(afterUpgrade.farmer.coop_level, 2, 'Alias routes must upgrade the same barn only once');
-    const upgradeReplay = await post(upgrades[upgradeWinner].route, upgrades[upgradeWinner].payload, `upgrade-race-${upgradeWinner}`);
+    const upgradeReplay = await post(upgrades[upgradeWinner].route, upgrades[upgradeWinner].payload, `upgrade-contention-${upgradeWinner}`);
     assert.equal(upgradeReplay.statusCode, 200, upgradeReplay.body);
     assert.deepEqual(state(), afterUpgrade);
 
@@ -110,7 +110,7 @@ test('competing purchases and upgrades conserve balances and shared capacity', {
     db.prepare('INSERT INTO fish_batches (owner_id, species, qty, planted_at, ready_at) VALUES (?, ?, ?, ?, ?)')
       .run(1, species.id, capacity - 1, now, now + 86400000);
     const beforeStock = state();
-    const stocked = await Promise.all([1, 'max'].map((qty, index) => post('/fish-stock', { species: species.id, qty }, `stock-race-${index}`, 'last-pond-slot')));
+    const stocked = await Promise.all([1, 'max'].map((qty, index) => post('/fish-stock', { species: species.id, qty }, `stock-contention-${index}`, 'last-pond-slot')));
     assert.deepEqual(gates.get('last-pond-slot').snapshots, [fishBudget, fishBudget]);
     assert.deepEqual(stocked.map((response) => response.statusCode).sort(), [200, 400], stocked.map((response) => response.body).join('\n'));
     const stockWinner = stocked.findIndex((response) => response.statusCode === 200);
@@ -121,7 +121,7 @@ test('competing purchases and upgrades conserve balances and shared capacity', {
     assert.equal(afterStock.farmer.gold, fishBudget - species.fry);
     assert.equal(afterStock.fish.reduce((sum, batch) => sum + batch.qty, 0), capacity);
     assert.equal(afterStock.fish.length, beforeStock.fish.length + 1);
-    const stockReplay = await post('/fish-stock', { species: species.id, qty: [1, 'max'][stockWinner] }, `stock-race-${stockWinner}`);
+    const stockReplay = await post('/fish-stock', { species: species.id, qty: [1, 'max'][stockWinner] }, `stock-contention-${stockWinner}`);
     assert.equal(stockReplay.statusCode, 200, stockReplay.body);
     assert.deepEqual(state(), afterStock, 'Retrying a successful stocking must not add fish or spend gold again');
   } finally {
