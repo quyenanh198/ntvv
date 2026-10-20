@@ -1289,6 +1289,7 @@
              ${[1, 10, 100].map((qty) => `<button class="gbtn ${qty === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-buy="thucan" data-qty="${qty}" ${m.gold >= feed.buy * qty ? '' : 'disabled'}>${qty} túi<small>${(feed.buy * qty).toLocaleString('vi')} vàng</small></button>`).join('')}
            </span>
          </div>
+         ${sheet.returnBarn ? `<button class="btn gbtn gbtn--green" data-barn="${esc(sheet.returnBarn)}">Về chuồng ${esc(DATA.config.animals[sheet.returnBarn]?.name || '')} để cho ăn</button>` : ''}
          <p class="sheet-note">Hạt giống mua ngay lúc gieo: chạm ô đất trống.</p>${seedRows}</section>
          <section data-shop-section="guard" ${categoryHidden('guard')}><section class="festival-card dog-hire" aria-labelledby="dog-hire-heading">
            <div class="festival-card-heading"><img class="lux-art" src="${A('assets/pets-v3/companion-dog.png')}" alt="" loading="lazy" /><h3 id="dog-hire-heading">Chó canh vườn</h3></div>
@@ -1523,7 +1524,7 @@
            <button class="btn gbtn gbtn--green" data-buy-animal="${kind}" data-count="max" ${canBuy ? '' : 'disabled'}>＋ Mua tối đa (${canBuy} con · ${(canBuy * a.price).toLocaleString('vi')} vàng)</button>` : ''}
            ${barn.next ? `<button class="btn gbtn gbtn--gold" data-upgrade-barn="${kind}" ${m.gold >= barn.next.gold ? '' : 'disabled'}>⬆️ Nâng chuồng cấp ${barn.next.level} (${barn.next.capacity} con) — ${barn.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}
          </div>
-         ${feedMissing ? `<div class="barn-feed-help"><p>Thiếu ${feedMissing} túi để cho ${hungryN} con đói ăn một lượt. Thức ăn dùng chung cho mọi chuồng.</p><button class="gbtn gbtn--green" data-sheet="shop">Mua thức ăn</button><p class="sheet-note">Cũng có thể xay 2 ngô ở Cối xay (Lv 10).</p></div>` : ''}`,
+         ${feedMissing ? `<div class="barn-feed-help"><p>Thiếu ${feedMissing} túi để cho ${hungryN} con đói ăn một lượt. Thức ăn dùng chung cho mọi chuồng.</p><button class="gbtn gbtn--green" data-sheet="shop" data-shop-category="supplies" data-return-barn="${kind}">Mua thức ăn</button><p class="sheet-note">Cũng có thể xay 2 ngô ở Cối xay (Lv 10).</p></div>` : ''}`,
         'sheet--barn',
       );
     }
@@ -2118,7 +2119,7 @@
         if (el.dataset.sheet === 'market') { openMarket(); return; }
         if (el.dataset.sheet === 'luxury') { openLuxury(); return; }
         if (el.dataset.sheet === 'money') { openMoney(); return; }
-        sheet = { type: el.dataset.sheet }; render();
+        sheet = { type: el.dataset.sheet, shopCategory: el.dataset.shopCategory, returnBarn: el.dataset.returnBarn }; render();
       }));
     if (sheet?.type === 'seed') {
       const updateSeedFinder = () => {
@@ -2543,7 +2544,7 @@
         if (r) { updateMe(r); closeSheetAfterAction(startedSheet); if (wasAll) toast(`🌱 Đã gieo ${r.planted} ô!`); render(); }
       }));
 
-    document.querySelectorAll('[data-shop-category]').forEach((el) =>
+    document.querySelectorAll('button[data-shop-category]:not([data-sheet])').forEach((el) =>
       el.addEventListener('click', () => {
         if (sheet?.type !== 'shop') return;
         sheet.shopCategory = el.dataset.shopCategory;

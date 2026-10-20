@@ -117,3 +117,5 @@ This is the project plan for the farm game, separate from the older stability au
 - **Guard dog decisions (step 5):** the shop now has a painted protection card, clear active/new shift behavior, probabilistic protection guidance and per-duration cost/balance previews. Mobile coverage verifies a shortfall, exact-budget hire, and exact extension of an existing shift, including gold debit and accessibility.
 
 - **Shop navigation (step 5):** category controls now separate feed/seeds, animal purchases, gem exchange and guard services while retaining an All view. Mobile coverage verifies each category, keyboard focus, 44px targets, and an exact-budget feed purchase that preserves the selected category.
+
+- **Barn feed round trip (step 5):** hungry-barn shortcuts now open supplies directly and provide a return-to-barn action preserved across purchases and category changes. Mobile coverage completes purchase and feeding for two hungry quails, verifying gold, feed inventory and both production timers.
