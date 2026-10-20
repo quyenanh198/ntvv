@@ -1069,7 +1069,7 @@
         <button class="gbtn gbtn--green btn-mini" data-buy-animal="${a.id}" ${full || m.gold < a.price ? 'disabled' : ''}>＋ Mua ${a.name.toLowerCase()} · ${a.price.toLocaleString('vi')} ${COIN}</button>
         <button class="gbtn gbtn--green btn-mini" data-buy-animal="${a.id}" data-count="max" ${canBuy ? '' : 'disabled'}>Mua tối đa (${canBuy} con · ${(canBuy * a.price).toLocaleString('vi')} vàng)</button>
         ${barn.next
-          ? `<button class="gbtn gbtn--gold btn-mini" data-upgrade-barn="${a.id}" ${m.gold >= barn.next.gold ? '' : 'disabled'}>⬆️ Cấp ${barn.next.level} (${barn.next.capacity} con) · ${barn.next.gold.toLocaleString('vi')} ${COIN}</button>`
+          ? `<button class="gbtn gbtn--gold btn-mini" data-preview-barn="${a.id}">Xem nâng cấp ${barn.next.level} · ${barn.next.gold.toLocaleString('vi')} ${COIN}</button>`
           : `<span class="seed-meta">${house === 'ao' ? 'Ao' : 'Chuồng'} đã tối đa</span>`}
         <button class="gbtn btn-mini" data-barn="${a.id}" aria-label="Mở ${house} ${esc(a.name)}">Mở ${house}</button>
       </div>`}
@@ -1522,8 +1522,14 @@
            ${readyN ? `<button class="btn gbtn gbtn--gold" data-collect-kind="${kind}">${itemImg(a.product, 'coin-img')} Thu ${readyN}</button>` : ''}
            ${herd.length < barn.capacity ? `<button class="btn btn-ghost" data-buy-animal="${kind}">＋ Mua ${a.name} (${a.price.toLocaleString('vi')} vàng)</button>
            <button class="btn gbtn gbtn--green" data-buy-animal="${kind}" data-count="max" ${canBuy ? '' : 'disabled'}>＋ Mua tối đa (${canBuy} con · ${(canBuy * a.price).toLocaleString('vi')} vàng)</button>` : ''}
-           ${barn.next ? `<button class="btn gbtn gbtn--gold" data-upgrade-barn="${kind}" ${m.gold >= barn.next.gold ? '' : 'disabled'}>⬆️ Nâng chuồng cấp ${barn.next.level} (${barn.next.capacity} con) — ${barn.next.gold.toLocaleString('vi')} ${COIN}</button>` : ''}
          </div>
+         ${barn.next ? `<article class="festival-card barn-upgrade-preview">
+           <div class="festival-card-heading"><h3>Nâng chuồng cấp ${barn.next.level}</h3></div>
+           <p class="festival-hint barn-upgrade-capacity">Sức chứa: ${barn.capacity} → ${barn.next.capacity} con (thêm ${barn.next.capacity - barn.capacity} chỗ).</p>
+           <p class="festival-hint">Chỉ mở thêm chỗ; mua vật nuôi riêng. Vật nuôi và lịch sản xuất hiện tại được giữ lại.</p>
+           <p class="festival-hint barn-upgrade-balance">${m.gold >= barn.next.gold ? `Sau khi nâng: còn ${(m.gold - barn.next.gold).toLocaleString('vi')} vàng.` : `Thiếu ${(barn.next.gold - m.gold).toLocaleString('vi')} vàng.`}</p>
+           <div class="festival-card-footer"><button class="btn gbtn gbtn--gold" data-upgrade-barn="${kind}" ${m.gold >= barn.next.gold ? '' : 'disabled'}>Nâng cấp · ${barn.next.gold.toLocaleString('vi')} vàng</button></div>
+         </article>` : '<p class="sheet-note">Chuồng đã đạt cấp tối đa.</p>'}
          ${feedMissing ? `<div class="barn-feed-help"><p>Thiếu ${feedMissing} túi để cho ${hungryN} con đói ăn một lượt. Thức ăn dùng chung cho mọi chuồng.</p><button class="gbtn gbtn--green" data-sheet="shop" data-shop-category="supplies" data-return-barn="${kind}">Mua thức ăn</button><p class="sheet-note">Cũng có thể xay 2 ngô ở Cối xay (Lv 10).</p></div>` : ''}`,
         'sheet--barn',
       );
@@ -2683,8 +2689,8 @@
       const r = await run(() => api(path, {}));
       if (r) { updateMe(r); if (after) after(r, e); render(); }
     });
-    document.querySelectorAll('[data-barn]').forEach((el) =>
-      el.addEventListener('click', () => { sheet = { type: 'barn', kind: el.dataset.barn }; render(); }));
+    document.querySelectorAll('[data-barn], [data-preview-barn]').forEach((el) =>
+      el.addEventListener('click', () => { sheet = { type: 'barn', kind: el.dataset.barn || el.dataset.previewBarn }; render(); }));
     document.querySelectorAll('[data-feed-kind]').forEach((el) =>
       el.addEventListener('click', async () => {
         const r = await run(() => api('/feed', { kind: el.dataset.feedKind }));
