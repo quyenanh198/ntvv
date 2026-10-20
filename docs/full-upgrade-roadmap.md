@@ -76,6 +76,8 @@ This is the project plan for the farm game, separate from the older stability au
 - **Mutation target contract:** JSON object bodies, numeric target IDs, plot indexes, catalog-key strings, and harvest-help modes are checked before farmer state loads. Explicit malformed watering owners no longer select the caller's farm. The [input contract](api-inputs.md) and two-farmer integration test cover rejected targets with unchanged value and valid watering shortcuts.
 - **Sheet continuity:** a completed plot action closes only the sheet from which it began. A second browser race check holds a planting response while the player opens another seed chooser, then verifies that chooser remains usable.
 
+- **Concurrent planting and animal spending:** these routes now read current farmer state inside the journal transaction. A deterministic two-request barrier test covers separate plots sharing one seed budget, the two chicken purchase routes sharing one animal budget, and mixed planting/bulk-animal purchases. It verifies one winner, exact debit and ownership, and unchanged winning retries; details are in [spending-consistency.md](spending-consistency.md).
+
 ## 10. Improve speed and accessibility
 
 - Measure mobile startup, image payload, rendering work, and state polling. Optimize the measured bottlenecks.
