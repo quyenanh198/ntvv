@@ -115,3 +115,5 @@ This is the project plan for the farm game, separate from the older stability au
 - **Factory speed consistency (step 9):** individual, bulk and legacy queue/collection routes now read farmer speed modifiers inside their journal transaction. A deterministic held-request test commits a real upgrade after authentication and verifies current-speed scheduling, completed-cycle counting, ingredient/output conservation and unchanged retries across all six routes.
 
 - **Guard dog decisions (step 5):** the shop now has a painted protection card, clear active/new shift behavior, probabilistic protection guidance and per-duration cost/balance previews. Mobile coverage verifies a shortfall, exact-budget hire, and exact extension of an existing shift, including gold debit and accessibility.
+
+- **Shop navigation (step 5):** category controls now separate feed/seeds, animal purchases, gem exchange and guard services while retaining an All view. Mobile coverage verifies each category, keyboard focus, 44px targets, and an exact-budget feed purchase that preserves the selected category.

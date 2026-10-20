@@ -139,3 +139,7 @@ Recipe durations now include both the learned production-speed skill and the mac
 ## Guard dog purchase decisions
 
 The shop uses the existing painted companion-dog sprite in a full-width protection card. It separates current shift status, probabilistic protection and fine rules from the three duration choices. Each choice shows its exact cost and remaining balance or shortfall; an active shift explicitly explains that another purchase extends it. Mobile coverage verifies a one-gold shortage, an exact-budget first shift, decoded artwork, accessibility, and a second purchase that adds exactly one hour to the existing expiry. Review capture: `guard-dog-affordable-320.png`.
+
+## Shop categories
+
+The shop now offers All, Feed and seeds, Animals, Gems, and Guard controls above the catalog. Category selection hides unrelated groups, uses pressed-button semantics and 44px targets, and returns keyboard focus to the chosen control. The selected category survives a purchase refresh. Mobile coverage visits every category, checks visible sections and hidden purchase controls, buys one feed bag with the exact debit and inventory increase, and checks selection continuity, accessibility and overflow. Review capture: `shop-supplies-320.png`.

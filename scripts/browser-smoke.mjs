@@ -1646,6 +1646,36 @@ try {
   await page.locator('[data-dog-hire="1"]').click();
   assert.equal((await extensionResponse).status(), 200);
   assert.deepEqual(db.prepare('SELECT gold, dog_until FROM farmers WHERE user_id = 1').get(), { gold: 0, dog_until: firstDogShift.dog_until + 3600000 });
+  await page.locator('[data-shop-category="supplies"]').click();
+  assert.equal(await page.locator('[data-shop-category="supplies"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.locator('[data-shop-category="supplies"]').evaluate((button) => button === document.activeElement), true);
+  assert.deepEqual(await page.locator('[data-shop-section]:visible').evaluateAll((sections) => sections.map((section) => section.dataset.shopSection)), ['supplies']);
+  assert.equal(await page.locator('[data-buy-gems]').first().isVisible(), false);
+  assert.equal(await page.locator('[data-buy-animal="ga"]').isVisible(), false);
+  const feedCost = (await (await fetch(`${base}/farm/api/state`)).json()).config.goods.thucan.buy;
+  db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(feedCost);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="shop"]').click();
+  await page.locator('[data-shop-category="supplies"]').click();
+  const feedBeforeCategoryPurchase = db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'thucan'").get()?.qty || 0;
+  const categoryFeedResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/buy') && response.request().method() === 'POST');
+  await page.locator('[data-buy="thucan"][data-qty="1"]').click();
+  assert.equal((await categoryFeedResponse).status(), 200);
+  await page.locator('[data-buy="thucan"][data-qty="1"]:disabled').waitFor();
+  assert.equal(await page.locator('[data-shop-category="supplies"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, 0);
+  assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'thucan'").get().qty, feedBeforeCategoryPurchase + 1);
+  for (const category of ['animals', 'gems', 'guard', 'all']) {
+    await page.locator(`[data-shop-category="${category}"]`).click();
+    const visibleSections = await page.locator('[data-shop-section]:visible').evaluateAll((sections) => sections.map((section) => section.dataset.shopSection));
+    assert.deepEqual(visibleSections, category === 'all' ? ['gems', 'supplies', 'guard', 'animals'] : [category]);
+  }
+  await page.locator('[data-shop-category="supplies"]').click();
+  const categoryTouchSizes = await page.locator('[data-shop-category]').evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height));
+  assert.ok(categoryTouchSizes.every((height) => height >= 44));
+  await checkNoOverflow(page, '320px shop categories');
+  await auditAccessibility(page, 'shop-categories-320');
+  await page.screenshot({ path: resolve(outputDir, 'shop-supplies-320.png') });
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

@@ -1264,12 +1264,16 @@
 
     if (t === 'shop') {
       const feed = goods().thucan;
+      const shopCategory = sheet.shopCategory || 'all';
+      const categories = { all: 'Tất cả', supplies: 'Thức ăn & hạt', animals: 'Vật nuôi', gems: 'Kim cương', guard: 'Canh vườn' };
+      const categoryButtons = `<div class="mc-view-switch" role="group" aria-label="Danh mục cửa hàng">${Object.entries(categories).map(([id, label]) => `<button type="button" data-shop-category="${id}" aria-pressed="${shopCategory === id}">${label}</button>`).join('')}</div>`;
+      const categoryHidden = (id) => shopCategory !== 'all' && shopCategory !== id ? 'hidden' : '';
       const chickenCount = m.animals.filter((animal) => animal.kind === 'ga').length;
       const seedRows = Object.values(crops()).filter((c) => m.level >= c.level).slice(-4).reverse()
         .map((c) => `<div class="seed-meta">· ${c.name}: hạt ${c.seed} ${COIN}, bán ${c.sell} ${COIN}</div>`).join('');
       return sheetShell(
         `🏪 Cửa hàng <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
-        `<div class="inv-row">
+        `${categoryButtons}<section data-shop-section="gems" ${categoryHidden('gems')}><div class="inv-row">
            ${GEM}
            <span class="seed-info"><span class="seed-name">Mua kim cương bằng vàng</span>
              <div class="seed-meta">Dùng để tăng tốc, mua năng lượng, hoàn điểm kỹ năng · vàng mua bị đốt khỏi kinh tế làng</div></span>
@@ -1277,7 +1281,7 @@
              ${(DATA.config.gemPacks || []).map((p) => `<button class="gbtn ${p.gems >= 100 ? 'gbtn--gold' : 'gbtn--green'} btn-mini" data-buy-gems="${p.id}" ${m.gold >= p.gold ? '' : 'disabled'}>Mua ${p.gems} ${GEM} <small>${p.gold.toLocaleString('vi')} vàng</small></button>`).join('')}
            </span>
          </div>
-         <div class="inv-row">
+         </section><section data-shop-section="supplies" ${categoryHidden('supplies')}><div class="inv-row">
            <img src="${A('assets/ui/feed.svg')}" alt="" />
            <span class="seed-info"><span class="seed-name">Thức ăn gia súc</span>
              <div class="seed-meta">${feed.buy} ${COIN}/túi · gà ăn 1 túi cho 1 trứng</div></span>
@@ -1285,7 +1289,8 @@
              ${[1, 10, 100].map((qty) => `<button class="gbtn ${qty === 1 ? 'gbtn--green' : 'gbtn--gold'} btn-mini" data-buy="thucan" data-qty="${qty}" ${m.gold >= feed.buy * qty ? '' : 'disabled'}>${qty} túi<small>${(feed.buy * qty).toLocaleString('vi')} vàng</small></button>`).join('')}
            </span>
          </div>
-         <section class="festival-card dog-hire" aria-labelledby="dog-hire-heading">
+         <p class="sheet-note">Hạt giống mua ngay lúc gieo: chạm ô đất trống.</p>${seedRows}</section>
+         <section data-shop-section="guard" ${categoryHidden('guard')}><section class="festival-card dog-hire" aria-labelledby="dog-hire-heading">
            <div class="festival-card-heading"><img class="lux-art" src="${A('assets/pets-v3/companion-dog.png')}" alt="" loading="lazy" /><h3 id="dog-hire-heading">Chó canh vườn</h3></div>
            <p class="festival-hint dog-hire-status">${m.dog?.active ? `Đang trực, còn ${fmtTime(m.dog.until - Date.now())}. Mua thêm sẽ nối tiếp ca hiện tại.` : 'Chưa có ca trực. Ca mới bắt đầu ngay khi thuê.'}</p>
            <p class="festival-hint">Tỷ lệ bắt trộm ${Math.round(DATA.config.dog.catchChance * 100)}%, thêm ${Math.round((DATA.config.dog.onlineBonus || 0) * 100)} điểm phần trăm khi bạn online. Không đảm bảo chặn mọi lần trộm.</p>
@@ -1296,7 +1301,7 @@
                <p class="festival-hint dog-hire-balance">${m.gold >= cost ? `Sau khi thuê: còn ${(m.gold - cost).toLocaleString('vi')} vàng.` : `Thiếu ${(cost - m.gold).toLocaleString('vi')} vàng.`}</p>
                <div class="festival-card-footer"><button class="gbtn gbtn--green" data-dog-hire="${h}" ${m.gold >= cost ? '' : 'disabled'}>Thuê ${h} giờ · ${cost.toLocaleString('vi')} vàng</button></div></article>`;
            }).join('')}
-         </section>
+         </section></section><section data-shop-section="animals" ${categoryHidden('animals')}>
          ${m.level >= DATA.config.chicken.level ? `
          <div class="inv-row">
            <img src="${A('assets/art/chicken.png')}" alt="" />
@@ -1316,8 +1321,7 @@
              <button class="gbtn gbtn--green btn-mini" data-buy-animal="${k}" aria-label="${herd >= m.barns[k].capacity ? `Chuồng đầy: ${esc(a.name)}` : `Mua ${esc(a.name)} với ${a.price.toLocaleString('vi')} vàng`}" ${herd >= m.barns[k].capacity || m.gold < a.price ? 'disabled' : ''}>${herd >= m.barns[k].capacity ? 'Chuồng đầy' : 'Mua'}</button>
            </div>`;
          }).join('')}
-         <p class="sheet-note" style="margin-top:0.6rem">💡 Hạt giống mua ngay lúc gieo (chạm ô đất trống). Giá mới nhất:</p>
-         ${seedRows}`,
+         </section>`,
         'sheet--shop',
       );
     }
@@ -2539,6 +2543,13 @@
         if (r) { updateMe(r); closeSheetAfterAction(startedSheet); if (wasAll) toast(`🌱 Đã gieo ${r.planted} ô!`); render(); }
       }));
 
+    document.querySelectorAll('[data-shop-category]').forEach((el) =>
+      el.addEventListener('click', () => {
+        if (sheet?.type !== 'shop') return;
+        sheet.shopCategory = el.dataset.shopCategory;
+        render();
+        document.querySelector(`[data-shop-category="${sheet.shopCategory}"]`)?.focus();
+      }));
     document.querySelectorAll('[data-factory-view]').forEach((el) =>
       el.addEventListener('click', () => {
         if (!sheet || sheet.type !== 'mill') return;
