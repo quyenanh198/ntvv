@@ -143,3 +143,7 @@ The shop uses the existing painted companion-dog sprite in a full-width protecti
 ## Shop categories
 
 The shop now offers All, Feed and seeds, Animals, Gems, and Guard controls above the catalog. Category selection hides unrelated groups, uses pressed-button semantics and 44px targets, and returns keyboard focus to the chosen control. The selected category survives a purchase refresh. Mobile coverage visits every category, checks visible sections and hidden purchase controls, buys one feed bag with the exact debit and inventory increase, and checks selection continuity, accessibility and overflow. Review capture: `shop-supplies-320.png`.
+
+## Barn feed round trip
+
+A hungry barn opens the supplies category directly and carries a return action naming the originating animal. Buying feed and switching shop categories retain that return action. Mobile coverage starts with two hungry quails and no feed, opens supplies, buys ten bags with the exact debit, returns to the quail barn and feeds both animals. It verifies eight bags remain and both production timers start. Review capture: `barn-fed-roundtrip-320.png`.

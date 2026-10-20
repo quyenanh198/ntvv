@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
-import { DOG, EXPANSIONS, FESTIVAL, FISHING, FISH_STOCK_BY_LEVEL, GOLD_MULT, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
+import { DOG, EXPANSIONS, FESTIVAL, FISHING, FISH_STOCK_BY_LEVEL, GOLD_MULT, GOODS, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, xpNeedFor } from '../server/src/game.js';
 
 const players = [
   { id: 1, username: 'browser', display_name: 'Browser Farmer' },
@@ -723,20 +723,39 @@ try {
   await page.locator('.barn-feed-help').scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'barn-feed-help-320.png') });
   await page.locator('.barn-feed-help [data-sheet="shop"]').click();
+  assert.equal(await page.locator('[data-shop-category="supplies"]').getAttribute('aria-pressed'), 'true');
+  assert.deepEqual(await page.locator('[data-shop-section]:visible').evaluateAll((sections) => sections.map((section) => section.dataset.shopSection)), ['supplies']);
   assert.equal(await page.locator('[data-buy="thucan"]').count(), 3, 'feed shortcut should open feed purchase controls');
   const hundredFeed = page.locator('[data-buy="thucan"][data-qty="100"]');
   assert.match(await hundredFeed.innerText(), /100 túi\s+1\.200 vàng/);
   assert.equal(await hundredFeed.isDisabled(), true, 'unaffordable feed packs should be disabled');
   assert.equal(await page.locator('[data-buy="thucan"][data-qty="1"]').isEnabled(), true);
+  await page.locator('[data-shop-category="animals"]').click();
   assert.match(await page.locator('.inv-row').filter({ has: page.locator('[data-buy-animal="ga"]') }).innerText(), /chuồng 0\/3/,
     'the chicken count must exclude the two quails');
+  await page.locator('[data-shop-category="supplies"]').click();
   await checkNoOverflow(page, '320px shop purchase prices');
   await auditAccessibility(page, 'shop-320');
   await hundredFeed.scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'shop-prices-320.png') });
+  const feedRoundTripResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/buy') && response.request().method() === 'POST');
+  await page.locator('[data-buy="thucan"][data-qty="10"]').click();
+  assert.equal((await feedRoundTripResponse).status(), 200);
+  assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, 400 - GOODS.thucan.buy * 10);
+  assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'thucan'").get().qty, 8,
+    'Buying feed should automatically feed both hungry quails');
+  await page.locator('[data-shop-section="supplies"] [data-barn="cut"]').waitFor();
+  await page.locator('[data-shop-section="supplies"] [data-barn="cut"]').click();
+  assert.equal(await page.locator('[data-feed-kind="cut"]').count(), 0);
+  assert.equal(await page.locator('.barn-feed-help').count(), 0);
+  assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'thucan'").get().qty, 8);
+  assert.ok(hungryQuails.every((id) => db.prepare('SELECT ready_at FROM animals WHERE id = ?').get(id).ready_at > Date.now()));
+  await checkNoOverflow(page, '320px barn feed round trip');
+  await page.screenshot({ path: resolve(outputDir, 'barn-fed-roundtrip-320.png') });
   await page.keyboard.press('Escape');
   for (const id of hungryQuails) db.prepare('DELETE FROM animals WHERE id = ?').run(id);
   db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(barnGoldBefore);
+  db.prepare("DELETE FROM inventory WHERE owner_id = 1 AND item = 'thucan'").run();
   if (barnFeedBefore) db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'thucan', ?)").run(barnFeedBefore);
 
   const levelTwentyXp = Array.from({ length: 19 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, xp) => sum + xp, 0);
