@@ -129,3 +129,5 @@ This is the project plan for the farm game, separate from the older stability au
 - **Header art and sound state (steps 2 and 10):** energy, sound, news, leaderboard and ledger now use the shared vector style. The sound button has a stable accessible name and explicit pressed state. Mobile coverage checks toggle behavior, persisted preference after reload, corresponding artwork and decoded header icons.
 
 - **Barn upgrade decisions (step 5):** overview upgrades open a detailed capacity and balance preview before spending. The card explains added places and separate animal purchases. Mobile coverage verifies shortage, exact debit, increased quail capacity, persisted upgrade level and preserved animals/production timestamps.
+
+- **Gem exchange decisions (step 5):** pack cards now preview per-gem value, exact cost, resulting balances and shortages. Mobile coverage verifies blocked and affordable states, cancellation, confirmed exchange accounting and category continuity, alongside accessibility and overflow checks.

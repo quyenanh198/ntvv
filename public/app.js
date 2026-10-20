@@ -1273,14 +1273,15 @@
         .map((c) => `<div class="seed-meta">· ${c.name}: hạt ${c.seed} ${COIN}, bán ${c.sell} ${COIN}</div>`).join('');
       return sheetShell(
         `🏪 Cửa hàng <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`,
-        `${categoryButtons}<section data-shop-section="gems" ${categoryHidden('gems')}><div class="inv-row">
-           ${GEM}
-           <span class="seed-info"><span class="seed-name">Mua kim cương bằng vàng</span>
-             <div class="seed-meta">Dùng để tăng tốc, mua năng lượng, hoàn điểm kỹ năng · vàng mua bị đốt khỏi kinh tế làng</div></span>
-           <span class="btn-group">
-             ${(DATA.config.gemPacks || []).map((p) => `<button class="gbtn ${p.gems >= 100 ? 'gbtn--gold' : 'gbtn--green'} btn-mini" data-buy-gems="${p.id}" ${m.gold >= p.gold ? '' : 'disabled'}>Mua ${p.gems} ${GEM} <small>${p.gold.toLocaleString('vi')} vàng</small></button>`).join('')}
-           </span>
-         </div>
+        `${categoryButtons}<section data-shop-section="gems" ${categoryHidden('gems')} aria-labelledby="gem-exchange-heading">
+           <h3 id="gem-exchange-heading">Đổi vàng lấy kim cương</h3>
+           <p class="sheet-note">Dùng để tăng tốc, mua năng lượng, hoàn điểm kỹ năng. Vàng dùng để đổi sẽ rời khỏi kinh tế làng.</p>
+           ${(DATA.config.gemPacks || []).map((p) => `<article class="festival-card" data-gem-pack="${p.id}">
+             <div class="festival-card-heading"><h4>${p.gems} kim cương</h4><span>${p.gold.toLocaleString('vi')} vàng</span></div>
+             <p class="festival-hint">${(p.gold / p.gems).toLocaleString('vi')} vàng / kim cương.</p>
+             <p class="festival-hint gem-exchange-balance">${m.gold >= p.gold ? `Sau khi đổi: còn ${(m.gold - p.gold).toLocaleString('vi')} vàng · có ${(m.gems + p.gems).toLocaleString('vi')} kim cương.` : `Thiếu ${(p.gold - m.gold).toLocaleString('vi')} vàng.`}</p>
+             <div class="festival-card-footer"><button class="gbtn gbtn--green" data-buy-gems="${p.id}" ${m.gold >= p.gold ? '' : 'disabled'}>Đổi ${p.gold.toLocaleString('vi')} vàng lấy ${p.gems} kim cương</button></div>
+           </article>`).join('')}
          </section><section data-shop-section="supplies" ${categoryHidden('supplies')}><div class="inv-row">
            <img src="${A('assets/ui/feed.svg')}" alt="" />
            <span class="seed-info"><span class="seed-name">Thức ăn gia súc</span>
