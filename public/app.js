@@ -251,6 +251,7 @@
   const ERRORS = {
     not_enough_gold: 'Không đủ vàng rồi!',
     not_enough_gems: 'Không đủ kim cương!',
+    state_changed: 'Trại đã thay đổi. Mở lại ô đất để xem cây hiện tại trước khi nhổ.',
     not_enough_items: 'Trong kho không đủ đồ.',
     not_enough_feed: 'Hết thức ăn — ghé Cửa hàng hoặc xay ngô nhé.',
     level_too_low: 'Chưa đủ cấp, cày thêm chút nữa!',
@@ -1218,6 +1219,16 @@
 
     if (t === 'plotmenu') {
       const p = m.plots[sheet.idx];
+      if (sheet.removeTree) {
+        const target = sheet.removeTree;
+        const valid = p?.tree && m.mutationVersion === target.version;
+        return sheetShell(`Nhổ cây ${esc(trees()[target.crop]?.name || '')}?`, `<article class="festival-card tree-removal-review">
+          <p class="festival-hint">Ô đất ${sheet.idx + 1} sẽ trống. Cây bị mất và không hoàn lại vàng mua cây.</p>
+          <p class="festival-hint">${p?.fruits ? `${p.fruits} quả trên cây cũng bị mất. ` : ''}Các vụ quả tương lai của cây này sẽ dừng.</p>
+          ${valid ? '' : '<p class="festival-hint">Trại đã thay đổi. Giữ cây và mở lại để xem trạng thái mới.</p>'}
+          </article><div class="sheet-actions"><button class="btn gbtn gbtn--green" id="btn-cancel-remove-tree">Giữ cây</button>
+          <button class="btn btn-ghost" id="btn-confirm-remove-tree" ${valid ? '' : 'disabled'}>Nhổ cây, không hoàn vàng</button></div>`, 'sheet--tree-removal');
+      }
       if (!p || !p.crop || p.ready) return '';
       const info = p.tree ? trees()[p.crop] : crops()[p.crop];
       const left = p.readyAt - Date.now();
@@ -2559,9 +2570,21 @@
         const r = await run(() => wasAll ? api('/plant-all', { crop: el.dataset.tree }) : api('/plant-tree', { idx: sheet.idx, tree: el.dataset.tree }), wasAll ? 'global' : plotResource(me().id, sheet.idx), el);
         if (r) { updateMe(r); closeSheetAfterAction(startedSheet); toast(wasAll ? `🌳 Đã trồng ${r.planted} cây!` : '🌳 Cây đã bén rễ!'); render(); }
       }));
-    document.getElementById('btn-remove-tree')?.addEventListener('click', async (e) => {
+    document.getElementById('btn-remove-tree')?.addEventListener('click', () => {
+      const plot = me().plots[sheet.idx];
+      sheet.removeTree = { crop: plot.crop, version: me().mutationVersion };
+      render();
+      document.getElementById('btn-cancel-remove-tree')?.focus();
+    });
+    document.getElementById('btn-cancel-remove-tree')?.addEventListener('click', () => {
+      if (!me().plots[sheet.idx]?.tree || me().plots[sheet.idx]?.ready) { sheet = null; render(); return; }
+      delete sheet.removeTree;
+      render();
+      document.getElementById('btn-remove-tree')?.focus();
+    });
+    document.getElementById('btn-confirm-remove-tree')?.addEventListener('click', async (e) => {
       const startedSheet = sheet;
-      const r = await run(() => api('/remove-tree', { idx: sheet.idx }), plotResource(me().id, sheet.idx), e.currentTarget);
+      const r = await run(() => api('/remove-tree', { idx: sheet.idx, expectedVersion: sheet.removeTree.version }), plotResource(me().id, sheet.idx), e.currentTarget);
       if (r) { updateMe(r); closeSheetAfterAction(startedSheet); toast('🪓 Đã nhổ cây.'); render(); }
     });
     document.querySelectorAll('[data-crop]').forEach((el) =>
