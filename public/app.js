@@ -900,7 +900,7 @@
           ${!mine && canPoach ? '<span class="plot-act">😋</span>' : ''}
         </button>`;
       }
-      const total = c.growMs;
+      const total = Math.max(1, (p.readyAt - p.plantedAt) || c.growMs);
       const left = p.readyAt - now;
       const pct = Math.min(100, Math.max(3, Math.round(((total - left) / total) * 100)));
       const acts = visiting ? visiting.myActs[p.idx] : null;
