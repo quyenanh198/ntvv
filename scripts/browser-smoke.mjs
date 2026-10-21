@@ -1936,6 +1936,10 @@ try {
   assert.equal(await page.locator('.scene-banner [data-scene-barn="bo"] .scene-herd-count').innerText(), '2');
   assert.equal(await page.locator('.scene-banner [data-scene-barn="cuu"]').getAttribute('data-herd-count'), '1');
   assert.equal(await page.locator('.scene-banner .sb-pig, .scene-banner .sb-dog, .scene-banner .sb-hen2').count(), 3);
+  const ownerDogBounds = await page.locator('.scene-banner .sb-dog').boundingBox();
+  const ownerPigBounds = await page.locator('.scene-banner .sb-pig').boundingBox();
+  assert.ok(ownerDogBounds.x >= ownerPigBounds.x + ownerPigBounds.width,
+    'The active guard dog should sit beside the herd without covering its animal art');
   await checkNoOverflow(page, '320px owned scene animals');
   await page.screenshot({ path: resolve(outputDir, 'scene-owner-herd-320.png') });
   await page.locator('.scene-banner [data-scene-barn="bo"]').click();

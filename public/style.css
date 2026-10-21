@@ -591,7 +591,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 .sb-sheep { right: 22%; bottom: 3%; width: 9%; z-index: 6; }
 .sb-pig { right: 10.5%; bottom: 2%; width: 9.5%; z-index: 6; }
 .sb-farmer { left: 37%; bottom: -3%; width: 13%; z-index: 7; animation: farmer-idle 3.8s ease-in-out infinite; }
-.sb-dog { left: 51.5%; bottom: -2%; width: 9.5%; z-index: 7; animation: hen-bob 2.8s ease-in-out infinite; }
+.sb-dog { right: .5%; bottom: -2%; width: 9.5%; z-index: 7; animation: hen-bob 2.8s ease-in-out infinite; }
 .sb-logo {
   left: 0;
   top: 0;
@@ -1621,7 +1621,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
   .scene-banner .sb-btn { min-width: 44px; min-height: 44px; display: grid; place-items: center; }
   .scene-banner .sb-cowbarn { right: 37%; }
   .sb-farmer { width: 16%; }
-  .sb-dog { width: 11%; }
+  .sb-dog { width: 9%; }
   .sb-tag { display: none; }
   .welcome-sign, .pond-img { display: none; }
   .hud-round { width: 44px; height: 44px; border-width: 2px; font-size: .95rem; }
