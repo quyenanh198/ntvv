@@ -2029,6 +2029,17 @@ try {
   assert.deepEqual(db.prepare('SELECT * FROM plots WHERE owner_id = 1 AND idx = 2').get(), treeBeforeReview);
   assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, goldBeforeRemovalReview);
   await page.locator('#btn-remove-tree').click();
+  const concurrentTreeReviewWater = await fetch(`${base}/farm/api/water`, { method: 'POST',
+    headers: { 'content-type': 'application/json', 'idempotency-key': 'tree-review-concurrent-water' }, body: JSON.stringify({ idx: 0 }) });
+  assert.equal(concurrentTreeReviewWater.status, 200);
+  const staleReviewResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/remove-tree') && response.request().method() === 'POST');
+  await page.locator('#btn-confirm-remove-tree').click();
+  assert.equal((await staleReviewResponse).status(), 409);
+  await page.locator('#btn-confirm-remove-tree:disabled').waitFor();
+  assert.match(await page.locator('.tree-removal-review').innerText(), /Trại đã thay đổi/);
+  assert.deepEqual(db.prepare('SELECT * FROM plots WHERE owner_id = 1 AND idx = 2').get(), treeBeforeReview);
+  await page.locator('#btn-cancel-remove-tree').click();
+  await page.locator('#btn-remove-tree').click();
   const reviewedRemovalResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/remove-tree') && response.request().method() === 'POST');
   await page.locator('#btn-confirm-remove-tree').click();
   const reviewedRemoval = await reviewedRemovalResponse;

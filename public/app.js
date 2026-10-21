@@ -239,6 +239,7 @@
         setTimeout(() => location.reload(), 900);
         throw new Error('stale_client');
       }
+      if (data.error === 'state_changed') setTimeout(refresh, 0);
       toast(data.message || ERRORS[data.error] || 'Có lỗi rồi, thử lại nhé!');
       // Đang thăm ruộng mà server bảo hết/chưa tới lượt: ruộng đã đổi (chủ vừa thu,
       // người khác vừa hái ké…) → tải lại ruộng ngay cho nút bấm khớp thực tế.
