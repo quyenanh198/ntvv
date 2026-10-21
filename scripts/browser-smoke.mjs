@@ -101,6 +101,8 @@ try {
   await pondScene.evaluate((image) => image.decode());
   assert.equal(await pondScene.evaluate((image) => image.naturalWidth), 224);
   assert.ok((await pondScene.getAttribute('src')).includes('fishing_pond_v3-224.png'));
+  assert.equal(await page.locator('.scene-banner .sb-pig, .scene-banner .sb-dog, .scene-banner .sb-hen2').count(), 0,
+    'Starter farms must not show unowned pigs/chickens or an inactive guard dog');
   const dockIcons = page.locator('.bottom-dock .dock-icon img');
   assert.equal(await dockIcons.count(), 5);
   for (const icon of await dockIcons.all()) await icon.evaluate((image) => image.decode());
@@ -1920,6 +1922,49 @@ try {
     await progressVisitor.screenshot({ path: resolve(outputDir, 'plot-skilled-progress-visitor-390.png') });
   } finally {
     await progressContext.close();
+  }
+  db.prepare('DELETE FROM animals WHERE owner_id = 1').run();
+  const sceneAnimalReadyAt = Date.now() + 86400000;
+  for (const kind of ['bo', 'bo', 'cuu', 'heo', 'ga']) {
+    db.prepare('INSERT INTO animals (owner_id, kind, ready_at) VALUES (1, ?, ?)').run(kind, sceneAnimalReadyAt);
+  }
+  db.prepare('UPDATE farmers SET dog_until = ? WHERE user_id = 1').run(Date.now() + 3600000);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.scene-banner [data-scene-barn="bo"]').waitFor();
+  assert.equal(await page.locator('.scene-banner [data-scene-barn="bo"]').getAttribute('data-herd-count'), '2');
+  assert.equal(await page.locator('.scene-banner [data-scene-barn="cuu"]').getAttribute('data-herd-count'), '1');
+  assert.equal(await page.locator('.scene-banner .sb-pig, .scene-banner .sb-dog, .scene-banner .sb-hen2').count(), 3);
+  await checkNoOverflow(page, '320px owned scene animals');
+  await page.screenshot({ path: resolve(outputDir, 'scene-owner-herd-320.png') });
+  await page.locator('.scene-banner [data-scene-barn="bo"]').click();
+  assert.ok((await page.locator('.sheet').innerText()).includes(`2/${ANIMALS.bo.capacities[0]} con`));
+  const sceneContext = await browser.newContext({ viewport: { width: 390, height: 800 }, reducedMotion: 'reduce' });
+  try {
+    db.prepare('UPDATE farmers SET xp = 0, dog_until = 0 WHERE user_id = 2').run();
+    db.prepare('DELETE FROM animals WHERE owner_id = 2').run();
+    await sceneContext.addCookies([{ name: 'lb_session', value: 'friend-smoke', url: base }]);
+    const sceneVisitor = await sceneContext.newPage();
+    sceneVisitor.on('pageerror', (error) => pageErrors.push(error.message));
+    await sceneVisitor.goto(`${base}/farm/`, { waitUntil: 'domcontentloaded' });
+    assert.equal(await sceneVisitor.locator('.scene-banner .sb-pig, .scene-banner .sb-dog, .scene-banner .sb-hen2').count(), 0);
+    await sceneVisitor.locator('.dock-btn[data-sheet="more"]').click();
+    await sceneVisitor.locator('.more-card[data-sheet="family"]').click();
+    const sceneVisitResponse = sceneVisitor.waitForResponse((response) => response.url().endsWith('/farm/api/farm/1'));
+    await sceneVisitor.locator('.sheet--family .family-member[data-visit="1"]').click();
+    const sceneVisitData = await (await sceneVisitResponse).json();
+    assert.deepEqual(sceneVisitData.farm.herd, [{ kind: 'bo', count: 2 }, { kind: 'cuu', count: 1 }, { kind: 'ga', count: 1 }, { kind: 'heo', count: 1 }]);
+    const visitedCow = sceneVisitor.locator('.scene-banner [data-scene-barn="bo"]');
+    await visitedCow.waitFor();
+    assert.equal(await visitedCow.getAttribute('data-herd-count'), '2');
+    assert.equal(await visitedCow.evaluate((element) => element.classList.contains('sb--locked')), false,
+      'A level-one visitor must see the owner barn unlocks');
+    assert.equal(await sceneVisitor.locator('.scene-banner button[data-barn]').count(), 0,
+      'Visited barn art must not open the visitor own barn');
+    assert.equal(await sceneVisitor.locator('.scene-banner .sb-pig, .scene-banner .sb-dog, .scene-banner .sb-hen2').count(), 3);
+    await checkNoOverflow(sceneVisitor, '390px visited owner herd');
+    await sceneVisitor.screenshot({ path: resolve(outputDir, 'scene-visited-herd-390.png') });
+  } finally {
+    await sceneContext.close();
   }
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');

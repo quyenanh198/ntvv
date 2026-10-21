@@ -167,3 +167,7 @@ Seed cards now include the learned crop-growth bonus, including seconds for shor
 ## Plot progress follows its persisted schedule
 
 Growing crop bars and stage calculations now use the interval between the plot planting and readiness timestamps, instead of the catalog base time. This prevents a newly planted skilled crop from appearing ten percent grown and keeps the halfway state near fifty percent. The same plot timestamps work for owners and visitors with different skill ranks. Mobile coverage checks new and halfway skilled corn on the owner farm and the halfway plot through another account. Review captures: `plot-skilled-progress-320.png` and `plot-skilled-progress-visitor-390.png`.
+
+## Scene reflects the farm owner
+
+Cow and sheep barn art now includes actual herd counts and unlock labels. Pig and chicken figures appear only for owned animals, and the guard dog only during an active shift. Visitor scenes use the owner level, aggregate herd counts and guard expiry; barn figures are informational there instead of opening the visitor own barns. The visit API exposes only species/count aggregates for this display. Mobile coverage checks empty starter scenes, owner counts and barn navigation, then a level-one visitor seeing the higher-level owner herd, unlocks and active dog. Review captures: `scene-owner-herd-320.png` and `scene-visited-herd-390.png`.

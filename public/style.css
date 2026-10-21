@@ -1777,6 +1777,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 /* Chuồng bò trên scene */
 .sb-cowbarn { right: 34%; bottom: 2.5%; width: 11%; z-index: 6; }
+.scene-barn-mark > img { display: block; width: 100%; height: auto; }
 .sb--locked { opacity: 0.55; filter: grayscale(0.4); }
 
 /* Family sidebar trên màn rộng (như danh sách nhóm chat) */

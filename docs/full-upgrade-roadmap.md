@@ -141,3 +141,5 @@ This is the project plan for the farm game, separate from the older stability au
 - **Production mutation consistency (step 9):** bulk planting now authorizes against current transactional farmer state, and manual feeding uses current animal-speed modifiers. Deterministic contention coverage checks individual/bulk crop and tree spending; production coverage verifies every species at zero/two speed ranks with exact feed use, adjusted deadlines and safe retries.
 
 - **Growth progress graphics (step 3):** growing crop progress and stage selection now follow persisted planting/readiness timestamps rather than base catalog duration. Owner and visitor browser checks verify new and halfway skilled crops display consistent progress even when accounts have different skills.
+
+- **Scene ownership clarity (step 3):** barn counts, animal figures and the guard dog now follow actual owner state. Visited scenes use owner unlocks and aggregate herd counts and cannot open the visitor own barns. Two-account mobile coverage checks empty starters, owner navigation and a low-level visitor viewing a higher-level owner herd/guard.
