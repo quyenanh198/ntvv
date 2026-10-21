@@ -163,3 +163,7 @@ Animal cycle labels in barn summaries, barn details and the shop now include the
 ## Crop and tree skill timing
 
 Seed cards now include the learned crop-growth bonus, including seconds for short crops. Tree cards and tooltips apply that bonus to establishment and fruit cycles while leaving lifespan unchanged; the fruit-cycle minimum matches the server. Mobile coverage plants rank-two wheat and orange trees, compares persisted establishment times with previews, verifies the unchanged ten-hour orange lifespan, then settles a fruit cycle and checks the persisted next deadline against the displayed cycle. Review captures: `crop-skilled-time-320.png` and `tree-skilled-time-320.png`.
+
+## Plot progress follows its persisted schedule
+
+Growing crop bars and stage calculations now use the interval between the plot planting and readiness timestamps, instead of the catalog base time. This prevents a newly planted skilled crop from appearing ten percent grown and keeps the halfway state near fifty percent. The same plot timestamps work for owners and visitors with different skill ranks. Mobile coverage checks new and halfway skilled corn on the owner farm and the halfway plot through another account. Review captures: `plot-skilled-progress-320.png` and `plot-skilled-progress-visitor-390.png`.

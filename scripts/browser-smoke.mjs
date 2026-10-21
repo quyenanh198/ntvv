@@ -1884,6 +1884,43 @@ try {
   const settledSkillTree = await (await fetch(`${base}/farm/api/state`)).json();
   assert.equal(settledSkillTree.me.plots.find((plot) => plot.idx === 1).fruits, TREES.cam.yield);
   assert.equal(db.prepare('SELECT ready_at FROM plots WHERE owner_id = 1 AND idx = 1').get().ready_at, firstFruitAt + fruitCycleMs);
+  db.prepare('DELETE FROM plots WHERE owner_id = 1').run();
+  const progressDuration = Math.round(CROPS.ngo.growMs * 0.9);
+  const progressNow = Date.now();
+  const insertProgressCrop = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at) VALUES (1, ?, ?, ?, ?)');
+  insertProgressCrop.run(0, 'ngo', progressNow - progressDuration / 2, progressNow + progressDuration / 2);
+  insertProgressCrop.run(1, 'ngo', progressNow, progressNow + progressDuration);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const halfGrownPlot = page.locator('.plot[data-idx="0"]');
+  const newGrowthPlot = page.locator('.plot[data-idx="1"]');
+  await halfGrownPlot.waitFor();
+  assert.equal(Number(await halfGrownPlot.getAttribute('data-total')), progressDuration);
+  const halfProgress = await halfGrownPlot.locator('.plot-progress i').evaluate((bar) => Number.parseFloat(bar.style.width));
+  assert.ok(halfProgress >= 49 && halfProgress <= 52, `Half-grown skilled crop should show about 50%, got ${halfProgress}%`);
+  const newProgress = await newGrowthPlot.locator('.plot-progress i').evaluate((bar) => Number.parseFloat(bar.style.width));
+  assert.ok(newProgress <= 5, `A newly planted skilled crop should start near zero, got ${newProgress}%`);
+  await page.screenshot({ path: resolve(outputDir, 'plot-skilled-progress-320.png') });
+  const progressContext = await browser.newContext({ viewport: { width: 390, height: 800 }, reducedMotion: 'reduce' });
+  try {
+    await progressContext.addCookies([{ name: 'lb_session', value: 'friend-smoke', url: base }]);
+    db.prepare('UPDATE farmers SET skills_json = ? WHERE user_id = 2').run('{}');
+    const progressVisitor = await progressContext.newPage();
+    progressVisitor.on('pageerror', (error) => pageErrors.push(error.message));
+    await progressVisitor.goto(`${base}/farm/`, { waitUntil: 'domcontentloaded' });
+    await progressVisitor.locator('.dock-btn[data-sheet="more"]').click();
+    await progressVisitor.locator('.more-card[data-sheet="family"]').click();
+    await progressVisitor.locator('.sheet--family .family-member[data-visit="1"]').click();
+    const visitedProgressPlot = progressVisitor.locator('.plot[data-idx="0"][data-cropid="ngo"]');
+    await visitedProgressPlot.waitFor();
+    assert.equal(Number(await visitedProgressPlot.getAttribute('data-total')), progressDuration,
+      'Visitors must use the owner plot schedule rather than their own skill ranks');
+    const visitorProgress = await visitedProgressPlot.locator('.plot-progress i').evaluate((bar) => Number.parseFloat(bar.style.width));
+    assert.ok(visitorProgress >= 49 && visitorProgress <= 54, `Visitor should see the same halfway crop, got ${visitorProgress}%`);
+    await checkNoOverflow(progressVisitor, '390px visited skilled crop progress');
+    await progressVisitor.screenshot({ path: resolve(outputDir, 'plot-skilled-progress-visitor-390.png') });
+  } finally {
+    await progressContext.close();
+  }
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
