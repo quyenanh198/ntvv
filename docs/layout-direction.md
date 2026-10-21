@@ -171,3 +171,7 @@ Growing crop bars and stage calculations now use the interval between the plot p
 ## Scene reflects the farm owner
 
 Cow and sheep barn art now includes actual herd counts and unlock labels. Pig and chicken figures appear only for owned animals, and the guard dog only during an active shift. Visitor scenes use the owner level, aggregate herd counts and guard expiry; barn figures are informational there instead of opening the visitor own barns. The visit API exposes only species/count aggregates for this display. Mobile coverage checks empty starter scenes, owner counts and barn navigation, then a level-one visitor seeing the higher-level owner herd, unlocks and active dog. Review captures: `scene-owner-herd-320.png` and `scene-visited-herd-390.png`.
+
+## Inventory sale decisions
+
+Inventory rows now use server-calculated sale rates including learned selling bonuses and current saturation. Changing quantity updates estimated proceeds; fractional or out-of-stock quantities disable the selected-quantity sale with inline guidance. Estimates are explicitly provisional because market prices are finalized when selling. Asset-summary captions now identify the existing base-value accounting rather than calling it the current sale price. Mobile coverage checks animal/processed bonuses, invalid quantity recovery and an accepted sale matching its preview. Review capture: `inventory-skill-sale-320.png`.

@@ -1974,6 +1974,38 @@ try {
   } finally {
     await sceneContext.close();
   }
+  db.prepare('DELETE FROM inventory WHERE owner_id = 1').run();
+  db.prepare('DELETE FROM market_sat').run();
+  db.prepare('UPDATE farmers SET gold = 1000, skills_json = ? WHERE user_id = 1').run(JSON.stringify({ spcaocap: 2, donggoidep: 2 }));
+  const saleMilk = ANIMALS.bo.product;
+  for (const item of [saleMilk, 'botmi', 'luami']) db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, 3)').run(item);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('.dock-btn[data-sheet="inventory"]').click();
+  const milkSaleRow = page.locator(`.inv-row[data-item="${saleMilk}"]`);
+  const milkSaleQty = milkSaleRow.locator('.qty-input');
+  const milkSaleButton = milkSaleRow.locator('[data-sell]:not([data-qty])');
+  assert.match(await milkSaleRow.innerText(), /\+16% kỹ năng/);
+  assert.match(await page.locator('.inv-row[data-item="botmi"]').innerText(), /\+10% kỹ năng/);
+  assert.match(await page.locator('.inv-worth-card').first().innerText(), /Giá gốc/);
+  await milkSaleQty.fill('1.5');
+  assert.equal(await milkSaleButton.isDisabled(), true);
+  assert.match(await milkSaleRow.locator('.sale-preview').innerText(), /Nhập số nguyên từ 1 đến 3/);
+  await milkSaleQty.fill('4');
+  assert.equal(await milkSaleButton.isDisabled(), true);
+  await milkSaleQty.fill('3');
+  assert.equal(await milkSaleButton.isEnabled(), true);
+  const milkSaleExpected = Math.round(GOODS[saleMilk].sell * GOLD_MULT * 1.16 * 3);
+  assert.ok((await milkSaleRow.locator('.sale-preview').innerText()).includes(milkSaleExpected.toLocaleString('vi')));
+  await milkSaleRow.scrollIntoViewIfNeeded();
+  await checkNoOverflow(page, '320px skill-adjusted sale preview');
+  await auditAccessibility(page, 'sale-preview-320');
+  await page.screenshot({ path: resolve(outputDir, 'inventory-skill-sale-320.png') });
+  const quotedSaleResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/sell') && response.request().method() === 'POST');
+  await milkSaleButton.click();
+  const quotedSale = await quotedSaleResponse;
+  assert.equal(quotedSale.status(), 200);
+  assert.equal((await quotedSale.json()).gained, milkSaleExpected);
+  assert.equal(db.prepare('SELECT qty FROM inventory WHERE owner_id = 1 AND item = ?').get(saleMilk)?.qty || 0, 0);
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

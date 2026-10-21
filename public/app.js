@@ -1258,10 +1258,13 @@
         ? '<p class="sheet-note">Kho trống — thu hoạch gì đó đi!</p>'
         : entries.map(([id, q]) => {
             const info = itemInfo(id);
-            return `<div class="inv-row${info?.sell ? ' inv-row--sell' : ''}" data-item="${id}" data-inventory-kind="${inventoryGroup(id)}">
+            const quote = m.salePrices?.[id];
+            const saleRate = quote?.unitGold ?? info?.sell ?? 0;
+            return `<div class="inv-row${info?.sell ? ' inv-row--sell' : ''}" data-item="${id}" data-inventory-kind="${inventoryGroup(id)}" data-sale-rate="${saleRate}">
               ${itemImg(id)}
               <span class="seed-info"><span class="seed-name">${info?.name || id}</span>
-                <div class="seed-meta">x${q}${info?.sell ? ` · ${Math.round(info.sell * (m.market?.[id]?.mult || 1)).toLocaleString('vi')} ${COIN}/cái${m.market?.[id] ? ` <i class="sat">📉 −${Math.round((1 - m.market[id].mult) * 100)}% bão hoà · hồi ~${m.market[id].hours}h</i>` : ''}` : ' · không bán được'}</div></span>
+                <div class="seed-meta">x${q}${info?.sell ? ` · ~${Math.round(saleRate).toLocaleString('vi')} ${COIN}/cái${quote?.bonusPercent ? ` · +${quote.bonusPercent}% kỹ năng` : ''}${m.market?.[id] ? ` <i class="sat">📉 −${Math.round((1 - m.market[id].mult) * 100)}% bão hoà · hồi ~${m.market[id].hours}h</i>` : ''}` : ' · không bán được'}</div>
+                ${info?.sell ? `<p class="seed-meta sale-preview" aria-live="polite">Bán 1: ước tính ${Math.round(saleRate).toLocaleString('vi')} vàng.</p>` : ''}</span>
               ${info?.sell ? `
                 <span class="btn-group">
                   <span class="qty-ctl">
@@ -1275,10 +1278,10 @@
             </div>`;
           }).join('');
       const worth = `<div class="inv-worth" role="group" aria-label="Giá trị tài sản">
-        <div class="inv-worth-card"><span>Giá trị kho</span><strong>${(m.inventoryValue || 0).toLocaleString('vi')} ${COIN}</strong><small>Giá bán hiện tại</small></div>
-        <div class="inv-worth-card"><span>Tổng tài sản</span><strong>${(m.netWorth ?? m.gold).toLocaleString('vi')} ${COIN}</strong><small>Vàng + giá trị kho</small></div>
+        <div class="inv-worth-card"><span>Giá trị kho</span><strong>${(m.inventoryValue || 0).toLocaleString('vi')} ${COIN}</strong><small>Giá gốc, chưa tính kỹ năng/bão hoà</small></div>
+        <div class="inv-worth-card"><span>Tổng tài sản</span><strong>${(m.netWorth ?? m.gold).toLocaleString('vi')} ${COIN}</strong><small>Vàng + giá trị kho cơ bản</small></div>
       </div>`;
-      return sheetShell(`🎒 Kho đồ <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, worth + finder + rows, 'sheet--inventory');
+      return sheetShell(`🎒 Kho đồ <span class="sheet-coins">${COIN} ${m.gold.toLocaleString('vi')}</span>`, worth + '<p class="sheet-note">Ước tính bán đã tính kỹ năng và bão hoà. Giá thực nhận chốt lúc bán.</p>' + finder + rows, 'sheet--inventory');
     }
 
     if (t === 'shop') {
@@ -2853,12 +2856,21 @@
       const max = Number(input.max) || 999;
       return Math.max(1, Math.min(max, Math.round(Number(input.value) || 1)));
     }
+    function updateSalePreview(row) {
+      const preview = row?.querySelector('.sale-preview');
+      if (!preview) return;
+      const input = row.querySelector('.qty-input');
+      const quantity = Number(input.value);
+      const valid = input.value.trim() !== '' && Number.isSafeInteger(quantity) && quantity >= 1 && quantity <= Number(input.max);
+      row.querySelector('[data-sell]:not([data-qty])').disabled = !valid;
+      preview.textContent = valid ? `Bán ${quantity}: ước tính ${Math.round(Number(row.dataset.saleRate) * quantity).toLocaleString('vi')} vàng.` : `Nhập số nguyên từ 1 đến ${input.max}.`;
+    }
     document.querySelectorAll('[data-qstep]').forEach((el) =>
       el.addEventListener('click', () => {
         const row = el.closest('.inv-row');
         const input = row.querySelector('.qty-input');
         const max = Number(input.max) || 999;
-        input.value = Math.max(1, Math.min(max, (Number(input.value) || 1) + Number(el.dataset.qstep)));
+        input.value = Math.max(1, Math.min(max, Math.round(Number(input.value) || 1) + Number(el.dataset.qstep)));
         input.dispatchEvent(new Event('input'));
         const btn = row.querySelector('[data-sell]:not([data-qty])');
         if (btn) btn.textContent = `Bán ${input.value}`;
@@ -2867,6 +2879,7 @@
       el.addEventListener('input', () => {
         const btn = el.closest('.inv-row').querySelector('[data-sell]:not([data-qty])');
         if (btn) btn.textContent = `Bán ${Math.max(1, Math.min(Number(el.max) || 999, Math.round(Number(el.value) || 1)))}`;
+        updateSalePreview(el.closest('.inv-row'));
       }));
     document.querySelectorAll('[data-sell]').forEach((el) =>
       el.addEventListener('click', async (e) => {
