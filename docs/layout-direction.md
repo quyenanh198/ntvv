@@ -175,3 +175,7 @@ Cow and sheep barn art now includes actual herd counts and unlock labels. Pig an
 ## Inventory sale decisions
 
 Inventory rows now use server-calculated sale rates including learned selling bonuses and current saturation. Changing quantity updates estimated proceeds; fractional or out-of-stock quantities disable the selected-quantity sale with inline guidance. Estimates are explicitly provisional because market prices are finalized when selling. Asset-summary captions now identify the existing base-value accounting rather than calling it the current sale price. Mobile coverage checks animal/processed bonuses, invalid quantity recovery and an accepted sale matching its preview. Review capture: `inventory-skill-sale-320.png`.
+
+## Tree removal review
+
+Removing a growing tree now opens a second review in the existing dialog. It names the tree and plot, explains no gold refund and loss of future fruit, and initially focuses Keep tree. Cancel restores the plot menu without changing the tree or gold. Confirmation sends the reviewed mutation version so changes from another request require a fresh review. Mobile coverage checks focus, cancellation, confirmed removal, unchanged gold, accessibility and the empty plot. Review capture: `tree-removal-review-320.png`.

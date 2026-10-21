@@ -145,7 +145,7 @@ const MUTATION_TARGET_FIELDS = new Map(Object.entries({
   'poach-machine': { ownerId: positiveId },
   'plant-help': { ownerId: positiveId },
   'plant-tree': { idx: plotIndex, tree: catalogKey },
-  'remove-tree': { idx: plotIndex },
+  'remove-tree': { idx: plotIndex, expectedVersion: optional((value) => Number.isSafeInteger(value) && value >= 0) },
   'upgrade-barn': { kind: catalogKey },
   'fish-stock': { species: catalogKey },
   'fish-harvest': { id: optional(positiveId) },
@@ -2434,12 +2434,13 @@ export function buildApp({ config, db, logger = true }) {
         const { idx } = request.body ?? {};
         const me = request.farmer;
         const removed = runJournaledMutation(request, 'remove-tree', () => {
+          if (request.body.expectedVersion !== undefined && getFarmer.get(me.user_id).mutation_version !== request.body.expectedVersion) return { error: 'state_changed' };
           const plot = getPlot.get(me.user_id, idx);
           if (!plot || !plot.tree) return { error: 'no_plot' };
           db.prepare('DELETE FROM plots WHERE owner_id = ? AND idx = ?').run(me.user_id, idx);
           return { idx };
         });
-        if (removed.error) return reply.code(removed.error === 'idempotency_conflict' ? 409 : 400).send({ error: removed.error });
+        if (removed.error) return reply.code(['idempotency_conflict', 'state_changed'].includes(removed.error) ? 409 : 400).send({ error: removed.error });
         return { me: fresh(me.user_id) };
       });
 
