@@ -2035,6 +2035,7 @@ try {
   const staleReviewResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/remove-tree') && response.request().method() === 'POST');
   await page.locator('#btn-confirm-remove-tree').click();
   assert.equal((await staleReviewResponse).status(), 409);
+  await page.locator('.tree-removal-review').filter({ hasText: 'Trại đã thay đổi' }).waitFor();
   await page.locator('#btn-confirm-remove-tree:disabled').waitFor();
   assert.match(await page.locator('.tree-removal-review').innerText(), /Trại đã thay đổi/);
   assert.deepEqual(db.prepare('SELECT * FROM plots WHERE owner_id = 1 AND idx = 2').get(), treeBeforeReview);
