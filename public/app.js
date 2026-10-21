@@ -624,24 +624,12 @@
             <img class="sb sb-green" src="${A('assets/scene-v3/greenhouse_v3.png')}" alt="" />
             <img class="sb sb-tree2" src="${A('assets/pack/tree_02.png')}" alt="" />
             <span class="sb sb-pen" aria-hidden="true"></span>
-            ${m.level >= DATA.config.animals.cuu.level ? `
-              <button class="sb sb-btn sb-sheep" data-barn="cuu" title="Chuồng cừu">
-                <img src="${A('assets/pack/sheep_adult.png')}" alt="Chuồng cừu" />
-                ${m.animals.some((x) => x.kind === 'cuu' && x.ready) ? '<i class="dot"></i>' : ''}
-                <span class="sb-tag">Chuồng cừu</span>
-              </button>`
-            : `<img class="sb sb-sheep sb--locked" src="${A('assets/pack/sheep_adult.png')}" alt="" title="Chuồng cừu — cần Lv ${DATA.config.animals.cuu.level}" />`}
-            ${m.level >= DATA.config.animals.bo.level ? `
-              <button class="sb sb-btn sb-cowbarn" data-barn="bo" title="Chuồng bò">
-                <img src="${A('assets/art/cow.png')}" alt="Chuồng bò" />
-                ${m.animals.some((x) => x.kind === 'bo' && x.ready) ? '<i class="dot"></i>' : ''}
-                <span class="sb-tag">Chuồng bò</span>
-              </button>`
-            : `<img class="sb sb-cowbarn sb--locked" src="${A('assets/art/cow.png')}" alt="" title="Chuồng bò — cần Lv ${DATA.config.animals.bo.level}" />`}
-            <img class="sb sb-pig" src="${A('assets/pack/pig_adult.png')}" alt="" />
+            ${renderSceneBarn('cuu', 'sb-sheep', visiting)}
+            ${renderSceneBarn('bo', 'sb-cowbarn', visiting)}
+            ${sceneHerdCount(visiting, 'heo') ? `<img class="sb sb-pig" src="${A('assets/art/pig.png')}" alt="" />` : ''}
             <img class="sb sb-well" src="${A('assets/pack/well.png')}" alt="" />
             <img class="sb sb-farmer" src="${A('assets/scene-v3/farmer_v3.png')}" alt="" />
-            <img class="sb sb-dog" src="${A('assets/pack/pet_dogs.png')}" alt="" />
+            ${(visiting ? visiting.farm.dogUntil > Date.now() : m.dog?.active) ? `<img class="sb sb-dog" src="${A('assets/pets-v3/companion-dog.png')}" alt="" />` : ''}
             ${renderSceneButtons(visiting)}
             <img class="sb sb-logo" src="${A('assets/pack/farm_logo.png')}" alt="Nông Trại Vui Vẻ" />
           </div>
@@ -864,6 +852,20 @@
     </section>`;
   }
 
+  function sceneHerdCount(visiting, kind) {
+    return visiting ? (visiting.farm.herd || []).find((herd) => herd.kind === kind)?.count || 0
+      : me().animals.filter((animal) => animal.kind === kind).length;
+  }
+  function renderSceneBarn(kind, className, visiting) {
+    const farm = visiting ? visiting.farm : me();
+    const animal = DATA.config.animals[kind];
+    const count = sceneHerdCount(visiting, kind);
+    const unlocked = farm.level >= animal.level;
+    const label = unlocked ? `${animal.name} · ${count} con` : `Lv ${animal.level}`;
+    const attrs = `class="sb ${className} scene-barn-mark${unlocked ? '' : ' sb--locked'}${!visiting && unlocked ? ' sb-btn' : ''}" data-scene-barn="${kind}" data-herd-count="${count}" aria-label="Chuồng ${esc(label)}"`;
+    const content = `${barnArtImg(kind)}<span class="sb-tag" aria-hidden="true">${esc(label)}</span>${unlocked ? `<span class="scene-herd-count" aria-hidden="true">${count}</span>` : ''}`;
+    return !visiting && unlocked ? `<button ${attrs} data-barn="${kind}">${content}</button>` : `<span ${attrs} role="img">${content}</span>`;
+  }
   function renderPlots(visiting) {
     const farm = visiting ? visiting.farm : me();
     const mine = !visiting;
@@ -935,9 +937,9 @@
     const millDone = m.mill && m.mill.ready;
     if (visiting) {
       return `
-        <img class="sb sb-coop" src="${A('assets/scene-v3/chicken_coop_v3.png')}" alt="" />
-        <img class="sb sb-hen2" src="${A('assets/art/chicken_v3.png')}" alt="" />
-        <img class="sb sb-mill" src="${A('assets/scene-v3/windmill_v3-224.png')}" alt="" />
+        <img class="sb sb-coop${visiting.farm.level < DATA.config.chicken.level ? ' sb--locked' : ''}" src="${A('assets/scene-v3/chicken_coop_v3.png')}" alt="" />
+        ${sceneHerdCount(visiting, 'ga') ? `<img class="sb sb-hen2" src="${A('assets/art/chicken_v3.png')}" alt="" />` : ''}
+        <img class="sb sb-mill${visiting.farm.level < DATA.config.mill.level ? ' sb--locked' : ''}" src="${A('assets/scene-v3/windmill_v3-224.png')}" alt="" />
         <img class="sb sb-shop" src="${A('assets/scene-v3/market_shop_v3-208.png')}" alt="" />`;
     }
     return `
@@ -947,7 +949,7 @@
           ${eggReady ? '<i class="dot"></i>' : ''}
           <span class="sb-tag">${eggReady ? '🥚 Trứng!' : hungry ? 'Gà đói' : 'Chuồng gà'}</span>
         </button>
-        <img class="sb sb-hen2" src="${A('assets/art/chicken_v3.png')}" alt="" />`
+        ${sceneHerdCount(null, 'ga') ? `<img class="sb sb-hen2" src="${A('assets/art/chicken_v3.png')}" alt="" />` : ''}`
       : `<img class="sb sb-coop sb--locked" src="${A('assets/scene-v3/chicken_coop_v3.png')}" alt="" title="Chuồng gà — cần Lv ${DATA.config.chicken.level}" />`}
       ${millUnlocked ? `
         <button class="sb sb-btn sb-mill" data-sheet="mill" title="Cối xay">

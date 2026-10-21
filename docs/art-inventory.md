@@ -2,7 +2,7 @@
 
 Generated from `server/src/game.js` and the current asset directory by `npm run art:inventory`. The shared seedling is `public/assets/crops-v3/seedling.png`.
 
-**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 186/186 catalog products have PNG or SVG icons. 370 static asset paths appear in the client.
+**Coverage:** 36/36 crops have matching growing and ripe v3 art; 13/13 trees and 13/13 fruit items have individual PNG art; 15/15 animals have individual PNG art. 12/12 machines have individual PNG art. 186/186 catalog products have PNG or SVG icons. 367 static asset paths appear in the client.
 
 ## Crops
 
@@ -496,9 +496,6 @@ This list includes scene buildings, backgrounds, UI icons, and product art named
 | `assets/machines-v3/snail-stall.png` | 39 KB |
 | `assets/machines-v3/weaving-workshop.png` | 37 KB |
 | `assets/pack/farm_logo.png` | 54 KB |
-| `assets/pack/pet_dogs.png` | 21 KB |
-| `assets/pack/pig_adult.png` | 12 KB |
-| `assets/pack/sheep_adult.png` | 18 KB |
 | `assets/pack/tree_01.png` | 10 KB |
 | `assets/pack/tree_02.png` | 14 KB |
 | `assets/pack/well.png` | 17 KB |

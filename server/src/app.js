@@ -2662,7 +2662,7 @@ export function buildApp({ config, db, logger = true }) {
           machinesReady: db.prepare('SELECT COUNT(*) c FROM machine_jobs WHERE owner_id = ? AND ready_at <= ? AND poached = 0').get(ownerId, now2).c,
         };
         return {
-          farm: { id: owner.user_id, name: owner.name, level: li.level, stars: owner.stars, plotsCount: owner.plots_count, plots, loot, dogUntil: owner.dog_until || 0, online: ownerOnline(owner), dogChance: Math.round(dogChance(owner) * 100) },
+          farm: { id: owner.user_id, name: owner.name, level: li.level, stars: owner.stars, plotsCount: owner.plots_count, plots, loot, herd: db.prepare('SELECT kind, COUNT(*) count FROM animals WHERE owner_id = ? GROUP BY kind ORDER BY kind').all(ownerId), dogUntil: owner.dog_until || 0, online: ownerOnline(owner), dogChance: Math.round(dogChance(owner) * 100) },
           myActs,
           me: fresh(request.farmer.user_id),
         };
