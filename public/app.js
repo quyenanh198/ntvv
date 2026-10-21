@@ -252,7 +252,7 @@
   const ERRORS = {
     not_enough_gold: 'Không đủ vàng rồi!',
     not_enough_gems: 'Không đủ kim cương!',
-    state_changed: 'Trại đã thay đổi. Mở lại ô đất để xem cây hiện tại trước khi nhổ.',
+    state_changed: 'Trại đã thay đổi. Xem lại trạng thái mới trước khi thực hiện thao tác.',
     not_enough_items: 'Trong kho không đủ đồ.',
     not_enough_feed: 'Hết thức ăn — ghé Cửa hàng hoặc xay ngô nhé.',
     level_too_low: 'Chưa đủ cấp, cày thêm chút nữa!',
@@ -1238,9 +1238,11 @@
       return sheetShell(
         `${icon} ${info.name}`,
         `<p class="sheet-note">Còn <b>${fmtTime(left)}</b> nữa là ${p.tree ? 'ra quả' : 'chín'}.${p.watered ? ' Đã tưới 💧 (Tươi tốt).' : ''}${p.tree && p.treeEndsAt ? ` 🍂 Cây còn sống <b>${fmtDuration(Math.max(0, p.treeEndsAt - Date.now()))}</b>.` : ''}</p>
+         <article class="festival-card plot-speedup-preview"><p class="festival-hint">Hoàn thành lượt đang chờ: ${cost} kim cương. Mỗi 5 phút còn lại tính 1 kim cương, làm tròn lên.</p>
+         <p class="festival-hint plot-speedup-balance">${m.gems >= cost ? `Sau khi tăng tốc: còn ${m.gems - cost} kim cương.` : `Thiếu ${cost - m.gems} kim cương. Có thể chờ cây tự lớn.`}</p></article>
          <div class="sheet-actions">
            ${p.watered ? '' : `<button class="btn gbtn gbtn--green" id="btn-water-own">💧 Tưới (+EXP khi thu)</button>`}
-           <button class="btn gbtn gbtn--gold" id="btn-speedup-plot">${GEM} ${cost} · ${p.tree ? 'Ra quả ngay' : 'Chín ngay'}</button>
+           <button class="btn gbtn gbtn--gold" id="btn-speedup-plot" ${m.gems >= cost ? '' : 'disabled'}>${GEM} ${cost} · ${p.tree ? 'Ra quả ngay' : 'Chín ngay'}</button>
            ${p.tree ? `<button class="btn btn-ghost" id="btn-remove-tree">🪓 Nhổ cây</button>` : ''}
          </div>`,
       );
@@ -1612,6 +1614,7 @@
           const outId = Object.keys(r.out)[0];
           const outInfo = itemInfo(outId);
           let state = '';
+          let speedHint = '';
           if (job && job.ready) {
             const running = job.processing
               ? `<small class="mc-run" data-machine-ready="${job.currentReadyAt}">🔄 mẻ kế · ${fmtTime(job.currentReadyAt - Date.now())} · chờ ${job.queued}</small>`
@@ -1619,8 +1622,10 @@
             state = `<button class="mc-plus mc-plus--done" data-machine-collect="${mc.id}" data-recipe="${r.id}" aria-label="Lấy ${job.completed} mẻ ${r.name} từ ${mc.name}" title="Lấy ${r.name}">✅ Lấy ${job.completed}</button>${running}`;
           } else if (job) {
             const left = (job.currentReadyAt || job.readyAt) - Date.now();
+            const cost = Math.max(1, Math.ceil(left / 300000));
+            speedHint = `<p class="mc-speed-hint">Xong ngay 1 mẻ: ${cost} kim cương · ${m.gems >= cost ? `sau đó còn ${m.gems - cost}.` : `thiếu ${cost - m.gems}, có thể chờ mẻ tự xong.`}</p>`;
             state = `<small class="mc-run" data-machine-ready="${job.currentReadyAt || job.readyAt}">🔄 1 đang làm · chờ ${job.queued} · ${fmtTime(left)}</small>
-              <button class="mc-plus mc-plus--gem" data-machine-speed="${mc.id}" data-recipe="${r.id}" aria-label="Hoàn thành ngay ${r.name} với ${Math.max(1, Math.ceil(left / 300000))} kim cương" title="Xong ngay">${GEM}${Math.max(1, Math.ceil(left / 300000))}</button>`;
+              <button class="mc-plus mc-plus--gem" data-machine-speed="${mc.id}" data-recipe="${r.id}" ${m.gems >= cost ? '' : 'disabled'} aria-label="Hoàn thành ngay ${r.name} với ${cost} kim cương" title="Xong ngay 1 mẻ">${GEM}${cost}</button>`;
           }
           return `<div class="seed-row mc-row${job ? ' mc-row--active' : ''}${canAdd ? '' : ' mc-row--dim'}${sheet.preferredRecipe === outId ? ' mc-row--recommended' : ''}" data-recipe-output="${outId}" data-can-make="${canAdd ? '1' : '0'}" data-job-active="${job ? '1' : '0'}" ${missing ? `data-missing="${missing}" data-missing-name="${r.name}" title="Thiếu nguyên liệu — bấm để đăng tin thu mua" style="cursor:pointer"` : 'style="cursor:default"'}>
             ${itemImg(outId, 'seed-sprite')}
@@ -1629,7 +1634,7 @@
               <span><b>Cần:</b> ${ins}</span>
               <span><time class="mc-duration" datetime="PT${duration / 1000}S" data-duration-ms="${duration}">⏱ ${fmtTime(duration)} /mẻ</time> · Bán ${(outInfo?.sell || 0).toLocaleString('vi')} ${COIN} · +${r.exp} EXP</span>
             </div>${missing ? `<small class="mc-missing">Thiếu ${esc(missingText)} · Bấm 🛒 để đăng mua</small>` : ''}
-            <span class="mc-add">
+            ${speedHint}<span class="mc-add">
               ${state}
               <button class="mc-plus${missing ? ' mc-plus--want' : ''}" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="1" ${canAdd ? '' : missing ? 'data-off="1"' : 'disabled'} aria-label="${canAdd ? `Thêm 1 mẻ ${r.name} tại ${mc.name}` : unavailable}" title="${canAdd ? 'Thêm 1 mẻ' : unavailable}">${missing ? '🛒' : '＋'}</button>
               <button class="mc-plus mc-plus--max" data-machine-run="${mc.id}" data-recipe="${r.id}" data-count="${maxBatches}" ${canAdd && maxBatches > 1 ? '' : 'disabled'} aria-label="${canAdd && maxBatches > 1 ? `Xếp ${maxBatches} mẻ ${r.name} tại ${mc.name}` : canAdd ? `Chỉ xếp được 1 mẻ ${r.name}` : unavailable}" title="${canAdd && maxBatches > 1 ? 'Xếp hết nguyên liệu' : canAdd ? 'Chỉ xếp được 1 mẻ' : unavailable}">＋${maxBatches > 1 ? maxBatches : ''}</button>
@@ -2728,7 +2733,7 @@
       }));
     document.querySelectorAll('[data-machine-speed]').forEach((el) =>
       el.addEventListener('click', async () => {
-        const r = await run(() => api('/speedup', { target: 'machine', kind: el.dataset.machineSpeed, recipe: el.dataset.recipe || undefined }));
+        const r = await run(() => api('/speedup', { target: 'machine', kind: el.dataset.machineSpeed, recipe: el.dataset.recipe || undefined, expectedVersion: me().mutationVersion }));
         if (r) { updateMe(r); toast(`💎 -${r.cost} kim cương!`); render(); }
       }));
 
@@ -2866,11 +2871,11 @@
     });
     document.getElementById('btn-speedup-plot')?.addEventListener('click', async (e) => {
       const startedSheet = sheet;
-      const r = await run(() => api('/speedup', { target: 'plot', idx: sheet.idx }), plotResource(me().id, sheet.idx), e.currentTarget);
+      const r = await run(() => api('/speedup', { target: 'plot', idx: sheet.idx, expectedVersion: me().mutationVersion }), plotResource(me().id, sheet.idx), e.currentTarget);
       if (r) { updateMe(r); closeSheetAfterAction(startedSheet); toast(`💎 -${r.cost} kim cương — chín ngay!`); render(); }
     });
     document.getElementById('btn-speedup-mill')?.addEventListener('click', async () => {
-      const r = await run(() => api('/speedup', { target: 'mill' }));
+      const r = await run(() => api('/speedup', { target: 'mill', expectedVersion: me().mutationVersion }));
       if (r) { updateMe(r); toast(`💎 -${r.cost} kim cương!`); render(); }
     });
 

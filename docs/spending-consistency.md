@@ -31,3 +31,7 @@ Bulk crop/tree planting now reads current balance, tax, level, plot capacity and
 ## Sale quotes and current selling skills
 
 A shared server quote calculation supplies inventory estimates and committed sale proceeds. Sales reload the farmer inside the journal transaction so a skill learned after request authentication still applies. `test/sale-price-quotes.test.js` holds animal/processed sales while learning the real selling skill, verifies credit and safe retry, then checks saturated quotes against actual proceeds for animal, processed and crop items. Base inventory/net-worth valuation remains unchanged and is labeled as such in the UI.
+
+## Reviewed speedup state
+
+Speedups use an optional reviewed mutation version before spending. `test/speedup-review.test.js` covers plot, machine and legacy mill targets: another real planting mutation invalidates the old view; stale and malformed versions and insufficient gems leave value/readiness/journal records unchanged. An exact-budget refreshed request spends once, marks the current target ready, preserves a machine queue and safely replays. Mobile controls submit the version represented by their current state.

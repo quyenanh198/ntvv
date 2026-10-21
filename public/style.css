@@ -2002,6 +2002,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 }
 .machine-grid .mc-recipe-meta b { color: #3e3426; }
 .machine-grid .mc-missing { grid-column: 1 / -1; color: #794514; font-size: .72rem; font-weight: 750; line-height: 1.35; }
+.machine-grid .mc-speed-hint { grid-column: 1 / -1; margin: .2rem 0; color: #503818; font-size: max(.75rem, 12px); line-height: 1.4; }
 .machine-grid .mc-add {
   grid-column: 1 / -1;
   display: flex; align-items: center; justify-content: flex-end; gap: .3rem;
