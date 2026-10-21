@@ -1932,6 +1932,8 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('.scene-banner [data-scene-barn="bo"]').waitFor();
   assert.equal(await page.locator('.scene-banner [data-scene-barn="bo"]').getAttribute('data-herd-count'), '2');
+  assert.equal(await page.locator('.scene-banner [data-scene-barn="bo"] .scene-herd-count').isVisible(), true);
+  assert.equal(await page.locator('.scene-banner [data-scene-barn="bo"] .scene-herd-count').innerText(), '2');
   assert.equal(await page.locator('.scene-banner [data-scene-barn="cuu"]').getAttribute('data-herd-count'), '1');
   assert.equal(await page.locator('.scene-banner .sb-pig, .scene-banner .sb-dog, .scene-banner .sb-hen2').count(), 3);
   await checkNoOverflow(page, '320px owned scene animals');
@@ -1956,6 +1958,8 @@ try {
     const visitedCow = sceneVisitor.locator('.scene-banner [data-scene-barn="bo"]');
     await visitedCow.waitFor();
     assert.equal(await visitedCow.getAttribute('data-herd-count'), '2');
+    assert.equal(await visitedCow.locator('.scene-herd-count').isVisible(), true);
+    assert.equal(await visitedCow.locator('.scene-herd-count').innerText(), '2');
     assert.equal(await visitedCow.evaluate((element) => element.classList.contains('sb--locked')), false,
       'A level-one visitor must see the owner barn unlocks');
     assert.equal(await sceneVisitor.locator('.scene-banner button[data-barn]').count(), 0,

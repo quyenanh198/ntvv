@@ -1778,6 +1778,7 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 /* Chuồng bò trên scene */
 .sb-cowbarn { right: 34%; bottom: 2.5%; width: 11%; z-index: 6; }
 .scene-barn-mark > img { display: block; width: 100%; height: auto; }
+.scene-herd-count { position: absolute; right: 0; bottom: 0; min-width: 16px; min-height: 16px; padding: 0 3px; border: 1px solid #967344; border-radius: 10px; background: #fff3d0; color: #4b321e; font-size: 11px; font-weight: 800; line-height: 16px; pointer-events: none; }
 .sb--locked { opacity: 0.55; filter: grayscale(0.4); }
 
 /* Family sidebar trên màn rộng (như danh sách nhóm chat) */

@@ -863,7 +863,7 @@
     const unlocked = farm.level >= animal.level;
     const label = unlocked ? `${animal.name} · ${count} con` : `Lv ${animal.level}`;
     const attrs = `class="sb ${className} scene-barn-mark${unlocked ? '' : ' sb--locked'}${!visiting && unlocked ? ' sb-btn' : ''}" data-scene-barn="${kind}" data-herd-count="${count}" aria-label="Chuồng ${esc(label)}"`;
-    const content = `${barnArtImg(kind)}<span class="sb-tag" aria-hidden="true">${esc(label)}</span>`;
+    const content = `${barnArtImg(kind)}<span class="sb-tag" aria-hidden="true">${esc(label)}</span>${unlocked ? `<span class="scene-herd-count" aria-hidden="true">${count}</span>` : ''}`;
     return !visiting && unlocked ? `<button ${attrs} data-barn="${kind}">${content}</button>` : `<span ${attrs} role="img">${content}</span>`;
   }
   function renderPlots(visiting) {
