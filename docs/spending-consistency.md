@@ -27,3 +27,7 @@ Machine and barn upgrades, including the legacy chicken shortcut, now compare th
 ## Bulk planting and manual production
 
 Bulk crop/tree planting now reads current balance, tax, level, plot capacity and skills inside its journal transaction. The held-request spending test includes individual versus bulk crop planting with one seed budget and individual versus bulk tree planting with one tree budget; only one request may spend or plant, and winning retries preserve value. Manual feeding also reads current farmer state and applies the same animal-speed formula used by automatic tending. The production test covers all fifteen species with zero and two speed ranks, two animals per request, exact feed consumption, shared adjusted deadlines and unchanged retries.
+
+## Sale quotes and current selling skills
+
+A shared server quote calculation supplies inventory estimates and committed sale proceeds. Sales reload the farmer inside the journal transaction so a skill learned after request authentication still applies. `test/sale-price-quotes.test.js` holds animal/processed sales while learning the real selling skill, verifies credit and safe retry, then checks saturated quotes against actual proceeds for animal, processed and crop items. Base inventory/net-worth valuation remains unchanged and is labeled as such in the UI.

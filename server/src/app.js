@@ -922,6 +922,14 @@ export function buildApp({ config, db, logger = true }) {
     for (const [id, qty] of Object.entries(invAll(userId))) total += (itemInfo(id)?.sell || 0) * GOLD_MULT * qty;
     return Math.round(total);
   }
+  function saleQuote(farmer, item, now = Date.now()) {
+    let skillMult = 1;
+    if (ANIMAL_PRODUCTS.has(item)) skillMult = 1 + 0.08 * skillRank(farmer, 'spcaocap');
+    if (MACHINE_PRODUCTS.has(item)) skillMult = 1 + 0.05 * skillRank(farmer, 'donggoidep');
+    const marketMult = priceMult(item, now);
+    return { unitGold: (itemInfo(item)?.sell || 0) * GOLD_MULT * skillMult * marketMult,
+      bonusPercent: Math.round((skillMult - 1) * 100), marketMult };
+  }
   function luxuryView(f) {
     if (!f) return { owned: [], title: null, frame: null, decor: [] };
     const owned = db.prepare('SELECT item FROM luxury WHERE owner_id = ?').all(f.user_id).map((r) => r.item).filter((id) => LUXURY[id]);
@@ -1015,7 +1023,9 @@ export function buildApp({ config, db, logger = true }) {
     try { awayReport = f.away_report_json ? JSON.parse(f.away_report_json) : null; } catch { awayReport = null; }
     const goldRequests = { incoming: db.prepare("SELECT COUNT(*) n FROM gold_requests WHERE to_id = ? AND status = 'open'").get(userId).n };
     const inventoryValueNow = inventoryValue(userId);
-    return { ...farmerView(f), tax: taxView(f), luxury: luxuryView(f), machineLevels: machineLevels(f), market: saturationView(), awayReport, debts: debtView(userId), goldRequests, inventoryValue: inventoryValueNow, netWorth: (f.gold || 0) + inventoryValueNow };
+    const quoteAt = Date.now();
+    const salePrices = Object.fromEntries(Object.keys(invAll(userId)).map((item) => [item, saleQuote(f, item, quoteAt)]));
+    return { ...farmerView(f), tax: taxView(f), luxury: luxuryView(f), machineLevels: machineLevels(f), market: saturationView(), salePrices, awayReport, debts: debtView(userId), goldRequests, inventoryValue: inventoryValueNow, netWorth: (f.gold || 0) + inventoryValueNow };
   }
 
   // ---- API ----------------------------------------------------------------
@@ -1501,12 +1511,11 @@ export function buildApp({ config, db, logger = true }) {
         }
         const n = qty;
         const sale = runJournaledMutation(request, 'sell', () => {
+          const me = getFarmer.get(request.farmer.user_id);
           if (!invTake(me.user_id, item, n)) return { error: 'not_enough_items' };
-          let mult = 1;
-          if (ANIMAL_PRODUCTS.has(item)) mult = 1 + 0.08 * skillRank(me, 'spcaocap');
-          if (MACHINE_PRODUCTS.has(item)) mult = 1 + 0.05 * skillRank(me, 'donggoidep');
-          const pm = priceMult(item);
-          const gained = Math.round(info.sell * n * GOLD_MULT * mult * pm);
+          const quote = saleQuote(me, item);
+          const pm = quote.marketMult;
+          const gained = Math.round(quote.unitGold * n);
           grant(me.user_id, { gold: gained });
           addSold.run(gained, me.user_id);
           recordEconomySale('direct', saleCategory(item), n, gained);
