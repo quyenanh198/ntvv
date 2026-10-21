@@ -1997,6 +1997,8 @@ try {
   const milkSaleExpected = Math.round(GOODS[saleMilk].sell * GOLD_MULT * 1.16 * 3);
   assert.ok((await milkSaleRow.locator('.sale-preview').innerText()).includes(milkSaleExpected.toLocaleString('vi')));
   await milkSaleRow.scrollIntoViewIfNeeded();
+  const saleTextSizes = await milkSaleRow.locator('.seed-meta').evaluateAll((elements) => elements.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)));
+  assert.ok(saleTextSizes.every((size) => size >= 12), 'Sale price and proceeds need readable 12px minimum text');
   await checkNoOverflow(page, '320px skill-adjusted sale preview');
   await auditAccessibility(page, 'sale-preview-320');
   await page.screenshot({ path: resolve(outputDir, 'inventory-skill-sale-320.png') });
