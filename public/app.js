@@ -369,6 +369,18 @@
       dialog.querySelector('h2').textContent = title;
       dialog.querySelector('p').textContent = message;
       dialog.querySelector('[value="confirm"]').textContent = confirmLabel;
+      dialog.addEventListener('keydown', (event) => {
+        if (event.key !== 'Tab') return;
+        const first = dialog.querySelector('[value="cancel"]');
+        const last = dialog.querySelector('[value="confirm"]');
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      });
       dialog.addEventListener('close', () => {
         const accepted = dialog.returnValue === 'confirm';
         actionConfirmation = null;
@@ -2166,7 +2178,7 @@
     document.querySelectorAll('[data-close]').forEach((el) =>
       el.addEventListener('click', () => { sheet = null; showLb = null; render(); }));
     document.addEventListener('keydown', (ev) => {
-      if (actionConfirmation?.open) return; // Native dialog owns Escape and focus trapping.
+      if (actionConfirmation?.open) return; // Confirmation owns Escape and focus trapping.
       const awayOpen = !!document.querySelector('.modal--away');
       if (!sheet && !showLb && !awayOpen) return;
       if (ev.key === 'Escape') {
