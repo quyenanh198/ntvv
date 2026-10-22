@@ -103,6 +103,8 @@ This is the project plan for the farm game, separate from the older stability au
 
 ### Current acceptance record
 
+- **Consistent action reviews (steps 5, 7 and 10):** gem exchange, decoration purchases, gold-request payments, ingredient buy requests, bulk production, inspection and help harvesting now share an in-game confirmation dialog. It puts Cancel first, restores focus, keeps Escape scoped to the review, and names the final action. Purchase reviews explain resulting balances and irreversible/cosmetic consequences. Browser coverage exercises cancellation, real purchases/transfers, keyboard trapping, focus return and mobile accessibility.
+
 - **Discrete progression (step 6):** the [every-level scenario report](progression-report.md) carries cash, sow/harvest XP, occupied plots, visit-aligned deadlines and tax through levels 1–50. Sixteen combinations compare four visit intervals, XP/gold policies and base/floor prices with exact cash ledgers. These crop-only greedy paths exclude other systems and do not prove player pacing; observed sessions, calendar-tax sensitivity and broader progression scenarios remain pending. CI regenerates the report to prevent catalog drift.
 
 - **Motion accessibility (step 10):** the More menu offers a persisted Reduce motion setting while preserving the device preference. Catchable animals now remain visible and stationary when movement is suppressed. Browser coverage checks normal motion, both reduction paths, persistence, focus, accessibility, and successful server-backed catches. This does not replace the pending manual screen-reader audit.

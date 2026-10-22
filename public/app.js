@@ -355,6 +355,44 @@
     return `${Math.floor(s / 86400)} ngày`;
   }
 
+  let actionConfirmation = null;
+  function confirmAction(title, message, confirmLabel) {
+    if (actionConfirmation) return Promise.resolve(false);
+    return new Promise((resolve) => {
+      const opener = document.activeElement;
+      const dialog = document.createElement('dialog');
+      actionConfirmation = dialog;
+      dialog.className = 'action-confirm';
+      dialog.setAttribute('aria-labelledby', 'action-confirm-title');
+      dialog.setAttribute('aria-describedby', 'action-confirm-message');
+      dialog.innerHTML = '<form method="dialog"><h2 id="action-confirm-title"></h2><p id="action-confirm-message"></p><div class="action-confirm-buttons"><button class="btn btn-ghost" value="cancel" autofocus>Hủy</button><button class="btn gbtn gbtn--green" value="confirm"></button></div></form>';
+      dialog.querySelector('h2').textContent = title;
+      dialog.querySelector('p').textContent = message;
+      dialog.querySelector('[value="confirm"]').textContent = confirmLabel;
+      dialog.addEventListener('keydown', (event) => {
+        if (event.key !== 'Tab') return;
+        const first = dialog.querySelector('[value="cancel"]');
+        const last = dialog.querySelector('[value="confirm"]');
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      });
+      dialog.addEventListener('close', () => {
+        const accepted = dialog.returnValue === 'confirm';
+        actionConfirmation = null;
+        dialog.remove();
+        if (opener?.isConnected) opener.focus({ preventScroll: true });
+        resolve(accepted);
+      }, { once: true });
+      document.body.appendChild(dialog);
+      dialog.showModal();
+    });
+  }
+
   function toast(msg) {
     document.querySelectorAll('.toast').forEach((t) => t.remove());
     const el = document.createElement('div');
@@ -2140,6 +2178,7 @@
     document.querySelectorAll('[data-close]').forEach((el) =>
       el.addEventListener('click', () => { sheet = null; showLb = null; render(); }));
     document.addEventListener('keydown', (ev) => {
+      if (actionConfirmation?.open) return; // Confirmation owns Escape and focus trapping.
       const awayOpen = !!document.querySelector('.modal--away');
       if (!sheet && !showLb && !awayOpen) return;
       if (ev.key === 'Escape') {
@@ -2374,7 +2413,7 @@
       if (act === 'pay') {
         const request = MONEY?.incoming.find((entry) => entry.id === Number(el.dataset.grId));
         if (!request || me().gold < request.amount) return;
-        if (!window.confirm(`Cho ${request.fromName} ${request.amount.toLocaleString('vi')} vàng? Bạn còn ${(me().gold - request.amount).toLocaleString('vi')} vàng sau khi cho.`)) return;
+        if (!await confirmAction('Cho vàng', `Cho ${request.fromName} ${request.amount.toLocaleString('vi')} vàng? Bạn còn ${(me().gold - request.amount).toLocaleString('vi')} vàng sau khi cho.`, 'Cho vàng')) return;
       }
       const r = await run(() => api('/gold-request-act', { id: Number(el.dataset.grId), action: act }));
       if (r) { updateMe(r); MONEY = r.requests; toast(act === 'pay' ? '💝 Đã cho!' : act === 'decline' ? '🙅 Đã từ chối' : '↩️ Đã huỷ'); render(); }
@@ -2419,7 +2458,7 @@
     document.querySelectorAll('[data-away-close]').forEach((el) => el.addEventListener('click', () => { if (DATA.me) DATA.me.awayReport = null; render(); }));
     document.querySelectorAll('[data-buy-gems]').forEach((el) => el.addEventListener('click', async () => {
       const pack = (DATA.config.gemPacks || []).find((p) => p.id === el.dataset.buyGems);
-      if (!pack || !window.confirm(`Mua ${pack.gems} kim cương với ${pack.gold.toLocaleString('vi')} vàng?`)) return;
+      if (!pack || !await confirmAction('Đổi kim cương', `Mua ${pack.gems} kim cương với ${pack.gold.toLocaleString('vi')} vàng? Sau khi đổi: còn ${(me().gold - pack.gold).toLocaleString('vi')} vàng · có ${(me().gems + pack.gems).toLocaleString('vi')} kim cương.`, 'Đổi kim cương')) return;
       const r = await run(() => api('/buy-gems', { pack: pack.id }));
       if (r) { updateMe(r); toast(`💎 +${r.gems} kim cương!`); render(); }
     }));
@@ -2435,7 +2474,7 @@
     document.querySelectorAll('[data-lux-buy]').forEach((el) => el.addEventListener('click', async () => {
       if (el.dataset.off) { toast('Chưa đủ vàng 😅'); return; }
       const x = DATA.config.luxury[el.dataset.luxBuy];
-      if (!window.confirm(`Tậu ${x.emoji} ${x.name} với ${x.price.toLocaleString('vi')} vàng? Vàng này bị đốt, không hoàn lại.`)) return;
+      if (!await confirmAction('Mua đồ trang trí', `Tậu ${x.name} với ${x.price.toLocaleString('vi')} vàng? Sau khi mua: còn ${(me().gold - x.price).toLocaleString('vi')} vàng. Vàng này bị đốt, không hoàn lại. Món đồ không tăng sức mạnh.`, 'Mua món này')) return;
       const r = await run(() => api('/luxury-buy', { item: x.id }));
       if (r) { updateMe(r); toast(`💎 Đã tậu ${x.emoji} ${x.name}!`); render(); }
     }));
@@ -2671,7 +2710,7 @@
         const need = el.dataset.missing.split(',').map((x) => { const [id, q] = x.split(':'); return { id, q: Number(q) }; });
         const lines = need.map((x) => `• ${x.q} ${itemInfo(x.id)?.name || x.id} — ${(Math.round((itemInfo(x.id)?.sell || 0) * 1.3) * x.q).toLocaleString('vi')} vàng`).join('\n');
         const total = need.reduce((a, x) => a + Math.round((itemInfo(x.id)?.sell || 0) * 1.3) * x.q, 0);
-        if (!window.confirm(`Thiếu nguyên liệu cho ${el.dataset.missingName}:\n${lines}\n\nĐăng tin thu mua từ bạn bè (trả 130% giá chợ, ký quỹ ${total.toLocaleString('vi')} vàng)?`)) return;
+        if (!await confirmAction('Thu mua nguyên liệu', `Thiếu nguyên liệu cho ${el.dataset.missingName}:\n${lines}\n\nĐăng tin thu mua từ bạn bè (trả 130% giá chợ, ký quỹ ${total.toLocaleString('vi')} vàng)?`, 'Đăng tin thu mua')) return;
         let ok = 0;
         for (const x of need) {
           const r = await run(() => api('/want-create', { item: x.id, qty: x.q }));
@@ -2735,7 +2774,7 @@
       }
     });
     document.getElementById('btn-cook-all')?.addEventListener('click', async () => {
-      if (!window.confirm('Xếp tối đa mọi công thức đủ nguyên liệu? Nguyên liệu sẽ dùng ngay và không thể hủy các mẻ đã xếp.')) return;
+      if (!await confirmAction('Xếp mẻ hàng loạt', 'Xếp tối đa mọi công thức đủ nguyên liệu? Nguyên liệu sẽ dùng ngay và không thể hủy các mẻ đã xếp.', 'Xếp tối đa')) return;
       const r = await run(() => api('/machine-run-all', {}));
       if (r) { updateMe(r); toast(`🏭 Đã xếp ${r.queued} mẻ vào ${new Set(r.jobs.map((j) => j.machine)).size} máy!`); render(); }
     });
@@ -2965,7 +3004,7 @@
       const idx = Number(btn.dataset.idx);
       if (VISIT && INSPECT && kind !== 'empty') {
         const fee = DATA.config.cansa?.inspectFee || 0;
-        if (!window.confirm(`Khám xét ô này? ${fee ? `Tốn ${fee.toLocaleString('vi')} vàng.` : 'Miễn phí, mỗi nhà 5 lượt/ngày.'} Trúng cần sa: ô bị nhổ sạch, bạn lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')} vàng.`)) return;
+        if (!await confirmAction('Khám xét ô đất', `Khám xét ô này? ${fee ? `Tốn ${fee.toLocaleString('vi')} vàng.` : 'Miễn phí, mỗi nhà 5 lượt/ngày.'} Trúng cần sa: ô bị nhổ sạch, bạn lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')} vàng.`, 'Khám xét')) return;
         const r = await run(() => api('/inspect', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx), btn);
         if (r) {
           updateMe(r);
@@ -3004,7 +3043,7 @@
         const r = await run(() => api('/poach', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx), btn);
         if (r) { updateMe(r); floatGain(x, y, '😋 +2'); render(); }
       } else if (kind === 'ripe' && VISIT) {
-        if (!window.confirm('Thu hoạch giúp ô này? Nông sản vào kho của bạn ấy, bạn nhận 8 vàng công.')) return;
+        if (!await confirmAction('Thu hoạch giúp', 'Thu hoạch giúp ô này? Nông sản vào kho của bạn ấy, bạn nhận 8 vàng công.', 'Thu hoạch giúp')) return;
         const r = await run(() => api('/harvest-help', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx), btn);
         if (r) { sfx('playHarvest'); sfx('playCoin'); updateMe(r); floatGain(x, y, '🧺', `+${r.gained} ${COIN}`); render(); }
       } else if (kind === 'growing' || kind === 'ripe') {

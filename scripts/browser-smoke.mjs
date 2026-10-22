@@ -46,6 +46,15 @@ async function checkNoOverflow(page, label) {
   assert.ok(sizes.document <= sizes.viewport + 1, `${label} overflows horizontally: ${JSON.stringify(sizes)}`);
 }
 
+async function respondConfirmation(page, accepted) {
+  const dialog = page.locator('dialog.action-confirm');
+  await dialog.waitFor();
+  const message = await dialog.locator('p').innerText();
+  await dialog.locator(`[value="${accepted ? 'confirm' : 'cancel'}"]`).click();
+  await dialog.waitFor({ state: 'detached' });
+  return message;
+}
+
 async function auditAccessibility(page, label) {
   if (!await page.evaluate(() => !!window.axe)) {
     await page.route('**/farm/axe.min.js', (route) => route.fulfill({ path: axePath, contentType: 'application/javascript' }));
@@ -530,14 +539,13 @@ try {
   assert.equal(db.prepare('SELECT status FROM gold_requests WHERE id = ?').get(unaffordableRequest.id).status, 'declined');
   assert.deepEqual(db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all(), afterGift,
     'Declining a request must not move gold');
-  friendPage.once('dialog', (dialog) => dialog.dismiss());
   await friendPage.locator(`[data-gr-id="${goldRequest.id}"][data-gr-act="pay"]`).click();
+  await respondConfirmation(friendPage, false);
   assert.equal(db.prepare('SELECT status FROM gold_requests WHERE id = ?').get(goldRequest.id).status, 'open');
   assert.deepEqual(db.prepare('SELECT user_id, gold FROM farmers WHERE user_id IN (1, 2) ORDER BY user_id').all(), afterGift,
     'Cancelling payment confirmation must not move gold');
-  let paymentConfirmation;
-  friendPage.once('dialog', (dialog) => { paymentConfirmation = dialog.message(); return dialog.accept(); });
   await friendPage.locator(`[data-gr-id="${goldRequest.id}"][data-gr-act="pay"]`).click();
+  const paymentConfirmation = await respondConfirmation(friendPage, true);
   await friendPage.locator(`[data-gr-id="${goldRequest.id}"][data-gr-act="pay"]`).waitFor({ state: 'hidden' });
   assert.equal(db.prepare('SELECT status FROM gold_requests WHERE id = ?').get(goldRequest.id).status, 'paid');
   assert.match(paymentConfirmation, /Cho Browser Farmer 7 vàng/);
@@ -944,9 +952,8 @@ try {
     'bulk production should explain its irreversible ingredient use');
   const bulkWheatBefore = db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty;
   const bulkJobsBefore = db.prepare('SELECT COUNT(*) AS n FROM machine_jobs WHERE owner_id = 1').get().n;
-  let bulkConfirmation = '';
-  page.once('dialog', async (dialog) => { bulkConfirmation = dialog.message(); await dialog.dismiss(); });
   await page.locator('#btn-cook-all').click();
+  const bulkConfirmation = await respondConfirmation(page, false);
   assert.match(bulkConfirmation, /Xếp tối đa mọi công thức.*không thể hủy/);
   assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty, bulkWheatBefore,
     'canceling bulk production should leave ingredients untouched');
@@ -1018,8 +1025,8 @@ try {
   assert.equal(await buyMissing.isEnabled(), true, 'buy-missing control should be actionable');
   assert.equal(await buyMissing.getAttribute('aria-disabled'), null,
     'buy-missing control should not announce itself as disabled');
-  page.once('dialog', (dialog) => dialog.dismiss());
   await buyMissing.click();
+  await respondConfirmation(page, false);
   await checkNoOverflow(page, '320px order factory shortcut');
   await page.screenshot({ path: resolve(outputDir, 'order-factory-320.png') });
   await page.keyboard.press('Escape');
@@ -1503,8 +1510,8 @@ try {
   await page.locator('[data-sheet="luxury"]').click();
   await page.locator('[data-lux-view="available"]').click();
   assert.equal(await titleCard.isVisible(), true);
-  page.once('dialog', (dialog) => dialog.accept());
   await titleCard.locator('[data-lux-buy]').click();
+  await respondConfirmation(page, true);
   await page.locator('[data-lux-view="owned"]').click();
   await titleCard.locator('[data-lux-equip=""]').waitFor();
   assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 1').get().gold, 0);
@@ -1797,13 +1804,26 @@ try {
   await auditAccessibility(page, 'gem-exchange-320');
   await page.screenshot({ path: resolve(outputDir, 'gem-exchange-320.png') });
   const exchangeBefore = db.prepare('SELECT gold, gems, sunk_gold FROM farmers WHERE user_id = 1').get();
-  page.once('dialog', (dialog) => dialog.dismiss());
   await exchangeButton.click();
+  const exchangeDialog = page.locator('dialog.action-confirm');
+  await exchangeDialog.waitFor();
+  assert.equal(await exchangeDialog.locator('[value="cancel"]').evaluate(el => el === document.activeElement), true);
+  await page.keyboard.press('Shift+Tab');
+  assert.equal(await exchangeDialog.locator('[value="confirm"]').evaluate(el => el === document.activeElement), true);
+  await page.keyboard.press('Tab');
+  assert.equal(await exchangeDialog.locator('[value="cancel"]').evaluate(el => el === document.activeElement), true);
+  await checkNoOverflow(page, '320px exchange confirmation');
+  await auditAccessibility(page, 'exchange-confirmation-320');
+  await page.screenshot({ path: resolve(outputDir, 'exchange-confirmation-320.png') });
+  await page.keyboard.press('Escape');
+  await exchangeDialog.waitFor({ state: 'detached' });
+  assert.equal(await exchangeButton.evaluate(el => el === document.activeElement), true);
+  assert.equal(await page.locator('.sheet--shop').isVisible(), true, 'Escape closes only the confirmation');
   assert.deepEqual(db.prepare('SELECT gold, gems, sunk_gold FROM farmers WHERE user_id = 1').get(), exchangeBefore,
     'Cancelling the gem exchange must preserve currency');
   const exchangeResponse = page.waitForResponse((response) => response.url().endsWith('/farm/api/buy-gems') && response.request().method() === 'POST');
-  page.once('dialog', (dialog) => dialog.accept());
   await exchangeButton.click();
+  await respondConfirmation(page, true);
   assert.equal((await exchangeResponse).status(), 200);
   await exchangeCard.locator('.gem-exchange-balance').filter({ hasText: 'Thiếu' }).waitFor();
   assert.deepEqual(db.prepare('SELECT gold, gems, sunk_gold FROM farmers WHERE user_id = 1').get(), {
