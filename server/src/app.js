@@ -1259,8 +1259,12 @@ export function buildApp({ config, db, logger = true }) {
           for (const p of db.prepare('SELECT * FROM plots WHERE owner_id = ? AND tree = 1').all(me.user_id)) treeSettle(me, p, now);
           const ready = db.prepare('SELECT * FROM plots WHERE owner_id = ? AND ((tree = 0 AND ready_at <= ?) OR (tree = 1 AND fruit_stock > 0))').all(me.user_id, now);
           if (ready.length === 0) return { error: 'nothing_ready' };
+          const before = getFarmer.get(me.user_id);
+          const beforeItems = new Map(ready.map((plot) => [plot.crop, invQty(me.user_id, plot.crop)]));
           for (const p of ready) harvestPlot(me, p);
-          return { harvested: ready.length };
+          const after = getFarmer.get(me.user_id);
+          const items = Object.fromEntries([...beforeItems].map(([item, quantity]) => [item, invQty(me.user_id, item) - quantity]).filter(([, quantity]) => quantity > 0));
+          return { harvested: ready.length, reward: { items, xp: after.xp - before.xp, gold: after.gold - before.gold } };
         });
         if (harvest.error) return reply.code(harvest.error === 'idempotency_conflict' ? 409 : 400).send({ error: harvest.error });
         if (!harvest.replay) logEvent(`🧺 ${me.name} thu hoạch ${harvest.outcome.harvested} ô một lượt`);
@@ -1290,12 +1294,13 @@ export function buildApp({ config, db, logger = true }) {
           db.prepare('UPDATE plots SET watered = 1, ready_at = MAX(?, ready_at - ?) WHERE owner_id = ? AND idx = ?').run(now, boost, ownerId, idx);
           touchAction.run(ownerId, idx, plot.planted_at, me.user_id, 'water', now);
           grant(me.user_id, { gold: WATER_HELPER_GOLD * GOLD_MULT, xp: WATER_HELPER_EXP });
-          return { helped: true, ownerName: owner.name };
+          return { helped: true, ownerName: owner.name, gained: WATER_HELPER_GOLD * GOLD_MULT,
+            xp: WATER_HELPER_EXP, boostMs: Math.min(boost, plot.ready_at - now) };
         });
         if (water.error) return reply.code(water.error === 'idempotency_conflict' ? 409 : 400).send({ error: water.error });
         if (!water.outcome.helped) return { me: fresh(me.user_id) };
-        if (!water.replay) logEvent(`💧 ${me.name} tưới giúp ruộng của ${water.outcome.ownerName} — cây chín sớm 10 phút`);
-        return visitPayload(request, ownerId);
+        if (!water.replay) logEvent(`💧 ${me.name} tưới giúp ruộng của ${water.outcome.ownerName} — cây chín sớm ${Math.ceil(water.outcome.boostMs / 1000)} giây`);
+        return { ...visitPayload(request, ownerId), gained: water.outcome.gained, xp: water.outcome.xp, boostMs: water.outcome.boostMs };
       });
 
       // Hái ké: ô chín nhà người khác, chủ KHÔNG mất gì, khách +1 sản phẩm.

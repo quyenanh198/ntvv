@@ -471,7 +471,13 @@ try {
   assert.ok(visitLayout.buttons.every(({ width, height }) => width >= 120 && height >= 44), 'Visit actions need readable touch targets');
   await page.locator('.visit-bar').screenshot({ path: resolve(outputDir, 'visit-actions-320.png') });
   await page.screenshot({ path: resolve(outputDir, 'visit-friend-320.png') });
+  const beforeFriendWater = db.prepare('SELECT ready_at FROM plots WHERE owner_id = 2 AND idx = 0').get().ready_at;
+  const friendWaterResponse = page.waitForResponse(response => response.url().endsWith('/farm/api/water') && response.request().method() === 'POST');
   await page.locator('.plot[data-idx="0"][data-kind="water"]').click();
+  const friendWater = await (await friendWaterResponse).json();
+  assert.ok(friendWater.boostMs > 0 && friendWater.boostMs < 10 * 60000);
+  assert.equal(friendWater.boostMs, beforeFriendWater - db.prepare('SELECT ready_at FROM plots WHERE owner_id = 2 AND idx = 0').get().ready_at);
+  await page.waitForFunction(gold => document.getElementById('farm-announcer').textContent.includes(`+${gold} vàng`), friendWater.gained);
   await page.locator('.plot[data-idx="0"].plot--ready').waitFor();
   assert.notEqual(await page.locator('details.lux-strip').getAttribute('open'), null, 'Decoration gallery should stay open after watering refresh');
   assert.equal(db.prepare('SELECT watered FROM plots WHERE owner_id = 2 AND idx = 0').get().watered, 1);
@@ -2251,6 +2257,24 @@ try {
     assert.equal(await inspector.locator('#btn-inspect-mode').getAttribute('aria-pressed'), 'false');
     assert.equal(await inspector.locator('.inspection-note').count(), 0);
   } finally { await inspectContext.close(); }
+  assert.deepEqual(pageErrors, []);
+  db.prepare('DELETE FROM plots WHERE owner_id = 1').run();
+  const bulkNow = Date.now();
+  const rewardPlot = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered, poached, tree, tree_at, fruit_stock) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  rewardPlot.run(0, 'luami', bulkNow - 10000, bulkNow - 1, 1, 1, 0, null, 0);
+  rewardPlot.run(1, 'carot', bulkNow - 10000, bulkNow - 1, 0, 0, 0, null, 0);
+  rewardPlot.run(2, 'cam', bulkNow - 10000, bulkNow + 3600000, 1, 0, 1, bulkNow - 10000, 3);
+  rewardPlot.run(3, 'cansa', bulkNow - 10000, bulkNow - 1, 0, 0, 0, null, 0);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const bulkRewardResponse = page.waitForResponse(response => response.url().endsWith('/farm/api/harvest-all') && response.request().method() === 'POST');
+  await page.locator('#btn-harvestall-tb').click();
+  const bulkReward = await (await bulkRewardResponse).json();
+  assert.equal(bulkReward.harvested, 4);
+  assert.deepEqual(bulkReward.reward.items, { luami: HARVEST_YIELD - 1, carot: HARVEST_YIELD, cam: 3 });
+  await page.waitForFunction(() => document.getElementById('farm-announcer').textContent.includes('Đã thu 4 ô: 10 nông sản'));
+  assert.match(await page.locator('#farm-announcer').innerText(), /1\.000\.000 vàng/);
+  await page.locator('.farm-toolbar').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: resolve(outputDir, 'bulk-harvest-feedback-320.png') });
   assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {

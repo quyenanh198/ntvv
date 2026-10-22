@@ -439,6 +439,19 @@
     }
   }
 
+  function reportBulkHarvest(result, event) {
+    const reward = result.reward;
+    if (reward) {
+      const entries = Object.entries(reward.items);
+      const quantity = entries.reduce((sum, [, count]) => sum + count, 0);
+      const names = entries.slice(0, 3).map(([item, count]) => `${count} ${itemInfo(item)?.name || item}`).join(', ');
+      const extra = entries.length > 3 ? `, và ${entries.length - 3} loại khác` : '';
+      const gains = [quantity ? `${quantity} nông sản (${names}${extra})` : '', reward.gold > 0 ? `${reward.gold.toLocaleString('vi')} vàng` : '', reward.xp > 0 ? `${reward.xp} EXP` : ''].filter(Boolean);
+      toast(`Đã thu ${result.harvested} ô: ${gains.join(' · ')}.`);
+    } else toast(`Đã thu ${result.harvested} ô. Kho đã được cập nhật.`);
+    floatGain(event.clientX || innerWidth / 2, event.clientY || innerHeight / 2, `🧺 ${result.harvested} ô`, reward?.xp > 0 ? `+${reward.xp} EXP` : null);
+  }
+
   function fold(s) {
     return String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
   }
@@ -2635,7 +2648,7 @@
     document.getElementById('btn-harvestall')?.addEventListener('click', async (e) => {
       sfx('playHarvest');
       const r = await run(() => api('/harvest-all', {}));
-      if (r) { sfx('playCoin'); updateMe(r); floatGain(e.clientX || 200, e.clientY || 300, `🧺 +${r.harvested}`); render(); }
+      if (r) { sfx('playCoin'); updateMe(r); reportBulkHarvest(r, e); render(); }
     });
 
     document.querySelectorAll('[data-seed-sort]').forEach((el) =>
@@ -2925,7 +2938,7 @@
         render();
       }
     });
-    simple('btn-harvestall-tb', '/harvest-all', (r, e) => floatGain(e.clientX || 200, e.clientY || 300, `🧺 +${r.harvested}`));
+    simple('btn-harvestall-tb', '/harvest-all', reportBulkHarvest);
 
     document.querySelectorAll('[data-fest-claim]').forEach((el) =>
       el.addEventListener('click', async () => {
@@ -3066,7 +3079,15 @@
       } else if (kind === 'water') {
         sfx('playWater');
         const r = await run(() => api('/water', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx), btn);
-        if (r) { updateMe(r); floatGain(x, y, '💧 −10p', `+${2 * 4} ${COIN}`); render(); }
+        if (r) {
+          updateMe(r);
+          if (Number.isFinite(r.boostMs)) {
+            const duration = preciseDuration(r.boostMs);
+            toast(`Đã tưới giúp: chín sớm ${duration} · +${r.gained.toLocaleString('vi')} vàng · +${r.xp} EXP.`);
+            floatGain(x, y, `💧 −${duration}`, `+${r.gained} ${COIN}`);
+          } else toast('Đã tưới giúp. Trạng thái ruộng đã được cập nhật.');
+          render();
+        }
       } else if (kind === 'poach') {
         sfx('playHarvest');
         const r = await run(() => api('/poach', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx), btn);
