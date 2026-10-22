@@ -20,3 +20,7 @@ Gold gifts and requests require a JSON integer amount from 1 through 1,000,000,0
 ## Reviewed tree removal
 
 `remove-tree` accepts optional `expectedVersion`, a non-negative safe integer copied from the farmer mutationVersion when reviewing removal. If current transactional state has a different version, the server returns HTTP 409 with state_changed before deleting the tree. A successful keyed retry still replays before the version check and cannot remove a replacement. Callers omitting the field retain the legacy contract.
+
+## Reviewed speedups
+
+`speedup` accepts the same optional non-negative safe-integer `expectedVersion` token as reviewed tree removal. Updated plot, machine and legacy mill controls send the current farmer mutationVersion; a changed version returns state_changed (409) before gems or readiness are modified. Successful keyed retries still replay even after the version advances. Existing callers may omit the token.

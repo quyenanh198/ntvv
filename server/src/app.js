@@ -139,7 +139,7 @@ const MUTATION_TARGET_FIELDS = new Map(Object.entries({
   'machine-upgrade': { machine: catalogKey },
   'luxury-buy': { item: catalogKey },
   'luxury-equip': { item: optional((value) => typeof value === 'string'), kind: optional(catalogKey) },
-  speedup: { target: (value) => ['plot', 'machine', 'mill'].includes(value), idx: optional(plotIndex), kind: optional(catalogKey), recipe: optional(catalogKey) },
+  speedup: { target: (value) => ['plot', 'machine', 'mill'].includes(value), idx: optional(plotIndex), kind: optional(catalogKey), recipe: optional(catalogKey), expectedVersion: optional((value) => Number.isSafeInteger(value) && value >= 0) },
   'skill-learn': { id: catalogKey },
   'poach-animal': { ownerId: positiveId },
   'poach-machine': { ownerId: positiveId },
@@ -2160,6 +2160,7 @@ export function buildApp({ config, db, logger = true }) {
         const { target, idx } = request.body ?? {};
         const me = request.farmer;
         const speedup = runJournaledMutation(request, 'speedup', () => {
+          if (request.body.expectedVersion !== undefined && getFarmer.get(me.user_id).mutation_version !== request.body.expectedVersion) return { error: 'state_changed' };
           const now = Date.now();
           if (target === 'plot') {
             const plot = getPlot.get(me.user_id, idx);
@@ -2186,7 +2187,7 @@ export function buildApp({ config, db, logger = true }) {
           }
           return { error: 'bad_request' };
         });
-        if (speedup.error) return reply.code(speedup.error === 'idempotency_conflict' ? 409 : 400).send({ error: speedup.error });
+        if (speedup.error) return reply.code(['idempotency_conflict', 'state_changed'].includes(speedup.error) ? 409 : 400).send({ error: speedup.error });
         return { me: fresh(me.user_id), cost: speedup.outcome.cost };
       });
 

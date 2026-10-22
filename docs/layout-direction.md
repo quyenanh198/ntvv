@@ -179,3 +179,7 @@ Inventory rows now use server-calculated sale rates including learned selling bo
 ## Tree removal review
 
 Removing a growing tree now opens a second review in the existing dialog. It names the tree and plot, explains no gold refund and loss of future fruit, and initially focuses Keep tree. Cancel restores the plot menu without changing the tree or gold. Confirmation sends the reviewed mutation version so changes from another request require a fresh review. Mobile coverage checks focus, cancellation, confirmed removal, unchanged gold, accessibility and the empty plot. Review capture: `tree-removal-review-320.png`.
+
+## Speedup decisions
+
+Plot menus now explain the five-minute gem pricing, show remaining gems or exact shortfall and disable unaffordable speedups. Active factory recipes show the cost and balance impact for finishing one batch, with unavailable actions disabled. Mobile coverage checks one-gem shortfalls and exact-budget purchases for both surfaces, verifies the gem debit and crop readiness, and confirms speeding one machine batch retains its remaining queue. Review captures: `plot-speedup-shortfall-320.png`, `plot-speedup-affordable-320.png` and `factory-speedup-affordable-320.png`.
