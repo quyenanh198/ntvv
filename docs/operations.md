@@ -19,7 +19,22 @@ curl -H "x-farm-secret: $FARM_INTERNAL_SECRET" http://localhost:8090/internal/fa
 curl -H "x-farm-secret: $FARM_INTERNAL_SECRET" http://localhost:8090/internal/farm/economy
 ```
 
-This is a first operational baseline. Persisted metrics, alerts, external request cold-start timing, and a restore rehearsal still need release work.
+The capture tool below persists operational samples. Deployment of monitoring, alerts, external cold-start measurements, and a restore rehearsal still need release work.
+
+## Persistent operational capture
+
+From a trusted host with `FARM_INTERNAL_SECRET` set in its environment:
+
+```sh
+npm run ops:monitor -- https://farm.example.com /secure/monitor/farm.jsonl --once
+npm run ops:monitor -- https://farm.example.com /secure/monitor/farm.jsonl --interval-ms=60000
+```
+
+The first command captures one sample and exits 0 only when health and protected metrics both succeed; failures exit 1. Continuous mode appends samples until SIGINT or SIGTERM. Each cycle probes public health first, then protected metrics, then waits the configured interval (default 60 seconds). Each request times out after 30 seconds; stopping during a request can take up to 60 seconds. Redirects are rejected so the secret cannot follow them. Use a URL without credentials, query parameters, or fragments.
+
+JSONL and stdout contain allowlisted aggregate counters, health/probe status and elapsed milliseconds, startup readiness, and interval deltas: requests per second, 5xx fraction, and fraction above 1000 ms. These are bucket-based rates, not latency percentiles. The first public probe includes any wake-up delay observed from the monitoring host; it does not establish a cold-start benchmark. Failed probes retain no response bodies or raw network errors. Secrets are never written to samples.
+
+The monitor resumes the latest valid sample for the same target from the final 256 KiB of the log, skipping failed samples and incomplete lines. A longer failure streak or log rotation can require a fresh baseline. Process restarts, counter decreases, and reversed clocks create new baselines rather than negative rates. Signals record unavailable probes and resets; they do not send alerts. Keep one writer per file, configure retention/rotation and service supervision externally, and protect both logs and stdout. The tool does not capture funnel/economy snapshots. A deployed collection and alerting rehearsal remains a release gate.
 
 CI also starts the built production image with a disposable Docker volume. It checks `/healthz`, the protected metrics endpoint, the farm page, and a scene asset, then inserts a synthetic farmer, restarts the container, and confirms that SQLite row survives. This checks the packaged runtime and volume behavior; it does not replace a rehearsal against a copy of live data.
 
