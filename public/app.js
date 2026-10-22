@@ -393,10 +393,21 @@
     });
   }
 
+  let announcementFrame = null;
   function toast(msg) {
+    const announcer = document.getElementById('farm-announcer');
+    if (announcer) {
+      if (announcementFrame !== null) cancelAnimationFrame(announcementFrame);
+      announcer.textContent = '';
+      announcementFrame = requestAnimationFrame(() => {
+        announcer.textContent = msg;
+        announcementFrame = null;
+      });
+    }
     document.querySelectorAll('.toast').forEach((t) => t.remove());
     const el = document.createElement('div');
     el.className = 'toast';
+    el.setAttribute('aria-hidden', 'true');
     el.textContent = msg;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 2400);
@@ -407,6 +418,7 @@
     if (!layer) {
       layer = document.createElement('div');
       layer.className = 'toast-layer';
+      layer.setAttribute('aria-hidden', 'true');
       document.body.appendChild(layer);
     }
     const el = document.createElement('div');
@@ -3037,13 +3049,18 @@
       else if (kind === 'plotmenu') { sfx('playTap'); sheet = { type: 'plotmenu', idx }; render(); }
       else if (kind === 'harvest') {
         const p = me().plots[idx];
-        const c = p?.crop ? crops()[p.crop] : null;
+        const c = p?.crop ? (crops()[p.crop] || trees()[p.crop]) : null;
         sfx('playHarvest');
         const r = await run(() => api('/harvest', { idx }), plotResource(me().id, idx), btn);
         if (r) {
           sfx('playCoin');
           updateMe(r);
-          if (c) floatGain(x, y, `${itemImg(c.id, 'coin-img')} +1`, `+${c.expHarvest} EXP`);
+          if (c && r.reward) {
+            const reward = r.reward;
+            const gains = [reward.quantity > 0 ? `${reward.quantity} ${c.name}` : '', reward.gold > 0 ? `${reward.gold.toLocaleString('vi')} vàng` : '', reward.xp > 0 ? `${reward.xp} EXP` : ''].filter(Boolean);
+            toast(`Đã thu hoạch: ${gains.join(' · ') || c.name}.`);
+            floatGain(x, y, reward.quantity > 0 ? `${itemImg(c.id, 'coin-img')} +${reward.quantity}` : `+${reward.gold.toLocaleString('vi')} ${COIN}`, reward.xp > 0 ? `+${reward.xp} EXP` : null);
+          } else toast('Đã thu hoạch. Kho đã được cập nhật.');
           render();
         }
       } else if (kind === 'water') {

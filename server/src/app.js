@@ -1241,7 +1241,12 @@ export function buildApp({ config, db, logger = true }) {
           if (!plot) return { error: 'no_plot' };
           const ripe = plot.tree ? treeSettle(me, plot).stock > 0 : Date.now() >= plot.ready_at;
           if (!ripe) return { error: 'not_ready' };
-          return { item: harvestPlot(me, plot).id };
+          const before = getFarmer.get(me.user_id);
+          const beforeQty = invQty(me.user_id, plot.crop);
+          const item = harvestPlot(me, plot).id;
+          const after = getFarmer.get(me.user_id);
+          return { item, reward: { item, quantity: invQty(me.user_id, item) - beforeQty,
+            xp: after.xp - before.xp, gold: after.gold - before.gold } };
         });
         if (harvest.error) return reply.code(harvest.error === 'idempotency_conflict' ? 409 : 400).send({ error: harvest.error });
         return { me: fresh(me.user_id), ...harvest.outcome };
