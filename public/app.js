@@ -450,7 +450,7 @@
         sfx('playLevelUp');
       }
     }
-    if (r.farm && VISIT) VISIT = { ownerId: VISIT.ownerId, farm: r.farm, myActs: r.myActs };
+    if (r.farm && VISIT) VISIT = { ownerId: VISIT.ownerId, farm: r.farm, myActs: r.myActs, inspection: r.inspection };
   }
 
   async function run(fn, resource = 'global', control = null) {
@@ -695,12 +695,13 @@
           ${visiting.farm.loot?.emptyPlots ? `<button class="gbtn gbtn--gold btn-mini" id="btn-plant-help">🌱 Trồng giúp (${visiting.farm.loot.emptyPlots})</button>` : ''}
           ${(() => { const n = Object.values(visiting.myActs).filter((x) => x.canWater).length; return n >= 2 ? `<button class="gbtn gbtn--green btn-mini" id="btn-water-help-all">💧 Tưới hết (${n})</button>` : ''; })()}
           ${(() => { const n = visiting.farm.plots.filter((p) => p.crop && p.ready).length; return n ? `<button class="gbtn gbtn--green btn-mini" id="btn-harvest-help">🧺 Thu hoạch giúp (${n})</button>` : ''; })()}
-              <button class="gbtn ${INSPECT ? 'gbtn--gold' : 'gbtn--green'} btn-mini" id="btn-inspect-mode" title="Khám xét: bấm vào ô đang trồng (${DATA.config.cansa?.inspectFee ? `tốn ${DATA.config.cansa.inspectFee.toLocaleString('vi')} vàng` : 'miễn phí'}, ${DATA.config.cansa?.inspectPerDay || 5} lượt/nhà/ngày); trúng cần sa thì lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')}">🔍 Khám xét${INSPECT ? ' — bấm ô' : ''}</button>
+              <button class="gbtn ${INSPECT ? 'gbtn--gold' : 'gbtn--green'} btn-mini" id="btn-inspect-mode" aria-pressed="${INSPECT}">🔍 Khám xét${INSPECT ? ' — tắt chế độ' : ''}</button>
               <button class="gbtn gbtn--green btn-mini" id="btn-gold-give">💝 Cho tiền</button>
               <button class="gbtn gbtn--green btn-mini" id="btn-gold-ask">🙏 Xin tiền</button>
               <button id="btn-home" class="gbtn gbtn--gold">🏡 Về nhà</button>
             </div>` : renderToolbar()}
 
+          ${visiting && INSPECT ? `<p class="inspection-note" role="status">Còn ${visiting.inspection?.left ?? 0}/${visiting.inspection?.limit ?? DATA.config.cansa?.inspectPerDay ?? 5} lượt tại nhà này trong 24 giờ. ${visiting.inspection?.fee ? `Mỗi lượt: ${visiting.inspection.fee.toLocaleString('vi')} vàng.` : 'Miễn phí.'} Chọn ô cây trồng để khám xét; cây ăn quả không được khám xét.</p>` : ''}
           <div class="field-wrap">
             ${luxStrip((visiting ? visiting.farm : m).luxury)}
             <span class="field-decor decor-1">🌻</span>
@@ -919,6 +920,16 @@
         return `<button class="plot plot--empty" data-idx="${p.idx}" data-kind="empty" aria-label="${mine ? 'Gieo hạt, ' : ''}${plotName}: ${mine ? 'trống, chọn hạt để gieo' : 'trống'}" ${mine ? '' : 'disabled'}>
           <span class="plot-main">${mine ? `<img class="plot-empty-sprout" src="${A('assets/crops/seed-1.svg')}" alt="" />` : ''}</span>
           ${mine ? '<span class="plot-note">Gieo hạt</span>' : ''}
+        </button>`;
+      }
+      if (visiting && INSPECT) {
+        const acts = visiting.myActs[p.idx];
+        const plant = p.tree ? trees()[p.crop] : crops()[p.crop];
+        const reason = p.tree ? 'Cây ăn quả, không khám xét' : acts?.inspected ? 'Đã khám xét lứa này' : !visiting.inspection?.left ? 'Hết lượt khám xét' : 'Khám xét ô này';
+        const stage = p.ready ? 3 : (now - p.plantedAt) / Math.max(1, p.readyAt - p.plantedAt) < .45 ? 1 : 2;
+        return `<button class="plot ${p.tree ? 'plot--tree' : ''} ${p.ready ? 'plot--ready' : 'plot--growing'} plot--inspect" data-idx="${p.idx}" data-kind="inspect" data-cropid="${p.crop}" aria-label="${plotName}, ${esc(plant.name)}: ${reason}" ${acts?.canInspect ? '' : 'disabled'}>
+          <img class="${p.tree ? 'tree-sprite' : 'crop-sprite'}" src="${p.tree ? treeArt(p.crop) : cropSprite(p.crop, stage)}" alt="${esc(plant.name)}" />
+          <span class="plot-note">${p.tree ? 'Cây ăn quả' : acts?.inspected ? 'Đã khám' : acts?.canInspect ? 'Khám xét' : 'Hết lượt'}</span>
         </button>`;
       }
       if (p.tree) {
@@ -2448,7 +2459,7 @@
       if (DATA.me) DATA.me.awayReport = null;
       try {
         const r = await api(`/farm/${targetId}`);
-        VISIT = { ownerId: targetId, farm: r.farm, myActs: r.myActs };
+        VISIT = { ownerId: targetId, farm: r.farm, myActs: r.myActs, inspection: r.inspection };
         render();
         toast(`🎯 Đã đột nhập nông trại của ${r.farm.name}! Mau hành động!`);
       } catch (err) {
@@ -2597,7 +2608,7 @@
       if (el.dataset.me === '1') { VISIT = null; sheet = null; refresh(); return; }
       try {
         const r = await api(`/farm/${Number(el.dataset.visit)}`);
-        VISIT = { ownerId: Number(el.dataset.visit), farm: r.farm, myActs: r.myActs };
+        VISIT = { ownerId: Number(el.dataset.visit), farm: r.farm, myActs: r.myActs, inspection: r.inspection };
         sheet = null;
         render();
       } catch { /* toast lo rồi */ }
@@ -3004,7 +3015,8 @@
       const idx = Number(btn.dataset.idx);
       if (VISIT && INSPECT && kind !== 'empty') {
         const fee = DATA.config.cansa?.inspectFee || 0;
-        if (!await confirmAction('Khám xét ô đất', `Khám xét ô này? ${fee ? `Tốn ${fee.toLocaleString('vi')} vàng.` : 'Miễn phí, mỗi nhà 5 lượt/ngày.'} Trúng cần sa: ô bị nhổ sạch, bạn lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')} vàng.`, 'Khám xét')) return;
+        if (!VISIT.myActs[idx]?.canInspect) return;
+        if (!await confirmAction('Khám xét ô đất', `Khám xét ô này? ${fee ? `Tốn ${fee.toLocaleString('vi')} vàng.` : 'Miễn phí.'} Còn ${VISIT.inspection?.left ?? 0} lượt tại nhà này trong 24 giờ. Trúng cần sa: ô bị nhổ sạch, bạn lĩnh ${(DATA.config.cansa?.bounty || 500000).toLocaleString('vi')} vàng.`, 'Khám xét')) return;
         const r = await run(() => api('/inspect', { ownerId: VISIT.ownerId, idx }), plotResource(VISIT.ownerId, idx), btn);
         if (r) {
           updateMe(r);
@@ -3079,7 +3091,7 @@
       DATA = next;
       if (lastLevel && DATA.me.level > lastLevel) toast(`🎉 Lên cấp ${DATA.me.level}!`);
       lastLevel = DATA.me.level;
-      if (visitedFarm) VISIT = { ownerId: visitOwnerId, farm: visitedFarm.farm, myActs: visitedFarm.myActs };
+      if (visitedFarm) VISIT = { ownerId: visitOwnerId, farm: visitedFarm.farm, myActs: visitedFarm.myActs, inspection: visitedFarm.inspection };
       if (changed || VISIT || !document.querySelector('.stage')) render();
       scheduleCritter();
     } catch { /* gate/waking đã render */ }

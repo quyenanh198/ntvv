@@ -59,13 +59,24 @@ test('watering and inspection replay without duplicate social rewards or plot ch
     assert.equal((await post(1, '/water-help-all', { ownerId: 2 }, 'bulk-water-new-key-0001')).statusCode, 400);
 
     insert.run(2, 2, 'cansa', Date.now(), future);
+    const visitBefore = (await app.inject({ method: 'GET', url: '/farm/api/farm/2', headers: { 'x-test-user': '1' } })).json();
+    assert.equal(visitBefore.inspection.left, CANSA.inspectPerDay);
+    assert.equal(visitBefore.myActs[2].canInspect, true);
+    assert.notEqual(visitBefore.farm.plots.find((p) => p.idx === 2).crop, 'cansa');
     const beforeInspect = gold(1);
     const inspect = await post(1, '/inspect', { ownerId: 2, idx: 2 }, 'inspect-retry-key-0001');
     assert.equal(inspect.statusCode, 200, inspect.body);
     assert.equal(inspect.json().found, true);
+    assert.equal(inspect.json().inspection.left, CANSA.inspectPerDay - 1);
     assert.equal((await post(1, '/inspect', { ownerId: 2, idx: 2 }, 'inspect-retry-key-0001')).statusCode, 200);
     assert.equal(gold(1) - beforeInspect, CANSA.bounty - CANSA.inspectFee);
     assert.equal(plot(2, 2), undefined);
+    const miss = await post(1, '/inspect', { ownerId: 2, idx: 0 }, 'inspect-miss-state-0001');
+    assert.equal(miss.statusCode, 200);
+    assert.equal(miss.json().found, false);
+    assert.equal(miss.json().myActs[0].inspected, true);
+    assert.equal(miss.json().myActs[0].canInspect, false);
+    assert.equal(miss.json().inspection.left, CANSA.inspectPerDay - 2);
     const afterInspect = gold(1);
     await app.close();
     db.close();

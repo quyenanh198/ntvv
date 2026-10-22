@@ -103,6 +103,8 @@ This is the project plan for the farm game, separate from the older stability au
 
 ### Current acceptance record
 
+- **Inspection gameplay (steps 5, 7 and 9):** visitors now see remaining checks for the rolling 24-hour window, used crop checks, unavailable fruit trees and exhausted attempts. Inspection mode names its actual action and can be toggled off. Two-browser coverage plants a risky crop through the owner UI, verifies visitor disguise, cancels safely, checks an ordinary crop, detects/removes the risky crop with exact reward, refreshes the owner view and exhausts the visitor limit. API authorization remains authoritative.
+
 - **Consistent action reviews (steps 5, 7 and 10):** gem exchange, decoration purchases, gold-request payments, ingredient buy requests, bulk production, inspection and help harvesting now share an in-game confirmation dialog. It puts Cancel first, restores focus, keeps Escape scoped to the review, and names the final action. Purchase reviews explain resulting balances and irreversible/cosmetic consequences. Browser coverage exercises cancellation, real purchases/transfers, keyboard trapping, focus return and mobile accessibility.
 
 - **Discrete progression (step 6):** the [every-level scenario report](progression-report.md) carries cash, sow/harvest XP, occupied plots, visit-aligned deadlines and tax through levels 1–50. Sixteen combinations compare four visit intervals, XP/gold policies and base/floor prices with exact cash ledgers. These crop-only greedy paths exclude other systems and do not prove player pacing; observed sessions, calendar-tax sensitivity and broader progression scenarios remain pending. CI regenerates the report to prevent catalog drift.

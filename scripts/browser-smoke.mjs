@@ -2163,6 +2163,82 @@ try {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.equal(await page.locator('.sun').evaluate(el => getComputedStyle(el).animationName), 'none');
   assert.deepEqual(pageErrors, []);
+  // Full risky-crop loop: owner plants, visitor sees a disguise, then checks
+  // both an ordinary and risky crop without learning hidden crop data first.
+  db.prepare('DELETE FROM plots WHERE owner_id = 1').run();
+  db.prepare("DELETE FROM plot_actions WHERE owner_id = 1 AND helper_id = 2 AND action = 'inspect'").run();
+  const riskyXp = Array.from({ length: CROPS.cansa.level - 1 }, (_, index) => xpNeedFor(index + 1)).reduce((sum, need) => sum + need, 0);
+  db.prepare("UPDATE farmers SET xp = ?, gold = 2000000, dog_until = 0, skills_json = '{}' WHERE user_id = 1").run(riskyXp);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const inspectionConfig = (await (await page.request.get(`${base}/farm/api/state`)).json()).config.cansa;
+  for (const [idx, crop] of [[0, 'cansa'], [1, 'luami']]) {
+    await page.locator(`.plot[data-idx="${idx}"][data-kind="empty"]`).click();
+    await page.locator(`.seed-card[data-crop="${crop}"]`).click();
+    await page.locator(`.plot[data-idx="${idx}"][data-kind="waterplot"]`).waitFor();
+    assert.equal(db.prepare('SELECT crop FROM plots WHERE owner_id = 1 AND idx = ?').get(idx).crop, crop);
+  }
+  await page.locator('.plot[data-idx="2"][data-kind="empty"]').click();
+  await page.locator('.seed-card[data-tree="cam"]').click();
+  await page.locator('.plot[data-idx="2"].plot--tree').waitFor();
+  const inspectionPlant = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at) VALUES (1, ?, ?, ?, ?)');
+  for (const idx of [3, 4, 5, 6]) inspectionPlant.run(idx, 'carot', Date.now(), Date.now() + 3600000);
+  const inspectContext = await browser.newContext({ viewport: { width: 390, height: 800 }, reducedMotion: 'reduce' });
+  try {
+    await inspectContext.addCookies([{ name: 'lb_session', value: 'friend-smoke', url: base }]);
+    const inspector = await inspectContext.newPage();
+    inspector.on('pageerror', error => pageErrors.push(error.message));
+    await inspector.goto(`${base}/farm/`, { waitUntil: 'domcontentloaded' });
+    await inspector.locator('.dock-btn[data-sheet="more"]').click();
+    await inspector.locator('.more-card[data-sheet="family"]').click();
+    await inspector.locator('.sheet--family .family-member[data-visit="1"]').click();
+    await inspector.locator('#btn-inspect-mode').waitFor();
+    const disguised = await (await inspector.request.get(`${base}/farm/api/farm/1`)).json();
+    assert.notEqual(disguised.farm.plots.find(plot => plot.idx === 0).crop, 'cansa');
+    assert.doesNotMatch(JSON.stringify(disguised.farm), /cansa|risky/);
+    const visitorGold = db.prepare('SELECT gold FROM farmers WHERE user_id = 2').get().gold;
+    await inspector.locator('#btn-inspect-mode').click();
+    assert.equal(await inspector.locator('#btn-inspect-mode').getAttribute('aria-pressed'), 'true');
+    assert.equal(await inspector.locator('.plot[data-idx="2"]').isDisabled(), true);
+    const normalPlot = inspector.locator('.plot[data-idx="1"]');
+    await normalPlot.click();
+    await respondConfirmation(inspector, false);
+    assert.equal(db.prepare("SELECT COUNT(*) n FROM plot_actions WHERE owner_id = 1 AND helper_id = 2 AND action = 'inspect'").get().n, 0);
+    assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 2').get().gold, visitorGold);
+    const inspectPlot = async (idx) => {
+      const response = inspector.waitForResponse(result => result.url().endsWith('/farm/api/inspect') && result.request().method() === 'POST');
+      await inspector.locator(`.plot[data-idx="${idx}"]`).click();
+      await respondConfirmation(inspector, true);
+      const result = await response;
+      assert.equal(result.status(), 200);
+      return result.json();
+    };
+    const miss = await inspectPlot(1);
+    assert.equal(miss.found, false);
+    assert.equal(miss.left, inspectionConfig.inspectPerDay - 1);
+    await inspector.waitForFunction(() => document.querySelector('.plot[data-idx="1"]').disabled);
+    assert.match(await normalPlot.getAttribute('aria-label'), /Đã khám/);
+    const hit = await inspectPlot(0);
+    assert.equal(hit.found, true);
+    assert.equal(hit.bounty, inspectionConfig.bounty);
+    assert.equal(db.prepare('SELECT crop FROM plots WHERE owner_id = 1 AND idx = 0').get(), undefined);
+    assert.equal(db.prepare('SELECT gold FROM farmers WHERE user_id = 2').get().gold,
+      visitorGold + inspectionConfig.bounty - 2 * inspectionConfig.inspectFee);
+    await inspector.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
+    for (const idx of [3, 4, 5]) await inspectPlot(idx);
+    await inspector.waitForFunction(() => document.querySelector('.plot[data-idx="6"]').disabled);
+    assert.match(await inspector.locator('.plot[data-idx="6"]').getAttribute('aria-label'), /Hết lượt/);
+    assert.match(await inspector.locator('.inspection-note').innerText(), /0\/5/);
+    await inspector.locator('.inspection-note').scrollIntoViewIfNeeded();
+    await checkNoOverflow(inspector, '390px inspection mode');
+    await auditAccessibility(inspector, 'inspection-390');
+    await inspector.screenshot({ path: resolve(outputDir, 'inspection-exhausted-390.png') });
+    await inspector.locator('#btn-inspect-mode').click();
+    assert.equal(await inspector.locator('#btn-inspect-mode').getAttribute('aria-pressed'), 'false');
+    assert.equal(await inspector.locator('.inspection-note').count(), 0);
+  } finally { await inspectContext.close(); }
+  assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
   await browser?.close();
