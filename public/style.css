@@ -2041,7 +2041,19 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
+  .critter { left: 50%; transform: translateX(-50%); }
 }
+
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+html.reduce-motion .critter { left: 50%; transform: translateX(-50%); }
+.motion-settings { margin-top: 1rem; padding: .8rem; border: 1px solid #caa76b; border-radius: 12px; background: #fff9ed; color: #4a2810; }
+.motion-settings button { min-height: 44px; width: 100%; }
+.motion-settings button[aria-pressed="true"] { background: #e0edce; border-color: #63864d; }
+.motion-settings p { font-size: .85rem; line-height: 1.5; margin: .6rem 0 0; }
 
 .mc-plus--want { background: linear-gradient(180deg, #fff0bb, #f4d384); border-color: #a76c24; color: #653907; }
 

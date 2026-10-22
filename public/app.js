@@ -3,6 +3,9 @@
 
 (() => {
   const app = document.getElementById('app');
+  let reduceMotion = false;
+  try { reduceMotion = localStorage.getItem('ntvv-reduce-motion') === 'true'; } catch {}
+  document.documentElement.classList.toggle('reduce-motion', reduceMotion);
 
   let DATA = null;   // /state
   // ?v= của app.js đang chạy = phiên bản server lúc tải trang. Phải khai báo TRƯỚC
@@ -2045,6 +2048,10 @@
             <span class="mc-name">Bảng xếp hạng</span>
             <span class="mc-sub">Vinh danh làng</span>
           </button>
+        </div>
+        <div class="motion-settings">
+          <button class="gbtn" id="btn-motion-toggle" aria-pressed="${reduceMotion}" aria-describedby="motion-help">Giảm chuyển động</button>
+          <p id="motion-help">Dừng hiệu ứng trang trí; giữ nguyên thời gian sản xuất. Luôn tôn trọng cài đặt giảm chuyển động của thiết bị.</p>
         </div>${renderUpcomingUnlocks(m.level)}`
       );
     }
@@ -2372,6 +2379,12 @@
       const r = await run(() => api('/gold-request-act', { id: Number(el.dataset.grId), action: act }));
       if (r) { updateMe(r); MONEY = r.requests; toast(act === 'pay' ? '💝 Đã cho!' : act === 'decline' ? '🙅 Đã từ chối' : '↩️ Đã huỷ'); render(); }
     }));
+    document.getElementById('btn-motion-toggle')?.addEventListener('click', (event) => {
+      reduceMotion = !reduceMotion;
+      try { localStorage.setItem('ntvv-reduce-motion', String(reduceMotion)); } catch {}
+      document.documentElement.classList.toggle('reduce-motion', reduceMotion);
+      event.currentTarget.setAttribute('aria-pressed', String(reduceMotion));
+    });
     document.getElementById('btn-audio-toggle')?.addEventListener('click', () => {
       const muted = window.NTVVAudio?.toggleMute();
       sfx('playTap');
