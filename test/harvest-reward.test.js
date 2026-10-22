@@ -43,3 +43,30 @@ test('harvest reward reports exact transactional crop, tree and risky gains and 
     }
   } finally { await app.close(); db.close(); }
 });
+
+test('bulk harvest groups exact mixed rewards and preserves them on retry', async () => {
+  const db = openDb(':memory:');
+  const app = buildApp({ db, logger: false, config: { mockChatUser: { id: 1, username: 'bulk', display_name: 'Bulk' } } });
+  const harvest = () => app.inject({ method: 'POST', url: '/farm/api/harvest-all', payload: {}, headers: { 'idempotency-key': 'bulk-exact-rewards' } });
+  try {
+    await app.inject({ method: 'GET', url: '/farm/api/state' });
+    db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'luami', 7)").run();
+    const now = Date.now();
+    const insert = db.prepare('INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered, poached, tree, tree_at, fruit_stock) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    insert.run(0, 'luami', now - 10000, now - 1, 1, 1, 0, null, 0);
+    insert.run(1, 'carot', now - 10000, now - 1, 0, 0, 0, null, 0);
+    insert.run(2, 'cam', now - 10000, now + 3600000, 1, 0, 1, now - 10000, 3);
+    insert.run(3, 'cansa', now - 10000, now - 1, 0, 0, 0, null, 0);
+    const response = await harvest();
+    assert.equal(response.statusCode, 200, response.body);
+    assert.equal(response.json().harvested, 4);
+    assert.deepEqual(response.json().reward, { items: { luami: HARVEST_YIELD - 1, carot: HARVEST_YIELD, cam: 3 },
+      xp: CROPS.luami.expHarvest + CROPS.carot.expHarvest + TREES.cam.exp + CROPS.cansa.expHarvest + 2 * WATER_FRESH_EXP,
+      gold: CANSA.reward });
+    assert.equal(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty, 7 + HARVEST_YIELD - 1);
+    const after = db.prepare('SELECT gold, xp, mutation_version FROM farmers WHERE user_id = 1').get();
+    const replay = await harvest();
+    assert.deepEqual(replay.json().reward, response.json().reward);
+    assert.deepEqual(db.prepare('SELECT gold, xp, mutation_version FROM farmers WHERE user_id = 1').get(), after);
+  } finally { await app.close(); db.close(); }
+});

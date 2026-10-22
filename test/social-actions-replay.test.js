@@ -44,10 +44,14 @@ test('watering and inspection replay without duplicate social rewards or plot ch
     const help = { ownerId: 2, idx: 0 };
     const first = await post(1, '/water', help, 'help-water-retry-0001');
     assert.equal(first.statusCode, 200, first.body);
+    assert.equal(first.json().gained, WATER_HELPER_GOLD * GOLD_MULT);
+    assert.ok(first.json().xp > 0);
     const afterHelpPlot = plot(2, 0);
+    assert.equal(first.json().boostMs, future - afterHelpPlot.ready_at);
     assert.equal((await post(1, '/water', help, 'help-water-retry-0001')).statusCode, 200);
     assert.deepEqual(plot(2, 0), afterHelpPlot);
     assert.equal(gold(1) - beforeHelp, WATER_HELPER_GOLD * GOLD_MULT);
+    assert.equal((await post(1, '/water', help, 'help-water-retry-0001')).json().boostMs, first.json().boostMs);
     assert.equal((await post(1, '/water', { ownerId: 2, idx: 1 }, 'help-water-retry-0001')).statusCode, 409);
 
     const beforeBulk = gold(1);
