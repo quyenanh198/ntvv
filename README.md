@@ -36,12 +36,16 @@ Trình duyệt ── chat.lazybutts.com/farm/* ──► caddy ──(sablier �
 - **Scale-to-zero**: container ngủ khi 15 phút không ai chơi, caddy+sablier đánh thức khi
   có người mở. Client chỉ poll khi tab đang hiển thị để không giữ farm thức oan.
 
+## Upgrade candidate
+
+Upgrade candidate: [release notes](docs/release-notes.md), [readiness evidence and remaining gates](docs/release-readiness.md), [step-by-step roadmap](docs/full-upgrade-roadmap.md), and [operations](docs/operations.md).
+
 ## Env
 
 | Biến | Mặc định | Ý nghĩa |
 |---|---|---|
 | `PORT` | `8090` | Cổng lắng nghe |
-| `DATA_DIR` | `/data` | Chỗ để `farm.sqlite3` |
+| `DATA_DIR` | `/data` | Chỗ để `farm2.sqlite3` |
 | `CHAT_API_URL` | `http://chat:8082` | Gốc URL của Chat (auth + push) |
 | `FARM_INTERNAL_SECRET` | *(trống = tắt push)* | Secret gọi endpoint nội bộ của Chat |
 | `FARM_FAST` | *(trống)* | `1` = cây lớn nhanh ×60 (chỉ để test) |
