@@ -103,6 +103,8 @@ This is the project plan for the farm game, separate from the older stability au
 
 ### Current acceptance record
 
+- **Discrete progression (step 6):** the [every-level scenario report](progression-report.md) carries cash, sow/harvest XP, occupied plots, visit-aligned deadlines and tax through levels 1–50. Sixteen combinations compare four visit intervals, XP/gold policies and base/floor prices with exact cash ledgers. These crop-only greedy paths exclude other systems and do not prove player pacing; observed sessions, calendar-tax sensitivity and broader progression scenarios remain pending. CI regenerates the report to prevent catalog drift.
+
 - **Motion accessibility (step 10):** the More menu offers a persisted Reduce motion setting while preserving the device preference. Catchable animals now remain visible and stationary when movement is suppressed. Browser coverage checks normal motion, both reduction paths, persistence, focus, accessibility, and successful server-backed catches. This does not replace the pending manual screen-reader audit.
 
 - **Operational capture (step 9):** `npm run ops:monitor` persists health and aggregate metrics with resumable interval rates and safe reset baselines. HTTP/CLI coverage verifies persistence and secret-safe output. Deployment, alerting and production-data rehearsal remain pending; the user will provide the local database later.

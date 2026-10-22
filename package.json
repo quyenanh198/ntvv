@@ -14,6 +14,7 @@
     "db:rehearse": "node scripts/rehearse-db.mjs",
     "ops:monitor": "node scripts/monitor-farm.mjs",
     "balance:report": "node scripts/balance-report.mjs --write",
+    "balance:progression": "node scripts/progression-report.mjs --write",
     "browser:smoke": "node scripts/browser-smoke.mjs",
     "test": "node --test"
   },
