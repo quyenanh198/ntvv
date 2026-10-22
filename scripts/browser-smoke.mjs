@@ -2104,6 +2104,45 @@ try {
   assert.equal(db.prepare("SELECT queue_count FROM machine_jobs WHERE owner_id = 1 AND kind = 'coixay' AND recipe = 'botmi'").get().queue_count, 2);
   await page.locator('[data-machine-collect="coixay"][data-recipe="botmi"]').waitFor();
   assert.deepEqual(pageErrors, []);
+  // Catchable animals must remain visible when CSS animation is suppressed.
+  const catchStationaryCritter = async () => {
+    const gemsBefore = db.prepare('SELECT gems FROM farmers WHERE user_id = 1').get().gems;
+    db.prepare('UPDATE farmers SET critter_next_at = ? WHERE user_id = 1').run(Date.now() + 1000);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    const critter = page.locator('.critter');
+    await critter.waitFor();
+    const box = await critter.boundingBox();
+    assert.ok(box && box.x >= 0 && box.x + box.width <= 320, 'stationary critter stays on screen');
+    assert.equal(await critter.evaluate(el => getComputedStyle(el).animationName), 'none');
+    const caught = page.waitForResponse(response => response.url().endsWith('/farm/api/critter-catch') && response.request().method() === 'POST');
+    await critter.click();
+    assert.equal((await caught).status(), 200);
+    assert.ok(db.prepare('SELECT gems FROM farmers WHERE user_id = 1').get().gems > gemsBefore);
+  };
+  await page.setViewportSize({ width: 320, height: 800 });
+  await catchStationaryCritter(); // Device preference, no in-game override.
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  assert.notEqual(await page.locator('.sun').evaluate(el => getComputedStyle(el).animationName), 'none');
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  const motionToggle = page.locator('#btn-motion-toggle');
+  await motionToggle.scrollIntoViewIfNeeded();
+  await motionToggle.click();
+  assert.equal(await motionToggle.getAttribute('aria-pressed'), 'true');
+  assert.equal(await motionToggle.evaluate(el => el === document.activeElement), true);
+  assert.equal(await page.locator('.sun').evaluate(el => getComputedStyle(el).animationName), 'none');
+  await checkNoOverflow(page, '320px motion settings');
+  await auditAccessibility(page, 'motion-settings-320');
+  await page.screenshot({ path: resolve(outputDir, 'motion-settings-320.png') });
+  await catchStationaryCritter(); // Saved in-game preference survives reload.
+  assert.equal(await page.evaluate(() => document.documentElement.classList.contains('reduce-motion')), true);
+  await page.locator('.dock-btn[data-sheet="more"]').click();
+  await motionToggle.scrollIntoViewIfNeeded();
+  await motionToggle.click();
+  assert.equal(await motionToggle.getAttribute('aria-pressed'), 'false');
+  assert.notEqual(await page.locator('.sun').evaluate(el => getComputedStyle(el).animationName), 'none');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  assert.equal(await page.locator('.sun').evaluate(el => getComputedStyle(el).animationName), 'none');
+  assert.deepEqual(pageErrors, []);
   console.log('Browser smoke passed at 320px, 390px, 768px, 844px landscape, 1180px, and 1280px; screenshots saved in artifacts/browser.');
 } finally {
   await browser?.close();
