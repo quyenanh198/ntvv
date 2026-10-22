@@ -3,11 +3,15 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
-import { chromium } from 'playwright';
+import { chromium, firefox, webkit } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
 import { HARVEST_YIELD } from '../server/src/game.js';
 import { ANIMALS, BARN_UPGRADE_GOLD, CROPS, DOG, EXPANSIONS, FESTIVAL, FISHING, FISH_FARM, FISH_STOCK_BY_LEVEL, GEM_PACKS, GOLD_MULT, GOODS, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, TREES, xpNeedFor } from '../server/src/game.js';
+
+const engineName = process.env.NTVV_BROWSER || 'chromium';
+const engines = { chromium, firefox, webkit };
+if (!Object.hasOwn(engines, engineName)) throw new Error('NTVV_BROWSER must be chromium, firefox or webkit');
 
 const players = [
   { id: 1, username: 'browser', display_name: 'Browser Farmer' },
@@ -36,7 +40,7 @@ const app = buildApp({
   db,
   logger: false,
 });
-const outputDir = resolve('artifacts/browser');
+const outputDir = resolve('artifacts/browser', engineName === 'chromium' ? '' : engineName);
 const require = createRequire(import.meta.url);
 const axePath = require.resolve('axe-core/axe.min.js');
 mkdirSync(outputDir, { recursive: true });
@@ -77,7 +81,7 @@ async function auditAccessibility(page, label) {
 
 try {
   const base = await app.listen({ port: 0, host: '127.0.0.1' });
-  browser = await chromium.launch({ headless: true });
+  browser = await engines[engineName].launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 320, height: 800 }, reducedMotion: 'reduce' });
   await context.addCookies([{ name: 'lb_session', value: 'browser-smoke', url: base }]);
   const pageErrors = [];

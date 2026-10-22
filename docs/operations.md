@@ -1,5 +1,22 @@
 # Farm API operational checks
 
+## Browser verification
+
+CI runs the full gameplay/layout walkthrough in Chromium, Firefox and WebKit. The Chromium job also runs server tests, report generation, dependency audit and container checks. Independent Firefox/WebKit jobs keep failures and screenshots visible even if another engine fails. Artifacts include engine-specific responsive captures, accessibility scans and resource samples. WebKit on Linux does not establish physical Safari/iPhone behavior; manual device and screen-reader checks remain release gates.
+
+To run another engine locally after installing dependencies:
+
+```powershell
+npx playwright install firefox webkit
+$env:NTVV_BROWSER = 'webkit'
+npm run browser:smoke
+Remove-Item Env:NTVV_BROWSER
+```
+
+With no `NTVV_BROWSER`, the command uses Chromium. Accepted values are `chromium`, `firefox` and `webkit`. Alternate-engine artifacts are written under `artifacts/browser/<engine>/`.
+
+## API authorization and metrics
+
 The farm API returns `x-request-id` on every `/farm/api/` response. Include this ID when investigating a failed player action; Fastify uses the same ID in request logs.
 
 Mutation requests under `/farm/api/` must use `Content-Type: application/json`. Browser requests with a cross-site `Sec-Fetch-Site` value or an `Origin` that differs from the farm host and protocol are rejected before authentication can change farmer state. Keep the reverse proxy's forwarded protocol accurate for HTTPS traffic. The game client sends JSON from the farm origin.
