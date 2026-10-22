@@ -2653,11 +2653,17 @@ export function buildApp({ config, db, logger = true }) {
         for (const p of plots) if (p.crop && CROPS[p.crop]?.risky) p.crop = disguiseFor(owner, p.idx, p.plantedAt); // người ngoài thấy như cây khác
         const myActs = {};
         const now2 = Date.now();
+        const inspectedCount = db.prepare("SELECT COUNT(*) n FROM plot_actions WHERE owner_id = ? AND helper_id = ? AND action = 'inspect' AND at > ?")
+          .get(ownerId, request.farmer.user_id, now2 - 24 * 60 * 60 * 1000).n;
+        const inspection = { left: Math.max(0, CANSA.inspectPerDay - inspectedCount), limit: CANSA.inspectPerDay, fee: CANSA.inspectFee };
         const again = scaleMs(POACH_AGAIN_MS, config.fast);
         for (const p of plots) {
           if (!p.crop) continue;
           const lastWater = lastAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'water');
+          const inspected = !!lastAction.get(ownerId, p.idx, p.plantedAt, request.farmer.user_id, 'inspect');
           myActs[p.idx] = {
+            inspected,
+            canInspect: !p.tree && !inspected && inspection.left > 0,
             watered: p.watered || !!lastWater,
             canWater: !p.ready && (!lastWater || now2 - lastWater.at >= scaleMs(WATER_HELP_COOLDOWN_MS, config.fast)),
             poached: p.poached,
@@ -2675,6 +2681,7 @@ export function buildApp({ config, db, logger = true }) {
         return {
           farm: { id: owner.user_id, name: owner.name, level: li.level, stars: owner.stars, plotsCount: owner.plots_count, plots, loot, herd: db.prepare('SELECT kind, COUNT(*) count FROM animals WHERE owner_id = ? GROUP BY kind ORDER BY kind').all(ownerId), dogUntil: owner.dog_until || 0, online: ownerOnline(owner), dogChance: Math.round(dogChance(owner) * 100) },
           myActs,
+          inspection,
           me: fresh(request.farmer.user_id),
         };
       }
