@@ -2301,7 +2301,7 @@ button, a, .plot, .side-btn, .gbtn, .hud-round, .coin-pill, .seed-card, .inv-row
 .unlock-level > b { color: #795222; }
 .unlock-level > div { display: flex; flex-wrap: wrap; gap: .35rem; }
 .unlock-item { padding: .25rem .4rem; border-radius: 8px; background: #fff; color: var(--ink); }
-.unlock-item small { color: var(--muted); margin-left: .15rem; }
+.unlock-item small { color: #654b31; font-size: .75rem; margin-left: .15rem; }
 
 /* Financial Ledger Sheet */
 .ledger-box {
