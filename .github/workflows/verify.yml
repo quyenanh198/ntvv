@@ -42,8 +42,9 @@ jobs:
         run: |
           npm run art:inventory
           npm run balance:report
+          npm run balance:progression
           git diff --check
-          git diff --exit-code -- docs/art-inventory.md docs/balance-report.md
+          git diff --exit-code -- docs/art-inventory.md docs/balance-report.md docs/progression-report.md
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
       - name: Build production image
