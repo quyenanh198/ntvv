@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
+import { HARVEST_YIELD } from '../server/src/game.js';
 import { ANIMALS, BARN_UPGRADE_GOLD, CROPS, DOG, EXPANSIONS, FESTIVAL, FISHING, FISH_FARM, FISH_STOCK_BY_LEVEL, GEM_PACKS, GOLD_MULT, GOODS, LAND_TAX_UNLOCK_LEVEL, LOTTERY, MACHINES, MACHINE_UPGRADE_GOLD, LUXURY, POND_LEVELS, POND_UPGRADE_GOLD, START_PLOTS, TAX_PER_PLOT, TREES, xpNeedFor } from '../server/src/game.js';
 
 const players = [
@@ -325,10 +326,22 @@ try {
   await page.locator('.plot[data-idx="0"][data-kind="harvest"]').waitFor();
   assert.match(await page.locator('.plot[data-idx="0"]').getAttribute('aria-label'), /Ô đất 1, .*: thu hoạch/);
   await page.screenshot({ path: resolve(outputDir, 'ready-320.png') });
+  const firstHarvestResponse = page.waitForResponse(response => response.url().endsWith('/farm/api/harvest') && response.request().method() === 'POST');
+  const announcementNode = await page.locator('#farm-announcer').elementHandle();
   await page.locator('.plot[data-idx="0"][data-kind="harvest"]').click();
+  const firstHarvest = await (await firstHarvestResponse).json();
+  assert.equal(firstHarvest.reward.quantity, HARVEST_YIELD);
+  assert.ok(firstHarvest.reward.xp > CROPS.luami.expHarvest, 'watered harvest includes its bonus XP');
   await page.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
+  await page.waitForFunction(quantity => document.getElementById('farm-announcer').textContent.includes(`${quantity} Lúa mì`), firstHarvest.reward.quantity);
+  assert.match(await page.locator('#farm-announcer').innerText(), new RegExp(`${firstHarvest.reward.xp} EXP`));
+  assert.equal(await page.locator('#farm-announcer').getAttribute('role'), 'status');
+  assert.equal(await page.locator('.toast').getAttribute('aria-hidden'), 'true');
+  assert.equal(await page.locator('.toast-layer').getAttribute('aria-hidden'), 'true');
   assert.ok(db.prepare("SELECT qty FROM inventory WHERE owner_id = 1 AND item = 'luami'").get().qty > 0);
   await page.locator('.dock-btn[data-sheet="inventory"]').click();
+  assert.equal(await announcementNode.evaluate(node => node === document.getElementById('farm-announcer')), true,
+    'live region stays mounted through game renders');
   await page.locator('.float-gain').first().waitFor({ state: 'detached' });
   await auditAccessibility(page, 'inventory-320');
   await checkNoOverflow(page, '320px inventory controls');
