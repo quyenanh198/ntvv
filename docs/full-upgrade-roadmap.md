@@ -103,6 +103,8 @@ This is the project plan for the farm game, separate from the older stability au
 
 ### Current acceptance record
 
+- **Browser engine coverage (steps 10 and 11):** the full responsive, gameplay, two-player, keyboard and accessibility walkthrough can select Chromium, Firefox or WebKit. CI runs Firefox and WebKit independently with separate screenshots and reports, alongside the existing Chromium/server/container checks. Physical Safari/iPhone and manual screen-reader validation remain pending.
+
 - **Bulk harvest and friend-help feedback (steps 5, 7 and 10):** both bulk harvest controls now distinguish plots from item quantities and announce transaction-derived mixed item, XP and gold gains. Friend watering reports its actual capped time reduction, payment and XP rather than always claiming ten minutes. API coverage verifies mixed crop/tree/risky harvests, existing-stock exclusion and stable retries; browser coverage verifies the short-crop water reduction and the mixed bulk reward announcement.
 
 - **Accurate accessible feedback (steps 3 and 10):** individual harvests now return transaction-derived item quantity, XP and gold, retained on journal replay. The client reports these actual gains for crops, trees and risky crops instead of a hardcoded single item/base XP. A stable polite live region announces toast text; decorative popups are hidden from assistive technology and visual toasts do not intercept input. API coverage verifies yield loss, water bonuses, stored tree fruit, risky gold and replay protection; the first-session browser flow checks its real reward and persistent announcement node. Manual screen-reader confirmation remains pending.
