@@ -24,3 +24,19 @@ test('normal renders patch the existing DOM instead of replacing the whole app',
 test('machine collection uses the same upgraded cycle as queue creation', () => {
   assert.match(server, /machineTime\(me, scaleMs\(recipe\.ms, config\.fast\), machineId\)/);
 });
+
+// The server CSP (default-src 'self', no 'unsafe-inline') blocks every handler written into
+// markup. Nothing tells the player: dialog buttons just do nothing and broken images stay.
+test('no inline event handler attributes in rendered markup (the CSP blocks them)', () => {
+  // Skip comment lines: comments may name the forbidden pattern.
+  const code = client.split('\n').filter((line) => !line.trim().startsWith('//')).join('\n');
+  const inline = code.match(/\son(?:click|error|change|input|submit|keyup|keydown|focus|blur|load)\s*=\s*["']/g) || [];
+  assert.deepEqual(inline, [], 'bind with addEventListener instead of on... attributes');
+});
+
+test('dialog backdrops close only on clicks that land on the backdrop itself', () => {
+  const closeHandler = client.slice(client.indexOf("querySelectorAll('[data-close]')"), client.indexOf("querySelectorAll('[data-sheet]')"));
+  assert.match(closeHandler, /e\.target !== el/);
+  const awayHandler = client.slice(client.indexOf("querySelectorAll('[data-away-close]')"));
+  assert.match(awayHandler.slice(0, 400), /e\.target !== el/);
+});

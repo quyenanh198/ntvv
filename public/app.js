@@ -620,7 +620,7 @@
 
     const meFam = DATA.family.find((u) => u.me) || {};
     const hudAvatar = meFam.avatar_at
-      ? `<img src="/farm/api/avatar/${m.id}?v=${meFam.avatar_at}" alt="" onerror="this.remove()" />`
+      ? `<img src="/farm/api/avatar/${m.id}?v=${meFam.avatar_at}" alt="" data-drop-on-error="1" />`
       : esc((m.name || '?').charAt(0).toUpperCase());
 
     const questsReady = m.daily.done >= m.daily.required && !m.daily.chestClaimed;
@@ -797,7 +797,7 @@
     return list.map((u) => {
       const active = VISIT ? VISIT.ownerId === u.id : u.me;
       const av = u.avatar_at
-        ? `<img src="/farm/api/avatar/${u.id}?v=${u.avatar_at}" alt="" onerror="this.remove()" />`
+        ? `<img src="/farm/api/avatar/${u.id}?v=${u.avatar_at}" alt="" data-drop-on-error="1" />`
         : esc((u.name || '?').charAt(0).toUpperCase());
       return `
         <button class="family-member${active ? ' family-member--active' : ''}" data-visit="${u.id}" data-me="${u.me ? 1 : 0}">
@@ -1120,7 +1120,7 @@
       </div>`).join('');
     return `
       <div class="modal-backdrop" data-away-close="1">
-        <div class="modal modal--away" role="dialog" aria-modal="true" aria-labelledby="away-title" onclick="event.stopPropagation()">
+        <div class="modal modal--away" role="dialog" aria-modal="true" aria-labelledby="away-title">
           <h3 id="away-title">😱 Trong lúc bạn vắng mặt</h3>
           <p class="sheet-note">Từ ${fmt(r.since)} đến ${fmt(r.until)}, nhà bạn bị chôm tổng cộng <b>${r.total}</b> món:</p>
           <div class="away-scroll">
@@ -2159,7 +2159,7 @@
       <p class="sheet-note">💹 Kinh tế làng = tổng vàng cả làng đã <b>bán hàng</b> (hệ thống + đơn hàng + bạn bè; không tính vàng tặng/trộm/thưởng): ${(tb.economy?.villageGold || 0).toLocaleString('vi')} ${COIN} → thưởng ×${tb.economy?.mult || 1} (mỗi 5 triệu cộng thêm ×1).</p>`;
     return `
       <div class="modal-backdrop" data-close="1">
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="leaderboard-title" onclick="event.stopPropagation()">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="leaderboard-title">
           <h3 id="leaderboard-title">Bảng xếp hạng</h3>
           <button class="modal-close" type="button" data-close="1" aria-label="Đóng bảng xếp hạng">×</button>
           <div class="lb-tabs">
@@ -2211,8 +2211,22 @@
         : { ...(options || {}), signal: bindAbort.signal };
       return nativeAdd.call(this, type, listener, opts);
     };
+    // A backdrop closes only when the click lands on the backdrop itself. Dialogs used to
+    // stop propagation with onclick="event.stopPropagation()", but the CSP (default-src
+    // 'self', no 'unsafe-inline') blocks inline handlers, so every click inside a dialog
+    // bubbled up and closed it (the leaderboard tabs could never be switched).
     document.querySelectorAll('[data-close]').forEach((el) =>
-      el.addEventListener('click', () => { sheet = null; showLb = null; render(); }));
+      el.addEventListener('click', (e) => {
+        if (el.matches('.modal-backdrop, .sheet-backdrop') && e.target !== el) return;
+        sheet = null; showLb = null; render();
+      }));
+    // Broken avatars are removed (inline onerror="this.remove()" is blocked by the CSP too).
+    // An image may already have failed before this runs, so check its state as well.
+    document.querySelectorAll('img[data-drop-on-error]').forEach((img) => {
+      const drop = () => img.remove();
+      img.addEventListener('error', drop, { once: true });
+      if (img.complete && img.naturalWidth === 0) drop();
+    });
     document.addEventListener('keydown', (ev) => {
       if (actionConfirmation?.open) return; // Confirmation owns Escape and focus trapping.
       const awayOpen = !!document.querySelector('.modal--away');
@@ -2491,7 +2505,11 @@
         toast(err?.message || 'Không thể ghé thăm nông trại này');
       }
     }));
-    document.querySelectorAll('[data-away-close]').forEach((el) => el.addEventListener('click', () => { if (DATA.me) DATA.me.awayReport = null; render(); }));
+    document.querySelectorAll('[data-away-close]').forEach((el) => el.addEventListener('click', (e) => {
+      if (el.matches('.modal-backdrop') && e.target !== el) return; // clicks inside the dialog stay inside
+      if (DATA.me) DATA.me.awayReport = null;
+      render();
+    }));
     document.querySelectorAll('[data-buy-gems]').forEach((el) => el.addEventListener('click', async () => {
       const pack = (DATA.config.gemPacks || []).find((p) => p.id === el.dataset.buyGems);
       if (!pack || !await confirmAction('Đổi kim cương', `Mua ${pack.gems} kim cương với ${pack.gold.toLocaleString('vi')} vàng? Sau khi đổi: còn ${(me().gold - pack.gold).toLocaleString('vi')} vàng · có ${(me().gems + pack.gems).toLocaleString('vi')} kim cương.`, 'Đổi kim cương')) return;
