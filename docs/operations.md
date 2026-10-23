@@ -55,6 +55,10 @@ The monitor resumes the latest valid sample for the same target from the final 2
 
 CI also starts the built production image with a disposable Docker volume. It checks `/healthz`, the protected metrics endpoint, the farm page, and a scene asset, then inserts a synthetic farmer, restarts the container, and confirms that SQLite row survives. This checks the packaged runtime and volume behavior; it does not replace a rehearsal against a copy of live data.
 
+## Reverse proxy must report the public scheme
+
+Every POST passes a same-origin check that compares the browser's `Origin` with the scheme and host the server believes it is serving (`trustProxy` is on, so the scheme comes from `X-Forwarded-Proto`). On the Lazybutts hub, players arrive over HTTPS through Cloudflare, but cloudflared talks plain HTTP to Caddy, so Caddy's default `X-Forwarded-Proto: http` made every harvest, planting and sale fail with `403 cross_origin_request` on 2026-10-23 (rolled back within minutes, then fixed in the hub's Caddyfile with `header_up X-Forwarded-Proto https` on the farm route). Any new proxy in front of the farm must forward the public scheme. A quick check after deploying: a same-origin POST with `Origin: https://<host>` must not return `cross_origin_request`, and one with a foreign `Origin` must.
+
 ## Backup and migration rehearsal
 
 Before deploying a schema change, run this against the live data directory from a trusted host. Choose a new backup filename outside the data directory:

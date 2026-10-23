@@ -1,5 +1,7 @@
 # Nông Trại Vui Vẻ (NTVV) — Product, Design & Architecture Audit
 
+> Historical snapshot from 2026-09-22, kept for context. Most of its UI, audio, test and social recommendations have shipped; the module split of `server/src/app.js` and `public/app.js` has not. Current status: [`HANDOFF.md`](HANDOFF.md) and [`docs/release-readiness.md`](docs/release-readiness.md).
+
 **Date:** 2026-09-22  
 **Auditor Persona:** Steve Jobs (Ruthless Simplicity, Uncompromising Taste, Emotional Craft)  
 **Product Vision:** **The Most Delightful, Cozy & Addictive Social Farm Game on the Open Web**

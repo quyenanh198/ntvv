@@ -1,6 +1,6 @@
 # Upgrade candidate release readiness
 
-Audit of roadmap requirements against master `5fb7ae4`, 2026-10-22. This is not a release approval. The implementation summary is in [candidate release notes](release-notes.md). [PR #126](https://github.com/quyenanh198/ntvv/pull/126) is running the first Firefox/WebKit verification; update this record with its result before a staged release.
+Audit of roadmap requirements against master `5fb7ae4`, 2026-10-22, updated 2026-10-23 for master `d3217a9` (deployed to the family hub). This is not a release approval. The implementation summary is in [candidate release notes](release-notes.md). [PR #126](https://github.com/quyenanh198/ntvv/pull/126) is running the first Firefox/WebKit verification; update this record with its result before a staged release.
 
 ## Evidence rules
 
@@ -37,24 +37,24 @@ Audit of roadmap requirements against master `5fb7ae4`, 2026-10-22. This is not 
 | 8: Collections/personalization/achievements/events | Persistent collections, star rewards, owned decoration/pet gallery, title controls, festival and reward hub | Confirm players can name a next-session and next-week goal |
 | 8: One collection and recurring event prototype | `docs/collection-design.md`; `docs/festival-design.md`; actual claims in browser/API coverage | Observe whether rewards support ordinary play |
 | 9: Every value-changing endpoint journaled atomically | 59 replay-safe POST routes, server/client route contracts and broad mutation/retry/contention/restart tests | Maintain explicit route-to-test evidence; route count alone is insufficient coverage proof |
-| 9: Bodies/errors/auth/CSRF/migrations/backups | Contract validation tests, origin boundaries, transactional migrations, `npm run db:rehearse`, operations guide | Production copy migration and staged restore with existing farmer state |
+| 9: Bodies/errors/auth/CSRF/migrations/backups | Contract validation tests, origin boundaries, transactional migrations, `npm run db:rehearse`, operations guide; production-copy rehearsal on 2026-10-23 (backup/integrity, migration, every farmer's state, rollback to the previous code) recorded in `docs/operations.md` | Restore performed by stopping the live service (only if ever needed); keep the proxy sending the public scheme (see `docs/operations.md`) |
 | 9: Request IDs, errors/latency/cold starts/replays | Response IDs, protected aggregate metrics and `npm run ops:monitor` capture/resume tool | Deployed collection/alerts, external cold-start observations and operational rehearsal |
 | 10: Startup/images/render/polling measurements | Transfer baseline/budgets, request races, persistent DOM checks, lazy catalog images and screenshots | Representative slow-network, memory, rendering and polling measurements |
 | 10: Keyboard/focus/contrast/names/targets/motion | Automated axe/geometry/focus checks, shared action dialogs, live announcement node, motion/critters walkthroughs | Manual keyboard and screen-reader audit; real speech output is unverified |
-| 11: Unit/integration/two-player/migration/manual release checks | Existing Chromium/server/report/audit/container CI green at PR #126; Firefox/WebKit pending | All three engines green; manual release-candidate browser/device checks |
-| 11: Content/art/economy/backup/rollback review and small cohort | Art sources/prompts, scenario reports, backup/rehearsal command and operator instructions | Final content/provenance review; production-compatible backup/restore and code rollback on staging; cohort deployment |
-| 11: Merge, release notes and post-release observation | Many verified increments merged to master; PR links and acceptance records | Publish consolidated release notes, staged deployment and mature first-session/day-two results |
+| 11: Unit/integration/two-player/migration/manual release checks | Existing Chromium/server/report/audit/container CI green at PR #126; Firefox/WebKit pending; Chromium, Firefox and WebKit walkthroughs green since PR #126 (`4ad0d91`) | Manual release-candidate browser/device checks |
+| 11: Content/art/economy/backup/rollback review and small cohort | Art sources/prompts, scenario reports, backup/rehearsal command and operator instructions; backup, migration and code rollback rehearsed on a copy of the live database; verified backup kept on the host | Final content/provenance review; persistent metrics/alerts for the family cohort |
+| 11: Merge, release notes and post-release observation | Many verified increments merged to master; PR links and acceptance records; master `d3217a9` deployed to the family hub on 2026-10-23 (see `HANDOFF.md`) | Mature first-session/day-two results from the deployed metrics |
 | 12: Choose fixes from actual behavior and retest | Study script, provisional product metrics and aggregate instrumentation | First staged evidence and resulting priority/retest cycle |
 | 12: Keep inventory/models/tests/roadmap current | Generated reports enforced by CI; acceptance records for merged increments | Reconcile stale roadmap summary statements with current implementation and retain open human/deployment gates |
 
 ## Required handoff evidence
 
-1. Record Firefox and WebKit job outcomes for PR #126 and review their farm/dialog screenshots. Fix any actual incompatibilities before merging.
+1. ~~Record Firefox and WebKit job outcomes for PR #126.~~ Done 2026-10-23: the only failure was the walkthrough itself (Firefox rejects `decode()` on a not-yet-requested lazy image); fixed in `4ad0d91`, all three engines green.
 2. Publish this audit and consolidated release notes against a merged revision; include exact CI links and the scope of each result.
 3. Complete a source/export/provenance inventory review and final phone/desktop visual review. Do not infer rights from file presence or generated coverage.
 4. Run and record manual keyboard, screen-reader and physical-device checks on that candidate.
 5. Run five first-player observations plus returning-player observations using the study script. Retain anonymous notes and actual times.
-6. The user deferred providing the locally hosted database. Once supplied, rehearse backup, migration, state load, restore and compatible code rollback on staging.
-7. Deploy to a small cohort with persistent metrics/alerts; collect mature funnel/economy results. Choose and retest the next fixes from that evidence.
+6. ~~Rehearse backup, migration, state load, restore and compatible code rollback on a copy of the live database.~~ Done 2026-10-23, recorded in `docs/operations.md`.
+7. Deployed to the family hub 2026-10-23 (the whole family is the cohort). Still to do: deploy to a small cohort with persistent metrics/alerts; collect mature funnel/economy results. Choose and retest the next fixes from that evidence.
 
 The goal remains open. Neither implementation coverage nor green synthetic tests substitutes for these remaining release gates.
