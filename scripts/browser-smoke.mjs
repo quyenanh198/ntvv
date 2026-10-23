@@ -46,6 +46,18 @@ const axePath = require.resolve('axe-core/axe.min.js');
 mkdirSync(outputDir, { recursive: true });
 let browser;
 
+// Decodes an image, waiting for its load first where the engine requires it. Much of the art
+// is loading="lazy": Chromium's decode() waits for a lazy image, but Firefox rejects it
+// ("Invalid image request") while the request has not started. Callers scroll the image into
+// view, so on rejection this waits for the load that triggers and decodes again.
+// Runs in the page, so it must stay self-contained.
+const loadThenDecode = (image) => image.decode().catch(() => new Promise((resolve, reject) => {
+  if (image.complete && image.naturalWidth > 0) return resolve();
+  const timer = setTimeout(() => reject(new Error(`image never loaded: ${image.currentSrc || image.src}`)), 15000);
+  image.addEventListener('load', () => { clearTimeout(timer); resolve(); }, { once: true });
+  image.addEventListener('error', () => { clearTimeout(timer); reject(new Error(`image failed: ${image.currentSrc || image.src}`)); }, { once: true });
+}).then(() => image.decode()));
+
 async function checkNoOverflow(page, label) {
   const sizes = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));
   assert.ok(sizes.document <= sizes.viewport + 1, `${label} overflows horizontally: ${JSON.stringify(sizes)}`);
@@ -112,14 +124,14 @@ try {
   assert.ok(startup.imageTransferBytes <= 900_000, `320px image transfer exceeds 900 KB: ${startup.imageTransferBytes}`);
   assert.ok(startup.localTransferBytes <= 1_200_000, `320px local transfer exceeds 1.2 MB: ${startup.localTransferBytes}`);
   const pondScene = page.locator('.pond-img img');
-  await pondScene.evaluate((image) => image.decode());
+  await pondScene.evaluate(loadThenDecode);
   assert.equal(await pondScene.evaluate((image) => image.naturalWidth), 224);
   assert.ok((await pondScene.getAttribute('src')).includes('fishing_pond_v3-224.png'));
   assert.equal(await page.locator('.scene-banner .sb-pig, .scene-banner .sb-dog, .scene-banner .sb-hen2').count(), 0,
     'Starter farms must not show unowned pigs/chickens or an inactive guard dog');
   const dockIcons = page.locator('.bottom-dock .dock-icon img');
   assert.equal(await dockIcons.count(), 5);
-  for (const icon of await dockIcons.all()) await icon.evaluate((image) => image.decode());
+  for (const icon of await dockIcons.all()) await icon.evaluate(loadThenDecode);
   const dockArt = await dockIcons.evaluateAll((images) => images.map((image) => ({
     path: new URL(image.src).pathname.split('/').pop(), alt: image.alt,
     loaded: image.naturalWidth > 0, width: image.getBoundingClientRect().width,
@@ -182,7 +194,7 @@ try {
   assert.ok((await audioButton.locator('img').getAttribute('src')).includes(expectedAudioIcon));
   const headerIcons = page.locator('.hud-round .hud-icon, .coin-pill--energy img');
   assert.equal(await headerIcons.count(), 5);
-  for (const icon of await headerIcons.all()) await icon.evaluate((image) => image.decode());
+  for (const icon of await headerIcons.all()) await icon.evaluate(loadThenDecode);
   assert.ok((await headerIcons.evaluateAll((images) => images.map((image) => image.alt === '' && image.naturalWidth > 0))).every(Boolean));
   await page.screenshot({ path: resolve(outputDir, 'header-sound-state-320.png') });
   await page.locator('.dock-btn[data-sheet="more"]').click();
@@ -265,7 +277,7 @@ try {
     'search should reveal a locked matching seed with its unlock level');
   const futureCorn = page.locator('.seed-card[data-seed-name="Ngô"] > img.seed-sprite');
   await futureCorn.scrollIntoViewIfNeeded();
-  await futureCorn.evaluate((image) => image.decode());
+  await futureCorn.evaluate(loadThenDecode);
   assert.ok(await futureCorn.evaluate((image) => image.naturalWidth > 0),
     'revealing a future seed should still load its deferred sprite');
   await page.locator('#seed-search').fill('ca rot');
@@ -418,7 +430,7 @@ try {
   for (const [id, file, folder = 'decor-v3'] of ownedArt) {
     const art = friendPage.locator(`[data-decor="${id}"] img[src*="${folder}/${file}.png"]`);
     await art.scrollIntoViewIfNeeded();
-    await art.evaluate((img) => img.decode());
+    await art.evaluate(loadThenDecode);
     assert.ok(await art.evaluate((img) => img.naturalWidth > 0));
   }
   await checkNoOverflow(friendPage, '390px owned decoration gallery');
@@ -438,7 +450,7 @@ try {
   for (const [id, file, folder = 'decor-v3'] of ownedArt) {
     const art = friendPage.locator(`[data-lux-item="${id}"] img[src*="${folder}/${file}.png"]`);
     await art.scrollIntoViewIfNeeded();
-    await art.evaluate((img) => img.decode());
+    await art.evaluate(loadThenDecode);
   }
   await checkNoOverflow(friendPage, '390px owned decoration shop');
   await auditAccessibility(friendPage, 'decoration-shop-390');
@@ -458,7 +470,7 @@ try {
   for (const [id] of ownedArt) {
     const art = page.locator(`[data-decor="${id}"] img`);
     await art.scrollIntoViewIfNeeded();
-    await art.evaluate((img) => img.decode());
+    await art.evaluate(loadThenDecode);
   }
   await checkNoOverflow(page, '320px visitor decoration gallery');
   await page.locator('.lux-strip').scrollIntoViewIfNeeded();
@@ -868,7 +880,7 @@ try {
   await checkNoOverflow(page, '320px seed finder');
   await auditAccessibility(page, 'seed-finder-320');
   await page.locator('.seed-card[data-seed-name="Cà phê"]').scrollIntoViewIfNeeded();
-  await page.locator('.seed-card[data-seed-name="Cà phê"] > img.seed-sprite').evaluate((image) => image.decode());
+  await page.locator('.seed-card[data-seed-name="Cà phê"] > img.seed-sprite').evaluate(loadThenDecode);
   await page.screenshot({ path: resolve(outputDir, 'seed-finder-320.png') });
   await page.locator('#seed-search').fill('');
   await page.locator('[data-seed-sort="time"]').click();
@@ -886,7 +898,7 @@ try {
   assert.match(await pondDetail.innerText(), /Lươn/);
   assert.match(await pondDetail.innerText(), /150 vàng/);
   const pondDetailImage = pondDetail.locator('img[src*="farm-eel.png"]');
-  await pondDetailImage.evaluate((image) => image.decode());
+  await pondDetailImage.evaluate(loadThenDecode);
   assert.equal(await pondDetailImage.evaluate((image) => image.naturalWidth), 128);
   await pondDetail.scrollIntoViewIfNeeded();
   await page.screenshot({ path: resolve(outputDir, 'pond-species-320.png') });
@@ -1009,7 +1021,7 @@ try {
       const product = Object.keys(recipe.out)[0];
       const icon = page.locator(`.mc-row[data-recipe-output="${product}"] > img.seed-sprite`);
       assert.equal(await icon.count(), 1, `${product} needs its own product sprite`);
-      await icon.evaluate((image) => image.decode());
+      await icon.evaluate(loadThenDecode);
       assert.equal(await icon.evaluate((image) => image.naturalWidth), 128, `${product} should use the compact game export`);
     }
   }
@@ -1017,7 +1029,7 @@ try {
     const product = Object.keys(recipe.out)[0];
     const icon = page.locator(`.mc-row[data-recipe-output="${product}"] > img.seed-sprite`);
     assert.equal(await icon.count(), 1, `${product} needs an individual fish-oven sprite`);
-    await icon.evaluate((image) => image.decode());
+    await icon.evaluate(loadThenDecode);
   }
   await page.screenshot({ path: resolve(outputDir, 'snack-goods-320.png') });
   for (const product of ['banhtrangtron', 'nemchua', 'trasa']) {
@@ -1186,7 +1198,7 @@ try {
   assert.ok(pondActionBounds.y >= 0 && pondActionBounds.y + pondActionBounds.height <= page.viewportSize().height,
     'pond shortcut should scroll its harvest controls into the viewport');
   const pondShrimp = page.locator('.fish-batch img[src*="products-v3/fresh-shrimp.png"]');
-  await pondShrimp.evaluate((image) => image.decode());
+  await pondShrimp.evaluate(loadThenDecode);
   assert.equal(await pondShrimp.evaluate((image) => image.naturalWidth), 128,
     'pond batches should use their compact product sprites');
   await checkNoOverflow(page, '320px ready pond batches');
@@ -1701,7 +1713,7 @@ try {
   assert.equal(await page.locator('[data-dog-hire="1"]').isDisabled(), true);
   assert.match(await page.locator('.dog-hire-status').innerText(), /bắt đầu ngay/);
   const dogSprite = page.locator('.dog-hire img');
-  await dogSprite.evaluate((image) => image.decode());
+  await dogSprite.evaluate(loadThenDecode);
   assert.equal(await dogSprite.evaluate((image) => image.naturalWidth), 128);
   await checkNoOverflow(page, '320px guard dog shortage');
   db.prepare('UPDATE farmers SET gold = ? WHERE user_id = 1').run(DOG.pricePerHour);
@@ -1762,7 +1774,7 @@ try {
   await page.locator('.dock-btn[data-sheet="more"]').click();
   const featureIcons = page.locator('.more-card .mc-icon img');
   assert.equal(await featureIcons.count(), 14, 'Every unlocked feature should have matching navigation artwork');
-  for (const icon of await featureIcons.all()) await icon.evaluate((image) => image.decode());
+  for (const icon of await featureIcons.all()) await icon.evaluate(loadThenDecode);
   const featureArt = await featureIcons.evaluateAll((images) => images.map((image) => ({
     loaded: image.naturalWidth > 0, alt: image.alt, width: image.getBoundingClientRect().width,
     label: image.closest('button').querySelector('.mc-name').textContent,
