@@ -1797,18 +1797,29 @@ img.sb-mill { animation: mill-sway 5.6s ease-in-out infinite; }
 
 /* Family sidebar trên màn rộng (như danh sách nhóm chat) */
 @media (min-width: 1180px) {
+  /* The farm fills the space between the left edge and the family panel, with no cap:
+     the wider the screen, the more plot columns (2560px gives a ~2200px farm). It used to
+     be a fixed 720px block centred with the panel, leaving most of a wide screen empty. */
+  :root {
+    --family-right: clamp(16px, 2vw, 56px);
+    --corridor-left: clamp(16px, 2vw, 56px);
+    --corridor-right: calc(226px + var(--family-right) + 16px);
+  }
   .stage-center {
-    width: 720px;
+    width: auto;
     max-width: none;
-    left: max(16px, calc((100vw - 970px) / 2));
-    right: auto;
+    left: var(--corridor-left);
+    right: var(--corridor-right);
     margin: 0;
   }
+  /* The farm painting has a fixed composition; stretched to the full width its buildings
+     drift apart, so it keeps its size and stays centred over the plots. */
+  .scene-banner { max-width: 760px; }
   .family-block {
     position: fixed; z-index: 24;
     top: calc(76px + var(--top-safe));
     max-height: calc(100dvh - 90px - var(--top-safe) - var(--bottom-safe));
-    right: max(16px, calc((100vw - 970px) / 2));
+    right: var(--family-right);
     width: 226px;
     display: flex; flex-direction: column;
     background: rgba(255, 252, 240, 0.92);
@@ -2195,6 +2206,11 @@ button, a, .plot, .side-btn, .gbtn, .hud-round, .coin-pill, .seed-card, .inv-row
   border: 1.5px solid rgba(230, 215, 185, 0.85);
   border-radius: 28px;
   box-shadow: 0 14px 36px rgba(45, 30, 15, 0.16), 0 2px 8px rgba(0,0,0,0.04);
+}
+/* On wide screens the dock centres on the farm, not the screen (the farm leaves room for
+   the family panel on the right). After the base rule so it wins over left: 50%. */
+@media (min-width: 1180px) {
+  .bottom-dock { left: calc((var(--corridor-left) + 100vw - var(--corridor-right)) / 2); }
 }
 @media (min-width: 1180px) {
   .bottom-dock { left: calc(50% - 125px); }
