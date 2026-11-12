@@ -412,10 +412,16 @@ const onPath = (x, z) => [...PATHS, ROAD].some(p => p.pts.some((b, i) => i && se
 const groundTex = canvasTex(1024, 1024, (g, w, h) => {
   const X = x => (x + GS / 2) / GS * w, Z = z => (z + GS / 2) / GS * h, U = w / GS;
   g.fillStyle = '#6aa843'; g.fillRect(0, 0, w, h);
-  for (let i = 0; i < 2600; i++) {
-    const r = rand(4, 22), x = rand(0, w), y = rand(0, h);
-    g.fillStyle = pick(['rgba(90,160,60,.35)', 'rgba(140,195,80,.3)', 'rgba(70,140,50,.3)', 'rgba(160,205,95,.2)']);
-    g.beginPath(); g.ellipse(x, y, r, r * 0.6, rand(0, 3), 0, Math.PI * 2); g.fill();
+  for (let i = 0; i < 900; i++) { // soft, low-contrast variation (no dark stains)
+    const r = rand(10, 40), x = rand(0, w), y = rand(0, h);
+    g.fillStyle = pick(['rgba(90,160,60,.12)', 'rgba(140,195,80,.12)', 'rgba(80,150,55,.1)']);
+    g.beginPath(); g.ellipse(x, y, r, r * 0.7, rand(0, 3), 0, Math.PI * 2); g.fill();
+  }
+  g.lineCap = 'round';
+  for (let i = 0; i < 26000; i++) { // short painted grass strokes give the lawn texture up close
+    const x = rand(0, w), y = rand(0, h), a = rand(-0.5, 0.5), l = rand(2, 4.5);
+    g.strokeStyle = pick(['rgba(130,190,80,.55)', 'rgba(85,150,55,.5)', 'rgba(150,205,95,.45)', 'rgba(70,130,45,.4)']);
+    g.lineWidth = rand(0.8, 1.4); g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.sin(a) * l, y - Math.cos(a) * l); g.stroke();
   }
   // shore toward the lake
   const sh = g.createLinearGradient(0, Z(-22), 0, Z(-18.5));
@@ -440,7 +446,7 @@ ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
   const put = (x, z, yaw, len, wid, h, palette, y0) => {
     mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, y0 + h / 2 - 0.05 + rand(0, 0.015), z),
       new THREE.Quaternion().setFromAxisAngle(UP, yaw + rand(-0.05, 0.05)), new THREE.Vector3(len, h, wid)));
-    cols.push(new THREE.Color(pick(palette)).offsetHSL(0, 0, rand(-0.04, 0.04)));
+    cols.push(new THREE.Color(pick(palette)).offsetHSL(0, 0, rand(-0.025, 0.025)));
   };
   // rows of stones along the curve with random lengths, so joints stagger like a running bond
   const lay = (p, palette, minL, maxL, rowW, h, y0) => {
@@ -449,14 +455,14 @@ ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
       const off = (j - (rows - 1) / 2) * cw;
       for (let s = -rand(0, maxL * 0.6); s < L;) {
         const len = rand(minL, maxL), u = THREE.MathUtils.clamp(s + len / 2, 0, L) / L, pt = c.getPointAt(u), t = c.getTangentAt(u);
-        put(pt.x - t.z * off, pt.z + t.x * off, Math.atan2(-t.z, t.x), len - 0.06, cw - 0.06, h, palette, y0);
+        put(pt.x - t.z * off, pt.z + t.x * off, Math.atan2(-t.z, t.x), len - 0.09, cw - 0.09, h, palette, y0);
         s += len;
       }
     }
   };
-  const PATH_STONE = [0xb8b0a0, 0xa9a08f, 0xc2b8a3, 0x9d9585, 0xb5a68c, 0xc4b49a, 0xa89a82];
+  const PATH_STONE = [0xb4ab9c, 0xaaa192, 0xbdb3a2, 0xa69c8b, 0xb7aa94]; // narrow range: one stone, not a mosaic
   PATHS.forEach((p, i) => lay(p, PATH_STONE, 0.32, 0.62, 0.34, 0.12, i * 0.004));
-  lay(ROAD, [0x8e8b84, 0x9a968e, 0xa7a298, 0x7f7c76, 0xa19785, 0x958b7a], 0.4, 0.8, 0.42, 0.14, 0);
+  lay(ROAD, [0x8f8c86, 0x98948d, 0x8a8781, 0x9d988f, 0x928c82], 0.4, 0.8, 0.42, 0.14, 0);
   // kerb stones along both road edges, open where the farm paths join
   const openings = [[-5.8, -4.0], [STOP_X - 1.6, STOP_X + 1.6]];
   [-1, 1].forEach(side => {
@@ -626,7 +632,7 @@ function stall(x, z, ry) {
   return g;
 }
 // Vertex-coloured toon material that sways above `base` height (trees, grass)
-function swayMat(amp, base) {
+function swayMat(amp, base, tipShade = false) {
   const m = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: grad });
   m.onBeforeCompile = sh => {
     sh.uniforms.uTime = windU;
@@ -637,11 +643,15 @@ function swayMat(amp, base) {
       #endif
       float sw = sin(uTime * 1.4 + wq.x * 0.45 + wq.z * 0.3) * ${amp.toFixed(3)} * max(position.y - ${base.toFixed(2)}, 0.0);
       transformed.x += sw; transformed.z += sw * 0.5;`);
+    // grass: darker at the root, lighter at the tip
+    if (tipShade) sh.vertexShader = sh.vertexShader.replace('#include <color_vertex>', '#include <color_vertex>\n  vColor.rgb *= mix(0.62, 1.18, clamp(position.y * 2.6, 0.0, 1.0));');
   };
-  m.customProgramCacheKey = () => `sway-${amp}-${base}`; // otherwise tree and grass share one compiled shader
+  m.customProgramCacheKey = () => `sway-${amp}-${base}-${tipShade}`; // otherwise tree and grass share one compiled shader
   return m;
 }
-const SPH = new THREE.SphereGeometry(1, 9, 7), SPH_LO = new THREE.SphereGeometry(1, 6, 4), CONE10 = new THREE.ConeGeometry(1, 1, 10), CYL8 = new THREE.CylinderGeometry(1, 1, 1, 8);
+const vcPlain = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: grad });
+const APPLE = new THREE.SphereGeometry(1, 8, 6);
+const SPH = new THREE.SphereGeometry(1, 12, 8), SPH_LO = new THREE.SphereGeometry(1, 6, 4), CONE10 = new THREE.ConeGeometry(1, 1, 10), CYL8 = new THREE.CylinderGeometry(1, 1, 1, 8);
 const treeMat = swayMat(0.03, 1.6);
 // Broadleaf tree: soft layered crown, darker underneath and lighter where the sun hits
 function tree(x, z, s = 1, apples = false) {
@@ -649,12 +659,13 @@ function tree(x, z, s = 1, apples = false) {
   part(p, CYL8, 0x7a5230, 0, 1.1, 0, 0.26, 2.2, 0.26);
   part(p, SPH, 0x6b4628, 0, 0.04, 0, 0.45, 0.12, 0.45);
   limb(p, CYL8, 0x7a5230, 0, 1.5, 0, 0.09, 0.9, 0.8, 0.6); limb(p, CYL8, 0x7a5230, 0, 1.7, 0, 0.08, 0.8, 0.7, 3.5);
-  [[0, 2.85, 0, 1.3, 0x5a9e36], [0.95, 2.45, 0.25, 0.92, 0x4f9431], [-0.9, 2.5, -0.15, 0.95, 0x4f9431], [0.15, 2.4, 0.9, 0.85, 0x5a9e36],
-   [-0.2, 2.45, -0.95, 0.85, 0x4a8c2e], [0.45, 3.55, 0.1, 0.85, 0x6db542], [-0.5, 3.4, 0.35, 0.7, 0x78bf4b], [-0.35, 3.75, -0.3, 0.55, 0x86c955]]
-    .forEach(([bx, by, bz, r, c]) => part(p, SPH, vary(c, 0.01, 0.03), bx, by, bz, r, r * 0.9, r));
-  if (apples) for (let i = 0; i < 9; i++) {
-    const a = rand(0, 6.28), e = rand(-0.2, 0.7), d = new THREE.Vector3(Math.cos(a) * Math.cos(e), Math.sin(e), Math.sin(a) * Math.cos(e));
-    part(p, SPH_LO, 0xe0402e, d.x * 1.75, 2.8 + d.y * 1.6, d.z * 1.75, 0.13, 0.13, 0.13);
+  const blobs = [[0, 2.85, 0, 1.3, 0x5a9e36], [0.95, 2.45, 0.25, 0.92, 0x4f9431], [-0.9, 2.5, -0.15, 0.95, 0x4f9431], [0.15, 2.4, 0.9, 0.85, 0x5a9e36],
+   [-0.2, 2.45, -0.95, 0.85, 0x4a8c2e], [0.45, 3.55, 0.1, 0.85, 0x6db542], [-0.5, 3.4, 0.35, 0.7, 0x78bf4b], [-0.35, 3.75, -0.3, 0.55, 0x86c955]];
+  blobs.forEach(([bx, by, bz, r, c]) => part(p, SPH, vary(c, 0.01, 0.03), bx, by, bz, r, r * 0.9, r));
+  if (apples) for (let i = 0; i < 10; i++) { // apples sit on the surface of an outer blob, never in mid-air
+    const [bx, by, bz, r] = blobs[1 + (i % 7)], a = rand(0, 6.28), e = rand(-0.25, 0.6);
+    const d = new THREE.Vector3(Math.cos(a) * Math.cos(e), Math.sin(e), Math.sin(a) * Math.cos(e));
+    part(p, APPLE, 0xd8392a, bx + d.x * r * 0.97, by + d.y * r * 0.87, bz + d.z * r * 0.97, 0.11, 0.11, 0.11);
   }
   mesh(merge(p), treeMat, x, 0, z).scale.setScalar(s);
   solids.push({ x, z, r: 1.2 * s });
@@ -814,27 +825,53 @@ function scatter(geo, mat, count, colors, sy = [0.8, 1.2], area = 26) {
   scene.add(im); return im;
 }
 function buildFlora() {
-  TREES.forEach(a => tree(...a)); PINES.forEach(a => pine(...a));
-  // grass: a clump of thin swaying blades, tinted per instance
+  TREES.forEach(a => tree(...a)); PINES.forEach(a => pine(...a)); SUNFLOWERS.forEach(a => sunflower(...a));
+  // grass: dense clumps of short blades, darker at the root, growing in patches like a real lawn
   const bp = [];
-  const BLADE = new THREE.ConeGeometry(1, 1, 3, 1, true); // 3 triangles per blade: 900 tufts stay cheap on phone GPUs
-  for (let i = 0; i < 6; i++) limb(bp, BLADE, 0xffffff, rand(-0.07, 0.07), 0, rand(-0.07, 0.07), 0.04, rand(0.28, 0.5), rand(0.15, 0.5), i / 6 * 6.28 + rand(-0.3, 0.3), 0.35);
-  scatter(merge(bp), swayMat(0.22, 0), 550, [0x5ea43a, 0x74b847, 0x4f9733, 0x8cc95a, 0x6aad3f], [0.8, 1.3]);
-  // flowers: five petals around a golden centre
+  const BLADE = new THREE.ConeGeometry(1, 1, 3, 1, true); // 3 triangles per blade keeps ~850 clumps cheap on phone GPUs
+  for (let i = 0; i < 9; i++) limb(bp, BLADE, 0xffffff, rand(-0.09, 0.09), 0, rand(-0.09, 0.09), 0.06, rand(0.2, 0.38), rand(0.1, 0.55), i / 9 * 6.28 + rand(-0.3, 0.3), 0.3);
+  patchScatter(merge(bp), swayMat(0.3, 0, true), 140, 6, 0.9, [0x6fb944, 0x7cc24c, 0x63ad3c, 0x86c957], [0.8, 1.25]);
+  // flowers: five petals around a golden centre, in small drifts
   const fp = [];
   for (let i = 0; i < 5; i++) { const a = i / 5 * 6.28; part(fp, SPH_LO, 0xffffff, Math.cos(a) * 0.075, 0.15, Math.sin(a) * 0.075, 0.06, 0.02, 0.04, 0, -a); }
   part(fp, SPH_LO, 0xffd23f, 0, 0.16, 0, 0.04, 0.03, 0.04);
-  scatter(merge(fp), new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: grad }), 110, [0xffffff, 0xf7a8c4, 0xffe27a, 0xf59a7a, 0xd4b8f5], [0.9, 1.3]);
-  const rockGeo = new THREE.IcosahedronGeometry(0.4, 0); rockGeo.translate(0, 0.12, 0);
-  scatter(rockGeo, toon(0xffffff, { flatShading: true }), 10, [0xb8b1a3, 0xa39c8f, 0xc9c2b3], [0.5, 1]);
+  patchScatter(merge(fp), vcPlain, 34, 4, 0.7, [0xffffff, 0xf7a8c4, 0xffe27a, 0xf59a7a, 0xd4b8f5], [0.9, 1.3]);
+  // boulders: a faceted main stone with a moss cap and a couple of smaller stones
+  const rockMat = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: grad, flatShading: true });
+  for (let i = 0; i < 9; i++) {
+    let x, z, t = 0; do { x = rand(-24, 24); z = rand(-18, 15); t++; } while (blocked(x, z) && t < 40);
+    const p = [], n = 1 + (Math.random() * 3 | 0);
+    for (let k = 0; k < n; k++) {
+      const r = k ? rand(0.18, 0.3) : rand(0.35, 0.5), a = rand(0, 6.28), d = k ? rand(0.35, 0.6) : 0;
+      part(p, SPH_LO, vary(0xa8a196, 0.01, 0.05), Math.cos(a) * d, r * 0.35, Math.sin(a) * d, r, r * 0.75, r * 0.9, 0, rand(0, 6));
+      if (!k) part(p, SPH_LO, 0x6f9a45, 0, r * 0.78, 0, r * 0.6, r * 0.16, r * 0.5, 0, rand(0, 6));
+    }
+    mesh(merge(p), rockMat, x, 0, z);
+  }
 }
+function patchScatter(geo, mat, patches, per, rad, colors, sy) {
+  const pts = [];
+  for (let k = 0; k < patches; k++) {
+    let cx, cz, t = 0; do { cx = rand(-26, 26); cz = rand(-19, 16); t++; } while (blocked(cx, cz) && t < 40);
+    const n = Math.round(per * rand(0.5, 1.5));
+    for (let i = 0; i < n; i++) { const a = rand(0, 6.28), r = Math.sqrt(Math.random()) * rad, x = cx + Math.cos(a) * r, z = cz + Math.sin(a) * r; if (!blocked(x, z)) pts.push([x, z]); }
+  }
+  const im = new THREE.InstancedMesh(geo, mat, pts.length), c = new THREE.Color();
+  pts.forEach(([x, z], i) => { const s = rand(...sy); M4.compose(V.set(x, 0, z), Q.setFromEuler(E.set(0, rand(0, 6), 0)), S.set(s, s, s)); im.setMatrixAt(i, M4); im.setColorAt(i, c.set(pick(colors))); });
+  scene.add(im); return im;
+}
+// Sunflower: sturdy stem with two leaves, a ring of petals around a seed disc, face tipped up toward the camera
 function sunflower(x, z, h = 1.6) {
-  mesh(new THREE.CylinderGeometry(0.05, 0.06, h, 6), 0x5e9a35, x, h / 2, z);
-  const head = mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.08, 14), 0xf6c21c, x, h, z + 0.05); head.rotation.x = Math.PI / 2 - 0.3;
-  const eye = mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.1, 10), 0x6b3f1c, x, h + 0.02, z + 0.1); eye.rotation.x = Math.PI / 2 - 0.3;
-  const leaf = mesh(new THREE.SphereGeometry(0.22, 6, 4), 0x5e9a35, x + 0.15, h * 0.45, z); leaf.scale.set(1, 0.25, 0.6);
+  const p = [];
+  part(p, CYL8, 0x4f8f2e, 0, h / 2, 0, 0.06, h, 0.06);
+  [[0.45, 0.8], [0.68, -2.3]].forEach(([fy, yaw]) => part(p, SPH, 0x5e9a35, Math.sin(yaw) * 0.22, h * fy, Math.cos(yaw) * 0.22, 0.26, 0.05, 0.13, 0.35, yaw));
+  mesh(merge(p), vcPlain, x, 0, z);
+  const hp = [];
+  part(hp, CYL8, 0x6b3f1c, 0, 0, 0.02, 0.17, 0.08, 0.17, Math.PI / 2);
+  for (let i = 0; i < 14; i++) { const a = i / 14 * 6.28; part(hp, SPH, i % 2 ? 0xffd23f : 0xf6b91c, Math.cos(a) * 0.27, Math.sin(a) * 0.27, 0, 0.15, 0.06, 0.025, 0, 0, a); }
+  mesh(merge(hp), vcPlain, x, h, z + 0.04).rotation.x = -0.6;
 }
-[[-6.4, 8.6, 1.7], [-7, 8, 1.4], [-2.4, 8.5, 1.5], [10.2, 8.6, 1.6], [-12.6, 8.4, 1.5]].forEach(a => sunflower(...a));
+const SUNFLOWERS = [[-6.4, 8.6, 1.7], [-7, 8, 1.4], [-2.4, 8.5, 1.5], [10.2, 8.6, 1.6], [-12.6, 8.4, 1.5]];
 [[-2, -3.4], [6.5, 9], [-13.6, -2.5]].forEach(([x, z]) => { const h = mesh(new THREE.CylinderGeometry(0.55, 0.55, 1, 12), 0xe6c25c, x, 0.55, z); h.rotation.z = Math.PI / 2; h.rotation.y = rand(0, 3); });
 mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.8, 10), 0x8a5a32, 9.6, 0.4, 1.6);
 box(0.8, 0.5, 0.8, 0x9a6a3e, 10.4, 0.25, 1.2);
@@ -1611,6 +1648,16 @@ function updateAnimals(dt, time) {
     if (a.vy !== 0 || a.hop > 0) { a.vy -= 20 * dt; a.hop = Math.max(0, a.hop + a.vy * dt); if (a.hop === 0) a.vy = 0; }
     pos.y = a.hop + (moving ? Math.abs(Math.sin(time * (a.kind === 'chick' ? 22 : 12) + pos.x)) * (a.kind === 'sheep' || a.kind === 'pig' ? 0.04 : 0.06) : 0);
     g.rotation.z = moving ? Math.sin(time * 12 + pos.x) * 0.06 : 0;
+  }
+  // grown animals keep a body's width apart, and stay inside their pen or yard
+  for (let i = 0; i < animals.length; i++) for (let j = i + 1; j < animals.length; j++) {
+    const a = animals[i], b = animals[j]; if (a.kind === 'chick' || b.kind === 'chick') continue;
+    const dx = b.g.position.x - a.g.position.x, dz = b.g.position.z - a.g.position.z, d = Math.hypot(dx, dz), min = 1.15;
+    if (d < min && d > 1e-4) { const k = (min - d) / 2 / d; a.g.position.x -= dx * k; a.g.position.z -= dz * k; b.g.position.x += dx * k; b.g.position.z += dz * k; }
+  }
+  for (const a of animals) if (a.area) {
+    const [x0, z0, x1, z1] = a.area, p = a.g.position;
+    p.x = THREE.MathUtils.clamp(p.x, x0, x1); p.z = THREE.MathUtils.clamp(p.z, z0, z1);
   }
 }
 function tapAnimal(a) {
