@@ -120,7 +120,7 @@ step('finished goods collected; mill returns to idle', true);
 await page.click('#prodClose');
 
 // ---- P3: barn. Buy, feed, collect all go through the server ----
-await page.click('#bBarn');
+await page.click('#bMore'); await page.click('#prodRows .row:has-text("Chuồng trại") button');
 await page.waitForSelector('#prodRows .cta');
 await page.evaluate(() => [...document.querySelectorAll('#prodRows .row')].find((r) => r.textContent.includes('Gà') && r.querySelector('.cta:not(:disabled)')).querySelector('.cta').click());
 await page.waitForFunction(() => (__farm.store.me.animals || []).some((a) => a.kind === 'ga'), null, { timeout: 15000 });
@@ -191,11 +191,11 @@ await page.waitForFunction(() => document.querySelector('#toast').textContent.in
 step('gold ask: request stored by the server', db.prepare("SELECT COUNT(*) n FROM gold_requests WHERE from_id = 1 AND to_id = 2 AND status = 'open'").get().n === 1);
 await page.click('#prodClose');
 await page.evaluate(() => __farm.leaveVisit());
-await page.click('#bGold');
+await page.click('#bMore'); await page.click('#prodRows .row:has-text("Xin/Cho vàng") button');
 await page.waitForFunction(() => document.querySelector('#prodRows').textContent.includes('Bạn xin Hàng Xóm'), null, { timeout: 15000 });
 step('requests sheet lists my ask', true);
 await page.click('#prodClose');
-await page.click('#bThief');
+await page.click('#bMore'); await page.click('#prodRows .row:has-text("Bảng kẻ trộm") button');
 await page.waitForFunction(() => document.querySelector('#prodTitle').textContent === 'Bảng kẻ trộm' && !document.querySelector('#prodRows').textContent.includes('Đang tải'), null, { timeout: 15000 });
 step('thief board opens from the server', true);
 await page.click('#prodClose');
@@ -203,6 +203,28 @@ await page.evaluate(() => __farm.visitFarm(2));
 await page.evaluate(() => __farm.leaveVisit());
 step('back home restores my farm', await page.evaluate(() => !document.body.classList.contains('visiting') && __farm.plots[0].cropKey === null));
 await page.screenshot({ path: `${out}/e2e-12-home.png` });
+
+// ---- P3: the other eleven machines are buildings mirroring the server's jobs ----
+await page.waitForFunction(() => __farm.stations && __farm.stations.list.length === 11, null, { timeout: 15000 });
+step('eleven workshop buildings exist', true);
+const recipe = await page.evaluate(() => { const r = Object.values(__farm.store.catalog.machines.lonuong.recipes)[0]; return { id: r.id, in: r.in }; });
+for (const [item, n] of Object.entries(recipe.in)) db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, ?) ON CONFLICT(owner_id, item) DO UPDATE SET qty = ?').run(item, n * 3, n * 3);
+await page.evaluate(() => __farm.refresh());
+await page.click('#bMachines');
+await page.click('#prodTabs button:has-text("Lò nướng cá")');
+await page.click('#prodRows .row button:has-text("Chế 1 mẻ") >> nth=0');
+await page.waitForFunction(() => __farm.stations.byId('lonuong').state === 'working', null, { timeout: 15000 });
+step('machine job running; its building works', true);
+await page.click('#prodClose');
+await page.evaluate(() => { __farm.camTarget.set(27, 0, 0); __farm.setZoom(0.9); });
+await wait(1200);
+await page.screenshot({ path: `${out}/e2e-p3-street.png` });
+db.prepare("UPDATE machine_jobs SET ready_at = ? WHERE owner_id = 1 AND kind = 'lonuong'").run(Date.now() - 1000);
+await page.evaluate(() => __farm.refresh());
+await page.waitForFunction(() => __farm.stations.byId('lonuong').state === 'done' && __farm.stations.byId('lonuong').badge.visible, null, { timeout: 15000 });
+step('finished job shows the done badge on its building', true);
+await page.screenshot({ path: `${out}/e2e-p3-done.png` });
+await page.evaluate(() => __farm.camTarget.set(2.5, 0, 4.2));
 
 // ---- P5: secondary systems, every outcome decided by the server ----
 await page.click('#bMore');
@@ -242,11 +264,11 @@ await page.waitForFunction((n) => __farm.store.me.gems > n, gemsBefore, { timeou
 step('critter caught within the server window; gems granted by the server', true);
 
 // ---- P4/P5: daily quests and the ranking come from the server ----
-await page.click('#bQuests');
+await page.click('#bMore'); await page.click('#prodRows .row:has-text("Nhiệm vụ ngày") button');
 await page.waitForSelector('#prodRows .row');
 step('daily quests listed from the server', await page.evaluate(() => document.querySelectorAll('#prodRows .row').length >= 4));
 await page.click('#prodClose');
-await page.click('#bBoard');
+await page.click('#bMore'); await page.click('#prodRows .row:has-text("Bảng xếp hạng") button');
 await page.waitForFunction(() => document.querySelector('#prodRows').textContent.includes('(bạn)'), null, { timeout: 15000 });
 step('ranking lists the player', true);
 await page.click('#prodClose');

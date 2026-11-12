@@ -3,6 +3,7 @@ import { net, serverNow, api } from './net.js';
 import { store, refresh, act as doAct, subscribe } from './store.js';
 import { itemSprite } from './art.js';
 import { renderExtra } from './sheets.js';
+import { SLOTS, STATION_PATHS, createStations } from './stations.js';
 const $ = s => document.querySelector(s);
 const rand = (a = 0, b = 1) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -141,6 +142,7 @@ const PATHS = [
   { w: 1.1, pts: [[-4.9, 3.9], [-6.4, 3.9]] },                                                   // chicken yard
   { w: 1.0, pts: [[-4.9, 3.2], [-3.6, 3.2]] },                                                   // plot gate
 ];
+PATHS.push(...STATION_PATHS); // the workshop street east of the mill
 const ROAD = { w: 3.2, pts: [[-48, ROAD_Z], [48, ROAD_Z]] };
 // Paths bend gently through their points (centripetal Catmull-Rom); bed, stones and grass exclusion all follow the curve
 [...PATHS, ROAD].forEach(p => {
@@ -529,6 +531,7 @@ const mill = (() => {
   const hit = new THREE.Mesh(new THREE.BoxGeometry(3, 3.8, 3.4), new THREE.MeshBasicMaterial({ visible: false }));
   hit.position.set(MILL_X, 1.9, MILL_Z + 0.4); hit.userData.mill = true; scene.add(hit);
   solids.push({ x: MILL_X, z: MILL_Z, r: 1.8 });
+  Object.values(SLOTS).forEach(([x, z]) => solids.push({ x, z, r: 2.7 }));
   return { g, site, groups, stone, crank, gear, grain, hopper, sack, hit, state: 'locked', buildT: -1, job: null, t: 0, loadN: 0, grindT: 0 };
 })();
 
@@ -1213,7 +1216,7 @@ function onState() {
     else if (lastMe.level < MILL_LEVEL) { mill.state = 'pending'; setTimeout(unlockMill, 1700); }
   }
   lastMe = me;
-  renderSeeds(); renderHUD();
+  renderSeeds(); renderHUD(); ensureStations();
 }
 subscribe(onState);
 
@@ -1342,6 +1345,19 @@ function tapMill() {
   if (mill.state === 'locked' || mill.state === 'pending') { toast(`Cối xay bột mở khoá ở cấp ${MILL_LEVEL}`); return; }
   if (mill.state === 'building') return;
   openProd('machines', 'coixay');
+}
+// The other eleven machines live on the workshop street; they are built once the catalog (names, levels) is known.
+let stations = null, stationsFirst = true;
+function ensureStations() {
+  if (stations || !store.catalog) return;
+  stations = createStations({ THREE, scene, mesh, box, toon, canvasTex, emit, easeOutBack, bakeVC, hitTargets, sfx, tagsEl, toScreen, place, cat, fmtClock, serverNow, camPos: camTarget,
+    onUnlock: s => { camFocus = { v: new THREE.Vector3(s.x - 3, 0, s.z + 3), t: 2.6 }; const el = $('#lvlup'); el.textContent = `Mở khoá ${s.name}!`; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); } });
+}
+function tapStation(id) {
+  initAudio(); const s = stations && stations.byId(id); if (!s) return;
+  if (s.state === 'locked') { toast(`${s.name} mở khoá ở cấp ${s.level}`); return; }
+  if (s.state === 'building') return;
+  openProd('machines', id);
 }
 const setGrain = lv => { mill.grain.visible = lv > 0.02; const s = 0.35 + 0.65 * lv; mill.grain.scale.set(s, 1, s); mill.grain.position.y = 0.1 + 0.7 * lv; };
 const millV = new THREE.Vector3();
@@ -1569,7 +1585,7 @@ hitTargets.push(stallHit, truck.g, mill.hit, ...animals.map(a => a.g)); // ô đ
 function pickAt(cx, cy) {
   ndc.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
   const hits = ray.intersectObjects(hitTargets, true);
-  for (const h of hits) { let o = h.object; while (o) { if (o.userData.plot || o.userData.stall || o.userData.animal || o.userData.truck || o.userData.mill) return o.userData; o = o.parent; } }
+  for (const h of hits) { let o = h.object; while (o) { if (o.userData.plot || o.userData.stall || o.userData.animal || o.userData.truck || o.userData.mill || o.userData.station) return o.userData; o = o.parent; } }
   return null;
 }
 function groundAt(cx, cy, out) {
@@ -1608,7 +1624,7 @@ function endPointer(e) {
   if (!drag || !drag.lt || performance.now() - drag.lt > 80) panVel.set(0, 0, 0); // a pause before release means no fling
   if (drag && !drag.moved && performance.now() - drag.t < 600 && pointers.size === 0) {
     const h = pickAt(e.clientX, e.clientY);
-    if (h && h.plot) tapPlot(h.plot); else if (h && h.stall) openStore(); else if (h && h.animal) tapAnimal(h.animal); else if (h && h.truck) { initAudio(); sfx.horn(); truck.bounce = 1; } else if (h && h.mill) tapMill();
+    if (h && h.plot) tapPlot(h.plot); else if (h && h.stall) openStore(); else if (h && h.animal) tapAnimal(h.animal); else if (h && h.truck) { initAudio(); sfx.horn(); truck.bounce = 1; } else if (h && h.mill) tapMill(); else if (h && h.station) tapStation(h.station);
   }
   if (pointers.size < 2) pinch = null;
   if (pointers.size === 0) drag = null;
@@ -1768,6 +1784,7 @@ function frame(t) {
   updateAnimals(dt, time);
   updateTruck(dt, time);
   updateMill(dt, time);
+  if (stations && store.me) { stations.update(dt, time, store.me, stationsFirst); stationsFirst = false; }
   sails.rotation.z -= dt * 0.7;
   clouds.forEach(c => { c.position.x += c.userData.speed * dt; if (c.position.x > 75) c.position.x = -75; });
   flies.forEach(f => {
@@ -1785,7 +1802,7 @@ function frame(t) {
   if (!document.hidden) adaptQuality(gap);
 }
 requestAnimationFrame(frame);
-if (location.hash === '#debug') window.__farm = { visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
+if (location.hash === '#debug') window.__farm = { get stations() { return stations; }, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
 
 // ================= Production: machines and barns, every outcome decided by the server =================
 const prodSheet = $('#prodSheet');
@@ -1970,7 +1987,6 @@ function openProd(mode, machine) {
   renderProd(); prodSheet.hidden = false; (prodSheet.querySelector('.tab:not(:disabled), .cta:not(:disabled)') || $('#prodClose')).focus();
 }
 $('#bMachines').addEventListener('click', () => openProd('machines'));
-$('#bBarn').addEventListener('click', () => openProd('barn'));
 $('#bOrders').addEventListener('click', () => openProd('orders'));
 $('#prodClose').addEventListener('click', () => { prodSheet.hidden = true; });
 prodSheet.addEventListener('click', e => { if (e.target === prodSheet) prodSheet.hidden = true; });
@@ -2095,10 +2111,6 @@ async function visitTap(p) {
   } finally { p.busy = false; }
 }
 $('#bFamily').addEventListener('click', () => openProd('family'));
-$('#bQuests').addEventListener('click', () => openProd('quests'));
-$('#bBoard').addEventListener('click', () => openProd('board'));
-$('#bThief').addEventListener('click', () => openProd('thief'));
-$('#bGold').addEventListener('click', () => openProd('gold'));
 $('#bMore').addEventListener('click', () => openProd('more'));
 
 // A small animal appears for a few seconds when the server's schedule says so; catching it is one server call.

@@ -5,6 +5,7 @@ const medal = (n) => ['🥇', '🥈', '🥉'][n] || String(n + 1);
 export const MORE_ENTRIES = [
   ['stars', '⭐', 'Sao và cột mốc'], ['festival', '🎪', 'Lễ hội'], ['skills', '🧠', 'Kỹ năng'], ['luxury', '👑', 'Danh hiệu và trang trí'],
   ['lottery', '🎟️', 'Xổ số làng'], ['collections', '📚', 'Bộ sưu tập'], ['energy', '⚡', 'Năng lượng và kim cương'], ['dog', '🐕', 'Chó canh vườn'],
+  ['barn', '🐄', 'Chuồng trại'], ['quests', '📜', 'Nhiệm vụ ngày'], ['board', '🏆', 'Bảng xếp hạng'], ['thief', '🥷', 'Bảng kẻ trộm'], ['gold', '💝', 'Xin/Cho vàng'],
 ];
 
 export function renderExtra(mode, c) {
