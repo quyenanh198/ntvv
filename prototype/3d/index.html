@@ -153,6 +153,15 @@ button:focus-visible { outline: 3px solid var(--water); outline-offset: 2px; }
 .row b { font-size: 16px; }
 .row small { display: block; color: var(--ink-soft); font-size: 13px; }
 .row .qty { font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; }
+.row.recipe { grid-template-columns: auto 1fr auto; }
+.io { display: flex; align-items: center; gap: 3px; }
+.io img { width: 36px; height: 36px; object-fit: contain; }
+.io b { font-size: 13px; color: var(--ink-soft); }
+.arrow { width: 10px; height: 10px; border-top: 3px solid var(--leaf); border-right: 3px solid var(--leaf); transform: rotate(45deg); margin: 0 6px 0 2px; }
+.row small.short { color: #c0392b; }
+.cta.small { font-size: 15px; padding: 7px 16px; border-radius: 12px; box-shadow: 0 3px 0 #3a7a20; }
+.tag.ready { background: var(--leaf); border-color: #3a7a20; color: #fff; animation: glow 0.9s ease-in-out infinite alternate; }
+@keyframes glow { to { box-shadow: 0 0 0 4px rgba(124, 200, 74, .35); } }
 .empty { text-align: center; color: var(--ink-soft); padding: 10px; }
 .sheetfoot { display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
 .ghost { font: 700 15px var(--f-ui); background: none; border: 0; color: var(--ink-soft); cursor: pointer; padding: 8px; }
@@ -212,8 +221,18 @@ button:focus-visible { outline: 3px solid var(--water); outline-offset: 2px; }
       <span>Kéo</span><span>Di chuyển góc nhìn</span>
       <span>Lăn chuột / chụm 2 ngón</span><span>Phóng to, thu nhỏ</span>
       <span>Sạp chợ bên đường</span><span>Bán hàng, xe tải tới chở đi</span>
+      <span>Cối xay bột</span><span>Mở ở cấp 2: xay lúa mì, ngô thành bột</span>
     </div>
     <button class="cta" id="startBtn" type="button">Vào trang trại</button>
+  </div>
+</div>
+
+<div class="overlay" id="millSheet" hidden>
+  <div class="plank sheet" role="dialog" aria-labelledby="millTitle">
+    <h2 id="millTitle">Cối xay bột</h2>
+    <p id="millStatus">Chế biến luôn lời hơn bán thô.</p>
+    <div class="rows" id="millRows"></div>
+    <div class="sheetfoot"><button class="ghost" id="millClose" type="button">Đóng</button></div>
   </div>
 </div>
 
@@ -238,16 +257,26 @@ if (THREE.ColorManagement) THREE.ColorManagement.legacyMode = false;
 
 // ================= Game data (demo speed) =================
 const CROPS = {
-  wheat:   { name: 'Lúa mì', cost: 5,  sell: 6,  yield: 3, xp: 4,  dur: 15, img: '../../public/assets/crops-v3/wheat-ripe.png' },
-  carrot:  { name: 'Cà rốt', cost: 8,  sell: 9,  yield: 3, xp: 6,  dur: 25, img: '../../public/assets/crops-v3/carrot-ripe.png' },
-  corn:    { name: 'Ngô',    cost: 12, sell: 15, yield: 2, xp: 9,  dur: 35, img: '../../public/assets/crops-v3/corn-ripe.png' },
-  pumpkin: { name: 'Bí ngô', cost: 20, sell: 32, yield: 2, xp: 15, dur: 50, img: '../../public/assets/crops-v3/pumpkin-ripe.png' },
+  wheat:   { name: 'Lúa mì', cost: 5,  sell: 6,  yield: 3, xp: 12, dur: 15, img: '../../public/assets/crops-v3/wheat-ripe.png' },
+  carrot:  { name: 'Cà rốt', cost: 8,  sell: 9,  yield: 3, xp: 18, dur: 25, img: '../../public/assets/crops-v3/carrot-ripe.png' },
+  corn:    { name: 'Ngô',    cost: 12, sell: 15, yield: 2, xp: 27, dur: 35, img: '../../public/assets/crops-v3/corn-ripe.png' },
+  pumpkin: { name: 'Bí ngô', cost: 20, sell: 32, yield: 2, xp: 45, dur: 50, img: '../../public/assets/crops-v3/pumpkin-ripe.png' },
 };
+// Flour mill: recipes follow coixay in server/src/game.js; times are demo speed
+const ITEMS = { ...CROPS,
+  botmi:  { name: 'Bột mì',  sell: 20, img: '../../public/assets/products-v3/wheat-flour.png' },
+  botbap: { name: 'Bột bắp', sell: 55, img: '../../public/assets/products-v3/corn-flour.png' },
+};
+const RECIPES = {
+  botmi:  { name: 'Bột mì',  in: { wheat: 2 }, out: 1, dur: 12, xp: 10 },
+  botbap: { name: 'Bột bắp', in: { corn: 3 },  out: 1, dur: 16, xp: 12 },
+};
+const MILL_LEVEL = 2, MILL_X = 13, MILL_Z = 2.2;
 // EXP curve from NTVV's README: 100 + 12L + 3.36L², rounded to 10
 const xpNeed = L => Math.round((100 + 12 * L + 3.36 * L * L) / 10) * 10;
-const CROP_COL = { wheat: 0xf2b532, carrot: 0xf07c1e, corn: 0xf7c844, pumpkin: 0xf28a1c };
+const CROP_COL = { wheat: 0xf2b532, carrot: 0xf07c1e, corn: 0xf7c844, pumpkin: 0xf28a1c, botmi: 0xf6efe0, botbap: 0xf7d76a };
 const ROAD_Z = 12.6, STOP_X = 7.5, FAR = 50; // road lane, where the truck stops (stall), off-screen distance
-const G = { gold: 60, level: 1, xp: 0, store: { wheat: 0, carrot: 0, corn: 0, pumpkin: 0 }, seed: 'wheat', reserved: 0 };
+const G = { gold: 60, level: 1, xp: 0, store: { wheat: 0, carrot: 0, corn: 0, pumpkin: 0, botmi: 0, botbap: 0 }, seed: 'wheat', reserved: 0 };
 
 // ================= Renderer =================
 const canvas = $('#c');
@@ -376,6 +405,8 @@ const groundTex = canvasTex(1024, 1024, (g, w, h) => {
   path([[-4.8, -0.6], [2, -2], [8.5, -1.8]], 1.4);
   path([[-4.6, 3.5], [-4.4, 9.4], [5.6, 9.6]], 1.3);
   path([[STOP_X, 10.6], [STOP_X, 11.6]], 1.6);
+  path([[9.2, 9.6], [12.2, 4.4]], 1.2);
+  g.fillStyle = 'rgba(201,163,104,.9)'; g.beginPath(); g.ellipse(X(MILL_X), Z(MILL_Z + 0.3), 2.5 * U, 2.1 * U, 0, 0, Math.PI * 2); g.fill();
   // village road along the bottom edge (truck lane)
   g.fillStyle = '#9c9281'; g.fillRect(0, Z(ROAD_Z - 1.75), w, 3.5 * U);
   g.fillStyle = '#b8ae9b'; g.fillRect(0, Z(ROAD_Z - 1.55), w, 3.1 * U);
@@ -595,6 +626,57 @@ const truck = (() => {
 })();
 const crateGeo = new THREE.BoxGeometry(0.5, 0.42, 0.5), crateTopGeo = new THREE.BoxGeometry(0.42, 0.06, 0.42);
 function makeCrate(k) { const c = new THREE.Group(); mesh(crateGeo, 0x9a6a3e, 0, 0, 0, c); mesh(crateTopGeo, CROP_COL[k], 0, 0.22, 0, c); scene.add(c); return c; }
+
+// ================= Flour mill (unlocks at MILL_LEVEL) =================
+const MILL_POS = new THREE.Vector3(MILL_X, 0, MILL_Z);
+const mill = (() => {
+  const g = new THREE.Group(); g.position.copy(MILL_POS); g.rotation.y = -0.45; scene.add(g);
+  const wood = 0x9a6a3e, dark = 0x6b4423;
+  const frame = new THREE.Group(); g.add(frame);
+  [[-0.9, -0.7], [0.9, -0.7], [-0.9, 0.7], [0.9, 0.7]].forEach(([x, z]) => box(0.22, 1.6, 0.22, wood, x, 0.8, z, frame));
+  [-0.7, 0.7].forEach(z => box(2, 0.14, 0.14, dark, 0, 0.5, z, frame));
+  box(2.3, 0.2, 1.9, toon(0xffffff, { map: planks('#a8743f', '#7d5228') }), 0, 1.68, 0, frame);
+  [[-1.5, 1.1], [-1.75, 0.5]].forEach(([x, z]) => { mesh(new THREE.ConeGeometry(0.28, 0.9, 7), toon(0xe2b13c, { flatShading: true }), x, 0.45, z, frame); });
+  const stones = new THREE.Group(); stones.position.y = 1.78; g.add(stones);
+  mesh(new THREE.CylinderGeometry(0.88, 0.92, 0.32, 22), toon(0xb3ad9f, { flatShading: true }), 0, 0.16, 0, stones);
+  const stone = new THREE.Group(); stone.position.y = 0.32; stones.add(stone);
+  mesh(new THREE.CylinderGeometry(0.82, 0.84, 0.3, 22), toon(0xcbc5b7, { flatShading: true }), 0, 0.15, 0, stone);
+  mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.32, 10), 0x5c564c, 0, 0.17, 0, stone);
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; box(0.5, 0.04, 0.06, 0x9a9488, Math.cos(a) * 0.47, 0.31, Math.sin(a) * 0.47, stone).rotation.y = -a; }
+  const hopper = new THREE.Group(); hopper.position.y = 2.75; g.add(hopper);
+  [-0.7, 0.7].forEach(x => box(0.14, 1.3, 0.14, dark, x, -0.3, -0.55, hopper));
+  const hop = mesh(new THREE.CylinderGeometry(0.85, 0.3, 0.85, 4, 1, true), toon(0xffffff, { map: planks('#b07a46', '#8a5a32'), side: THREE.DoubleSide }), 0, 0.45, 0, hopper);
+  hop.rotation.y = Math.PI / 4;
+  const grain = mesh(new THREE.CylinderGeometry(0.72, 0.72, 0.06, 4), toon(0xf2b532, {}), 0, 0.1, 0, hopper);
+  grain.rotation.y = Math.PI / 4; grain.visible = false;
+  box(0.16, 0.4, 0.16, dark, 0, -0.1, 0, hopper);
+  const crank = new THREE.Group(); crank.position.set(1.0, 2.25, 0); g.add(crank);
+  mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.5, 8), dark, 0.2, 0, 0, crank).rotation.z = Math.PI / 2;
+  box(0.08, 0.6, 0.1, wood, 0.42, 0.25, 0, crank);
+  mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.35, 8), 0x7a4a26, 0.55, 0.52, 0, crank).rotation.z = Math.PI / 2;
+  const gear = new THREE.Group(); gear.position.set(0, 1.0, 0.98); g.add(gear);
+  mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.12, 18), 0x8a6a40, 0, 0, 0, gear).rotation.x = Math.PI / 2;
+  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; box(0.14, 0.16, 0.12, 0x7a5a34, Math.cos(a) * 0.47, Math.sin(a) * 0.47, 0, gear).rotation.z = a; }
+  mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.18, 8), 0x5c3a1e, 0, 0, 0, gear).rotation.x = Math.PI / 2;
+  const chute = new THREE.Group(); g.add(chute);
+  box(0.34, 0.08, 0.8, wood, 0, 1.75, 1.15, chute).rotation.x = 0.55;
+  const sack = new THREE.Group(); sack.position.set(0, 0, 1.75); g.add(sack);
+  mesh(new THREE.SphereGeometry(0.42, 14, 10), 0xefe3c4, 0, 0.45, 0, sack).scale.set(1, 1.15, 0.95);
+  mesh(new THREE.CylinderGeometry(0.12, 0.18, 0.18, 10), 0xd8c8a0, 0, 0.95, 0, sack);
+  sack.scale.setScalar(0.001);
+  const groups = [frame, stones, hopper, gear, crank, chute];
+  groups.forEach(o => { o.visible = false; o.scale.setScalar(0.001); });
+  // construction site shown while locked
+  const site = new THREE.Group(); site.position.copy(MILL_POS); scene.add(site);
+  box(0.12, 1.3, 0.12, dark, 0, 0.65, 1.2, site);
+  box(1.2, 0.6, 0.08, 0xc9a26a, 0, 1.3, 1.24, site);
+  for (let i = 0; i < 3; i++) box(1.7, 0.1, 0.3, wood, -0.6, 0.05 + i * 0.11, -0.3 + (i % 2) * 0.05, site).rotation.y = 0.2 + i * 0.08;
+  [[0.9, -0.4], [1.2, 0.2]].forEach(([x, z]) => mesh(new THREE.IcosahedronGeometry(0.3, 0), toon(0xb3ad9f, { flatShading: true }), x, 0.2, z, site));
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(3, 3.8, 3.4), new THREE.MeshBasicMaterial({ visible: false }));
+  hit.position.set(MILL_X, 1.9, MILL_Z + 0.4); hit.userData.mill = true; scene.add(hit);
+  solids.push({ x: MILL_X, z: MILL_Z, r: 1.8 });
+  return { g, site, groups, stone, crank, gear, grain, hopper, sack, hit, state: 'locked', buildT: -1, job: null, t: 0, loadN: 0, grindT: 0 };
+})();
 
 // ================= Fences, flowers, decoration (instanced) =================
 const fenceSegs = [];
@@ -1013,6 +1095,7 @@ const sfx = {
   oink: () => { tone(180, 0.12, 'sawtooth', 0.07, 120); tone(170, 0.14, 'sawtooth', 0.07, 110, 0.16); },
   horn: () => { tone(440, 0.16, 'square', 0.05); tone(349, 0.24, 'square', 0.05, null, 0.2); },
   engine: () => { tone(60, 1.4, 'sawtooth', 0.05, 110); noise(1.2, 0.08, 180, 0.7); },
+  grind: () => { noise(0.35, 0.07, 220, 0.8); tone(70, 0.3, 'triangle', 0.04, 60); },
   thunk: () => { noise(0.08, 0.3, 300, 1.5); tone(140, 0.08, 'sine', 0.1, 90); },
   bird: () => { const f = rand(2400, 3400); tone(f, 0.08, 'sine', 0.025, f * 1.3); tone(f * 1.1, 0.1, 'sine', 0.025, f * 0.9, 0.12); },
 };
@@ -1054,7 +1137,10 @@ function floater(text, x, y, z, color) {
   el.animate([{ transform: `translate(${s.x}px, ${s.y}px) translate(-50%, 0) scale(.7)`, opacity: 0 }, { transform: `translate(${s.x}px, ${s.y - 30}px) translate(-50%, 0) scale(1.1)`, opacity: 1, offset: 0.2 }, { transform: `translate(${s.x}px, ${s.y - 70}px) translate(-50%, 0)`, opacity: 0 }], { duration: 1300, easing: 'ease-out' }).onfinish = () => el.remove();
 }
 function flyTo(fromX, fromY, target, make, delay = 0) {
-  const r = target.getBoundingClientRect(), tx = r.left + r.width / 2, ty = r.top + r.height / 2;
+  const r = target.getBoundingClientRect();
+  flyBetween(fromX, fromY, r.left + r.width / 2, r.top + r.height / 2, make, delay, () => target.animate([{ transform: 'scale(1.15)' }, { transform: 'scale(1)' }], { duration: 200 }));
+}
+function flyBetween(fromX, fromY, tx, ty, make, delay = 0, done) {
   const el = make(); document.body.appendChild(el);
   const midX = (fromX + tx) / 2 + rand(-60, 60), midY = Math.min(fromY, ty) - 80;
   el.animate([
@@ -1062,13 +1148,13 @@ function flyTo(fromX, fromY, target, make, delay = 0) {
     { transform: `translate(${fromX}px, ${fromY - 40}px) translate(-50%, -50%) scale(1.1)`, opacity: 1, offset: 0.2 },
     { transform: `translate(${midX}px, ${midY}px) translate(-50%, -50%) scale(.9)`, opacity: 1, offset: 0.6 },
     { transform: `translate(${tx}px, ${ty}px) translate(-50%, -50%) scale(.5)`, opacity: 0.6 },
-  ], { duration: 900, delay, easing: 'ease-in-out', fill: 'backwards' }).onfinish = () => { el.remove(); target.animate([{ transform: 'scale(1.15)' }, { transform: 'scale(1)' }], { duration: 200 }); };
+  ], { duration: 900, delay, easing: 'ease-in-out', fill: 'backwards' }).onfinish = () => { el.remove(); if (done) done(); };
 }
 function openStore() {
   initAudio();
   const rows = $('#storeRows'); rows.innerHTML = ''; let total = 0;
   Object.entries(G.store).forEach(([k, n]) => {
-    if (!n) return; const c = CROPS[k]; total += n * c.sell;
+    if (!n) return; const c = ITEMS[k]; total += n * c.sell;
     const r = document.createElement('div'); r.className = 'row';
     r.innerHTML = `<img src="${c.img}" alt=""><div><b>${c.name}</b><small>${c.sell} vàng mỗi cái</small></div><div class="qty">×${n}</div>`;
     rows.appendChild(r);
@@ -1084,7 +1170,7 @@ $('#store').addEventListener('click', e => { if (e.target.id === 'store') $('#st
 $('#sellAll').addEventListener('click', () => {
   if (truck.state !== 'away') return;
   let total = 0, items = 0; const kinds = [];
-  Object.entries(G.store).forEach(([k, n]) => { if (n) kinds.push(k); total += n * CROPS[k].sell; items += n; G.store[k] = 0; });
+  Object.entries(G.store).forEach(([k, n]) => { if (n) kinds.push(k); total += n * ITEMS[k].sell; items += n; G.store[k] = 0; });
   if (!total) return;
   $('#store').hidden = true;
   // gold is paid when the truck drives off with the crates
@@ -1099,7 +1185,9 @@ $('#muteBtn').addEventListener('click', () => {
   if (master) master.gain.value = muted ? 0 : 0.6;
 });
 $('#startBtn').addEventListener('click', () => { initAudio(); $('#intro').hidden = true; });
-window.addEventListener('keydown', e => { if (e.key === 'Escape') $('#store').hidden = true; });
+window.addEventListener('keydown', e => { if (e.key === 'Escape') $('#store').hidden = $('#millSheet').hidden = true; });
+$('#millClose').addEventListener('click', () => { $('#millSheet').hidden = true; });
+$('#millSheet').addEventListener('click', e => { if (e.target.id === 'millSheet') $('#millSheet').hidden = true; });
 renderSeeds(); renderHUD();
 
 // ================= Game actions =================
@@ -1171,6 +1259,111 @@ function addXp(n) {
     const fp = farmer.root.position;
     [0xff5d73, 0xffd23f, 0x5fd0ff, 0x7fe07a, 0xc58bff].forEach(c => emit(fp.x, 2.2, fp.z, c, 14, { speed: 3.5, up: 6, grav: 6, life: 1.4, size: 0.16 }));
   }
+  if (G.level >= MILL_LEVEL && mill.state === 'locked') { mill.state = 'pending'; setTimeout(unlockMill, 1700); }
+}
+
+// ================= Mill behaviour =================
+let camFocus = null;
+const millTag = document.createElement('div'); millTag.className = 'tag sign'; tagsEl.appendChild(millTag);
+function unlockMill() {
+  mill.state = 'building'; mill.buildT = 0;
+  camFocus = { v: new THREE.Vector3(MILL_X - 3, 0, MILL_Z + 2.5), t: 2.6 };
+  const el = $('#lvlup'); el.textContent = 'Mở khoá Cối xay bột!'; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+}
+function tapMill() {
+  initAudio();
+  if (mill.state === 'locked' || mill.state === 'pending') { toast(`Cối xay bột mở khoá ở cấp ${MILL_LEVEL}`); return; }
+  if (mill.state === 'building' || mill.state === 'collect') return;
+  if (mill.state === 'done') { collectMill(); return; }
+  openMill();
+}
+function openMill() {
+  const rows = $('#millRows'), busy = mill.state !== 'idle'; rows.innerHTML = '';
+  const left = mill.job ? Math.max(0, Math.ceil(mill.job.start + mill.job.r.dur - now())) : 0;
+  $('#millStatus').textContent = mill.state === 'working' ? `Đang xay ${mill.job.r.name}, còn ${left} giây.` : busy ? 'Đang đổ nguyên liệu vào cối.' : 'Chế biến luôn lời hơn bán thô. Chọn món để xay.';
+  Object.entries(RECIPES).forEach(([id, r]) => {
+    const [[k, n]] = Object.entries(r.in), have = G.store[k];
+    const row = document.createElement('div'); row.className = 'row recipe';
+    row.innerHTML = `<div class="io"><img src="${ITEMS[k].img}" alt=""><b>×${n}</b><span class="arrow" aria-hidden="true"></span><img src="${ITEMS[id].img}" alt=""><b>×${r.out}</b></div>
+      <div><b>${r.name}</b><small>${r.dur} giây · +${r.xp} EXP · bán ${ITEMS[id].sell} vàng</small><small class="${have >= n ? '' : 'short'}">Kho có ${have}/${n} ${ITEMS[k].name}</small></div>`;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = 'Xay';
+    b.disabled = busy || have < n; b.addEventListener('click', () => startJob(id));
+    row.appendChild(b); rows.appendChild(row);
+  });
+  $('#millSheet').hidden = false; ($('#millRows .cta:not(:disabled)') || $('#millClose')).focus();
+}
+const hopperW = new THREE.Vector3();
+function startJob(id) {
+  const r = RECIPES[id];
+  if (mill.state !== 'idle') return;
+  for (const [k, n] of Object.entries(r.in)) if (G.store[k] < n) { toast(`Cần ${n} ${ITEMS[k].name} để xay ${r.name}`); sfx.error(); return; }
+  for (const [k, n] of Object.entries(r.in)) G.store[k] -= n;
+  $('#millSheet').hidden = true; renderHUD();
+  mill.job = { id, r, start: 0 }; mill.state = 'loading'; mill.t = 0;
+  mill.grain.material.color.set(CROP_COL[Object.keys(r.in)[0]]);
+  mill.hopper.getWorldPosition(hopperW); const hs = toScreen(hopperW.x, hopperW.y + 0.8, hopperW.z);
+  const kb = $('#khoBtn').getBoundingClientRect(); let i = 0;
+  for (const [k, n] of Object.entries(r.in)) for (let j = 0; j < n; j++, i++) {
+    flyBetween(kb.left + kb.width / 2, kb.top + kb.height / 2, hs.x, hs.y, () => { const im = document.createElement('img'); im.src = ITEMS[k].img; im.className = 'fly'; im.alt = ''; return im; }, i * 140, () => sfx.thunk());
+  }
+  mill.loadN = i;
+}
+function collectMill() {
+  const { id, r } = mill.job;
+  G.store[id] += r.out;
+  const sp = mill.sack.getWorldPosition(new THREE.Vector3()), s = toScreen(sp.x, sp.y + 1, sp.z);
+  for (let i = 0; i < r.out; i++) flyTo(s.x, s.y, $('#khoBtn'), () => { const im = document.createElement('img'); im.src = ITEMS[id].img; im.className = 'fly'; im.alt = ''; return im; }, i * 120);
+  floater(`+${r.out} ${r.name}  +${r.xp} EXP`, sp.x, 2.6, sp.z);
+  emit(sp.x, 1, sp.z, 0xfff2c0, 18, { speed: 2, up: 3, size: 0.16, spread: 0.4 });
+  sfx.harvest(); mill.state = 'collect'; mill.t = 0; mill.job = null;
+  addXp(r.xp); setTimeout(renderHUD, 800);
+}
+const setGrain = lv => { mill.grain.visible = lv > 0.02; const s = 0.35 + 0.65 * lv; mill.grain.scale.set(s, 1, s); mill.grain.position.y = 0.1 + 0.7 * lv; };
+const millV = new THREE.Vector3();
+function updateMill(dt, time) {
+  const M = mill;
+  if (M.state === 'building') {
+    M.buildT += dt;
+    M.site.scale.setScalar(Math.max(0.001, 1 - M.buildT / 0.3)); if (M.buildT > 0.3) M.site.visible = false;
+    M.groups.forEach((o, i) => {
+      const k = (M.buildT - 0.35 - i * 0.2) / 0.45; if (k <= 0) return;
+      if (!o.visible) { o.visible = true; sfx.thunk(); emit(MILL_X, 0.5 + i * 0.4, MILL_Z, 0xd8c8a8, 14, { speed: 2, up: 2, size: 0.22, spread: 0.8 }); }
+      o.scale.setScalar(Math.max(0.001, easeOutBack(Math.min(1, k))));
+    });
+    if (M.buildT > 0.35 + M.groups.length * 0.2 + 0.6) {
+      M.state = 'idle'; sfx.level();
+      [0xffd23f, 0x7fe07a, 0x5fd0ff].forEach(c => emit(MILL_X, 3, MILL_Z, c, 16, { speed: 3, up: 5, grav: 6, life: 1.3, size: 0.16 }));
+    }
+  } else if (M.state === 'loading') {
+    M.t += dt;
+    const arrive = 0.9, end = arrive + M.loadN * 0.14 + 0.3;
+    if (M.t > arrive && M.t < end && Math.random() < dt * 40) { M.hopper.getWorldPosition(millV); emit(millV.x + rand(-0.2, 0.2), millV.y + 1.1, millV.z, CROP_COL[Object.keys(M.job.r.in)[0]], 1, { speed: 0.2, up: 0, grav: 9, life: 0.25, size: 0.12, spread: 0.1 }); }
+    setGrain(THREE.MathUtils.clamp((M.t - arrive) / (end - arrive), 0, 1));
+    if (M.t >= end) { M.state = 'working'; M.job.start = now(); M.grindT = 0; }
+  } else if (M.state === 'working') {
+    const k = Math.min(1, (now() - M.job.start) / M.job.r.dur);
+    M.stone.rotation.y += dt * 3.2; M.crank.rotation.x += dt * 3.2; M.gear.rotation.z -= dt * 2.4;
+    M.g.position.x = MILL_X + Math.sin(time * 45) * 0.012;
+    setGrain(1 - k); M.sack.scale.setScalar(Math.max(0.001, 0.2 + 0.8 * k));
+    if (Math.random() < dt * 14) { const a = rand(0, 6.28); millV.set(Math.cos(a) * 0.9, 2.15, Math.sin(a) * 0.9); M.g.localToWorld(millV); emit(millV.x, millV.y, millV.z, 0xfaf6ea, 1, { speed: 0.5, up: 0.8, grav: -0.4, life: 1.1, size: 0.22, spread: 0.05 }); }
+    M.grindT -= dt; if (M.grindT <= 0) { M.grindT = 0.55; sfx.grind(); }
+    if (k >= 1) { M.state = 'done'; M.g.position.x = MILL_X; sfx.ripe(); M.sack.getWorldPosition(millV); emit(millV.x, 1.4, millV.z, 0xfff6b0, 16, { speed: 1, up: 2, grav: -0.5, life: 1.2, size: 0.15 }); }
+  } else if (M.state === 'done') {
+    const b = Math.sin(time * 5) * 0.05; M.sack.scale.set(1 + b, 1 - b, 1 + b);
+    if (Math.random() < dt * 2) { M.sack.getWorldPosition(millV); emit(millV.x + rand(-0.5, 0.5), rand(1, 1.6), millV.z + rand(-0.5, 0.5), 0xfff6b0, 1, { speed: 0.1, up: 0.6, grav: -0.3, life: 1, size: 0.13, spread: 0 }); }
+  } else if (M.state === 'collect') {
+    M.t += dt; const k = Math.min(1, M.t / 0.5);
+    M.sack.position.y = Math.sin(k * Math.PI) * 0.8; M.sack.scale.setScalar(Math.max(0.001, 1 - k));
+    if (k >= 1) { M.state = 'idle'; M.sack.position.y = 0; setGrain(0); }
+  }
+  // label over the mill
+  let txt = 'Cối xay bột', cls = 'tag sign';
+  if (M.state === 'locked' || M.state === 'pending') txt = `Cối xay bột · cấp ${MILL_LEVEL}`;
+  else if (M.state === 'loading') txt = 'Đang đổ nguyên liệu';
+  else if (M.state === 'working') { const left = Math.max(0, Math.ceil(M.job.start + M.job.r.dur - now())); txt = `Đang xay · 0:${String(left).padStart(2, '0')}`; cls = 'tag'; }
+  else if (M.state === 'done') { txt = 'Xong! Chạm để lấy'; cls = 'tag ready'; }
+  if (millTag.dataset.t !== txt) { millTag.textContent = txt; millTag.className = cls; millTag.dataset.t = txt; }
+  place(millTag, toScreen(MILL_X, 4.3, MILL_Z), 70);
 }
 
 // ================= Farmer behaviour =================
@@ -1337,11 +1530,11 @@ function resize() {
 window.addEventListener('resize', resize); resize();
 
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-const hitTargets = [...plots.map(p => p.soil), stallHit, truck.g, ...animals.map(a => a.g)];
+const hitTargets = [...plots.map(p => p.soil), stallHit, truck.g, mill.hit, ...animals.map(a => a.g)];
 function pickAt(cx, cy) {
   ndc.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
   const hits = ray.intersectObjects(hitTargets, true);
-  for (const h of hits) { let o = h.object; while (o) { if (o.userData.plot || o.userData.stall || o.userData.animal || o.userData.truck) return o.userData; o = o.parent; } }
+  for (const h of hits) { let o = h.object; while (o) { if (o.userData.plot || o.userData.stall || o.userData.animal || o.userData.truck || o.userData.mill) return o.userData; o = o.parent; } }
   return null;
 }
 function groundAt(cx, cy, out) {
@@ -1352,6 +1545,7 @@ const pointers = new Map(); let drag = null, pinch = null, hovered = null;
 const anchor = new THREE.Vector3(), cur = new THREE.Vector3();
 canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  camFocus = null;
   if (pointers.size === 1) { drag = { x: e.clientX, y: e.clientY, t: performance.now(), moved: false }; panVel.set(0, 0, 0); groundAt(e.clientX, e.clientY, anchor); }
   else if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: zoomGoal }; drag = null; }
 });
@@ -1379,7 +1573,7 @@ function endPointer(e) {
   if (!drag || !drag.lt || performance.now() - drag.lt > 80) panVel.set(0, 0, 0); // a pause before release means no fling
   if (drag && !drag.moved && performance.now() - drag.t < 600 && pointers.size === 0) {
     const h = pickAt(e.clientX, e.clientY);
-    if (h && h.plot) tapPlot(h.plot); else if (h && h.stall) openStore(); else if (h && h.animal) tapAnimal(h.animal); else if (h && h.truck) { initAudio(); sfx.horn(); truck.bounce = 1; }
+    if (h && h.plot) tapPlot(h.plot); else if (h && h.stall) openStore(); else if (h && h.animal) tapAnimal(h.animal); else if (h && h.truck) { initAudio(); sfx.horn(); truck.bounce = 1; } else if (h && h.mill) tapMill();
   }
   if (pointers.size < 2) pinch = null;
   if (pointers.size === 0) drag = null;
@@ -1406,6 +1600,7 @@ function frame(t) {
   if (intro > 1) intro = Math.max(1, intro - dt * 0.9 * (intro - 0.95));
   if (!$('#intro').hidden) intro = Math.max(intro, 1.25);
   if (!pointers.size && panVel.lengthSq() > 1e-4) { camTarget.addScaledVector(panVel, dt); panVel.multiplyScalar(Math.exp(-6 * dt)); clampCam(); }
+  if (camFocus) { camTarget.lerp(camFocus.v, 1 - Math.exp(-2.5 * dt)); camFocus.t -= dt; if (camFocus.t <= 0) camFocus = null; }
   placeCamera();
   for (let i = ripples.length - 1; i >= 0; i--) {
     const r = ripples[i]; r.t += dt; const k = r.t / 0.5;
@@ -1452,6 +1647,7 @@ function frame(t) {
   updateFarmer(dt, time);
   updateAnimals(dt, time);
   updateTruck(dt, time);
+  updateMill(dt, time);
   sails.rotation.z -= dt * 0.7;
   clouds.forEach(c => { c.position.x += c.userData.speed * dt; if (c.position.x > 75) c.position.x = -75; });
   flies.forEach(f => {
@@ -1465,6 +1661,6 @@ function frame(t) {
   renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
-if (location.hash === '#debug') window.__farm = { G, plots, tapPlot, truck, farmer, openStore, addXp, camTarget, CROPS };
+if (location.hash === '#debug') window.__farm = { G, plots, tapPlot, truck, farmer, openStore, addXp, camTarget, CROPS, mill, startJob, tapMill, openMill };
 })();
 </script>
