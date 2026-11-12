@@ -1860,6 +1860,47 @@ function renderProd() {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = 'Ghé thăm'; b.disabled = u.level == null || prodBusy;
       b.addEventListener('click', () => visitFarm(u.id)); row.querySelector('.acts').appendChild(b); rows.appendChild(row);
     });
+  } else if (prodMode === 'give' || prodMode === 'ask') {
+    const give = prodMode === 'give', f = VISIT && VISIT.farm;
+    $('#prodTitle').textContent = give ? 'Tặng vàng' : 'Xin vàng';
+    if (!f) { rows.innerHTML = '<div class="empty">Hãy ghé thăm một hàng xóm trước.</div>'; return; }
+    const head = document.createElement('p'); head.textContent = give ? `Tặng ${f.name} một ít vàng. Bạn có ${nf.format(me.gold)} vàng.` : `Xin ${f.name} một ít vàng. Người ấy sẽ nhận thông báo và tự quyết định có cho hay không.`; rows.appendChild(head);
+    const box = document.createElement('div'); box.className = 'amounts';
+    [100, 1000, 10000, 100000].forEach(n => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'cta'; b.textContent = nf.format(n);
+      b.disabled = prodBusy || (give && me.gold < n);
+      b.addEventListener('click', () => prodAct(give ? '/gold-give' : '/gold-ask', { toId: f.id, amount: n }, () => toast(give ? `Đã tặng ${f.name} ${nf.format(n)} vàng` : `Đã gửi lời xin ${nf.format(n)} vàng`)));
+      box.appendChild(b);
+    });
+    rows.appendChild(box);
+  } else if (prodMode === 'gold') {
+    $('#prodTitle').textContent = 'Xin/Cho vàng';
+    rows.innerHTML = '<div class="empty">Đang tải…</div>';
+    api('/gold-requests').then(g => {
+      if (prodMode !== 'gold') return; rows.innerHTML = '';
+      if (!g.incoming.length && !g.outgoing.length) rows.innerHTML = '<div class="empty">Chưa có lời xin nào. Ghé thăm hàng xóm để tặng hoặc xin vàng.</div>';
+      const line = (r, mine) => {
+        const row = document.createElement('div'); row.className = 'row job';
+        row.innerHTML = `<span class="emo">${mine ? '🙏' : '💝'}</span><div><b>${mine ? 'Bạn xin ' + r.toName : r.fromName + ' xin bạn'} ${nf.format(r.amount)} vàng</b><small>${r.note ? '“' + r.note.replace(/[<>&]/g, '') + '” · ' : ''}${{ open: 'đang chờ', paid: 'đã cho', declined: 'bị từ chối', cancelled: 'đã hủy' }[r.status] || r.status}</small></div><div class="acts"></div>`;
+        const acts = row.querySelector('.acts');
+        const add = (label, action, off) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = label; b.disabled = !!off || prodBusy; b.addEventListener('click', () => prodAct('/gold-request-act', { id: r.id, action }, () => toast(label))); acts.appendChild(b); };
+        if (r.status === 'open' && !mine) { add('Cho', 'pay', me.gold < r.amount); add('Từ chối', 'decline'); }
+        if (r.status === 'open' && mine) add('Hủy', 'cancel');
+        rows.appendChild(row);
+      };
+      g.incoming.forEach(r => line(r, false)); g.outgoing.forEach(r => line(r, true));
+    }).catch(fail);
+  } else if (prodMode === 'thief') {
+    $('#prodTitle').textContent = 'Bảng kẻ trộm';
+    rows.innerHTML = '<div class="empty">Đang tải…</div>';
+    api('/thief-board').then(t => {
+      if (prodMode !== 'thief') return; rows.innerHTML = '';
+      const head = document.createElement('p'); head.textContent = `Hôm nay nhà bạn bị hái ké ${t.myCount} món. Top 3 mỗi ngày nhận kim cương và vàng.`; rows.appendChild(head);
+      const medal = i => ['🥇', '🥈', '🥉'][i] || String(i + 1);
+      t.today.forEach((r, i) => { const row = document.createElement('div'); row.className = 'row job'; row.innerHTML = `<span class="emo">${medal(i)}</span><div><b>${r.name}${r.id === me.id ? ' (bạn)' : ''}</b><small>${r.count} món hôm nay${t.rewards[i] ? ` · thưởng ${t.rewards[i].gems} kim cương + ${nf.format(t.rewards[i].gold)} vàng` : ''}</small></div>`; rows.appendChild(row); });
+      if (!t.today.length) rows.innerHTML += '<div class="empty">Hôm nay chưa ai bị hái ké.</div>';
+      if (t.yesterday.winners.length) { const h = document.createElement('p'); h.style.fontWeight = '800'; h.textContent = `Bảng vàng hôm qua (${t.yesterday.day})`; rows.appendChild(h); t.yesterday.winners.forEach((w, i) => { const row = document.createElement('div'); row.className = 'row job'; row.innerHTML = `<span class="emo">${medal(i)}</span><div><b>${w.name}</b><small>${w.count} món · +${w.gems} kim cương · +${nf.format(w.gold)} vàng</small></div>`; rows.appendChild(row); }); }
+    }).catch(fail);
   } else if (prodMode === 'orders') {
     $('#prodTitle').textContent = 'Đơn hàng';
     if (me.level < (cat().orderUnlockLevel || 5)) { rows.innerHTML = `<div class="empty">Đơn hàng mở ở cấp ${cat().orderUnlockLevel || 5}.</div>`; return; }
@@ -1959,11 +2000,46 @@ function showVisit() {
     const v = byIdx.get(p.i), acts = VISIT.myActs[p.i] || {};
     applyView(p, v || { idx: p.i, crop: null }, true);
     p.mat.color.set(0x7d4d2b); // tưới của người khác không đổi màu đất của nhà này
-    p.marker.visible = !!(v && v.crop && (acts.canPoach || (acts.canWater && !v.ready)));
-    if (p.marker.visible) p.marker.material.color.set(acts.canPoach ? ACT_COL.harvest : ACT_COL.water);
+    const insp = VISIT.inspect && acts.canInspect;
+    p.marker.visible = !!(v && v.crop && (insp || (!VISIT.inspect && (acts.canPoach || (acts.canWater && !v.ready)))));
+    if (p.marker.visible) p.marker.material.color.set(insp ? 0xffd54a : acts.canPoach ? ACT_COL.harvest : ACT_COL.water);
   }
-  visitBar.hidden = false; $('#visitName').textContent = `Đang thăm ${f.name} · cấp ${f.level}`;
-  document.body.classList.add('visiting');
+  const herd = (f.herd || []).map(h => `${cat().animals[h.kind]?.emoji || ''}×${h.count}`).join(' ');
+  visitBar.hidden = false; $('#visitName').textContent = `Đang thăm ${f.name} · cấp ${f.level}${herd ? ' · ' + herd : ''}${f.dogUntil > serverNow() ? ' · 🐕' : ''}`;
+  document.body.classList.add('visiting'); renderVisitActs();
+}
+// Every visiting action is one server call; the button set only mirrors what the server says is possible.
+ERR.nothing_to_poach = 'Không còn gì để hái ké'; ERR.poach_cooldown = 'Vừa hái ké xong, đợi một lát'; ERR.inspect_limit = 'Hết lượt khám xét hôm nay'; ERR.already_inspected = 'Ô này đã khám rồi';
+ERR.too_many_requests = 'Bạn đang xin quá nhiều khoản, đợi người ta trả lời đã'; ERR.bad_amount = 'Số vàng không hợp lệ'; ERR.request_closed = 'Yêu cầu này đã đóng'; ERR.forbidden = 'Bạn không làm được việc này';
+function renderVisitActs() {
+  const box = $('#visitActs'); if (!VISIT) { box.hidden = true; return; }
+  const f = VISIT.farm, loot = f.loot || {}, acts = Object.values(VISIT.myActs), plotsV = f.plots || [];
+  const anyPoach = acts.some(a => a.canPoach), anyWater = plotsV.some(v => v.crop && !v.ready && (VISIT.myActs[v.idx] || {}).canWater), anyRipe = plotsV.some(v => v.crop && v.ready);
+  box.innerHTML = '';
+  const add = (label, on, off, pressed) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = label; b.disabled = !!off || prodBusy; if (pressed != null) b.setAttribute('aria-pressed', String(pressed)); b.addEventListener('click', on); box.appendChild(b); };
+  const id = VISIT.ownerId;
+  add('Hái ké hết', () => visitDo('/poach-all', { ownerId: id }, r => `Hái ké được ${itemsText(r.items) || 'không gì'}`), !anyPoach);
+  add('Tưới giúp hết', () => visitDo('/water-help-all', { ownerId: id }, r => `Tưới giúp ${r.watered} ô, +${nf.format(r.gained)} vàng`), !anyWater);
+  add('Thu giúp hết', () => visitDo('/harvest-help', { ownerId: id, all: true }, r => `Thu giúp ${r.harvested} ô, +${nf.format(r.gained)} vàng`), !anyRipe);
+  add('Trồng giúp', () => visitDo('/plant-help', { ownerId: id }, r => `Trồng giúp ${r.helped} ô, tốn ${nf.format(r.cost)} vàng`), !(loot.emptyPlots > 0));
+  add('Hái ké chuồng', () => visitDo('/poach-animal', { ownerId: id }, r => `Cuỗm ${r.got} sản phẩm trong chuồng`), !(loot.animalsReady > 0));
+  add('Hái ké máy', () => visitDo('/poach-machine', { ownerId: id }, r => `Cuỗm ${r.got} thành phẩm`), !(loot.machinesReady > 0));
+  add(VISIT.inspect ? 'Đang khám xét' : 'Khám xét', () => { VISIT.inspect = !VISIT.inspect; showVisit(); }, !(VISIT.inspect || acts.some(a => a.canInspect)), !!VISIT.inspect);
+  add('Tặng vàng', () => openProd('give'), false);
+  add('Xin vàng', () => openProd('ask'), false);
+  box.hidden = false;
+}
+async function visitDo(path, body, msg) {
+  if (prodBusy) return; prodBusy = true; initAudio(); renderVisitActs();
+  try {
+    const r = await doAct(path, body);
+    if (r.farm) { VISIT.farm = r.farm; VISIT.myActs = r.myActs || VISIT.myActs; }
+    const text = msg(r); toast(text); announce(text); sfx.harvest();
+    Object.entries(r.items || {}).forEach(([item, n]) => flyToKho(item, Math.min(n, 4), innerWidth / 2, innerHeight / 2));
+  } catch (e) {
+    if (e.code === 'caught_by_dog') { toast(e.data?.message || ERR.caught_by_dog); sfx.error(); announce(ERR.caught_by_dog); refresh().catch(() => {}); }
+    else fail(e);
+  } finally { prodBusy = false; if (VISIT) showVisit(); }
 }
 async function visitFarm(id) {
   if (prodBusy) return; prodBusy = true; initAudio();
@@ -1971,11 +2047,11 @@ async function visitFarm(id) {
     const r = await api(`/farm/${id}`);
     if (r.me) { store.me = r.me; }
     VISIT = { ownerId: id, farm: r.farm, myActs: r.myActs || {} };
-    prodSheet.hidden = true; showVisit(); announce(`Đang thăm ${r.farm.name}`);
+    prodBusy = false; prodSheet.hidden = true; showVisit(); announce(`Đang thăm ${r.farm.name}`);
   } catch (e) { fail(e); } finally { prodBusy = false; }
 }
 function leaveVisit() {
-  VISIT = null; visitBar.hidden = true; document.body.classList.remove('visiting');
+  VISIT = null; visitBar.hidden = true; $('#visitActs').hidden = true; document.body.classList.remove('visiting');
   for (const p of plots) { p.marker.visible = false; p.pending = null; }
   const me = store.me; ensurePlots(me.plotsCount, true);
   const byIdx = new Map(me.plots.map(v => [v.idx, v]));
@@ -1987,7 +2063,8 @@ async function visitTap(p) {
   ripple(p.x, 0.34, p.z, p.state === 'ripe' ? ACT_COL.harvest : ACT_COL.water);
   if (p.busy) return;
   let path = null;
-  if (p.state === 'ripe' && acts.canPoach) path = '/poach';
+  if (VISIT.inspect) { if (!acts.canInspect) { toast(acts.inspected ? ERR.already_inspected : ERR.inspect_limit); return; } path = '/inspect'; }
+  else if (p.state === 'ripe' && acts.canPoach) path = '/poach';
   else if (p.state === 'growing' && acts.canWater) path = '/water';
   else if (p.state === 'ripe') { toast(acts.poached ? 'Bạn đã hái ô này rồi' : 'Không hái ké được ô này'); return; }
   else if (p.state === 'growing') { toast(acts.watered ? 'Ô này bạn đã tưới rồi' : 'Cây chưa chín'); return; }
@@ -1997,7 +2074,11 @@ async function visitTap(p) {
     const r = await doAct(path, { ownerId: id, idx: p.i });
     if (r.farm) { VISIT.farm = r.farm; VISIT.myActs = r.myActs || VISIT.myActs; showVisit(); }
     const s = toScreen(p.x, 1, p.z);
-    if (path === '/poach') {
+    if (path === '/inspect') {
+      emit(p.x, 0.8, p.z, r.found ? 0xff5a4a : 0xffd54a, 18, { speed: 2, up: 3, size: 0.16, spread: 0.7 });
+      const t = r.found ? `Phát hiện cần sa! Thưởng ${nf.format(r.bounty)} vàng` : `Sạch sẽ. Còn ${r.left} lượt khám hôm nay`;
+      floater(r.found ? `+${nf.format(r.bounty)} vàng` : 'Sạch', p.x, 1.6, p.z, r.found ? '#ffd54a' : '#bff0ff'); toast(t); announce(t);
+    } else if (path === '/poach') {
       const item = r.cropId || r.item, name = itemName(item);
       emit(p.x, 0.8, p.z, cropColor(item), 20, { speed: 2.5, up: 4, size: 0.18, spread: 0.7 }); sfx.harvest();
       if (item) flyToKho(item, 2, s.x, s.y);
@@ -2014,6 +2095,8 @@ async function visitTap(p) {
 $('#bFamily').addEventListener('click', () => openProd('family'));
 $('#bQuests').addEventListener('click', () => openProd('quests'));
 $('#bBoard').addEventListener('click', () => openProd('board'));
+$('#bThief').addEventListener('click', () => openProd('thief'));
+$('#bGold').addEventListener('click', () => openProd('gold'));
 $('#visitHome').addEventListener('click', leaveVisit);
 
 // ================= Boot: load the state once, then keep it fresh =================
