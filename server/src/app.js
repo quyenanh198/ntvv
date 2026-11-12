@@ -54,7 +54,6 @@ import {
   DAILY_QUESTS,
   DAILY_CHEST,
   STAR_MILESTONES,
-  POACH_DAILY_LIMIT,
   POACH_EXP,
   POACH_YIELD,
   POACH_AGAIN_MS,
@@ -181,7 +180,63 @@ export function buildApp({ config, db, logger = true }) {
     if (reply.statusCode >= 500) apiMetrics.errors5xx += 1;
     else if (reply.statusCode >= 400) apiMetrics.errors4xx += 1;
   });
+  // Catalog: luật và nội dung chơi, không đổi trong suốt một lần chạy server.
+  // Client tải một lần (GET /farm/api/catalog, có ETag) rồi giữ ở bộ nhớ.
+  const catalogConfig = {
+    crops: Object.fromEntries(Object.entries(CROPS).map(([k, c]) => [k, { ...c, sell: c.sell * GOLD_MULT, growMs: scaleMs(c.growMs, config.fast) }])),
+    harvestYield: HARVEST_YIELD,
+    goods: Object.fromEntries(Object.entries(GOODS).map(([k, x]) => [k, { ...x, sell: x.sell * GOLD_MULT }])),
+    chicken: { ...CHICKEN, produceMs: scaleMs(CHICKEN.produceMs, config.fast) },
+    animals: Object.fromEntries(Object.entries(ANIMALS).map(([k, a]) => [k, { ...a, produceMs: scaleMs(a.produceMs, config.fast) }])),
+    barnUpgradeGold: BARN_UPGRADE_GOLD,
+    mill: {
+      ...MILL,
+      recipes: Object.fromEntries(
+        Object.entries(MILL.recipes).map(([k, r]) => [k, { ...r, ms: scaleMs(r.ms, config.fast) }]),
+      ),
+    },
+    machines: Object.fromEntries(Object.entries(MACHINES).map(([mk, m2]) => [mk, {
+      ...m2,
+      recipes: Object.fromEntries(Object.entries(m2.recipes).map(([rk, r]) => [rk, { ...r, ms: scaleMs(r.ms, config.fast) }])),
+    }])),
+    orderUnlockLevel: ORDER_UNLOCK_LEVEL,
+    fishFarm: Object.fromEntries(Object.entries(FISH_FARM).map(([k, sp]) => [k, { ...sp, growMs: scaleMs(sp.growMs, config.fast) }])),
+    fishStockByLevel: FISH_STOCK_BY_LEVEL,
+    fishing: {
+      ...FISHING,
+      loot: FISHING.loot.map((l) => ({ ...l, pct: Math.round((l.weight / FISHING.loot.reduce((a, x) => a + x.weight, 0)) * 100) })),
+    },
+    energy: ENERGY,
+    machineQueueMax: MACHINE_QUEUE_MAX,
+    dog: DOG,
+    skillTree: SKILLS,
+    trees: Object.fromEntries(Object.entries(TREES).map(([k, t]) => [k, { ...t, sell: t.sell * GOLD_MULT, growMs: scaleMs(t.growMs, config.fast), cycleMs: scaleMs(t.cycleMs, config.fast), lifeMs: scaleMs(t.lifeMs, config.fast) }])),
+    starMilestones: STAR_MILESTONES.map((m2) => ({ ...m2, gold: (m2.gold || 0) * GOLD_MULT })),
+      luxury: LUXURY,
+    machineUpgradeGold: MACHINE_UPGRADE_GOLD,
+    lottery: LOTTERY,
+    taxPerPlot: TAX_PER_PLOT,
+    cansa: CANSA,
+    gemPacks: GEM_PACKS,
+    marketSat: MARKET_SAT,
+    fast: config.fast,
+  };
+  const catalogJson = JSON.stringify(catalogConfig);
+  const catalog = {
+    config: catalogConfig,
+    json: catalogJson,
+    version: createHash('sha256').update(catalogJson).digest('hex').slice(0, 16),
+  };
+  app.get('/farm/api/catalog', async (request, reply) => {
+    const etag = `"${catalog.version}"`;
+    reply.header('etag', etag).header('cache-control', 'private, max-age=86400');
+    if (request.headers['if-none-match'] === etag) return reply.code(304).send();
+    return reply.type('application/json').send(catalog.json);
+  });
   const meCache = new Map();
+  let maxXpCache = null; // XP cao nhất làng; xóa mỗi khi có mutation (xp có thể đổi)
+  const familyCache = new Map(); // danh sách thành viên từ Chat, 60 giây mỗi phiên
+  const FAMILY_TTL_MS = 60_000;
   const rateBuckets = new Map();
   const upstreamTimeoutMs = config.upstreamTimeoutMs || 5_000;
   const mutationRecord = db.prepare('SELECT route, body_hash, outcome_json FROM mutation_results WHERE owner_id = ? AND request_key = ?');
@@ -210,6 +265,7 @@ export function buildApp({ config, db, logger = true }) {
       const outcome = work();
       if (outcome?.error) return outcome;
       db.prepare('UPDATE farmers SET mutation_version = mutation_version + 1 WHERE user_id = ?').run(request.farmer.user_id);
+      maxXpCache = null;
       if (key) insertMutationRecord.run(request.farmer.user_id, key, route, bodyHash, JSON.stringify(outcome), Date.now());
       return { outcome, replay: false };
     })();
@@ -240,8 +296,12 @@ export function buildApp({ config, db, logger = true }) {
     if (config.mockChatUser) return typeof config.mockChatUser === 'function' ? config.mockChatUser(request) : config.mockChatUser;
     const cookie = request.headers.cookie;
     if (!cookie) return null;
-    const hit = meCache.get(cookie);
-    if (hit && hit.until > Date.now()) return hit.user;
+    const cacheKey = createHash('sha256').update(cookie).digest('base64url');
+    const hit = meCache.get(cacheKey);
+    if (hit && hit.until > Date.now()) {
+      meCache.delete(cacheKey); meCache.set(cacheKey, hit); // LRU: dùng gần nhất xếp cuối
+      return hit.user;
+    }
     let res;
     try {
       res = await chatFetch('/api/me', { headers: { cookie } });
@@ -251,8 +311,9 @@ export function buildApp({ config, db, logger = true }) {
     }
     if (!res.ok) return null;
     const user = await res.json();
-    if (meCache.size >= ME_CACHE_MAX) meCache.clear();
-    meCache.set(cookie, { user, until: Date.now() + ME_CACHE_TTL_MS });
+    meCache.delete(cacheKey);
+    if (meCache.size >= ME_CACHE_MAX) meCache.delete(meCache.keys().next().value); // bỏ mục lâu không dùng nhất
+    meCache.set(cacheKey, { user, until: Date.now() + ME_CACHE_TTL_MS });
     return user;
   }
 
@@ -294,14 +355,17 @@ export function buildApp({ config, db, logger = true }) {
     }
     const existed = !!getFarmer.get(user.id);
     const firstSeenAt = clockNow();
-    upsertFarmer.run(user.id, user.display_name || user.username, START_GOLD, START_GEMS, START_PLOTS, firstSeenAt, firstSeenAt);
+    const displayName = user.display_name || user.username;
+    if (!existed) upsertFarmer.run(user.id, displayName, START_GOLD, START_GEMS, START_PLOTS, firstSeenAt, firstSeenAt);
+    else if (getFarmer.get(user.id).name !== displayName) db.prepare('UPDATE farmers SET name = ? WHERE user_id = ?').run(displayName, user.id);
     const legacy = db.prepare('SELECT xp FROM legacy_levels WHERE user_id = ?').get(user.id);
     if (legacy) db.prepare('UPDATE farmers SET xp = ? WHERE user_id = ? AND xp < ?').run(legacy.xp, user.id, legacy.xp);
     {
       // Hỗ trợ theo trần làng (cấp cao nhất − 20): mức được hưởng tính lại mỗi lần
       // vào, trần lên thì trả thêm phần chênh; đã nhận rồi không thu lại.
       const f0 = getFarmer.get(user.id);
-      const maxLevel = levelFor(db.prepare('SELECT COALESCE(MAX(xp), 0) x FROM farmers').get().x);
+      if (maxXpCache === null) maxXpCache = db.prepare('SELECT COALESCE(MAX(xp), 0) x FROM farmers').get().x;
+      const maxLevel = levelFor(maxXpCache);
       const entitled = welcomeGift(levelFor(f0.xp), maxLevel);
       const diff = entitled - (f0.support_paid || 0);
       if (diff > 0) {
@@ -466,6 +530,7 @@ export function buildApp({ config, db, logger = true }) {
 
   // Sổ mất trộm: ghi từng lần bị chôm (ruộng/chuồng/máy) để tổng kết lúc chủ quay lại.
   const recordTheft = (ownerId, thiefId, item, qty) => db.prepare('INSERT INTO thefts (owner_id, thief_id, item, qty, at) VALUES (?, ?, ?, ?, ?)').run(ownerId, thiefId, item, qty, Date.now());
+  const SEEN_WRITE_GAP_MS = 60_000; // chỉ ghi last_seen_at khi đã cũ hơn 1 phút
   const AWAY_GAP_MS = 10 * 60 * 1000; // vắng quá 10 phút = phiên mới
   function buildAwayReport(userId, since, until) {
     const items = db.prepare('SELECT item, SUM(qty) q FROM thefts WHERE owner_id = ? AND at > ? AND at <= ? GROUP BY item ORDER BY q DESC').all(userId, since, until);
@@ -484,7 +549,9 @@ export function buildApp({ config, db, logger = true }) {
       const report = buildAwayReport(userId, f.last_seen_at, now);
       if (report) db.prepare('UPDATE farmers SET away_report_json = ? WHERE user_id = ?').run(JSON.stringify(report), userId);
     }
-    db.prepare('UPDATE farmers SET last_seen_at = ? WHERE user_id = ?').run(now, userId);
+    if (!f?.last_seen_at || now - f.last_seen_at >= SEEN_WRITE_GAP_MS) {
+      db.prepare('UPDATE farmers SET last_seen_at = ? WHERE user_id = ?').run(now, userId);
+    }
   }
 
   function bumpPoached(userId, by) {
@@ -1039,11 +1106,20 @@ export function buildApp({ config, db, logger = true }) {
         ensureOrders(request.farmer);
         settleThiefBoard();
         let others = [];
-        try {
-          const res = await chatFetch('/api/users', { headers: { cookie: request.headers.cookie } });
-          if (res.ok) others = await res.json();
-        } catch (err) {
-          request.log.warn({ err }, 'chat /api/users unreachable');
+        const famKey = createHash('sha256').update(request.headers.cookie || String(request.chatUser.id)).digest('base64url');
+        const famHit = familyCache.get(famKey);
+        if (famHit && famHit.until > Date.now()) others = famHit.others;
+        else {
+          try {
+            const res = await chatFetch('/api/users', { headers: { cookie: request.headers.cookie } });
+            if (res.ok) {
+              others = await res.json();
+              if (familyCache.size >= ME_CACHE_MAX) familyCache.delete(familyCache.keys().next().value);
+              familyCache.set(famKey, { others, until: Date.now() + FAMILY_TTL_MS });
+            }
+          } catch (err) {
+            request.log.warn({ err }, 'chat /api/users unreachable');
+          }
         }
         const family = [
           { id: request.chatUser.id, name: request.farmer.name, avatar_at: request.chatUser.avatar_at, me: true },
@@ -1055,46 +1131,8 @@ export function buildApp({ config, db, logger = true }) {
         return {
           me: fresh(request.farmer.user_id),
           family,
-          config: {
-            crops: Object.fromEntries(Object.entries(CROPS).map(([k, c]) => [k, { ...c, sell: c.sell * GOLD_MULT, growMs: scaleMs(c.growMs, config.fast) }])),
-            harvestYield: HARVEST_YIELD,
-            goods: Object.fromEntries(Object.entries(GOODS).map(([k, x]) => [k, { ...x, sell: x.sell * GOLD_MULT }])),
-            chicken: { ...CHICKEN, produceMs: scaleMs(CHICKEN.produceMs, config.fast) },
-            animals: Object.fromEntries(Object.entries(ANIMALS).map(([k, a]) => [k, { ...a, produceMs: scaleMs(a.produceMs, config.fast) }])),
-            barnUpgradeGold: BARN_UPGRADE_GOLD,
-            mill: {
-              ...MILL,
-              recipes: Object.fromEntries(
-                Object.entries(MILL.recipes).map(([k, r]) => [k, { ...r, ms: scaleMs(r.ms, config.fast) }]),
-              ),
-            },
-            machines: Object.fromEntries(Object.entries(MACHINES).map(([mk, m2]) => [mk, {
-              ...m2,
-              recipes: Object.fromEntries(Object.entries(m2.recipes).map(([rk, r]) => [rk, { ...r, ms: scaleMs(r.ms, config.fast) }])),
-            }])),
-            orderUnlockLevel: ORDER_UNLOCK_LEVEL,
-            fishFarm: Object.fromEntries(Object.entries(FISH_FARM).map(([k, sp]) => [k, { ...sp, growMs: scaleMs(sp.growMs, config.fast) }])),
-            fishStockByLevel: FISH_STOCK_BY_LEVEL,
-            fishing: {
-              ...FISHING,
-              loot: FISHING.loot.map((l) => ({ ...l, pct: Math.round((l.weight / FISHING.loot.reduce((a, x) => a + x.weight, 0)) * 100) })),
-            },
-            energy: ENERGY,
-            machineQueueMax: MACHINE_QUEUE_MAX,
-            dog: DOG,
-            skillTree: SKILLS,
-            trees: Object.fromEntries(Object.entries(TREES).map(([k, t]) => [k, { ...t, sell: t.sell * GOLD_MULT, growMs: scaleMs(t.growMs, config.fast), cycleMs: scaleMs(t.cycleMs, config.fast), lifeMs: scaleMs(t.lifeMs, config.fast) }])),
-            starMilestones: STAR_MILESTONES.map((m2) => ({ ...m2, gold: (m2.gold || 0) * GOLD_MULT })),
-            poachDailyLimit: POACH_DAILY_LIMIT,
-            luxury: LUXURY,
-            machineUpgradeGold: MACHINE_UPGRADE_GOLD,
-            lottery: LOTTERY,
-            taxPerPlot: TAX_PER_PLOT,
-            cansa: CANSA,
-            gemPacks: GEM_PACKS,
-            marketSat: MARKET_SAT,
-            fast: config.fast,
-          },
+          ...(request.query.slim ? {} : { config: catalog.config }),
+          catalogVersion: catalog.version,
           events: db.prepare('SELECT at, text FROM events ORDER BY id DESC LIMIT 80').all(),
           // Phiên bản server lúc boot: client so với ?v= của app.js đang chạy,
           // lệch là tự tải lại (tránh tab mở sẵn chạy client cũ với server mới).
