@@ -910,7 +910,7 @@ function makeFarmer() {
     mesh(new THREE.SphereGeometry(0.085, 8, 6), skin, 0, -0.44, 0, pv);
     return pv;
   });
-  const head = new THREE.Group(); head.position.y = 0.95; upper.add(head);
+  const head = new THREE.Group(); head.position.y = 1.02; head.scale.setScalar(1.3); upper.add(head); // chibi: big head reads at phone size
   mesh(new THREE.SphereGeometry(0.36, 18, 14), skin, 0, 0, 0, head);
   const hair = mesh(new THREE.SphereGeometry(0.385, 18, 14), 0x3b2416, 0, 0.05, -0.07, head); hair.scale.set(1, 0.98, 0.95);
   const bang = mesh(new THREE.SphereGeometry(0.3, 12, 8), 0x3b2416, 0, 0.2, 0.15, head); bang.scale.set(1.15, 0.45, 0.8);
@@ -924,7 +924,7 @@ function makeFarmer() {
     mesh(new THREE.SphereGeometry(0.055, 8, 6), 0xf3a1a1, ex * 1.5, -0.12, 0.29, head).scale.set(1, 0.6, 0.4);
   });
   const mouth = mesh(new THREE.TorusGeometry(0.055, 0.014, 4, 10, Math.PI), 0x8a3b2a, 0, -0.14, 0.335, head, false); mouth.rotation.z = Math.PI;
-  const hat = new THREE.Group(); hat.position.y = 0.3; hat.rotation.x = -0.12; head.add(hat);
+  const hat = new THREE.Group(); hat.position.set(0, 0.28, -0.06); hat.rotation.x = -0.55; hat.scale.setScalar(0.82); head.add(hat); // tipped back so the face shows from above
   mesh(new THREE.ConeGeometry(0.78, 0.46, 28), 0xe9c77b, 0, 0.12, 0, hat);
   const rim = mesh(new THREE.TorusGeometry(0.76, 0.025, 4, 28), 0xc9a75a, 0, -0.1, 0, hat); rim.rotation.x = Math.PI / 2;
   [0.3, 0.6].forEach(f => { const l = mesh(new THREE.TorusGeometry(0.78 * (1 - f) + 0.006, 0.012, 3, 24), 0xc9a75a, 0, -0.11 + f * 0.46, 0, hat); l.rotation.x = Math.PI / 2; });
@@ -940,7 +940,7 @@ function makeFarmer() {
   mesh(new THREE.CylinderGeometry(0.2, 0.15, 0.2, 10), 0xc99a5c, 0, -0.05, 0, basket);
   const handle = mesh(new THREE.TorusGeometry(0.17, 0.02, 4, 12, Math.PI), 0xa8743f, 0, 0.05, 0, basket);
   hoe.visible = can.visible = false;
-  root.position.set(-4.8, 0, 1.2);
+  root.position.set(-4.8, 0, 1.2); root.scale.setScalar(1.15);
   return { root, upper, legs, arms, head, tail, hoe, can, spoutTip, basket, eyes, glints, phase: 0, state: 'idle', t: 0, task: null, facing: 0, lookT: 0, blinkT: 2, blink: 0 };
 }
 const farmer = makeFarmer();
@@ -951,7 +951,7 @@ function chicken(x, z, brown) {
   const body = brown ? 0xc8742e : 0xfafafa;
   const b = mesh(new THREE.SphereGeometry(0.28, 12, 10), body, 0, 0.36, 0, g); b.scale.set(0.9, 0.85, 1.15);
   const tail = mesh(new THREE.ConeGeometry(0.15, 0.3, 6), body, 0, 0.52, -0.3, g); tail.rotation.x = -0.9;
-  const head = new THREE.Group(); head.position.set(0, 0.62, 0.22); g.add(head);
+  const head = new THREE.Group(); head.position.set(0, 0.64, 0.24); head.scale.setScalar(1.35); g.add(head); g.scale.setScalar(1.15);
   mesh(new THREE.SphereGeometry(0.15, 10, 8), body, 0, 0, 0, head);
   mesh(new THREE.ConeGeometry(0.045, 0.13, 5), 0xf0a020, 0, -0.02, 0.17, head).rotation.x = Math.PI / 2;
   box(0.04, 0.12, 0.14, 0xe0402e, 0, 0.15, 0.02, head);
@@ -964,7 +964,7 @@ function chicken(x, z, brown) {
 function chick(mom, ox, oz) {
   const g = new THREE.Group(); scene.add(g);
   mesh(new THREE.SphereGeometry(0.12, 10, 8), 0xffd84a, 0, 0.13, 0, g);
-  const head = new THREE.Group(); head.position.set(0, 0.25, 0.06); g.add(head);
+  const head = new THREE.Group(); head.position.set(0, 0.26, 0.06); head.scale.setScalar(1.3); g.add(head); g.scale.setScalar(1.15);
   mesh(new THREE.SphereGeometry(0.08, 8, 6), 0xffd84a, 0, 0, 0, head);
   mesh(new THREE.ConeGeometry(0.025, 0.06, 4), 0xf0a020, 0, 0, 0.09, head).rotation.x = Math.PI / 2;
   g.position.set(mom.g.position.x + ox, 0, mom.g.position.z + oz);
@@ -975,7 +975,7 @@ function sheep(x, z) {
   const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
   const wool = toon(0xf6f2ea, { flatShading: true });
   [[0, 0.62, 0, 0.36], [0.2, 0.68, 0.18, 0.28], [-0.2, 0.68, 0.18, 0.28], [0.2, 0.66, -0.2, 0.28], [-0.2, 0.66, -0.2, 0.28], [0, 0.82, 0, 0.3]].forEach(([px, py, pz, r]) => mesh(new THREE.IcosahedronGeometry(r, 1), wool, px, py, pz, g));
-  const head = new THREE.Group(); head.position.set(0, 0.78, 0.45); g.add(head);
+  const head = new THREE.Group(); head.position.set(0, 0.8, 0.47); head.scale.setScalar(1.3); g.add(head); g.scale.setScalar(1.1);
   const h = mesh(new THREE.SphereGeometry(0.19, 10, 8), 0x3d3431, 0, 0, 0, head); h.scale.set(0.85, 1, 1.15);
   mesh(new THREE.IcosahedronGeometry(0.13, 1), wool, 0, 0.14, -0.02, head);
   [-1, 1].forEach(s => { const e = mesh(new THREE.SphereGeometry(0.08, 6, 4), 0x3d3431, s * 0.2, 0.04, -0.02, head); e.scale.set(1, 0.4, 0.6); });
@@ -988,7 +988,7 @@ function pig(x, z) {
   const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
   const pink = 0xf4a7a3;
   const b = mesh(new THREE.SphereGeometry(0.42, 14, 10), pink, 0, 0.5, 0, g); b.scale.set(0.95, 0.85, 1.25);
-  const head = new THREE.Group(); head.position.set(0, 0.6, 0.48); g.add(head);
+  const head = new THREE.Group(); head.position.set(0, 0.62, 0.5); head.scale.setScalar(1.2); g.add(head); g.scale.setScalar(1.1);
   mesh(new THREE.SphereGeometry(0.27, 12, 10), pink, 0, 0, 0, head);
   mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.1, 10), 0xe58f8b, 0, -0.04, 0.26, head).rotation.x = Math.PI / 2;
   [-0.04, 0.04].forEach(nx => mesh(new THREE.SphereGeometry(0.02, 4, 4), 0x9a4a4a, nx, -0.04, 0.32, head));
@@ -1661,6 +1661,6 @@ function frame(t) {
   renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
-if (location.hash === '#debug') window.__farm = { G, plots, tapPlot, truck, farmer, openStore, addXp, camTarget, CROPS, mill, startJob, tapMill, openMill };
+if (location.hash === '#debug') window.__farm = { G, plots, tapPlot, truck, farmer, openStore, addXp, camTarget, CROPS, mill, startJob, tapMill, openMill, setZoom: z => { zoomGoal = zoom = z; } };
 })();
 </script>
