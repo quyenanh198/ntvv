@@ -1,4 +1,4 @@
-import * as THREE from '../vendor/three.module.js';
+import * as THREE from '../vendor/0.149.0/three.module.js';
 import { net, serverNow, api } from './net.js';
 import { store, refresh, act as doAct, subscribe } from './store.js';
 import { itemSprite } from './art.js';
@@ -1823,6 +1823,32 @@ function renderProd() {
       if (j && j.ready) add('Lấy thành phẩm', () => collectRecipe(m.id, r), false);
       rows.appendChild(row);
     });
+  } else if (prodMode === 'quests') {
+    $('#prodTitle').textContent = 'Nhiệm vụ ngày';
+    const d = me.daily, head = document.createElement('p');
+    head.textContent = `Xong ${d.done}/${d.required} nhiệm vụ để mở rương ngày. Nhiệm vụ làm mới lúc 9 giờ sáng giờ Los Angeles.`; rows.appendChild(head);
+    d.quests.forEach(q => {
+      const row = document.createElement('div'); row.className = 'row job'; const done = q.progress >= q.target;
+      row.innerHTML = `<span class="emo">${q.emoji}</span><div><b>${q.name}</b> ${done ? '<span class="state-chip done">Xong</span>' : ''}<small>${q.progress}/${q.target} · +${nf.format(q.gold)} vàng · +${q.exp} EXP${q.stars ? ' · +' + q.stars + ' sao' : ''}</small></div>`;
+      rows.appendChild(row);
+    });
+    const chest = document.createElement('div'); chest.className = 'row job'; chest.innerHTML = '<span class="emo">🎁</span><div><b>Rương ngày</b><small>Vàng, EXP và cơ hội nhận kim cương</small></div><div class="acts"></div>';
+    const cb = document.createElement('button'); cb.type = 'button'; cb.className = 'cta small'; cb.textContent = d.chestClaimed ? 'Đã nhận' : 'Mở rương';
+    cb.disabled = d.chestClaimed || d.done < d.required || prodBusy;
+    cb.addEventListener('click', () => prodAct('/quest-chest', {}, r => toast(r.gem ? 'Rương ngày: nhận cả kim cương!' : 'Đã mở rương ngày')));
+    chest.querySelector('.acts').appendChild(cb); rows.appendChild(chest);
+  } else if (prodMode === 'board') {
+    $('#prodTitle').textContent = 'Bảng xếp hạng';
+    rows.innerHTML = '<div class="empty">Đang tải…</div>';
+    api('/leaderboard').then(list => {
+      if (prodMode !== 'board') return; rows.innerHTML = '';
+      list.forEach(u => {
+        const row = document.createElement('div'); row.className = 'row job';
+        row.innerHTML = `<span class="emo">${u.rank <= 3 ? ['🥇', '🥈', '🥉'][u.rank - 1] : u.rank}</span><div><b>${u.name}${u.id === me.id ? ' (bạn)' : ''}</b><small>Cấp ${u.level}${u.title ? ' · ' + u.title : ''} · ${nf.format(u.stars)} sao</small></div>`;
+        rows.appendChild(row);
+      });
+      if (!list.length) rows.innerHTML = '<div class="empty">Chưa có ai trên bảng.</div>';
+    }).catch(fail);
   } else if (prodMode === 'family') {
     $('#prodTitle').textContent = 'Hàng xóm';
     const others = store.family.filter(u => !u.me);
@@ -1986,6 +2012,8 @@ async function visitTap(p) {
   } finally { p.busy = false; }
 }
 $('#bFamily').addEventListener('click', () => openProd('family'));
+$('#bQuests').addEventListener('click', () => openProd('quests'));
+$('#bBoard').addEventListener('click', () => openProd('board'));
 $('#visitHome').addEventListener('click', leaveVisit);
 
 // ================= Boot: load the state once, then keep it fresh =================

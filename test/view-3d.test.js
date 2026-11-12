@@ -28,7 +28,7 @@ test('?view=3d serves the 3D shell and plain /farm/ still serves the 2D client',
 
 test('the 3D client modules and the pinned three build are served from the same origin', async () => {
   const { app } = harness();
-  for (const [url, type] of [['/farm/3d/main.js', /javascript/], ['/farm/3d/net.js', /javascript/], ['/farm/3d/store.js', /javascript/], ['/farm/3d/art.js', /javascript/], ['/farm/3d/style.css', /css/], ['/farm/vendor/three.module.js', /javascript/]]) {
+  for (const [url, type] of [['/farm/3d/main.js', /javascript/], ['/farm/3d/net.js', /javascript/], ['/farm/3d/store.js', /javascript/], ['/farm/3d/art.js', /javascript/], ['/farm/3d/style.css', /css/], ['/farm/vendor/0.149.0/three.module.js', /javascript/]]) {
     const res = await app.inject({ method: 'GET', url });
     assert.equal(res.statusCode, 200, url);
     assert.match(res.headers['content-type'], type, url);
@@ -36,6 +36,14 @@ test('the 3D client modules and the pinned three build are served from the same 
   const csp = (await app.inject({ method: 'GET', url: '/farm/?view=3d' })).headers['content-security-policy'];
   assert.match(csp, /default-src 'self'/);
   assert.doesNotMatch(csp, /unsafe-eval|script-src[^;]*unsafe-inline/, 'the 3D client needs no relaxed script policy');
+});
+
+test('three.js is cached for a year and the import path matches the installed version', async () => {
+  const { app } = harness();
+  const version = JSON.parse(readFileSync(new URL('../node_modules/three/package.json', import.meta.url), 'utf8')).version;
+  assert.match(readFileSync(new URL('../public/3d/main.js', import.meta.url), 'utf8'), new RegExp('vendor/' + version.replaceAll('.', '\.') + '/three\.module\.js'), 'main.js imports the installed three version');
+  const res = await app.inject({ method: 'GET', url: '/farm/vendor/' + version + '/three.module.js' });
+  assert.equal(res.headers['cache-control'], 'public, max-age=31536000, immutable');
 });
 
 test('the 3D client never decides outcomes: it carries no economy rules of its own', () => {

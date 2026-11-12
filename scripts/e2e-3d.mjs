@@ -11,6 +11,8 @@ import { chromium } from 'playwright';
 const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-e2e-'));
 const db = openDb(dataDir);
 const app = buildApp({ db, logger: false, config: { dataDir, fast: false, mockChatUser: { id: 1, username: 'e2e', display_name: 'E2E Farmer' } } });
+let threeHits = 0; // requests that actually reached the server, regardless of what the browser reports
+app.addHook('onRequest', async (req) => { if (req.raw.url.includes('/three.module.js')) threeHits += 1; });
 await app.listen({ port: 8091, host: '127.0.0.1' });
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const out = process.argv[2] || join(tmpdir(), 'ntvv-e2e-shots');
@@ -88,7 +90,7 @@ const done = await page.evaluate(() => ({ shown: document.querySelector('#gold')
 step('gold released when truck leaves', done.hold === null && Number(done.shown.replace(/\D/g, '')) === done.server, JSON.stringify(done));
 await page.screenshot({ path: `${out}/e2e-6-sold.png` });
 
-await page.reload();
+await page.goto('http://127.0.0.1:8091/farm/?view=3d&again=1#debug', { waitUntil: 'load' }); // a normal second visit, not a forced reload
 await page.waitForFunction(() => window.__farm && window.__farm.store.me, null, { timeout: 30000 });
 const after = await page.evaluate(() => ({ gold: __farm.store.me.gold, plots: __farm.plots.length }));
 step('reload restores the same farm', after.gold === done.server && after.plots === 12, JSON.stringify(after));
@@ -172,6 +174,22 @@ step('water-help: the server pays the helper', true);
 await page.evaluate(() => __farm.leaveVisit());
 step('back home restores my farm', await page.evaluate(() => !document.body.classList.contains('visiting') && __farm.plots[0].cropKey === null));
 await page.screenshot({ path: `${out}/e2e-12-home.png` });
+
+// ---- P4/P5: daily quests and the ranking come from the server ----
+await page.click('#bQuests');
+await page.waitForSelector('#prodRows .row');
+step('daily quests listed from the server', await page.evaluate(() => document.querySelectorAll('#prodRows .row').length >= 4));
+await page.click('#prodClose');
+await page.click('#bBoard');
+await page.waitForFunction(() => document.querySelector('#prodRows').textContent.includes('(bạn)'), null, { timeout: 15000 });
+step('ranking lists the player', true);
+await page.click('#prodClose');
+
+// ---- graphics load once: the second open takes three.js from the browser cache ----
+const mainLoads = reqs.filter((r) => r.includes('/3d/main.js'));
+// two browser contexts (the CSP check and the driven session) each download it once; the second visit in a context is served from its cache
+step('three.js downloaded once per browser; later opens come from the cache', threeHits === 2, 'server saw ' + threeHits + ' requests for 3 page loads');
+step('catalog not refetched in full after the first open', reqs.filter((r) => r.includes('/api/catalog')).length <= 2, `main.js ${mainLoads.length} loads`);
 
 const catalogCalls = reqs.filter((r) => r.includes('/api/catalog')).length;
 const stateCalls = reqs.filter((r) => r.includes('/api/state')).length;
