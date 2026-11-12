@@ -318,8 +318,8 @@ Mỗi giai đoạn là một nhánh và một PR riêng, có tiêu chí nghiệm
 
 | Giai đoạn | Trạng thái | Ghi chú |
 |---|---|---|
-| P0 Chuẩn bị server | Xong |  có ETag,  (5,9 KB so với 66,6 KB), cache gia đình, cấp cao nhất, LRU phiên, giảm ghi khi đọc, test giới hạn tần suất |
-| P1 Khung 3D | Xong |  tải đồ họa một lần khi mở trang (three.js ghim 0.149.0 phục vụ cùng nguồn, không cần CDN, không cần nới CSP); , , ,  |
+| P0 Chuẩn bị server | Xong | `/catalog` có ETag, `/state?slim=1` (5,9 KB so với 66,6 KB), cache gia đình, cấp cao nhất, LRU phiên, giảm ghi khi đọc, test giới hạn tần suất |
+| P1 Khung 3D | Xong | `/farm/?view=3d` tải đồ họa một lần khi mở trang (three.js ghim 0.149.0 phục vụ cùng nguồn, không cần CDN, không cần nới CSP); `net.js`, `store.js`, `art.js`, `main.js` |
 | P2 Vòng chơi chính | Xong | gieo, tưới, thu (lẻ và hàng loạt), bán qua xe tải, mua hạt (36 loại, khóa theo cấp), mở rộng đất, nông dân, hoạt cảnh; mọi kết quả do server trả về, client không tự cộng vàng hay EXP |
 | P3 Sản xuất | Chưa làm | vật nuôi, 12 máy, đơn hàng, ao cá, tăng tốc. Cối xay trong cảnh chỉ còn hoạt cảnh mở khóa; sản xuất vẫn dùng client 2D |
 | P4 Xã hội | Chưa làm | |
@@ -329,7 +329,7 @@ Mỗi giai đoạn là một nhánh và một PR riêng, có tiêu chí nghiệm
 Giới hạn đã biết của bản hiện tại:
 - Cảnh 3D vẽ tối đa 60 ô (ruộng chính 12 ô và 4 khối mở rộng ở phía đông). Người có nhiều đất hơn thấy phần còn lại ở client 2D; cần mở rộng khung thế giới trước P6.
 - Cây trồng dùng 4 họ mô hình cộng cây ăn quả, nhuộm màu quả theo từng loại; 10 họ ở §4.3 chưa đủ.
-- Cây ăn quả có thể xem và thu hoạch, nhưng chưa có thao tác trồng cây ăn quả ().
+- Cây ăn quả có thể xem và thu hoạch, nhưng chưa có thao tác trồng cây ăn quả (`plant-tree`).
 - Vật nuôi trong cảnh chỉ để trang trí, chưa phản ánh trạng thái từ server.
 
 ## 9. Kiểm thử
