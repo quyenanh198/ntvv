@@ -133,6 +133,23 @@ await page.screenshot({ path: `${out}/e2e-9-barn.png` });
 // with feed in the barn the server also collects ripe products on its own
 await page.waitForFunction(() => (__farm.store.me.inventory.trung || 0) >= 1, null, { timeout: 15000 });
 step('barn: buy via the server; server feeds and collects with feed in stock', true);
+await page.click('#prodClose');
+
+// ---- P3: orders. Delivery pays out only when the server accepts it ----
+await page.evaluate(() => __farm.refresh());
+const order = await page.evaluate(() => __farm.store.me.orders[0]);
+step('server offers orders', !!order && Object.keys(order.items).length > 0, JSON.stringify(order?.items));
+for (const [item, qty] of Object.entries(order.items)) db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, ?) ON CONFLICT(owner_id, item) DO UPDATE SET qty = ?').run(item, qty, qty);
+await page.evaluate(() => __farm.refresh());
+const goldBeforeOrder = await page.evaluate(() => __farm.store.me.gold);
+await page.click('#bOrders');
+await page.waitForSelector('#prodRows .cta');
+await page.screenshot({ path: `${out}/e2e-10-orders.png` });
+await page.evaluate(() => [...document.querySelectorAll('#prodRows .cta')].find((b) => b.textContent === 'Giao hàng' && !b.disabled).click());
+await page.waitForFunction((id) => !__farm.store.me.orders.some((o) => o.id === id), order.id, { timeout: 15000 });
+const goldAfterOrder = await page.evaluate(() => __farm.store.me.gold);
+step('order delivered; gold granted by the server', goldAfterOrder > goldBeforeOrder, `${goldBeforeOrder} -> ${goldAfterOrder}`);
+await page.click('#prodClose');
 
 const catalogCalls = reqs.filter((r) => r.includes('/api/catalog')).length;
 const stateCalls = reqs.filter((r) => r.includes('/api/state')).length;

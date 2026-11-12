@@ -1820,6 +1820,22 @@ function renderProd() {
       if (j && j.ready) add('Lấy thành phẩm', () => collectRecipe(m.id, r), false);
       rows.appendChild(row);
     });
+  } else if (prodMode === 'orders') {
+    $('#prodTitle').textContent = 'Đơn hàng';
+    if (me.level < (cat().orderUnlockLevel || 5)) { rows.innerHTML = `<div class="empty">Đơn hàng mở ở cấp ${cat().orderUnlockLevel || 5}.</div>`; return; }
+    const head = document.createElement('p'); head.textContent = `Giao đủ hàng trong kho để nhận vàng, EXP và sao. Sao hiện có: ${nf.format(me.stars)}.`; rows.appendChild(head);
+    if (!me.orders.length) rows.innerHTML += '<div class="empty">Chưa có đơn nào. Đơn mới sẽ tới sau ít phút.</div>';
+    me.orders.forEach(o => {
+      const row = document.createElement('div'); row.className = 'row job';
+      const ok = Object.entries(o.items).every(([id, n]) => (me.inventory[id] || 0) >= n);
+      const need = Object.entries(o.items).map(([id, n]) => { const have = me.inventory[id] || 0; return `<span class="${have >= n ? '' : 'short'}">${iconHtml(id)} ${nf.format(have)}/${n}</span>`; }).join('');
+      row.innerHTML = `<span class="emo">📦</span><div><b>Đơn #${o.slot + 1}</b><small>+${nf.format(o.gold)} vàng · +${o.exp} EXP · +${o.stars} sao</small></div><div class="need">${need}</div><div class="acts"></div>`;
+      const acts = row.querySelector('.acts');
+      const add = (label, on, disabled) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = label; b.disabled = disabled || prodBusy; b.addEventListener('click', on); acts.appendChild(b); };
+      add('Giao hàng', () => prodAct('/order-deliver', { id: o.id }, r => { toast(`Giao xong, +${nf.format(r.gained)} vàng`); announce(`Giao đơn hàng, nhận ${nf.format(r.gained)} vàng`); }), !ok);
+      add('Bỏ đơn', () => prodAct('/order-discard', { id: o.id }, () => toast('Đã bỏ đơn')), false);
+      rows.appendChild(row);
+    });
   } else {
     $('#prodTitle').textContent = 'Chuồng trại';
     const feed = me.inventory.thucan || 0, kinds = {};
@@ -1872,6 +1888,7 @@ function openProd(mode, machine) {
 }
 $('#bMachines').addEventListener('click', () => openProd('machines'));
 $('#bBarn').addEventListener('click', () => openProd('barn'));
+$('#bOrders').addEventListener('click', () => openProd('orders'));
 $('#prodClose').addEventListener('click', () => { prodSheet.hidden = true; });
 prodSheet.addEventListener('click', e => { if (e.target === prodSheet) prodSheet.hidden = true; });
 window.addEventListener('keydown', e => { if (e.key === 'Escape') prodSheet.hidden = true; });
