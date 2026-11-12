@@ -411,16 +411,16 @@ const segDist = (x, z, [ax, az], [bx, bz]) => { const dx = bx - ax, dz = bz - az
 const onPath = (x, z) => [...PATHS, ROAD].some(p => p.pts.some((b, i) => i && segDist(x, z, p.pts[i - 1], b) < p.w / 2 + 0.25));
 const groundTex = canvasTex(1024, 1024, (g, w, h) => {
   const X = x => (x + GS / 2) / GS * w, Z = z => (z + GS / 2) / GS * h, U = w / GS;
-  g.fillStyle = '#6aa843'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#6fb144'; g.fillRect(0, 0, w, h);
   for (let i = 0; i < 900; i++) { // soft, low-contrast variation (no dark stains)
     const r = rand(10, 40), x = rand(0, w), y = rand(0, h);
     g.fillStyle = pick(['rgba(90,160,60,.12)', 'rgba(140,195,80,.12)', 'rgba(80,150,55,.1)']);
     g.beginPath(); g.ellipse(x, y, r, r * 0.7, rand(0, 3), 0, Math.PI * 2); g.fill();
   }
   g.lineCap = 'round';
-  for (let i = 0; i < 26000; i++) { // short painted grass strokes give the lawn texture up close
-    const x = rand(0, w), y = rand(0, h), a = rand(-0.5, 0.5), l = rand(2, 4.5);
-    g.strokeStyle = pick(['rgba(130,190,80,.55)', 'rgba(85,150,55,.5)', 'rgba(150,205,95,.45)', 'rgba(70,130,45,.4)']);
+  for (let i = 0; i < 34000; i++) { // painted blade strokes: yellow-green tips over darker roots, like a lush lawn
+    const x = rand(0, w), y = rand(0, h), a = rand(-0.45, 0.45), l = rand(2.5, 6);
+    g.strokeStyle = pick(['rgba(150,210,85,.55)', 'rgba(175,220,95,.45)', 'rgba(85,150,55,.5)', 'rgba(60,120,40,.4)', 'rgba(125,195,70,.5)']);
     g.lineWidth = rand(0.8, 1.4); g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.sin(a) * l, y - Math.cos(a) * l); g.stroke();
   }
   // shore toward the lake
@@ -644,7 +644,7 @@ function swayMat(amp, base, tipShade = false) {
       float sw = sin(uTime * 1.4 + wq.x * 0.45 + wq.z * 0.3) * ${amp.toFixed(3)} * max(position.y - ${base.toFixed(2)}, 0.0);
       transformed.x += sw; transformed.z += sw * 0.5;`);
     // grass: darker at the root, lighter at the tip
-    if (tipShade) sh.vertexShader = sh.vertexShader.replace('#include <color_vertex>', '#include <color_vertex>\n  vColor.rgb *= mix(0.62, 1.18, clamp(position.y * 2.6, 0.0, 1.0));');
+    if (tipShade) sh.vertexShader = sh.vertexShader.replace('#include <color_vertex>', '#include <color_vertex>\n  vColor.rgb *= mix(0.52, 1.32, clamp(position.y * 2.2, 0.0, 1.0));');
   };
   m.customProgramCacheKey = () => `sway-${amp}-${base}-${tipShade}`; // otherwise tree and grass share one compiled shader
   return m;
@@ -829,13 +829,54 @@ function buildFlora() {
   // grass: dense clumps of short blades, darker at the root, growing in patches like a real lawn
   const bp = [];
   const BLADE = new THREE.ConeGeometry(1, 1, 3, 1, true); // 3 triangles per blade keeps ~850 clumps cheap on phone GPUs
-  for (let i = 0; i < 9; i++) limb(bp, BLADE, 0xffffff, rand(-0.09, 0.09), 0, rand(-0.09, 0.09), 0.06, rand(0.2, 0.38), rand(0.1, 0.55), i / 9 * 6.28 + rand(-0.3, 0.3), 0.3);
-  patchScatter(merge(bp), swayMat(0.3, 0, true), 140, 6, 0.9, [0x6fb944, 0x7cc24c, 0x63ad3c, 0x86c957], [0.8, 1.25]);
+  for (let i = 0; i < 12; i++) limb(bp, BLADE, 0xffffff, rand(-0.1, 0.1), 0, rand(-0.1, 0.1), 0.045, rand(0.26, 0.5), rand(0.05, 0.45), i / 12 * 6.28 + rand(-0.3, 0.3), 0.3);
+  patchScatter(merge(bp), swayMat(0.3, 0, true), 200, 7, 1.1, [0x86c94f, 0x93d158, 0x76bb45, 0xa2d963, 0x6aae3d], [0.8, 1.3]);
   // flowers: five petals around a golden centre, in small drifts
   const fp = [];
   for (let i = 0; i < 5; i++) { const a = i / 5 * 6.28; part(fp, SPH_LO, 0xffffff, Math.cos(a) * 0.075, 0.15, Math.sin(a) * 0.075, 0.06, 0.02, 0.04, 0, -a); }
   part(fp, SPH_LO, 0xffd23f, 0, 0.16, 0, 0.04, 0.03, 0.04);
   patchScatter(merge(fp), vcPlain, 34, 4, 0.7, [0xffffff, 0xf7a8c4, 0xffe27a, 0xf59a7a, 0xd4b8f5], [0.9, 1.3]);
+  // garden borders: lavender (purple spikes on arching leaves) along the paths,
+  // reed plumes (cỏ lau) behind the road kerb and along the lake shore
+  const STEM3 = new THREE.CylinderGeometry(1, 1, 1, 3, 1, true), PLUME = new THREE.SphereGeometry(1, 4, 3), SPIKE = new THREE.ConeGeometry(1, 1, 5);
+  const arch = (p, col, w, l1, l2, t0, bend, yaw) => {
+    const tip = limb(p, BLADE, vary(col, 0.02, 0.05), rand(-0.06, 0.06), 0, rand(-0.06, 0.06), w, l1, t0, yaw, 0.3);
+    limb(p, BLADE, vary(col, 0.02, 0.05), tip.x, tip.y, tip.z, w * 0.75, l2, t0 + bend, yaw, 0.3);
+  };
+  const dirOf = (tilt, yaw) => { _e.set(tilt, yaw, 0, 'YXZ'); return new THREE.Vector3(0, 1, 0).applyEuler(_e); };
+  const lav = [];
+  for (let i = 0; i < 14; i++) arch(lav, i % 3 ? 0x3f7a3a : 0x54914a, 0.035, rand(0.22, 0.3), rand(0.18, 0.26), rand(0.25, 0.55), rand(0.5, 0.8), i / 14 * 6.28 + rand(-0.2, 0.2));
+  for (let i = 0; i < 6; i++) {
+    const tilt = rand(0.05, 0.3), yaw = rand(0, 6.28), top = limb(lav, STEM3, 0x5d7f3e, rand(-0.06, 0.06), 0, rand(-0.06, 0.06), 0.012, rand(0.32, 0.45), tilt, yaw), d = dirOf(tilt, yaw);
+    part(lav, SPIKE, vary(0x8a5cc8, 0.02, 0.06), top.x + d.x * 0.11, top.y + d.y * 0.11, top.z + d.z * 0.11, 0.045, 0.24, 0.045, tilt, yaw);
+  }
+  const reed = [];
+  for (let i = 0; i < 22; i++) arch(reed, Math.random() < 0.2 ? 0xb58a4a : 0x5f8f3e, 0.03, rand(0.3, 0.42), rand(0.22, 0.32), rand(0.1, 0.4), rand(0.5, 0.9), rand(0, 6.28));
+  for (let i = 0; i < 6; i++) {
+    const tilt = rand(0.25, 0.6), yaw = i / 6 * 6.28 + rand(-0.3, 0.3), top = limb(reed, STEM3, 0x9a9a5a, 0, 0, 0, 0.012, rand(0.55, 0.75), tilt, yaw), d = dirOf(tilt + 0.25, yaw);
+    part(reed, PLUME, vary(0xefe4c6, 0.01, 0.04), top.x + d.x * 0.14, top.y + d.y * 0.14, top.z + d.z * 0.14, 0.065, 0.2, 0.065, tilt + 0.25, yaw);
+  }
+  const lavPts = [], reedPts = [];
+  PATHS.forEach(p => {
+    const L = p.curve.getLength();
+    for (let s = 0.4; s < L - 0.4; s += 0.55) { // close enough to read as one continuous border
+      const u = s / L, pt = p.curve.getPointAt(u), t = p.curve.getTangentAt(u), o = p.w / 2 + 0.42;
+      [-1, 1].forEach(side => { const x = pt.x - t.z * o * side, z = pt.z + t.x * o * side; if (!blocked(x, z)) lavPts.push([x + rand(-0.08, 0.08), z + rand(-0.08, 0.08)]); });
+    }
+  });
+  const nearLav = (x, z) => lavPts.some(([a, b]) => Math.hypot(a - x, b - z) < 0.8);
+  for (let x = -40; x < 40; x += rand(1.0, 1.5)) {
+    const z = ROAD_Z - ROAD.w / 2 - 0.75;
+    if (x > -6.2 && x < -3.6 || x > STOP_X - 1.9 && x < STOP_X + 1.9 || onPath(x, z) || nearLav(x, z) || solids.some(s => Math.hypot(x - s.x, z - s.z) < s.r + 0.3)) continue;
+    reedPts.push([x, z + rand(-0.15, 0.15)]);
+  }
+  for (let x = -45; x < 45; x += rand(1.2, 2.2)) reedPts.push([x, -20.2 + rand(-0.4, 0.3)]); // lake shore
+  const bordMat = swayMat(0.12, 0);
+  [[merge(lav), lavPts, [0xffffff, 0xf2eefa, 0xfbf8ff]], [merge(reed), reedPts, [0xffffff, 0xf7f2e6]]].forEach(([geo, pts, cols]) => {
+    const im = new THREE.InstancedMesh(geo, bordMat, pts.length), c = new THREE.Color();
+    pts.forEach(([x, z], i) => { const s = rand(1.1, 1.5); M4.compose(V.set(x, 0, z), Q.setFromEuler(E.set(0, rand(0, 6.28), 0)), S.set(s, s, s)); im.setMatrixAt(i, M4); im.setColorAt(i, c.set(pick(cols))); });
+    im.castShadow = true; scene.add(im);
+  });
   // boulders: a faceted main stone with a moss cap and a couple of smaller stones
   const rockMat = new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: grad, flatShading: true });
   for (let i = 0; i < 9; i++) {
