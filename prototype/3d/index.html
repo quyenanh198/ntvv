@@ -317,6 +317,7 @@ function mesh(geo, mat, x = 0, y = 0, z = 0, parent = scene, shadow = true) {
   m.position.set(x, y, z); m.castShadow = m.receiveShadow = shadow; parent.add(m); return m;
 }
 const box = (w, h, d, mat, x, y, z, parent) => mesh(new THREE.BoxGeometry(w, h, d), mat, x, y, z, parent);
+const toonFlat = c => { const k = 'flat' + c; if (!matCache.has(k)) matCache.set(k, toon(c, { flatShading: true })); return matCache.get(k); };
 
 // ================= Lights =================
 scene.add(new THREE.HemisphereLight(0xdcefff, 0x6f7f45, 0.5));
@@ -429,7 +430,7 @@ const hillGeo = new THREE.SphereGeometry(1, 14, 8);
 });
 for (let i = 0; i < 40; i++) {
   const x = rand(-100, 100), z = rand(-62, -48);
-  const t = mesh(new THREE.ConeGeometry(1.2, 3.2, 6), toon(pick([0x4f8a3a, 0x5c9a40, 0x467d35]), { flatShading: true }), x, 1.6 + rand(0, 3), z, scene, false);
+  const t = mesh(new THREE.ConeGeometry(1.2, 3.2, 6), toonFlat(pick([0x4f8a3a, 0x5c9a40, 0x467d35])), x, 1.6 + rand(0, 3), z, scene, false);
   t.scale.setScalar(rand(0.8, 1.4));
 }
 
@@ -579,7 +580,7 @@ function tree(x, z, s = 1, apples = false) {
   mesh(new THREE.CylinderGeometry(0.22, 0.32, 2, 7), 0x7a5230, 0, 1, 0, g);
   const greens = [0x5fa73a, 0x6fb441, 0x4f9733, 0x82c24c];
   [[0, 2.7, 0, 1.4], [0.8, 2.3, 0.3, 1], [-0.8, 2.4, -0.2, 1.05], [0.1, 3.4, -0.2, 1]].forEach(([px, py, pz, r]) => {
-    mesh(new THREE.IcosahedronGeometry(r, 1), toon(pick(greens), { flatShading: true }), px, py, pz, g);
+    mesh(new THREE.IcosahedronGeometry(r, 1), toonFlat(pick(greens)), px, py, pz, g);
   });
   if (apples) for (let i = 0; i < 7; i++) {
     const a = rand(0, Math.PI * 2), y = rand(2.1, 3.4);
@@ -1589,12 +1590,60 @@ function setHover(p) {
 }
 
 // ================= Main loop =================
+// ================= Static batching (phones are CPU-bound on draw calls) =================
+// Every static mesh that shares a material becomes one mesh; moving things are left alone.
+function mergeStatic(skip) {
+  scene.updateMatrixWorld(true);
+  const byMat = new Map();
+  scene.traverse(o => {
+    if (!o.isMesh || o.isInstancedMesh || o.userData.plot || !o.material.visible || o.material.transparent) return;
+    for (let p = o; p; p = p.parent) if (skip.has(p)) return;
+    if (!byMat.has(o.material)) byMat.set(o.material, []);
+    byMat.get(o.material).push(o);
+  });
+  for (const [mat, list] of byMat) {
+    if (list.length < 2) continue;
+    const geos = list.map(o => { const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); g.applyMatrix4(o.matrixWorld); return g; });
+    const names = ['position', 'normal', 'uv'].filter(n => geos.every(g => g.attributes[n]));
+    const merged = new THREE.BufferGeometry();
+    names.forEach(n => {
+      const size = geos[0].attributes[n].itemSize, arr = new Float32Array(geos.reduce((s, g) => s + g.attributes[n].count * size, 0));
+      let o = 0; geos.forEach(g => { arr.set(g.attributes[n].array, o); o += g.attributes[n].array.length; });
+      merged.setAttribute(n, new THREE.BufferAttribute(arr, size));
+    });
+    merged.computeBoundingSphere();
+    const m = new THREE.Mesh(merged, mat); m.castShadow = m.receiveShadow = list.some(o => o.castShadow);
+    m.matrixAutoUpdate = false; scene.add(m);
+    list.forEach(o => o.parent.remove(o)); geos.forEach(g => g.dispose());
+  }
+  scene.traverse(o => { // whatever stayed and never moves skips per-frame matrix work
+    for (let p = o; p; p = p.parent) if (skip.has(p)) return;
+    o.updateMatrix(); o.matrixAutoUpdate = false;
+  });
+}
+// tiny parts (eyes, buttons, beaks) cast shadows nobody sees but cost a draw call each
+scene.traverse(o => { if (o.isMesh && !o.isInstancedMesh) { if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); const s = new THREE.Vector3(); o.getWorldScale(s); if (o.geometry.boundingSphere.radius * Math.max(s.x, s.y, s.z) < 0.16) o.castShadow = false; } });
+mergeStatic(new Set([sun, sun.target, farmer.root, truck.g, mill.g, mill.site, mill.hit, sails, ...animals.map(a => a.g), ...clouds, ...flies.map(f => f.g), ...plots.flatMap(p => [p.crop, p.marker])]));
+
+// Drop resolution, then shadow detail, when frames stay slow (weak phones)
+let qualT = 0;
+function adaptQuality(gap) {
+  qualT += gap; if (qualT < 2000 || perf.gap.length < 90) return; qualT = 0;
+  const median = perf.gap.slice(-90).sort((a, b) => a - b)[45];
+  if (median <= 22) return;
+  const pr = renderer.getPixelRatio();
+  if (pr > 1) { renderer.setPixelRatio(Math.max(1, pr - 0.5)); resize(); }
+  else if (sun.shadow.mapSize.x > 1024) { sun.shadow.mapSize.set(1024, 1024); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
+}
+
 // keep world labels fully on screen
 const place = (el, s, m = 40) => { el.style.transform = `translate(${THREE.MathUtils.clamp(s.x, m, innerWidth - m)}px, ${s.y}px) translate(-50%, -100%)`; };
 let last = performance.now(), time = 0, birdT = 4;
+const perf = { gap: [], work: [] };
 function frame(t) {
   requestAnimationFrame(frame);
-  const dt = Math.min((t - last) / 1000, 0.05); last = t; time += dt;
+  const w0 = performance.now(), gap = t - last;
+  const dt = Math.min(gap / 1000, 0.05); last = t; time += dt;
   windU.value = time;
   zoom += (zoomGoal - zoom) * (1 - Math.exp(-8 * dt));
   if (intro > 1) intro = Math.max(1, intro - dt * 0.9 * (intro - 0.95));
@@ -1659,8 +1708,11 @@ function frame(t) {
   birdT -= dt; if (birdT <= 0) { birdT = rand(5, 11); sfx.bird(); }
   updateParticles(dt);
   renderer.render(scene, camera);
+  perf.gap.push(gap); perf.work.push(performance.now() - w0);
+  if (perf.gap.length > 600) { perf.gap.shift(); perf.work.shift(); }
+  if (!document.hidden) adaptQuality(gap);
 }
 requestAnimationFrame(frame);
-if (location.hash === '#debug') window.__farm = { G, plots, tapPlot, truck, farmer, openStore, addXp, camTarget, CROPS, mill, startJob, tapMill, openMill, setZoom: z => { zoomGoal = zoom = z; } };
+if (location.hash === '#debug') window.__farm = { G, plots, tapPlot, truck, farmer, openStore, addXp, camTarget, CROPS, mill, startJob, tapMill, openMill, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
 })();
 </script>
