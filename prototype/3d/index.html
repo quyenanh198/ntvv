@@ -401,6 +401,12 @@ const PATHS = [
   { w: 1.0, pts: [[-4.9, 3.2], [-3.6, 3.2]] },                                                   // plot gate
 ];
 const ROAD = { w: 3.2, pts: [[-48, ROAD_Z], [48, ROAD_Z]] };
+// Paths bend gently through their points (centripetal Catmull-Rom); bed, stones and grass exclusion all follow the curve
+[...PATHS, ROAD].forEach(p => {
+  const v = p.pts.map(([x, z]) => new THREE.Vector3(x, 0, z));
+  p.curve = v.length > 2 ? new THREE.CatmullRomCurve3(v, false, 'centripetal') : new THREE.LineCurve3(v[0], v[1]);
+  if (v.length > 2) p.pts = p.curve.getSpacedPoints(Math.ceil(p.curve.getLength() / 0.5)).map(q => [q.x, q.z]);
+});
 const segDist = (x, z, [ax, az], [bx, bz]) => { const dx = bx - ax, dz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz))); return Math.hypot(x - ax - dx * t, z - az - dz * t); };
 const onPath = (x, z) => [...PATHS, ROAD].some(p => p.pts.some((b, i) => i && segDist(x, z, p.pts[i - 1], b) < p.w / 2 + 0.25));
 const groundTex = canvasTex(1024, 1024, (g, w, h) => {
@@ -419,38 +425,47 @@ const groundTex = canvasTex(1024, 1024, (g, w, h) => {
   rr(-12.4, 3.4, -5.6, 7.8, 0.6, '#c3a06a');                                   // chicken yard
   rr(-3.7, -1.5, 7.7, 7.3, 0.8, '#a57a4b');                                    // tilled border around plots
   rr(MILL_X - 2.3, MILL_Z - 1.9, MILL_X + 2.3, MILL_Z + 2.5, 0.6, '#b38c5c');  // mill yard
-  // sand bed under the 3D cobbles, so gaps between stones read as sand
-  g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#b9a27a';
-  [...PATHS, ROAD].forEach(p => { g.lineWidth = (p.w + 0.2) * U; g.beginPath(); p.pts.forEach(([x, z], i) => i ? g.lineTo(X(x), Z(z)) : g.moveTo(X(x), Z(z))); g.stroke(); });
+  // dark soil bed under the 3D stones, so the joints read like the reference roads
+  g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#6f604c';
+  [...PATHS, ROAD].forEach(p => { g.lineWidth = (p.w + 0.1) * U; g.beginPath(); p.pts.forEach(([x, z], i) => i ? g.lineTo(X(x), Z(z)) : g.moveTo(X(x), Z(z))); g.stroke(); });
 });
 const ground = mesh(new THREE.PlaneGeometry(GS, GS), toon(0xffffff, { map: groundTex }), 0, 0, 0, scene, false);
 ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
 
 // ================= Cobblestone paths and road (one instanced mesh) =================
 (function pave() {
-  const geo = new THREE.CylinderGeometry(0.5, 0.56, 0.14, 7), mats = [], cols = [];
-  const put = (x, z, size, palette) => {
-    const m = new THREE.Matrix4().compose(new THREE.Vector3(x, rand(0, 0.015), z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rand(0, 6.28), 0)), new THREE.Vector3(size * rand(0.85, 1.1), 1, size * rand(0.75, 1)));
-    mats.push(m); cols.push(new THREE.Color(pick(palette)));
+  // chamfered square setts: a 4-sided frustum turned 45°, about 1 x 1 footprint before scaling
+  const geo = new THREE.CylinderGeometry(0.62, 0.7, 1, 4, 1); geo.rotateY(Math.PI / 4);
+  const mats = [], cols = [], UP = new THREE.Vector3(0, 1, 0);
+  const put = (x, z, yaw, len, wid, h, palette, y0) => {
+    mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, y0 + h / 2 - 0.05 + rand(0, 0.015), z),
+      new THREE.Quaternion().setFromAxisAngle(UP, yaw + rand(-0.05, 0.05)), new THREE.Vector3(len, h, wid)));
+    cols.push(new THREE.Color(pick(palette)).offsetHSL(0, 0, rand(-0.04, 0.04)));
   };
-  const lay = (p, palette, step, size) => {
-    const across = Math.max(2, Math.round(p.w / step)), gap = p.w / across;
-    p.pts.forEach(([vx, vz], i) => { // round fill at every corner and end
-      for (let gx = -p.w / 2; gx <= p.w / 2; gx += step) for (let gz = -p.w / 2; gz <= p.w / 2; gz += step)
-        if (Math.hypot(gx, gz) <= p.w / 2 - 0.05) put(vx + gx + rand(-0.04, 0.04), vz + gz + rand(-0.04, 0.04), size, palette);
-      if (!i) return;
-      const [ax, az] = p.pts[i - 1], L = Math.hypot(vx - ax, vz - az), ux = (vx - ax) / L, uz = (vz - az) / L, n = Math.max(1, Math.round(L / step));
-      for (let k = 1; k < n; k++) {
-        const count = k % 2 ? across - 1 : across; // brick-style offset rows
-        for (let j = 0; j < count; j++) {
-          const along = L * k / n + rand(-0.04, 0.04), off = (j - (count - 1) / 2) * gap + rand(-0.04, 0.04);
-          put(ax + ux * along - uz * off, az + uz * along + ux * off, size, palette);
-        }
+  // rows of stones along the curve with random lengths, so joints stagger like a running bond
+  const lay = (p, palette, minL, maxL, rowW, h, y0) => {
+    const c = p.curve, L = c.getLength(), rows = Math.max(2, Math.round(p.w / rowW)), cw = p.w / rows;
+    for (let j = 0; j < rows; j++) {
+      const off = (j - (rows - 1) / 2) * cw;
+      for (let s = -rand(0, maxL * 0.6); s < L;) {
+        const len = rand(minL, maxL), u = THREE.MathUtils.clamp(s + len / 2, 0, L) / L, pt = c.getPointAt(u), t = c.getTangentAt(u);
+        put(pt.x - t.z * off, pt.z + t.x * off, Math.atan2(-t.z, t.x), len - 0.06, cw - 0.06, h, palette, y0);
+        s += len;
       }
-    });
+    }
   };
-  PATHS.forEach(p => lay(p, [0xb9ae98, 0xa89e88, 0xc4b9a3, 0x9e937e, 0xb1a690], 0.4, 0.38));
-  lay(ROAD, [0xa8a296, 0x9a958a, 0xb3aea2, 0x8e897f, 0xa09a8d], 0.46, 0.44);
+  const PATH_STONE = [0xb8b0a0, 0xa9a08f, 0xc2b8a3, 0x9d9585, 0xb5a68c, 0xc4b49a, 0xa89a82];
+  PATHS.forEach((p, i) => lay(p, PATH_STONE, 0.32, 0.62, 0.34, 0.12, i * 0.004));
+  lay(ROAD, [0x8e8b84, 0x9a968e, 0xa7a298, 0x7f7c76, 0xa19785, 0x958b7a], 0.4, 0.8, 0.42, 0.14, 0);
+  // kerb stones along both road edges, open where the farm paths join
+  const openings = [[-5.8, -4.0], [STOP_X - 1.6, STOP_X + 1.6]];
+  [-1, 1].forEach(side => {
+    for (let x = -48; x < 48;) {
+      const len = rand(0.7, 1.0), mid = x + len / 2; x += len;
+      if (side < 0 && openings.some(([a, b]) => mid > a && mid < b)) continue;
+      put(mid, ROAD_Z + side * (ROAD.w / 2 + 0.14), rand(-0.03, 0.03), len - 0.05, 0.26, 0.22, [0x7d7a73, 0x8a867e, 0x74716b, 0x868077], 0);
+    }
+  });
   const im = new THREE.InstancedMesh(geo, toon(0xffffff, { flatShading: true }), mats.length);
   mats.forEach((m, i) => { im.setMatrixAt(i, m); im.setColorAt(i, cols[i]); });
   im.receiveShadow = true; scene.add(im);
