@@ -204,6 +204,43 @@ await page.evaluate(() => __farm.leaveVisit());
 step('back home restores my farm', await page.evaluate(() => !document.body.classList.contains('visiting') && __farm.plots[0].cropKey === null));
 await page.screenshot({ path: `${out}/e2e-12-home.png` });
 
+// ---- P5: secondary systems, every outcome decided by the server ----
+await page.click('#bMore');
+await page.waitForSelector('#prodRows .row');
+for (const mode of ['stars', 'festival', 'skills', 'luxury', 'lottery', 'collections', 'energy', 'dog']) {
+  await page.evaluate((m) => document.querySelector('#bMore').click() || 0, mode);
+  const idx = ['stars', 'festival', 'skills', 'luxury', 'lottery', 'collections', 'energy', 'dog'].indexOf(mode);
+  await page.click(`#prodRows .row:nth-of-type(${idx + 1}) button`);
+  await page.waitForFunction(() => document.querySelector('#prodRows').children.length > 1 && !document.querySelector('#prodRows').textContent.includes('Đang tải'), null, { timeout: 15000 });
+  if (mode === 'skills') {
+    const before = await page.evaluate(() => __farm.store.me.skills.points);
+    await page.click('#prodRows .row button:not([disabled])');
+    await page.waitForFunction((n) => __farm.store.me.skills.points < n, before, { timeout: 15000 });
+    step('skill learned; points decided by the server', true);
+  }
+  if (mode === 'dog') {
+    await page.click('#prodRows .row button:not([disabled])');
+    await page.waitForFunction(() => __farm.store.me.dog.active, null, { timeout: 15000 });
+    step('dog hired; server records it', true);
+  }
+  if (mode === 'lottery') {
+    const before = await page.evaluate(() => __farm.store.me.gold);
+    await page.click('#prodRows .amounts button >> nth=0');
+    await page.waitForFunction((g) => __farm.store.me.gold < g, before, { timeout: 15000 });
+    step('lottery ticket bought; server takes the gold', true);
+  }
+  await page.screenshot({ path: `${out}/e2e-p5-${mode}.png` });
+  step(`${mode} sheet renders from server state`, true);
+  await page.click('#prodClose');
+}
+db.prepare('UPDATE farmers SET critter_next_at = ? WHERE user_id = 1').run(Date.now() + 1500);
+await page.evaluate(() => __farm.refresh());
+await page.waitForSelector('#critter:not([hidden])', { timeout: 15000 });
+const gemsBefore = await page.evaluate(() => __farm.store.me.gems);
+await page.evaluate(() => document.querySelector('#critter').click());
+await page.waitForFunction((n) => __farm.store.me.gems > n, gemsBefore, { timeout: 15000 });
+step('critter caught within the server window; gems granted by the server', true);
+
 // ---- P4/P5: daily quests and the ranking come from the server ----
 await page.click('#bQuests');
 await page.waitForSelector('#prodRows .row');

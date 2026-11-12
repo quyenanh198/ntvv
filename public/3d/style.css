@@ -212,7 +212,7 @@ button:focus-visible { outline: 3px solid var(--water); outline-offset: 2px; }
 .tab[aria-selected="true"] { background: #f1fbe6; border-color: var(--leaf); box-shadow: 0 0 0 2px var(--leaf); }
 .tab:disabled { opacity: .5; cursor: default; }
 .row.job { grid-template-columns: auto 1fr; row-gap: 6px; }
-.row.job .acts { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
+.row.job .acts { grid-column: 2 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
 .row.job .need { display: flex; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--ink-soft); }
 .row.job .need .short { color: #a13024; font-weight: 700; }
 .row.job .need img { width: 22px; height: 22px; vertical-align: middle; object-fit: contain; }
@@ -227,3 +227,7 @@ body.visiting .bulk, body.visiting .seeds, body.visiting .hint { display: none; 
 .visitacts .cta { padding-inline: 12px; }
 .visitacts .cta[aria-pressed="true"] { outline: 3px solid #ffd54a; }
 .amounts { display: flex; flex-wrap: wrap; gap: 6px; }
+.critter { position: fixed; right: 16px; top: 38%; z-index: 6; font-size: 34px; line-height: 1; min-width: 64px; min-height: 64px; border-radius: 50%; animation: hop .6s ease-in-out infinite alternate; }
+.critter[hidden] { display: none; }
+@keyframes hop { to { transform: translateY(-12px); } }
+@media (prefers-reduced-motion: reduce) { .critter { animation: none; } }

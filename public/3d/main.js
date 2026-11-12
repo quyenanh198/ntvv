@@ -2,6 +2,7 @@ import * as THREE from '../vendor/0.149.0/three.module.js';
 import { net, serverNow, api } from './net.js';
 import { store, refresh, act as doAct, subscribe } from './store.js';
 import { itemSprite } from './art.js';
+import { renderExtra } from './sheets.js';
 const $ = s => document.querySelector(s);
 const rand = (a = 0, b = 1) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -1795,6 +1796,7 @@ const itemsText = (m) => Object.entries(m || {}).map(([id, n]) => `${n} ${itemNa
 function renderProd() {
   const me = store.me, rows = $('#prodRows'), tabs = $('#prodTabs');
   rows.innerHTML = ''; tabs.innerHTML = '';
+  if (renderExtra(prodMode, { rows, me, cat, nf, api, prodAct, toast, fail, serverNow, fmtDur, open: openProd, setTitle: t => { $('#prodTitle').textContent = t; }, busy: () => prodBusy, mode: () => prodMode })) return;
   if (prodMode === 'machines') {
     $('#prodTitle').textContent = 'Chế biến';
     const ms = Object.values(cat().machines).sort((a, b) => a.level - b.level);
@@ -2097,6 +2099,21 @@ $('#bQuests').addEventListener('click', () => openProd('quests'));
 $('#bBoard').addEventListener('click', () => openProd('board'));
 $('#bThief').addEventListener('click', () => openProd('thief'));
 $('#bGold').addEventListener('click', () => openProd('gold'));
+$('#bMore').addEventListener('click', () => openProd('more'));
+
+// A small animal appears for a few seconds when the server's schedule says so; catching it is one server call.
+ERR.critter_gone = 'Con vật chạy mất rồi'; ERR.not_enough_gems = 'Không đủ kim cương'; ERR.already_owned = 'Bạn đã có món này'; ERR.no_milestone = 'Không còn cột mốc nào'; ERR.not_enough_stars = 'Chưa đủ sao';
+ERR.collection_incomplete = 'Bộ sưu tập chưa đủ'; ERR.already_claimed = 'Bạn đã nhận rồi'; ERR.no_skill_points = 'Hết điểm kỹ năng'; ERR.max_rank = 'Kỹ năng đã tối đa'; ERR.respec_cooldown = 'Chưa đến lúc đặt lại kỹ năng'; ERR.lottery_max = 'Đã mua đủ số vé hôm nay'; ERR.not_owned = 'Bạn chưa có món này';
+const critterBtn = $('#critter');
+setInterval(() => {
+  const c = store.me && store.me.critter, now = serverNow(), live = !!c && !VISIT && prodSheet.hidden && now >= c.at && now <= c.at + c.windowMs;
+  if (live) critterBtn.textContent = c.kind;
+  if (critterBtn.hidden === live) critterBtn.hidden = !live;
+}, 400);
+critterBtn.addEventListener('click', async () => {
+  critterBtn.hidden = true; initAudio();
+  try { const r = await doAct('/critter-catch', {}); toast(`Bắt được ${r.kind}! +${r.gems} kim cương`); announce(`Bắt được ${r.kind}, nhận ${r.gems} kim cương`); sfx.harvest(); } catch (e) { fail(e); }
+});
 $('#visitHome').addEventListener('click', leaveVisit);
 
 // ================= Boot: load the state once, then keep it fresh =================
