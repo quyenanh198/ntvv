@@ -1335,7 +1335,9 @@ function unlockMill() {
 }
 function tapMill() {
   initAudio();
-  toast(mill.state === 'locked' || mill.state === 'pending' ? `Cối xay bột mở khoá ở cấp ${MILL_LEVEL}` : 'Cối xay bột: dùng bản 2D để xay, bản 3D sẽ có sớm');
+  if (mill.state === 'locked' || mill.state === 'pending') { toast(`Cối xay bột mở khoá ở cấp ${MILL_LEVEL}`); return; }
+  if (mill.state === 'building') return;
+  openProd('machines', 'coixay');
 }
 const setGrain = lv => { mill.grain.visible = lv > 0.02; const s = 0.35 + 0.65 * lv; mill.grain.scale.set(s, 1, s); mill.grain.position.y = 0.1 + 0.7 * lv; };
 const millV = new THREE.Vector3();
@@ -1353,14 +1355,11 @@ function updateMill(dt, time) {
       M.state = 'idle'; sfx.level();
       [0xffd23f, 0x7fe07a, 0x5fd0ff].forEach(c => emit(MILL_X, 3, MILL_Z, c, 16, { speed: 3, up: 5, grav: 6, life: 1.3, size: 0.16 }));
     }
-  } else if (M.state === 'loading') {
-    M.t += dt;
-    const arrive = 0.9, end = arrive + M.loadN * 0.14 + 0.3;
-    if (M.t > arrive && M.t < end && Math.random() < dt * 40) { M.hopper.getWorldPosition(millV); emit(millV.x + rand(-0.2, 0.2), millV.y + 1.1, millV.z, CROP_COL[Object.keys(M.job.r.in)[0]], 1, { speed: 0.2, up: 0, grav: 9, life: 0.25, size: 0.12, spread: 0.1 }); }
-    setGrain(THREE.MathUtils.clamp((M.t - arrive) / (end - arrive), 0, 1));
-    if (M.t >= end) { M.state = 'working'; M.job.start = now(); M.grindT = 0; }
   } else if (M.state === 'working') {
-    const k = Math.min(1, (now() - M.job.start) / M.job.r.dur);
+    const cur = Object.values(store.me.machines?.coixay || {}).find(j => !j.ready);
+    const cyc = cur ? (cat().machines.coixay.recipes[cur.recipe]?.ms || 1) : 1;
+    if (cur && M.grainFor !== cur.recipe) { M.grainFor = cur.recipe; M.grain.material.color.set(cropColor(Object.keys(cat().machines.coixay.recipes[cur.recipe].in)[0])); }
+    const k = cur ? THREE.MathUtils.clamp(1 - ((cur.currentReadyAt || cur.readyAt) - serverNow()) / cyc, 0, 1) : 1;
     M.stone.rotation.y += dt * 3.2; M.crank.rotation.x += dt * 3.2; M.gear.rotation.z -= dt * 2.4;
     M.g.position.x = MILL_X + Math.sin(time * 45) * 0.012;
     setGrain(1 - k); M.sack.scale.setScalar(Math.max(0.001, 0.2 + 0.8 * k));
@@ -1378,8 +1377,11 @@ function updateMill(dt, time) {
   // label over the mill
   let txt = 'Cối xay bột', cls = 'tag sign';
   if (M.state === 'locked' || M.state === 'pending') txt = `Cối xay bột · cấp ${MILL_LEVEL}`;
-  else if (M.state === 'loading') txt = 'Đang đổ nguyên liệu';
-  else if (M.state === 'working') { const left = Math.max(0, Math.ceil(M.job.start + M.job.r.dur - now())); txt = `Đang xay · 0:${String(left).padStart(2, '0')}`; cls = 'tag'; }
+  else if (M.state === 'working') {
+    const cur = Object.values(store.me.machines?.coixay || {}).find(j => !j.ready);
+    const left = cur ? Math.max(0, Math.ceil(((cur.currentReadyAt || cur.readyAt) - serverNow()) / 1000)) : 0;
+    txt = `Đang xay · ${fmtClock(left)}`; cls = 'tag';
+  }
   else if (M.state === 'done') { txt = 'Xong! Chạm để lấy'; cls = 'tag ready'; }
   if (millTag.dataset.t !== txt) { millTag.textContent = txt; millTag.className = cls; millTag.dataset.t = txt; }
   place(millTag, toScreen(MILL_X, 4.3, MILL_Z), 70);
@@ -1780,6 +1782,112 @@ function frame(t) {
 }
 requestAnimationFrame(frame);
 if (location.hash === '#debug') window.__farm = { G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
+
+// ================= Production: machines and barns, every outcome decided by the server =================
+const prodSheet = $('#prodSheet');
+let prodMode = null, prodMachine = 'coixay', prodBusy = false;
+const iconHtml = (id) => { const sp = itemSprite(id); return sp ? `<img src="${sp}" alt="" loading="lazy">` : `<span class="emo">${info(id)?.emoji || '📦'}</span>`; };
+const itemName = (id) => info(id)?.name || id;
+const itemsText = (m) => Object.entries(m || {}).map(([id, n]) => `${n} ${itemName(id)}`).join(', ');
+function renderProd() {
+  const me = store.me, rows = $('#prodRows'), tabs = $('#prodTabs');
+  rows.innerHTML = ''; tabs.innerHTML = '';
+  if (prodMode === 'machines') {
+    $('#prodTitle').textContent = 'Chế biến';
+    const ms = Object.values(cat().machines).sort((a, b) => a.level - b.level);
+    if (!cat().machines[prodMachine] || cat().machines[prodMachine].level > me.level) prodMachine = ms.find(m => m.level <= me.level)?.id || null;
+    ms.forEach(m => {
+      const locked = m.level > me.level, t = document.createElement('button');
+      t.type = 'button'; t.className = 'tab'; t.disabled = locked; t.setAttribute('role', 'tab'); t.setAttribute('aria-selected', String(m.id === prodMachine));
+      t.textContent = locked ? `${m.name} · cấp ${m.level}` : m.name;
+      t.addEventListener('click', () => { prodMachine = m.id; renderProd(); });
+      tabs.appendChild(t);
+    });
+    const m = prodMachine && cat().machines[prodMachine];
+    if (!m) { rows.innerHTML = '<div class="empty">Chưa mở máy nào. Lên cấp để mở máy chế biến.</div>'; return; }
+    const jobs = me.machines?.[m.id] || {}, MAXQ = cat().machineQueueMax || 50;
+    Object.values(m.recipes).forEach(r => {
+      const j = jobs[r.id], row = document.createElement('div'); row.className = 'row job';
+      const maxN = Math.min(MAXQ, ...Object.entries(r.in).map(([id, n]) => Math.floor((me.inventory[id] || 0) / n)));
+      const need = Object.entries(r.in).map(([id, n]) => { const have = me.inventory[id] || 0; return `<span class="${have >= n ? '' : 'short'}">${iconHtml(id)} ${nf.format(have)}/${n}</span>`; }).join('');
+      const left = j && !j.ready ? Math.max(0, Math.ceil(((j.currentReadyAt || j.readyAt) - serverNow()) / 1000)) : 0;
+      const chip = j ? (j.ready ? `<span class="state-chip done">Xong ${j.completed || 1} mẻ</span>` : `<span class="state-chip run">Đang chạy, còn ${fmtClock(left)}</span>`) + (j.queue > 1 ? ` <span class="state-chip">${j.queue} mẻ</span>` : '') : '';
+      row.innerHTML = `${iconHtml(Object.keys(r.out)[0])}<div><b>${r.name}</b> ${chip}<small>${itemsText(r.out)} · ${fmtDur(r.ms)} · +${r.exp} EXP</small></div><div class="need">${need}</div><div class="acts"></div>`;
+      const acts = row.querySelector('.acts');
+      const add = (label, on, disabled) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = label; b.disabled = disabled || prodBusy; b.addEventListener('click', on); acts.appendChild(b); };
+      add('Chế 1 mẻ', () => runRecipe(m.id, r, 1), maxN < 1);
+      if (maxN > 1) add(`Chế ${maxN} mẻ`, () => runRecipe(m.id, r, maxN), false);
+      if (j && j.ready) add('Lấy thành phẩm', () => collectRecipe(m.id, r), false);
+      rows.appendChild(row);
+    });
+  } else {
+    $('#prodTitle').textContent = 'Chuồng trại';
+    const feed = me.inventory.thucan || 0, kinds = {};
+    (me.animals || []).forEach(a => { const k = kinds[a.kind] || (kinds[a.kind] = { n: 0, hungry: 0, ready: 0 }); k.n += 1; if (a.ready_at == null) k.hungry += 1; else if (a.ready) k.ready += 1; });
+    const head = document.createElement('p'); head.textContent = `Thức ăn gia súc trong kho: ${nf.format(feed)}. Còn thức ăn thì chuồng tự cho ăn và tự thu; hết thì bấm tay ở đây. Xay ngô ở Cối xay bột để có thêm.`; rows.appendChild(head);
+    Object.entries(kinds).forEach(([kind, k]) => {
+      const a = cat().animals[kind], row = document.createElement('div'); row.className = 'row job';
+      row.innerHTML = `<span class="emo">${a.emoji}</span><div><b>${a.name} ×${k.n}</b> ${k.hungry ? `<span class="state-chip">${k.hungry} đói</span>` : ''} ${k.ready ? `<span class="state-chip done">${k.ready} có ${itemName(a.product)}</span>` : ''}<small>Cho ăn ${a.feedQty} thức ăn mỗi con · ra ${itemName(a.product)} sau ${fmtDur(a.produceMs)}</small></div><div class="acts"></div>`;
+      const acts = row.querySelector('.acts');
+      const add = (label, on, disabled) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = label; b.disabled = disabled || prodBusy; b.addEventListener('click', on); acts.appendChild(b); };
+      add('Cho ăn', () => prodAct('/feed', { kind }, r => toast(`Đã cho ${r.fed} con ăn`)), k.hungry < 1 || feed < a.feedQty);
+      add('Thu sản phẩm', () => prodAct('/collect', { kind }, r => { toast(`Thu ${r.collected} ${itemName(r.product)}`); announce(`Thu ${r.collected} ${itemName(r.product)}`); }), k.ready < 1);
+      rows.appendChild(row);
+    });
+    const buyHead = document.createElement('p'); buyHead.textContent = 'Mua vật nuôi'; buyHead.style.fontWeight = '800'; rows.appendChild(buyHead);
+    Object.values(cat().animals).sort((a, b) => a.level - b.level).forEach(a => {
+      const locked = a.level > me.level, row = document.createElement('div'); row.className = 'row job';
+      row.innerHTML = `<span class="emo">${a.emoji}</span><div><b>${a.name}</b><small>${locked ? `Mở ở cấp ${a.level}` : `${nf.format(a.price)} vàng`}</small></div><div class="acts"></div>`;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = 'Mua';
+      b.disabled = locked || me.gold < a.price || prodBusy; b.addEventListener('click', () => prodAct('/buy-animal', { kind: a.id }, () => toast(`Đã mua ${a.name}`)));
+      row.querySelector('.acts').appendChild(b); rows.appendChild(row);
+    });
+  }
+}
+async function prodAct(path, body, ok) {
+  if (prodBusy) return; prodBusy = true; initAudio(); renderProd();
+  try { const r = await doAct(path, body); ok?.(r); sfx.harvest(); }
+  catch (e) { fail(e); } finally { prodBusy = false; if (!prodSheet.hidden) renderProd(); }
+}
+const _hw = new THREE.Vector3();
+function runRecipe(machine, r, count) {
+  prodAct('/machine-run', { machine, recipe: r.id, count }, (res) => {
+    toast(`Đã xếp ${res.queued} mẻ ${r.name}`); announce(`Đã xếp ${res.queued} mẻ ${r.name}`);
+    if (machine === 'coixay') {
+      mill.hopper.getWorldPosition(_hw); const hs = toScreen(_hw.x, _hw.y + 0.8, _hw.z), kb = $('#khoBtn').getBoundingClientRect();
+      Object.keys(r.in).forEach((id, i) => flyBetween(kb.left + kb.width / 2, kb.top + kb.height / 2, hs.x, hs.y, flyImg(id), i * 140, () => sfx.thunk()));
+    }
+  });
+}
+function collectRecipe(machine, r) {
+  prodAct('/machine-collect', { machine, recipe: r.id }, (res) => {
+    toast(`Lấy ${itemsText(res.items)}`); announce(`Lấy ${itemsText(res.items)}`);
+    const s = machine === 'coixay' ? toScreen(MILL_X, 1.5, MILL_Z + 1.7) : { x: innerWidth / 2, y: innerHeight / 2 };
+    Object.entries(res.items || {}).forEach(([id, n]) => flyToKho(id, Math.min(n, 4), s.x, s.y));
+  });
+}
+function openProd(mode, machine) {
+  initAudio(); prodMode = mode; if (machine) prodMachine = machine;
+  renderProd(); prodSheet.hidden = false; (prodSheet.querySelector('.tab:not(:disabled), .cta:not(:disabled)') || $('#prodClose')).focus();
+}
+$('#bMachines').addEventListener('click', () => openProd('machines'));
+$('#bBarn').addEventListener('click', () => openProd('barn'));
+$('#prodClose').addEventListener('click', () => { prodSheet.hidden = true; });
+prodSheet.addEventListener('click', e => { if (e.target === prodSheet) prodSheet.hidden = true; });
+window.addEventListener('keydown', e => { if (e.key === 'Escape') prodSheet.hidden = true; });
+subscribe(() => { if (!prodSheet.hidden) renderProd(); });
+
+// ---- the mill in the scene mirrors the server's coixay jobs ----
+function syncMill(me) {
+  if (!['idle', 'working', 'done'].includes(mill.state)) return;
+  const jobs = Object.values(me.machines?.coixay || {});
+  const next = jobs.some(j => j.ready) ? 'done' : jobs.length ? 'working' : 'idle';
+  if (next !== mill.state) {
+    if (mill.state === 'working' && next === 'idle') setGrain(0);
+    mill.state = next; if (next === 'idle') mill.g.position.x = MILL_X;
+  }
+}
+subscribe(() => { if (store.me && lastMe) syncMill(store.me); });
 
 // ================= Boot: load the state once, then keep it fresh =================
 const bootEl = $('#boot');

@@ -321,7 +321,7 @@ Mỗi giai đoạn là một nhánh và một PR riêng, có tiêu chí nghiệm
 | P0 Chuẩn bị server | Xong | `/catalog` có ETag, `/state?slim=1` (5,9 KB so với 66,6 KB), cache gia đình, cấp cao nhất, LRU phiên, giảm ghi khi đọc, test giới hạn tần suất |
 | P1 Khung 3D | Xong | `/farm/?view=3d` tải đồ họa một lần khi mở trang (three.js ghim 0.149.0 phục vụ cùng nguồn, không cần CDN, không cần nới CSP); `net.js`, `store.js`, `art.js`, `main.js` |
 | P2 Vòng chơi chính | Xong | gieo, tưới, thu (lẻ và hàng loạt), bán qua xe tải, mua hạt (36 loại, khóa theo cấp), mở rộng đất, nông dân, hoạt cảnh; mọi kết quả do server trả về, client không tự cộng vàng hay EXP |
-| P3 Sản xuất | Chưa làm | vật nuôi, 12 máy, đơn hàng, ao cá, tăng tốc. Cối xay trong cảnh chỉ còn hoạt cảnh mở khóa; sản xuất vẫn dùng client 2D |
+| P3 Sản xuất | Làm một phần | Xong: sheet Chế biến cho cả 12 máy (xếp mẻ, lấy thành phẩm, mở theo cấp) và sheet Chuồng (mua, cho ăn, thu; server tự cho ăn và tự thu khi kho còn thức ăn), cối xay trong cảnh quay theo job thật của server. Chưa làm: mô hình 3D cho 11 máy còn lại và chuồng, vật nuôi trong cảnh theo trạng thái server, đơn hàng, ao cá, tăng tốc |
 | P4 Xã hội | Chưa làm | |
 | P5 Hệ thống phụ | Chưa làm | |
 | P6 Chuyển hẳn | Chưa làm | client 2D còn nguyên và vẫn là mặc định |

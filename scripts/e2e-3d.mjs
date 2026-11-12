@@ -34,7 +34,7 @@ page.on('pageerror', (e) => errs.push('pageerror: ' + e.message));
 page.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
 const reqs = [];
 page.on('response', (r) => { const u = r.url(); if (r.status() >= 400) reqs.push(String(r.status()) + ' ' + u); if (u.includes('/farm/')) reqs.push(`${r.status()} ${u.replace('http://127.0.0.1:8091', '')}`); });
-const step = (name, ok, extra = '') => log.push(`${ok ? 'PASS' : 'FAIL'} ${name} ${extra}`);
+const step = (name, ok, extra = '') => { const line = `${ok ? 'PASS' : 'FAIL'} ${name} ${extra}`; log.push(line); console.log(line); };
 
 await page.goto('http://127.0.0.1:8091/farm/?view=3d#debug');
 await page.waitForFunction(() => window.__farm && window.__farm.store.me, null, { timeout: 30000 });
@@ -95,6 +95,44 @@ step('reload restores the same farm', after.gold === done.server && after.plots 
 
 const nx = await page.evaluate(() => __farm.store.me.expandNext);
 step('expansion offered', !!nx, JSON.stringify(nx));
+
+// ---- P3: machines. The mill in the scene follows the server's job state ----
+db.prepare('UPDATE farmers SET xp = 100000, gold = 1000000 WHERE user_id = 1').run();
+db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'luami', 10) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 10").run();
+await page.evaluate(() => __farm.refresh());
+await page.waitForFunction(() => __farm.mill.state === 'idle', null, { timeout: 20000 });
+await page.click('#bMachines');
+await page.waitForSelector('#prodRows .cta');
+await page.screenshot({ path: `${out}/e2e-7-machines.png` });
+await page.evaluate(() => [...document.querySelectorAll('#prodRows .cta')].find((b) => b.textContent === 'Chế 1 mẻ').click());
+await page.waitForFunction(() => Object.keys(__farm.store.me.machines.coixay || {}).length > 0, null, { timeout: 15000 });
+await page.waitForFunction(() => __farm.mill.state === 'working', null, { timeout: 15000 });
+step('machine job queued by the server; mill starts working', await page.evaluate(() => __farm.store.me.inventory.luami === 8));
+db.prepare("UPDATE machine_jobs SET ready_at = ? WHERE kind = 'coixay'").run(Date.now() - 1000);
+await page.evaluate(() => __farm.refresh());
+await page.waitForFunction(() => __farm.mill.state === 'done', null, { timeout: 15000 });
+await page.screenshot({ path: `${out}/e2e-8-mill-done.png` });
+await page.evaluate(() => [...document.querySelectorAll('#prodRows .cta')].find((b) => b.textContent === 'Lấy thành phẩm').click());
+await page.waitForFunction(() => (__farm.store.me.inventory.botmi || 0) >= 1 && __farm.mill.state === 'idle', null, { timeout: 15000 });
+step('finished goods collected; mill returns to idle', true);
+await page.click('#prodClose');
+
+// ---- P3: barn. Buy, feed, collect all go through the server ----
+await page.click('#bBarn');
+await page.waitForSelector('#prodRows .cta');
+await page.evaluate(() => [...document.querySelectorAll('#prodRows .row')].find((r) => r.textContent.includes('Gà') && r.querySelector('.cta:not(:disabled)')).querySelector('.cta').click());
+await page.waitForFunction(() => (__farm.store.me.animals || []).some((a) => a.kind === 'ga'), null, { timeout: 15000 });
+db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'thucan', 20) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 20").run();
+await page.evaluate(() => __farm.refresh());
+// the server auto-feeds hungry animals when feed is in the barn (autoTend); the UI must reflect that either way
+await page.evaluate(() => [...document.querySelectorAll('#prodRows .cta')].find((b) => b.textContent === 'Cho ăn' && !b.disabled)?.click());
+await page.waitForFunction(() => (__farm.store.me.animals || []).every((a) => a.ready_at != null), null, { timeout: 15000 });
+db.prepare('UPDATE animals SET ready_at = ?').run(Date.now() - 1000);
+await page.evaluate(() => __farm.refresh());
+await page.screenshot({ path: `${out}/e2e-9-barn.png` });
+// with feed in the barn the server also collects ripe products on its own
+await page.waitForFunction(() => (__farm.store.me.inventory.trung || 0) >= 1, null, { timeout: 15000 });
+step('barn: buy via the server; server feeds and collects with feed in stock', true);
 
 const catalogCalls = reqs.filter((r) => r.includes('/api/catalog')).length;
 const stateCalls = reqs.filter((r) => r.includes('/api/state')).length;
