@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -88,6 +88,7 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = resolve(__dirname, '../../public');
+const THREE_DIR = resolve(__dirname, '../../node_modules/three/build');
 
 const ME_CACHE_TTL_MS = 30_000;
 const ME_CACHE_MAX = 300;
@@ -2761,8 +2762,12 @@ export function buildApp({ config, db, logger = true }) {
   );
 
   // ---- Static + cache-bust (giữ nguyên bài v1) ----------------------------
+  // Client 3D: mọi file phẳng trong public/3d tính vào phiên bản, đổi file là tab đang mở tự tải lại.
+  const view3dDir = join(PUBLIC_DIR, '3d');
+  const view3dFiles = existsSync(view3dDir) ? readdirSync(view3dDir).filter((f) => /.(js|css|html)$/.test(f)).sort() : [];
   const assetHash = createHash('sha256')
     .update(readFileSync(join(PUBLIC_DIR, 'index.html')))
+    .update(Buffer.concat(view3dFiles.map((f) => readFileSync(join(view3dDir, f)))))
     .update(readFileSync(join(PUBLIC_DIR, 'app.js')))
     .update(readFileSync(join(PUBLIC_DIR, 'audio.js')))
     .update(readFileSync(join(PUBLIC_DIR, 'style.css')))
@@ -2776,7 +2781,13 @@ export function buildApp({ config, db, logger = true }) {
     .replace(/src="audio\.js[^"]*"/, `src="audio.js?v=${BOOT_VERSION}"`)
     .replace(/src="app\.js[^"]*"/, `src="app.js?v=${BOOT_VERSION}"`);
 
+  const INDEX_3D_HTML = view3dFiles.includes('index.html')
+    ? readFileSync(join(view3dDir, 'index.html'), 'utf8').replaceAll('__BOOT__', BOOT_VERSION)
+    : null;
+
   app.register(staticPlugin, { root: PUBLIC_DIR, prefix: '/farm/', index: false });
+  // three.js phục vụ từ chính gói npm đã ghim phiên bản, không qua CDN (CSP chỉ cho 'self').
+  app.register(staticPlugin, { root: THREE_DIR, prefix: '/farm/vendor/', index: false, decorateReply: false });
 
   app.addHook('onSend', async (request, reply, payload) => {
     const url = request.raw.url || '';
@@ -2791,15 +2802,17 @@ export function buildApp({ config, db, logger = true }) {
     reply.header('x-frame-options', 'SAMEORIGIN');
     reply.header('content-security-policy', "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
     const isAsset =
-      url.startsWith('/farm/') && !url.startsWith('/farm/api/') && url !== '/farm/' && !url.startsWith('/farm/index.html');
+      url.startsWith('/farm/') && !url.startsWith('/farm/api/') && url.split('?')[0] !== '/farm/' && !url.startsWith('/farm/index.html');
     if (isAsset) {
       reply.header('cache-control', url.includes('?v=') ? 'public, max-age=31536000, immutable' : 'no-cache');
     }
     return payload;
   });
 
-  const serveIndex = async (request, reply) =>
-    reply.type('text/html; charset=utf-8').header('cache-control', 'no-store').send(INDEX_HTML);
+  const serveIndex = async (request, reply) => {
+    const html = request.query?.view === '3d' && INDEX_3D_HTML ? INDEX_3D_HTML : INDEX_HTML;
+    return reply.type('text/html; charset=utf-8').header('cache-control', 'no-store').send(html);
+  };
   app.get('/farm/', serveIndex);
   app.get('/farm/index.html', serveIndex);
   app.get('/farm', async (request, reply) => reply.redirect('/farm/'));

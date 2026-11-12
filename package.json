@@ -16,12 +16,14 @@
     "balance:report": "node scripts/balance-report.mjs --write",
     "balance:progression": "node scripts/progression-report.mjs --write",
     "browser:smoke": "node scripts/browser-smoke.mjs",
+    "e2e:3d": "node scripts/e2e-3d.mjs",
     "test": "node --test"
   },
   "dependencies": {
     "@fastify/static": "^10.1.3",
     "better-sqlite3": "^13.0.3",
-    "fastify": "^5.12.1"
+    "fastify": "^5.12.1",
+    "three": "0.149.0"
   },
   "allowScripts": {
     "better-sqlite3@13.0.3": true

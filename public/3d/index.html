@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7ecdf2">
+<title>Nông Trại Vui Vẻ</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="3d/style.css?v=__BOOT__">
+</head>
+<body>
+<div id="stage"><canvas id="c" aria-label="Trang trại 3D"></canvas></div>
+<div id="tags"></div>
+
+<div id="vig"></div>
+<div class="top">
+  <div class="chip lvlchip">
+    <div class="ring" id="ring"><span id="lvl">1</span></div>
+    <div class="lvlmeta"><b>Cấp <span id="lvl2">1</span></b><small id="xptext">0 / 120 EXP</small></div>
+  </div>
+  <div class="right">
+    <div class="chip pill"><span class="coin"></span><span id="gold">60</span></div>
+    <button class="chip icon" id="khoBtn" type="button" aria-label="Kho nông sản">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l9-4 9 4v9l-9 4-9-4z" fill="#e8b66d" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 8l9 4 9-4M12 12v9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      <span class="badge" id="khoBadge" hidden>0</span>
+    </button>
+    <button class="chip icon" id="muteBtn" type="button" aria-label="Tắt âm thanh">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path class="waves" d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="x" d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="tray">
+  <div class="bulk" id="bulk" role="group" aria-label="Thao tác hàng loạt">
+    <button class="chip bulkbtn" id="bHarvest" type="button">Thu hết</button>
+    <button class="chip bulkbtn" id="bWater" type="button">Tưới hết</button>
+    <button class="chip bulkbtn" id="bPlant" type="button">Gieo hết</button>
+    <button class="chip bulkbtn" id="bExpand" type="button" hidden>Mở rộng</button>
+  </div>
+  <div class="hint" id="hint">Chạm ô đất trống để gieo hạt đang chọn</div>
+  <div class="chip seeds" style="border-radius: 22px" id="seeds" role="group" aria-label="Chọn hạt giống"></div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="lvlup"></div>
+
+<div class="overlay" id="boot">
+  <div class="plank sheet" role="status">
+    <h2 id="bootTitle">Đang tải nông trại…</h2>
+    <p id="bootMsg">Chuẩn bị đồ họa 3D.</p>
+    <button class="cta" id="bootRetry" type="button" hidden>Thử lại</button>
+  </div>
+</div>
+
+<div class="overlay" id="store" hidden>
+  <div class="plank sheet" role="dialog" aria-labelledby="storeTitle">
+    <h2 id="storeTitle">Kho nông sản</h2>
+    <div class="rows" id="storeRows"></div>
+    <div class="sheetfoot">
+      <button class="ghost" id="storeClose" type="button">Đóng</button>
+      <button class="cta" id="sellAll" type="button">Bán hết</button>
+    </div>
+  </div>
+</div>
+<div id="farm-announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script type="module" src="3d/main.js?v=__BOOT__"></script>
+</body>
+</html>
