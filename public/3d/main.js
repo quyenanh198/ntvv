@@ -1,5 +1,5 @@
 import * as THREE from '../vendor/three.module.js';
-import { net, serverNow } from './net.js';
+import { net, serverNow, api } from './net.js';
 import { store, refresh, act as doAct, subscribe } from './store.js';
 import { itemSprite } from './art.js';
 const $ = s => document.querySelector(s);
@@ -1197,8 +1197,10 @@ function applyView(p, v, first) {
 function onState() {
   const me = store.me, first = !lastMe;
   MILL_LEVEL = cat().machines?.coixay?.level ?? MILL_LEVEL;
-  ensurePlots(me.plotsCount, first);
-  for (const v of me.plots) if (v.idx < plots.length) applyView(plots[v.idx], v, first);
+  if (!VISIT) { // đang đi thăm: cảnh hiện nhà người khác, trạng thái của mình chỉ cập nhật HUD
+    ensurePlots(me.plotsCount, first);
+    for (const v of me.plots) if (v.idx < plots.length) applyView(plots[v.idx], v, first);
+  }
   if (!first && me.level > lastMe.level) {
     const el = $('#lvlup'); el.textContent = `Lên cấp ${me.level}!`; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     sfx.level(); announce(`Lên cấp ${me.level}`);
@@ -1231,6 +1233,7 @@ function plotAction(p) {
 }
 function tapPlot(p) {
   initAudio();
+  if (VISIT) { visitTap(p); return; }
   const a = plotAction(p);
   ripple(p.x, 0.34, p.z, a ? ACT_COL[a] : 0xffffff);
   if (!a) {
@@ -1781,7 +1784,7 @@ function frame(t) {
   if (!document.hidden) adaptQuality(gap);
 }
 requestAnimationFrame(frame);
-if (location.hash === '#debug') window.__farm = { G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
+if (location.hash === '#debug') window.__farm = { visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
 
 // ================= Production: machines and barns, every outcome decided by the server =================
 const prodSheet = $('#prodSheet');
@@ -1819,6 +1822,17 @@ function renderProd() {
       if (maxN > 1) add(`Chế ${maxN} mẻ`, () => runRecipe(m.id, r, maxN), false);
       if (j && j.ready) add('Lấy thành phẩm', () => collectRecipe(m.id, r), false);
       rows.appendChild(row);
+    });
+  } else if (prodMode === 'family') {
+    $('#prodTitle').textContent = 'Hàng xóm';
+    const others = store.family.filter(u => !u.me);
+    const head = document.createElement('p'); head.textContent = 'Ghé thăm trang trại hàng xóm: tưới giúp được tiền công, ô chín thì hái ké (chủ ruộng không mất gì), nhưng coi chừng chó canh vườn.'; rows.appendChild(head);
+    if (!others.length) rows.innerHTML += '<div class="empty">Chưa có hàng xóm nào.</div>';
+    others.forEach(u => {
+      const row = document.createElement('div'); row.className = 'row job';
+      row.innerHTML = `<span class="emo">🏡</span><div><b>${u.name}</b><small>${u.level != null ? 'Cấp ' + u.level : 'Chưa chơi'}${u.title ? ' · ' + u.title : ''}</small></div><div class="acts"></div>`;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = 'Ghé thăm'; b.disabled = u.level == null || prodBusy;
+      b.addEventListener('click', () => visitFarm(u.id)); row.querySelector('.acts').appendChild(b); rows.appendChild(row);
     });
   } else if (prodMode === 'orders') {
     $('#prodTitle').textContent = 'Đơn hàng';
@@ -1905,6 +1919,74 @@ function syncMill(me) {
   }
 }
 subscribe(() => { if (store.me && lastMe) syncMill(store.me); });
+
+// ================= Visiting a neighbour: same scene, their land, server-decided actions =================
+var VISIT = null; // { ownerId, farm, myActs }
+const visitBar = $('#visitBar');
+ERR.own_farm = 'Đây là nhà bạn'; ERR.already_poached = 'Bạn đã hái ô này rồi'; ERR.water_cooldown = 'Ô này vừa được tưới, đợi một lát'; ERR.no_farm = 'Không tìm thấy trang trại';
+ERR.caught_by_dog = 'Chó canh vườn bắt được bạn!'; ERR.not_ready = 'Cây chưa chín';
+function showVisit() {
+  const f = VISIT.farm;
+  ensurePlots(f.plotsCount, true);
+  const byIdx = new Map(f.plots.map(v => [v.idx, v]));
+  for (const p of plots) {
+    const v = byIdx.get(p.i), acts = VISIT.myActs[p.i] || {};
+    applyView(p, v || { idx: p.i, crop: null }, true);
+    p.mat.color.set(0x7d4d2b); // tưới của người khác không đổi màu đất của nhà này
+    p.marker.visible = !!(v && v.crop && (acts.canPoach || (acts.canWater && !v.ready)));
+    if (p.marker.visible) p.marker.material.color.set(acts.canPoach ? ACT_COL.harvest : ACT_COL.water);
+  }
+  visitBar.hidden = false; $('#visitName').textContent = `Đang thăm ${f.name} · cấp ${f.level}`;
+  document.body.classList.add('visiting');
+}
+async function visitFarm(id) {
+  if (prodBusy) return; prodBusy = true; initAudio();
+  try {
+    const r = await api(`/farm/${id}`);
+    if (r.me) { store.me = r.me; }
+    VISIT = { ownerId: id, farm: r.farm, myActs: r.myActs || {} };
+    prodSheet.hidden = true; showVisit(); announce(`Đang thăm ${r.farm.name}`);
+  } catch (e) { fail(e); } finally { prodBusy = false; }
+}
+function leaveVisit() {
+  VISIT = null; visitBar.hidden = true; document.body.classList.remove('visiting');
+  for (const p of plots) { p.marker.visible = false; p.pending = null; }
+  const me = store.me; ensurePlots(me.plotsCount, true);
+  const byIdx = new Map(me.plots.map(v => [v.idx, v]));
+  for (const p of plots) applyView(p, byIdx.get(p.i) || { idx: p.i, crop: null }, true);
+  announce('Đã về nhà');
+}
+async function visitTap(p) {
+  const acts = VISIT.myActs[p.i] || {}, id = VISIT.ownerId;
+  ripple(p.x, 0.34, p.z, p.state === 'ripe' ? ACT_COL.harvest : ACT_COL.water);
+  if (p.busy) return;
+  let path = null;
+  if (p.state === 'ripe' && acts.canPoach) path = '/poach';
+  else if (p.state === 'growing' && acts.canWater) path = '/water';
+  else if (p.state === 'ripe') { toast(acts.poached ? 'Bạn đã hái ô này rồi' : 'Không hái ké được ô này'); return; }
+  else if (p.state === 'growing') { toast(acts.watered ? 'Ô này bạn đã tưới rồi' : 'Cây chưa chín'); return; }
+  else return;
+  p.busy = true;
+  try {
+    const r = await doAct(path, { ownerId: id, idx: p.i });
+    if (r.farm) { VISIT.farm = r.farm; VISIT.myActs = r.myActs || VISIT.myActs; showVisit(); }
+    const s = toScreen(p.x, 1, p.z);
+    if (path === '/poach') {
+      const item = r.cropId || r.item, name = itemName(item);
+      emit(p.x, 0.8, p.z, cropColor(item), 20, { speed: 2.5, up: 4, size: 0.18, spread: 0.7 }); sfx.harvest();
+      if (item) flyToKho(item, 2, s.x, s.y);
+      floater(`Hái ké ${name}`, p.x, 1.6, p.z); toast(`Đã hái ké ${name} của ${VISIT.farm.name}`); announce(`Hái ké ${name}`);
+    } else {
+      emit(p.x, 0.6, p.z, 0x9fe0ff, 20, { speed: 1.2, up: 2.5, grav: -1, life: 1, size: 0.14, spread: 0.9 }); sfx.water();
+      floater(r.gained ? `+${r.gained} vàng` : 'Đã tưới giúp', p.x, 1.6, p.z, '#bff0ff'); toast('Đã tưới giúp'); announce('Đã tưới giúp');
+    }
+  } catch (e) {
+    if (e.code === 'caught_by_dog') { toast(e.data?.message || ERR.caught_by_dog); sfx.error(); announce(ERR.caught_by_dog); store.me && refresh().catch(() => {}); }
+    else fail(e);
+  } finally { p.busy = false; }
+}
+$('#bFamily').addEventListener('click', () => openProd('family'));
+$('#visitHome').addEventListener('click', leaveVisit);
 
 // ================= Boot: load the state once, then keep it fresh =================
 const bootEl = $('#boot');

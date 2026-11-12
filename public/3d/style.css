@@ -218,3 +218,7 @@ button:focus-visible { outline: 3px solid var(--water); outline-offset: 2px; }
 .row.job .need img { width: 22px; height: 22px; vertical-align: middle; object-fit: contain; }
 .state-chip { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 800; background: #e9e0c9; color: var(--wood-dark); }
 .state-chip.run { background: #dcecf8; color: #1d5b8c; } .state-chip.done { background: #d4eeb9; color: #285c12; }
+
+.visitbar { position: fixed; left: 50%; transform: translateX(-50%); top: max(64px, calc(env(safe-area-inset-top, 0px) + 60px)); display: flex; align-items: center; gap: 12px; padding: 6px 8px 6px 16px; font-weight: 800; z-index: 5; max-width: calc(100% - 24px); }
+.visitbar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.visiting .bulk, body.visiting .seeds, body.visiting .hint { display: none; }

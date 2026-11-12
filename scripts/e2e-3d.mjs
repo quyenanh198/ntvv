@@ -151,6 +151,28 @@ const goldAfterOrder = await page.evaluate(() => __farm.store.me.gold);
 step('order delivered; gold granted by the server', goldAfterOrder > goldBeforeOrder, `${goldBeforeOrder} -> ${goldAfterOrder}`);
 await page.click('#prodClose');
 
+// ---- P4: visit a neighbour, poach a ripe plot, water-help a growing one ----
+const t0 = Date.now();
+db.prepare('INSERT INTO farmers (user_id, name, gold, gems, plots_count, created_at, xp) VALUES (2, ?, 100, 0, 12, ?, 500)').run('Hàng Xóm', t0);
+db.prepare("INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (2, 0, 'luami', ?, ?, 0)").run(t0 - 600000, t0 - 1000);
+db.prepare("INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (2, 1, 'carot', ?, ?, 0)").run(t0 - 1000, t0 + 3600000);
+const stockBefore = await page.evaluate(() => __farm.store.me.inventory.luami || 0);
+const goldBeforeVisit = await page.evaluate(() => __farm.store.me.gold);
+await page.evaluate(() => __farm.visitFarm(2));
+await page.waitForFunction(() => document.body.classList.contains('visiting'), null, { timeout: 15000 });
+await wait(500);
+await page.screenshot({ path: `${out}/e2e-11-visit.png` });
+step('visiting shows the neighbour\'s land', await page.evaluate(() => __farm.plots[0].state === 'ripe' && __farm.plots[1].state === 'growing' && document.querySelector('#visitName').textContent.includes('Hàng Xóm')));
+await page.evaluate(() => __farm.tapPlot(__farm.plots[0]));
+await page.waitForFunction((n) => (__farm.store.me.inventory.luami || 0) > n, stockBefore, { timeout: 15000 });
+step('poach: the server grants the item', true);
+await page.evaluate(() => __farm.tapPlot(__farm.plots[1]));
+await page.waitForFunction((g) => __farm.store.me.gold > g, goldBeforeVisit, { timeout: 15000 });
+step('water-help: the server pays the helper', true);
+await page.evaluate(() => __farm.leaveVisit());
+step('back home restores my farm', await page.evaluate(() => !document.body.classList.contains('visiting') && __farm.plots[0].cropKey === null));
+await page.screenshot({ path: `${out}/e2e-12-home.png` });
+
 const catalogCalls = reqs.filter((r) => r.includes('/api/catalog')).length;
 const stateCalls = reqs.filter((r) => r.includes('/api/state')).length;
 step('catalog requested once per page load', catalogCalls <= 2, `catalog ${catalogCalls}, state ${stateCalls}`);
