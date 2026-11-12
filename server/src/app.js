@@ -235,7 +235,6 @@ export function buildApp({ config, db, logger = true }) {
     return reply.type('application/json').send(catalog.json);
   });
   const meCache = new Map();
-  let maxXpCache = null; // XP cao nhất làng; xóa mỗi khi có mutation (xp có thể đổi)
   const familyCache = new Map(); // danh sách thành viên từ Chat, 60 giây mỗi phiên
   const FAMILY_TTL_MS = 60_000;
   const rateBuckets = new Map();
@@ -266,7 +265,6 @@ export function buildApp({ config, db, logger = true }) {
       const outcome = work();
       if (outcome?.error) return outcome;
       db.prepare('UPDATE farmers SET mutation_version = mutation_version + 1 WHERE user_id = ?').run(request.farmer.user_id);
-      maxXpCache = null;
       if (key) insertMutationRecord.run(request.farmer.user_id, key, route, bodyHash, JSON.stringify(outcome), Date.now());
       return { outcome, replay: false };
     })();
@@ -365,8 +363,7 @@ export function buildApp({ config, db, logger = true }) {
       // Hỗ trợ theo trần làng (cấp cao nhất − 20): mức được hưởng tính lại mỗi lần
       // vào, trần lên thì trả thêm phần chênh; đã nhận rồi không thu lại.
       const f0 = getFarmer.get(user.id);
-      if (maxXpCache === null) maxXpCache = db.prepare('SELECT COALESCE(MAX(xp), 0) x FROM farmers').get().x;
-      const maxLevel = levelFor(maxXpCache);
+      const maxLevel = levelFor(db.prepare('SELECT COALESCE(MAX(xp), 0) x FROM farmers').get().x);
       const entitled = welcomeGift(levelFor(f0.xp), maxLevel);
       const diff = entitled - (f0.support_paid || 0);
       if (diff > 0) {
