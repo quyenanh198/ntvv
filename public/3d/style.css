@@ -200,8 +200,12 @@ button:focus-visible { outline: 3px solid var(--water); outline-offset: 2px; }
 @media (max-width: 560px) {
   .seed { flex: 0 0 82px; }
   .seeds { gap: 6px; }
-  .bulk { gap: 6px; }
-  .bulkbtn { padding: 0 12px; font-size: 13px; }
+  .tray { gap: 6px; }
+  .bulk { box-sizing: border-box; width: 100%; flex-wrap: nowrap; justify-content: flex-start; gap: 6px; overflow-x: auto; scrollbar-width: thin; padding: 4px 2px 8px; -webkit-overflow-scrolling: touch; }
+  .bulkbtn { flex: 0 0 auto; padding: 0 13px; font-size: 13px; }
+  #bHarvest:not(:disabled), #bPlant:not(:disabled) { background: #e2f4cf; border-color: #5a9b3b; color: #285c12; }
+  .tag.sign { width: 25px; height: 25px; box-sizing: border-box; padding: 0; font-size: 0; justify-content: center; box-shadow: 0 2px 7px rgba(60, 35, 10, .2); }
+  .tag.sign::before { content: '⌂'; font-size: 17px; line-height: 1; }
 }
 .row .emo { font-size: 30px; width: 48px; text-align: center; }
 
