@@ -1,7 +1,11 @@
-import * as THREE from '../vendor/three.module.js';
-import { net, serverNow } from './net.js';
+import * as THREE from '../vendor/0.149.0/three.module.js';
+import { net, serverNow, api } from './net.js';
 import { store, refresh, act as doAct, subscribe } from './store.js';
 import { itemSprite } from './art.js';
+import { renderExtra } from './sheets.js';
+import { createStations } from './stations.js';
+import { GRID, ROWS, STREET_PATHS, createLayout, inDistrict, spanCenter } from './layout.js';
+import { PASTURE_FENCE, PASTURE_PATH, createHerd } from './herd.js';
 const $ = s => document.querySelector(s);
 const rand = (a = 0, b = 1) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -11,7 +15,7 @@ if (THREE.ColorManagement) THREE.ColorManagement.legacyMode = false;
 let MILL_LEVEL = 10; // đọc lại từ catalog (coixay.level) khi tải xong
 const MILL_X = 13, MILL_Z = 2.2;
 const ROAD_Z = 12.6, STOP_X = 7.5, FAR = 50; // road lane, where the truck stops (stall), off-screen distance
-const PLOT_CAP = 60; // số ô vẽ được trong 3D hiện tại: 12 ô ruộng chính + 4 khối mở rộng
+const PLOT_CAP = 96; // every plot the server can grant (MAX_PLOTS): the 12 main plots plus seven farm blocks of 12
 // 36 cây trồng dùng 4 họ mô hình (+ cây ăn quả); mỗi cây có màu quả riêng.
 const FAMILY = {
   luami: ['wheat'], gao: ['wheat', 0xe8d98a], me: ['wheat', 0xc9b27a],
@@ -31,6 +35,13 @@ const G = { seed: null, holdGold: null }; // seed: hạt đang chọn; holdGold:
 
 // ================= Renderer =================
 const canvas = $('#c');
+// Without WebGL there is no scene to draw: say so and offer the classic client instead of hanging on the loading card.
+if (!(document.createElement('canvas').getContext('webgl2') || document.createElement('canvas').getContext('webgl'))) {
+  $('#bootTitle').textContent = 'Thiết bị chưa hỗ trợ đồ họa 3D';
+  const msg = $('#bootMsg'); msg.textContent = 'Bạn vẫn chơi được bằng bản cổ điển. ';
+  const a = document.createElement('a'); a.href = '?view=2d'; a.textContent = 'Mở bản cổ điển'; msg.appendChild(a);
+  throw new Error('webgl-unavailable');
+}
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputEncoding = THREE.sRGBEncoding;
@@ -140,6 +151,7 @@ const PATHS = [
   { w: 1.1, pts: [[-4.9, 3.9], [-6.4, 3.9]] },                                                   // chicken yard
   { w: 1.0, pts: [[-4.9, 3.2], [-3.6, 3.2]] },                                                   // plot gate
 ];
+PATHS.push(...STREET_PATHS, PASTURE_PATH); // the workshop street east of the mill, the lane to the west pasture
 const ROAD = { w: 3.2, pts: [[-48, ROAD_Z], [48, ROAD_Z]] };
 // Paths bend gently through their points (centripetal Catmull-Rom); bed, stones and grass exclusion all follow the curve
 [...PATHS, ROAD].forEach(p => {
@@ -426,8 +438,9 @@ greenhouse(10.5, -5.2, -0.25);
 coop(-10.6, 1.8, 0.35);
 const stallGroup = stall(STOP_X, 10.1, 0);
 // trees, grass and flowers are built in buildFlora() once the merge helpers below exist
-const TREES = [[-16, -3, 1.2, true], [-15.5, 8.5, 1.1, false], [-4.5, -14.5, 1.3, true], [7.5, -16, 1.2, false], [18, -3, 1.2, true], [17.5, 9.5, 1, false], [-19.5, 9.5, 1.1, true], [-19, -12, 1.4, false], [21, -14, 1.3, false], [-3.5, -9.5, 0.8, false]];
-const PINES = [[-17.5, 1.5, 1.1], [-13, -14.5, 1.2], [16.5, -9.5, 1.1], [20, 3.5, 1.2], [-22, -6, 1.3], [22, -8, 1.2]];
+const TREES = [[-16, -3, 1.2, true], [-15.5, 0.4, 1.1, false], [-4.5, -14.5, 1.3, true], [7.5, -16, 1.2, false], [18, -3, 1.2, true], [17.5, 9.5, 1, false], [-21, 0.6, 1.1, true], [-19, -12, 1.4, false], [21, -14, 1.3, false], [-3.5, -9.5, 0.8, false]];
+const PINES = [[-26.5, 0.6, 1.1], [-13, -14.5, 1.2], [16.5, -9.5, 1.1], [20, 3.5, 1.2], [-22, -6, 1.3], [22, -8, 1.2]];
+for (const L of [TREES, PINES]) for (let i = L.length - 1; i >= 0; i -= 1) if (inDistrict(L[i][0], L[i][1])) L.splice(i, 1); // the building district is cleared of hand-placed trees
 
 // ================= Delivery truck =================
 const truck = (() => {
@@ -537,6 +550,7 @@ function fence(pts) { for (let i = 0; i < pts.length - 1; i++) fenceSegs.push([p
 fence([[-3.9, 2.2], [-3.9, -1.7], [7.9, -1.7], [7.9, 7.6], [-3.9, 7.6], [-3.9, 4.2]]); // plots, gap on the left
 fence([[-12.2, 3.6], [-12.2, 7.6], [-5.8, 7.6], [-5.8, 4.4]]);                       // chicken yard
 fence([[3.4, -7.4], [8, -7.4], [8, -3.2], [3.4, -3.2], [3.4, -5.6]]);                 // sheep pen
+fence(PASTURE_FENCE);                                                                  // west pasture
 const posts = [], rails = [];
 fenceSegs.forEach(([[ax, az], [bx, bz]]) => {
   const L = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(L / 1.3));
@@ -554,7 +568,7 @@ rails.forEach(([x, z, L, ry], i) => {
 });
 railMesh.castShadow = railMesh.receiveShadow = true; scene.add(railMesh);
 
-const blocked = (x, z) => (x > -4.4 && x < 8.4 && z > -2.2 && z < 8.1) || solids.some(s => Math.hypot(x - s.x, z - s.z) < s.r + 0.6) || (x > -12.6 && x < -5.4 && z > 3.2 && z < 8) || (x > 3 && x < 8.4 && z > -7.8 && z < -2.8) || z < -19 || Math.abs(z - ROAD_Z) < 2 || onPath(x, z) || (Math.abs(x - MILL_X) < 2.5 && Math.abs(z - MILL_Z) < 2.4);
+const blocked = (x, z) => inDistrict(x, z) || (x > -29.6 && x < -13.6 && z > 2.4 && z < 11.4) || (x > -4.4 && x < 8.4 && z > -2.2 && z < 8.1) || solids.some(s => Math.hypot(x - s.x, z - s.z) < s.r + 0.6) || (x > -12.6 && x < -5.4 && z > 3.2 && z < 8) || (x > 3 && x < 8.4 && z > -7.8 && z < -2.8) || z < -19 || Math.abs(z - ROAD_Z) < 2 || onPath(x, z) || (Math.abs(x - MILL_X) < 2.5 && Math.abs(z - MILL_Z) < 2.4);
 function scatter(geo, mat, count, colors, sy = [0.8, 1.2], area = 26) {
   const im = new THREE.InstancedMesh(geo, mat, count); const c = new THREE.Color();
   for (let i = 0; i < count; i++) {
@@ -835,11 +849,29 @@ const soilGeo = (() => { // one merged mesh per plot: bed + 4 furrows
 })();
 const markerGeo = new THREE.ConeGeometry(0.22, 0.45, 4); markerGeo.rotateX(Math.PI);
 const tagsEl = $('#tags');
+// Land plan: farm blocks and workshops share one grid east of the mill (layout.js); blocks get lots in the order they appear.
+let layout = null;
+const layoutKey = (me) => 'ntvv3d-layout-' + me.id;
+function initLayout(me) {
+  if (layout) return;
+  let saved = null; try { saved = JSON.parse(localStorage.getItem(layoutKey(me))); } catch { saved = null; }
+  layout = createLayout(saved, [MILL_X, MILL_Z]);
+}
+function saveLayout(me) { if (layout && layout.takeDirty()) { try { localStorage.setItem(layoutKey(me), JSON.stringify(layout.toJSON())); } catch { /* private mode: layout lasts for this visit */ } } }
+function syncLayout(me) {
+  initLayout(me);
+  for (let b = 0; b < Math.ceil((Math.min(me.plotsCount, PLOT_CAP) - 12) / 12); b += 1) layout.place('block:' + b, 3);
+  const ms = Object.values(cat().machines).filter(m => m.id !== 'coixay').sort((a, b) => a.level - b.level);
+  let upcoming = 2; // unlocked workshops, plus the next two as construction sites
+  for (const m of ms) { if (m.level <= me.level) layout.place('station:' + m.id, 1); else if (upcoming > 0) { upcoming -= 1; layout.place('station:' + m.id, 1); } }
+  saveLayout(me);
+}
 function plotPos(i) {
   if (i < 12) return [2 + ((i % 4) - 1.5) * 2.75, 3 + (Math.floor(i / 4) - 1) * 2.75];
-  const j = i - 12, b = Math.floor(j / 12), k = j % 12; // khối mở rộng ở phía đông, mỗi khối 12 ô
-  const bx = 25 + 13 * (b % 2), bz = 3 - Math.floor(b / 2) * 11.5;
-  return [bx + ((k % 4) - 1.5) * 2.75, bz + (Math.floor(k / 4) - 1) * 2.75];
+  const j = i - 12, b = Math.floor(j / 12), k = j % 12; // 6 x 2 plots in a block, three lots wide
+  layout.place('block:' + b, 3);
+  const [cx, cz] = layout.center('block:' + b) || [60, 0];
+  return [cx + ((k % 6) - 2.5) * 2.6, cz + (Math.floor(k / 6) - 0.5) * 2.6];
 }
 const hitTargets = [];
 function makePlot(i) {
@@ -967,9 +999,6 @@ function pig(x, z) {
   const a = { g, head, kind: 'pig', speed: 0.6, area: [3.9, -6.9, 7.5, -3.7], tx: x, tz: z, wait: rand(0, 3), peck: 0, hop: 0, vy: 0 };
   g.userData.animal = a; animals.push(a);
 }
-const hen1 = chicken(-9, 5.5, false), hen2 = chicken(-7.5, 6.3, true); chicken(-10.5, 6.5, false);
-chick(hen1, 0.5, -0.4); chick(hen1, -0.5, -0.5); chick(hen2, 0.4, -0.5); chick(hen2, -0.3, -0.6);
-sheep(5, -5.8); sheep(6.8, -4.4); pig(4.6, -4.3);
 
 // butterflies
 const flies = [];
@@ -1196,9 +1225,12 @@ function applyView(p, v, first) {
 }
 function onState() {
   const me = store.me, first = !lastMe;
+  syncLayout(me);
   MILL_LEVEL = cat().machines?.coixay?.level ?? MILL_LEVEL;
-  ensurePlots(me.plotsCount, first);
-  for (const v of me.plots) if (v.idx < plots.length) applyView(plots[v.idx], v, first);
+  if (!VISIT) { // đang đi thăm: cảnh hiện nhà người khác, trạng thái của mình chỉ cập nhật HUD
+    ensurePlots(me.plotsCount, first);
+    for (const v of me.plots) if (v.idx < plots.length) applyView(plots[v.idx], v, first);
+  }
   if (!first && me.level > lastMe.level) {
     const el = $('#lvlup'); el.textContent = `Lên cấp ${me.level}!`; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     sfx.level(); announce(`Lên cấp ${me.level}`);
@@ -1210,7 +1242,7 @@ function onState() {
     else if (lastMe.level < MILL_LEVEL) { mill.state = 'pending'; setTimeout(unlockMill, 1700); }
   }
   lastMe = me;
-  renderSeeds(); renderHUD();
+  renderSeeds(); renderHUD(); ensureStations(); ensureHerd(); if (!VISIT) herd.sync(me);
 }
 subscribe(onState);
 
@@ -1231,6 +1263,7 @@ function plotAction(p) {
 }
 function tapPlot(p) {
   initAudio();
+  if (VISIT) { visitTap(p); return; }
   const a = plotAction(p);
   ripple(p.x, 0.34, p.z, a ? ACT_COL[a] : 0xffffff);
   if (!a) {
@@ -1338,6 +1371,20 @@ function tapMill() {
   if (mill.state === 'locked' || mill.state === 'pending') { toast(`Cối xay bột mở khoá ở cấp ${MILL_LEVEL}`); return; }
   if (mill.state === 'building') return;
   openProd('machines', 'coixay');
+}
+// The other eleven machines live on the workshop street; they are built once the catalog (names, levels) is known.
+let stations = null, stationsFirst = true, herd = null;
+function ensureHerd() { if (!herd) herd = createHerd({ THREE, scene, mesh, box, animals, hitTargets, bakeVC, makeHen: chicken, makeSheep: sheep, makePig: pig, rand, easeOutBack }); }
+function ensureStations() {
+  if (stations || !store.catalog) return;
+  stations = createStations({ layout, THREE, scene, mesh, box, toon, canvasTex, emit, easeOutBack, bakeVC, hitTargets, sfx, tagsEl, toScreen, place, cat, fmtClock, serverNow, camPos: camTarget,
+    onUnlock: s => { camFocus = { v: new THREE.Vector3(s.x - 3, 0, s.z + 3), t: 2.6 }; const el = $('#lvlup'); el.textContent = `Mở khoá ${s.name}!`; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); } });
+}
+function tapStation(id) {
+  initAudio(); const s = stations && stations.byId(id); if (!s) return;
+  if (s.state === 'locked') { toast(`${s.name} mở khoá ở cấp ${s.level}`); return; }
+  if (s.state === 'building') return;
+  openProd('machines', id);
 }
 const setGrain = lv => { mill.grain.visible = lv > 0.02; const s = 0.35 + 0.65 * lv; mill.grain.scale.set(s, 1, s); mill.grain.position.y = 0.1 + 0.7 * lv; };
 const millV = new THREE.Vector3();
@@ -1537,14 +1584,14 @@ function tapAnimal(a) {
   initAudio();
   if (a.hop > 0) return;
   a.vy = 5.5; a.hop = 0.001;
-  ({ hen: sfx.cluck, chick: sfx.peep, sheep: sfx.baa, pig: sfx.oink })[a.kind]();
+  ({ hen: sfx.cluck, chick: sfx.peep, sheep: sfx.baa, pig: sfx.oink })[a.kind]?.();
   emit(a.g.position.x, 1, a.g.position.z, 0xff7aa2, 8, { speed: 1, up: 2.5, grav: -0.5, life: 1, size: 0.16 });
 }
 
 // ================= Camera & input =================
 const camTarget = new THREE.Vector3(2.5, 0, 4.2), panVel = new THREE.Vector3();
 const EL = 0.84; // camera pitch (radians above horizon)
-function clampCam() { camTarget.x = THREE.MathUtils.clamp(camTarget.x, -14, 40); camTarget.z = THREE.MathUtils.clamp(camTarget.z, -16, 14); }
+function clampCam() { camTarget.x = THREE.MathUtils.clamp(camTarget.x, -32, 46); camTarget.z = THREE.MathUtils.clamp(camTarget.z, -16, 34); }
 let zoom = 1, zoomGoal = 1, intro = 1.7;
 function baseDist() { return innerWidth < innerHeight ? 40 : 27; }
 function placeCamera() {
@@ -1565,7 +1612,7 @@ hitTargets.push(stallHit, truck.g, mill.hit, ...animals.map(a => a.g)); // ô đ
 function pickAt(cx, cy) {
   ndc.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
   const hits = ray.intersectObjects(hitTargets, true);
-  for (const h of hits) { let o = h.object; while (o) { if (o.userData.plot || o.userData.stall || o.userData.animal || o.userData.truck || o.userData.mill) return o.userData; o = o.parent; } }
+  for (const h of hits) { let o = h.object; while (o) { if (o.userData.plot || o.userData.stall || o.userData.animal || o.userData.truck || o.userData.mill || o.userData.station) return o.userData; o = o.parent; } }
   return null;
 }
 function groundAt(cx, cy, out) {
@@ -1603,8 +1650,8 @@ function endPointer(e) {
   pointers.delete(e.pointerId); canvas.classList.remove('dragging');
   if (!drag || !drag.lt || performance.now() - drag.lt > 80) panVel.set(0, 0, 0); // a pause before release means no fling
   if (drag && !drag.moved && performance.now() - drag.t < 600 && pointers.size === 0) {
-    const h = pickAt(e.clientX, e.clientY);
-    if (h && h.plot) tapPlot(h.plot); else if (h && h.stall) openStore(); else if (h && h.animal) tapAnimal(h.animal); else if (h && h.truck) { initAudio(); sfx.horn(); truck.bounce = 1; } else if (h && h.mill) tapMill();
+    const h = EDIT ? (editTap(e.clientX, e.clientY), null) : pickAt(e.clientX, e.clientY);
+    if (h && h.plot) tapPlot(h.plot); else if (h && h.stall) openStore(); else if (h && h.animal) tapAnimal(h.animal); else if (h && h.truck) { initAudio(); sfx.horn(); truck.bounce = 1; } else if (h && h.mill) tapMill(); else if (h && h.station) tapStation(h.station);
   }
   if (pointers.size < 2) pinch = null;
   if (pointers.size === 0) drag = null;
@@ -1764,6 +1811,8 @@ function frame(t) {
   updateAnimals(dt, time);
   updateTruck(dt, time);
   updateMill(dt, time);
+  if (herd) herd.update(dt, time);
+  if (stations && store.me) { stations.update(dt, time, store.me, stationsFirst); stationsFirst = false; }
   sails.rotation.z -= dt * 0.7;
   clouds.forEach(c => { c.position.x += c.userData.speed * dt; if (c.position.x > 75) c.position.x = -75; });
   flies.forEach(f => {
@@ -1781,7 +1830,7 @@ function frame(t) {
   if (!document.hidden) adaptQuality(gap);
 }
 requestAnimationFrame(frame);
-if (location.hash === '#debug') window.__farm = { G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
+if (location.hash === '#debug') window.__farm = { get layout() { return layout; }, editCell, get EDIT() { return EDIT; }, get stations() { return stations; }, get herd() { return herd; }, animals, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
 
 // ================= Production: machines and barns, every outcome decided by the server =================
 const prodSheet = $('#prodSheet');
@@ -1792,6 +1841,7 @@ const itemsText = (m) => Object.entries(m || {}).map(([id, n]) => `${n} ${itemNa
 function renderProd() {
   const me = store.me, rows = $('#prodRows'), tabs = $('#prodTabs');
   rows.innerHTML = ''; tabs.innerHTML = '';
+  if (renderExtra(prodMode, { rows, me, cat, nf, api, prodAct, toast, fail, serverNow, fmtDur, itemName, open: openProd, setTitle: t => { $('#prodTitle').textContent = t; }, busy: () => prodBusy, mode: () => prodMode })) return;
   if (prodMode === 'machines') {
     $('#prodTitle').textContent = 'Chế biến';
     const ms = Object.values(cat().machines).sort((a, b) => a.level - b.level);
@@ -1818,8 +1868,87 @@ function renderProd() {
       add('Chế 1 mẻ', () => runRecipe(m.id, r, 1), maxN < 1);
       if (maxN > 1) add(`Chế ${maxN} mẻ`, () => runRecipe(m.id, r, maxN), false);
       if (j && j.ready) add('Lấy thành phẩm', () => collectRecipe(m.id, r), false);
+      if (j && !j.ready) add('Tăng tốc', () => prodAct('/speedup', { target: 'machine', kind: m.id, recipe: r.id }, () => toast('Đã tăng tốc')), me.gems < 1);
       rows.appendChild(row);
     });
+  } else if (prodMode === 'quests') {
+    $('#prodTitle').textContent = 'Nhiệm vụ ngày';
+    const d = me.daily, head = document.createElement('p');
+    head.textContent = `Xong ${d.done}/${d.required} nhiệm vụ để mở rương ngày. Nhiệm vụ làm mới lúc 9 giờ sáng giờ Los Angeles.`; rows.appendChild(head);
+    d.quests.forEach(q => {
+      const row = document.createElement('div'); row.className = 'row job'; const done = q.progress >= q.target;
+      row.innerHTML = `<span class="emo">${q.emoji}</span><div><b>${q.name}</b> ${done ? '<span class="state-chip done">Xong</span>' : ''}<small>${q.progress}/${q.target} · +${nf.format(q.gold)} vàng · +${q.exp} EXP${q.stars ? ' · +' + q.stars + ' sao' : ''}</small></div>`;
+      rows.appendChild(row);
+    });
+    const chest = document.createElement('div'); chest.className = 'row job'; chest.innerHTML = '<span class="emo">🎁</span><div><b>Rương ngày</b><small>Vàng, EXP và cơ hội nhận kim cương</small></div><div class="acts"></div>';
+    const cb = document.createElement('button'); cb.type = 'button'; cb.className = 'cta small'; cb.textContent = d.chestClaimed ? 'Đã nhận' : 'Mở rương';
+    cb.disabled = d.chestClaimed || d.done < d.required || prodBusy;
+    cb.addEventListener('click', () => prodAct('/quest-chest', {}, r => toast(r.gem ? 'Rương ngày: nhận cả kim cương!' : 'Đã mở rương ngày')));
+    chest.querySelector('.acts').appendChild(cb); rows.appendChild(chest);
+  } else if (prodMode === 'board') {
+    $('#prodTitle').textContent = 'Bảng xếp hạng';
+    rows.innerHTML = '<div class="empty">Đang tải…</div>';
+    api('/leaderboard').then(list => {
+      if (prodMode !== 'board') return; rows.innerHTML = '';
+      list.forEach(u => {
+        const row = document.createElement('div'); row.className = 'row job';
+        row.innerHTML = `<span class="emo">${u.rank <= 3 ? ['🥇', '🥈', '🥉'][u.rank - 1] : u.rank}</span><div><b>${u.name}${u.id === me.id ? ' (bạn)' : ''}</b><small>Cấp ${u.level}${u.title ? ' · ' + u.title : ''} · ${nf.format(u.stars)} sao</small></div>`;
+        rows.appendChild(row);
+      });
+      if (!list.length) rows.innerHTML = '<div class="empty">Chưa có ai trên bảng.</div>';
+    }).catch(fail);
+  } else if (prodMode === 'family') {
+    $('#prodTitle').textContent = 'Hàng xóm';
+    const others = store.family.filter(u => !u.me);
+    const head = document.createElement('p'); head.textContent = 'Ghé thăm trang trại hàng xóm: tưới giúp được tiền công, ô chín thì hái ké (chủ ruộng không mất gì), nhưng coi chừng chó canh vườn.'; rows.appendChild(head);
+    if (!others.length) rows.innerHTML += '<div class="empty">Chưa có hàng xóm nào.</div>';
+    others.forEach(u => {
+      const row = document.createElement('div'); row.className = 'row job';
+      row.innerHTML = `<span class="emo">🏡</span><div><b>${u.name}</b><small>${u.level != null ? 'Cấp ' + u.level : 'Chưa chơi'}${u.title ? ' · ' + u.title : ''}</small></div><div class="acts"></div>`;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = 'Ghé thăm'; b.disabled = u.level == null || prodBusy;
+      b.addEventListener('click', () => visitFarm(u.id)); row.querySelector('.acts').appendChild(b); rows.appendChild(row);
+    });
+  } else if (prodMode === 'give' || prodMode === 'ask') {
+    const give = prodMode === 'give', f = VISIT && VISIT.farm;
+    $('#prodTitle').textContent = give ? 'Tặng vàng' : 'Xin vàng';
+    if (!f) { rows.innerHTML = '<div class="empty">Hãy ghé thăm một hàng xóm trước.</div>'; return; }
+    const head = document.createElement('p'); head.textContent = give ? `Tặng ${f.name} một ít vàng. Bạn có ${nf.format(me.gold)} vàng.` : `Xin ${f.name} một ít vàng. Người ấy sẽ nhận thông báo và tự quyết định có cho hay không.`; rows.appendChild(head);
+    const box = document.createElement('div'); box.className = 'amounts';
+    [100, 1000, 10000, 100000].forEach(n => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'cta'; b.textContent = nf.format(n);
+      b.disabled = prodBusy || (give && me.gold < n);
+      b.addEventListener('click', () => prodAct(give ? '/gold-give' : '/gold-ask', { toId: f.id, amount: n }, () => toast(give ? `Đã tặng ${f.name} ${nf.format(n)} vàng` : `Đã gửi lời xin ${nf.format(n)} vàng`)));
+      box.appendChild(b);
+    });
+    rows.appendChild(box);
+  } else if (prodMode === 'gold') {
+    $('#prodTitle').textContent = 'Xin/Cho vàng';
+    rows.innerHTML = '<div class="empty">Đang tải…</div>';
+    api('/gold-requests').then(g => {
+      if (prodMode !== 'gold') return; rows.innerHTML = '';
+      if (!g.incoming.length && !g.outgoing.length) rows.innerHTML = '<div class="empty">Chưa có lời xin nào. Ghé thăm hàng xóm để tặng hoặc xin vàng.</div>';
+      const line = (r, mine) => {
+        const row = document.createElement('div'); row.className = 'row job';
+        row.innerHTML = `<span class="emo">${mine ? '🙏' : '💝'}</span><div><b>${mine ? 'Bạn xin ' + r.toName : r.fromName + ' xin bạn'} ${nf.format(r.amount)} vàng</b><small>${r.note ? '“' + r.note.replace(/[<>&]/g, '') + '” · ' : ''}${{ open: 'đang chờ', paid: 'đã cho', declined: 'bị từ chối', cancelled: 'đã hủy' }[r.status] || r.status}</small></div><div class="acts"></div>`;
+        const acts = row.querySelector('.acts');
+        const add = (label, action, off) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = label; b.disabled = !!off || prodBusy; b.addEventListener('click', () => prodAct('/gold-request-act', { id: r.id, action }, () => toast(label))); acts.appendChild(b); };
+        if (r.status === 'open' && !mine) { add('Cho', 'pay', me.gold < r.amount); add('Từ chối', 'decline'); }
+        if (r.status === 'open' && mine) add('Hủy', 'cancel');
+        rows.appendChild(row);
+      };
+      g.incoming.forEach(r => line(r, false)); g.outgoing.forEach(r => line(r, true));
+    }).catch(fail);
+  } else if (prodMode === 'thief') {
+    $('#prodTitle').textContent = 'Bảng kẻ trộm';
+    rows.innerHTML = '<div class="empty">Đang tải…</div>';
+    api('/thief-board').then(t => {
+      if (prodMode !== 'thief') return; rows.innerHTML = '';
+      const head = document.createElement('p'); head.textContent = `Hôm nay nhà bạn bị hái ké ${t.myCount} món. Top 3 mỗi ngày nhận kim cương và vàng.`; rows.appendChild(head);
+      const medal = i => ['🥇', '🥈', '🥉'][i] || String(i + 1);
+      t.today.forEach((r, i) => { const row = document.createElement('div'); row.className = 'row job'; row.innerHTML = `<span class="emo">${medal(i)}</span><div><b>${r.name}${r.id === me.id ? ' (bạn)' : ''}</b><small>${r.count} món hôm nay${t.rewards[i] ? ` · thưởng ${t.rewards[i].gems} kim cương + ${nf.format(t.rewards[i].gold)} vàng` : ''}</small></div>`; rows.appendChild(row); });
+      if (!t.today.length) rows.innerHTML += '<div class="empty">Hôm nay chưa ai bị hái ké.</div>';
+      if (t.yesterday.winners.length) { const h = document.createElement('p'); h.style.fontWeight = '800'; h.textContent = `Bảng vàng hôm qua (${t.yesterday.day})`; rows.appendChild(h); t.yesterday.winners.forEach((w, i) => { const row = document.createElement('div'); row.className = 'row job'; row.innerHTML = `<span class="emo">${medal(i)}</span><div><b>${w.name}</b><small>${w.count} món · +${w.gems} kim cương · +${nf.format(w.gold)} vàng</small></div>`; rows.appendChild(row); }); }
+    }).catch(fail);
   } else if (prodMode === 'orders') {
     $('#prodTitle').textContent = 'Đơn hàng';
     if (me.level < (cat().orderUnlockLevel || 5)) { rows.innerHTML = `<div class="empty">Đơn hàng mở ở cấp ${cat().orderUnlockLevel || 5}.</div>`; return; }
@@ -1883,11 +2012,10 @@ function collectRecipe(machine, r) {
   });
 }
 function openProd(mode, machine) {
-  initAudio(); prodMode = mode; if (machine) prodMachine = machine;
+  initAudio(); if (mode === 'layout') { startEdit(); return; } prodMode = mode; if (machine) prodMachine = machine;
   renderProd(); prodSheet.hidden = false; (prodSheet.querySelector('.tab:not(:disabled), .cta:not(:disabled)') || $('#prodClose')).focus();
 }
 $('#bMachines').addEventListener('click', () => openProd('machines'));
-$('#bBarn').addEventListener('click', () => openProd('barn'));
 $('#bOrders').addEventListener('click', () => openProd('orders'));
 $('#prodClose').addEventListener('click', () => { prodSheet.hidden = true; });
 prodSheet.addEventListener('click', e => { if (e.target === prodSheet) prodSheet.hidden = true; });
@@ -1905,6 +2033,173 @@ function syncMill(me) {
   }
 }
 subscribe(() => { if (store.me && lastMe) syncMill(store.me); });
+
+// ================= Visiting a neighbour: same scene, their land, server-decided actions =================
+var VISIT = null; // { ownerId, farm, myActs }
+const visitBar = $('#visitBar');
+ERR.own_farm = 'Đây là nhà bạn'; ERR.already_poached = 'Bạn đã hái ô này rồi'; ERR.water_cooldown = 'Ô này vừa được tưới, đợi một lát'; ERR.no_farm = 'Không tìm thấy trang trại';
+ERR.caught_by_dog = 'Chó canh vườn bắt được bạn!'; ERR.not_ready = 'Cây chưa chín';
+function showVisit() {
+  const f = VISIT.farm;
+  ensurePlots(f.plotsCount, true);
+  const byIdx = new Map(f.plots.map(v => [v.idx, v]));
+  for (const p of plots) {
+    p.soil.visible = p.i < f.plotsCount; // plots built for a bigger neighbour stay hidden at a smaller farm
+    const v = byIdx.get(p.i), acts = VISIT.myActs[p.i] || {};
+    applyView(p, v || { idx: p.i, crop: null }, true);
+    p.mat.color.set(0x7d4d2b); // tưới của người khác không đổi màu đất của nhà này
+    const insp = VISIT.inspect && acts.canInspect;
+    p.marker.visible = !!(v && v.crop && (insp || (!VISIT.inspect && (acts.canPoach || (acts.canWater && !v.ready)))));
+    if (p.marker.visible) p.marker.material.color.set(insp ? 0xffd54a : acts.canPoach ? ACT_COL.harvest : ACT_COL.water);
+  }
+  const herd = (f.herd || []).map(h => `${cat().animals[h.kind]?.emoji || ''}×${h.count}`).join(' ');
+  visitBar.hidden = false; $('#visitName').textContent = `Đang thăm ${f.name} · cấp ${f.level}${herd ? ' · ' + herd : ''}${f.dogUntil > serverNow() ? ' · 🐕' : ''}`;
+  document.body.classList.add('visiting'); renderVisitActs();
+}
+// Every visiting action is one server call; the button set only mirrors what the server says is possible.
+ERR.nothing_to_poach = 'Không còn gì để hái ké'; ERR.poach_cooldown = 'Vừa hái ké xong, đợi một lát'; ERR.inspect_limit = 'Hết lượt khám xét hôm nay'; ERR.already_inspected = 'Ô này đã khám rồi';
+ERR.too_many_requests = 'Bạn đang xin quá nhiều khoản, đợi người ta trả lời đã'; ERR.bad_amount = 'Số vàng không hợp lệ'; ERR.request_closed = 'Yêu cầu này đã đóng'; ERR.forbidden = 'Bạn không làm được việc này';
+function renderVisitActs() {
+  const box = $('#visitActs'); if (!VISIT) { box.hidden = true; return; }
+  const f = VISIT.farm, loot = f.loot || {}, acts = Object.values(VISIT.myActs), plotsV = f.plots || [];
+  const anyPoach = acts.some(a => a.canPoach), anyWater = plotsV.some(v => v.crop && !v.ready && (VISIT.myActs[v.idx] || {}).canWater), anyRipe = plotsV.some(v => v.crop && v.ready);
+  box.innerHTML = '';
+  const add = (label, on, off, pressed) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = label; b.disabled = !!off || prodBusy; if (pressed != null) b.setAttribute('aria-pressed', String(pressed)); b.addEventListener('click', on); box.appendChild(b); };
+  const id = VISIT.ownerId;
+  add('Hái ké hết', () => visitDo('/poach-all', { ownerId: id }, r => `Hái ké được ${itemsText(r.items) || 'không gì'}`), !anyPoach);
+  add('Tưới giúp hết', () => visitDo('/water-help-all', { ownerId: id }, r => `Tưới giúp ${r.watered} ô, +${nf.format(r.gained)} vàng`), !anyWater);
+  add('Thu giúp hết', () => visitDo('/harvest-help', { ownerId: id, all: true }, r => `Thu giúp ${r.harvested} ô, +${nf.format(r.gained)} vàng`), !anyRipe);
+  add('Trồng giúp', () => visitDo('/plant-help', { ownerId: id }, r => `Trồng giúp ${r.helped} ô, tốn ${nf.format(r.cost)} vàng`), !(loot.emptyPlots > 0));
+  add('Hái ké chuồng', () => visitDo('/poach-animal', { ownerId: id }, r => `Cuỗm ${r.got} sản phẩm trong chuồng`), !(loot.animalsReady > 0));
+  add('Hái ké máy', () => visitDo('/poach-machine', { ownerId: id }, r => `Cuỗm ${r.got} thành phẩm`), !(loot.machinesReady > 0));
+  add(VISIT.inspect ? 'Đang khám xét' : 'Khám xét', () => { VISIT.inspect = !VISIT.inspect; showVisit(); }, !(VISIT.inspect || acts.some(a => a.canInspect)), !!VISIT.inspect);
+  add('Tặng vàng', () => openProd('give'), false);
+  add('Xin vàng', () => openProd('ask'), false);
+  box.hidden = false;
+}
+async function visitDo(path, body, msg) {
+  if (prodBusy) return; prodBusy = true; initAudio(); renderVisitActs();
+  try {
+    const r = await doAct(path, body);
+    if (r.farm) { VISIT.farm = r.farm; VISIT.myActs = r.myActs || VISIT.myActs; }
+    const text = msg(r); toast(text); announce(text); sfx.harvest();
+    Object.entries(r.items || {}).forEach(([item, n]) => flyToKho(item, Math.min(n, 4), innerWidth / 2, innerHeight / 2));
+  } catch (e) {
+    if (e.code === 'caught_by_dog') { toast(e.data?.message || ERR.caught_by_dog); sfx.error(); announce(ERR.caught_by_dog); refresh().catch(() => {}); }
+    else fail(e);
+  } finally { prodBusy = false; if (VISIT) showVisit(); }
+}
+async function visitFarm(id) {
+  if (prodBusy) return; prodBusy = true; initAudio();
+  try {
+    const r = await api(`/farm/${id}`);
+    if (r.me) { store.me = r.me; }
+    VISIT = { ownerId: id, farm: r.farm, myActs: r.myActs || {} };
+    prodBusy = false; prodSheet.hidden = true; showVisit(); announce(`Đang thăm ${r.farm.name}`);
+  } catch (e) { fail(e); } finally { prodBusy = false; }
+}
+function leaveVisit() {
+  VISIT = null; visitBar.hidden = true; $('#visitActs').hidden = true; document.body.classList.remove('visiting');
+  for (const p of plots) { p.marker.visible = false; p.pending = null; }
+  const me = store.me; ensurePlots(me.plotsCount, true);
+  const byIdx = new Map(me.plots.map(v => [v.idx, v]));
+  for (const p of plots) { p.soil.visible = p.i < me.plotsCount; applyView(p, byIdx.get(p.i) || { idx: p.i, crop: null }, true); }
+  announce('Đã về nhà');
+}
+async function visitTap(p) {
+  const acts = VISIT.myActs[p.i] || {}, id = VISIT.ownerId;
+  ripple(p.x, 0.34, p.z, p.state === 'ripe' ? ACT_COL.harvest : ACT_COL.water);
+  if (p.busy) return;
+  let path = null;
+  if (VISIT.inspect) { if (!acts.canInspect) { toast(acts.inspected ? ERR.already_inspected : ERR.inspect_limit); return; } path = '/inspect'; }
+  else if (p.state === 'ripe' && acts.canPoach) path = '/poach';
+  else if (p.state === 'growing' && acts.canWater) path = '/water';
+  else if (p.state === 'ripe') { toast(acts.poached ? 'Bạn đã hái ô này rồi' : 'Không hái ké được ô này'); return; }
+  else if (p.state === 'growing') { toast(acts.watered ? 'Ô này bạn đã tưới rồi' : 'Cây chưa chín'); return; }
+  else return;
+  p.busy = true;
+  try {
+    const r = await doAct(path, { ownerId: id, idx: p.i });
+    if (r.farm) { VISIT.farm = r.farm; VISIT.myActs = r.myActs || VISIT.myActs; showVisit(); }
+    const s = toScreen(p.x, 1, p.z);
+    if (path === '/inspect') {
+      emit(p.x, 0.8, p.z, r.found ? 0xff5a4a : 0xffd54a, 18, { speed: 2, up: 3, size: 0.16, spread: 0.7 });
+      const t = r.found ? `Phát hiện cần sa! Thưởng ${nf.format(r.bounty)} vàng` : `Sạch sẽ. Còn ${r.left} lượt khám hôm nay`;
+      floater(r.found ? `+${nf.format(r.bounty)} vàng` : 'Sạch', p.x, 1.6, p.z, r.found ? '#ffd54a' : '#bff0ff'); toast(t); announce(t);
+    } else if (path === '/poach') {
+      const item = r.cropId || r.item, name = itemName(item);
+      emit(p.x, 0.8, p.z, cropColor(item), 20, { speed: 2.5, up: 4, size: 0.18, spread: 0.7 }); sfx.harvest();
+      if (item) flyToKho(item, 2, s.x, s.y);
+      floater(`Hái ké ${name}`, p.x, 1.6, p.z); toast(`Đã hái ké ${name} của ${VISIT.farm.name}`); announce(`Hái ké ${name}`);
+    } else {
+      emit(p.x, 0.6, p.z, 0x9fe0ff, 20, { speed: 1.2, up: 2.5, grav: -1, life: 1, size: 0.14, spread: 0.9 }); sfx.water();
+      floater(r.gained ? `+${r.gained} vàng` : 'Đã tưới giúp', p.x, 1.6, p.z, '#bff0ff'); toast('Đã tưới giúp'); announce('Đã tưới giúp');
+    }
+  } catch (e) {
+    if (e.code === 'caught_by_dog') { toast(e.data?.message || ERR.caught_by_dog); sfx.error(); announce(ERR.caught_by_dog); store.me && refresh().catch(() => {}); }
+    else fail(e);
+  } finally { p.busy = false; }
+}
+$('#bFamily').addEventListener('click', () => openProd('family'));
+$('#bMore').addEventListener('click', () => openProd('more'));
+
+// A small animal appears for a few seconds when the server's schedule says so; catching it is one server call.
+ERR.critter_gone = 'Con vật chạy mất rồi'; ERR.not_enough_gems = 'Không đủ kim cương'; ERR.already_owned = 'Bạn đã có món này'; ERR.no_milestone = 'Không còn cột mốc nào'; ERR.not_enough_stars = 'Chưa đủ sao';
+ERR.collection_incomplete = 'Bộ sưu tập chưa đủ'; ERR.already_claimed = 'Bạn đã nhận rồi'; ERR.no_skill_points = 'Hết điểm kỹ năng'; ERR.max_rank = 'Kỹ năng đã tối đa'; ERR.respec_cooldown = 'Chưa đến lúc đặt lại kỹ năng'; ERR.lottery_max = 'Đã mua đủ số vé hôm nay'; ERR.not_owned = 'Bạn chưa có món này';
+const critterBtn = $('#critter');
+setInterval(() => {
+  const c = store.me && store.me.critter, now = serverNow(), live = !!c && !VISIT && prodSheet.hidden && now >= c.at && now <= c.at + c.windowMs;
+  if (live) critterBtn.textContent = c.kind;
+  if (critterBtn.hidden === live) critterBtn.hidden = !live;
+}, 400);
+critterBtn.addEventListener('click', async () => {
+  critterBtn.hidden = true; initAudio();
+  try { const r = await doAct('/critter-catch', {}); toast(`Bắt được ${r.kind}! +${r.gems} kim cương`); announce(`Bắt được ${r.kind}, nhận ${r.gems} kim cương`); sfx.harvest(); } catch (e) { fail(e); }
+});
+$('#visitHome').addEventListener('click', leaveVisit);
+
+// ================= Edit mode: rearrange the workshops on the district grid =================
+// Purely a display preference kept on this device; the server never sees the layout.
+var EDIT = null; // { sel: layout key of the picked building }
+const editBar = $('#editBar'), lotGroup = new THREE.Group(), lotMeshes = [];
+lotGroup.visible = false; scene.add(lotGroup);
+function ensureLots() {
+  if (lotMeshes.length) return;
+  const geo = new THREE.PlaneGeometry(GRID.cw - 0.4, GRID.cd - 0.4); geo.rotateX(-Math.PI / 2);
+  for (let r = 0; r < ROWS; r += 1) for (let c = 0; c < GRID.cols; c += 1) {
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2, depthWrite: false }));
+    const [x, z] = spanCenter(c, r, 1); m.position.set(x, 0.1, z); m.userData.lot = { c, r }; lotGroup.add(m); lotMeshes.push(m);
+  }
+}
+function paintLots() {
+  for (const m of lotMeshes) {
+    const { c, r } = m.userData.lot, occ = layout.occupantAt(c, r);
+    const [col, op] = !occ ? [0xffffff, 0.2] : occ === EDIT.sel ? [0xffd54a, 0.7] : occ.startsWith('block') ? [0x8a5a32, 0.4] : [0x4aa3df, 0.4];
+    m.material.color.set(col); m.material.opacity = op;
+  }
+  $('#editMsg').textContent = EDIT.sel ? 'Chạm ô trống hoặc tòa khác để đổi chỗ' : 'Chạm một tòa nhà để chọn';
+}
+function startEdit() {
+  if (VISIT) { toast('Về nhà trước khi sắp xếp'); return; }
+  prodSheet.hidden = true; EDIT = { sel: null }; ensureLots(); lotGroup.visible = true; editBar.hidden = false; document.body.classList.add('editing');
+  camFocus = { v: new THREE.Vector3(GRID.x0 + GRID.cols * GRID.cw / 2 - 3, 0, 4), t: 1.5 }; paintLots(); announce('Chế độ sắp xếp phố xưởng');
+}
+function endEdit() { EDIT = null; lotGroup.visible = false; editBar.hidden = true; document.body.classList.remove('editing'); announce('Đã lưu cách sắp xếp'); }
+function editTap(cx, cy) { const pt = groundAt(cx, cy, new THREE.Vector3()); editCell(pt && layout.cellAt(pt.x, pt.z)); }
+function editCell(cell) {
+  if (!cell) return;
+  const occ = layout.occupantAt(cell.c, cell.r);
+  if (!EDIT.sel) {
+    if (!occ) { toast('Chạm một tòa nhà để chọn trước'); return; }
+    if (occ.startsWith('block')) { toast('Khối ruộng không di chuyển được'); return; }
+    EDIT.sel = occ;
+  } else if (occ === EDIT.sel) EDIT.sel = null;
+  else if (layout.move(EDIT.sel, cell.c, cell.r)) { saveLayout(store.me); sfx.thunk(); toast('Đã đổi chỗ'); EDIT.sel = null; }
+  else toast('Không đặt vào đây được');
+  paintLots();
+}
+$('#editDone').addEventListener('click', endEdit);
+$('#editReset').addEventListener('click', () => { layout.reset('station:'); syncLayout(store.me); EDIT.sel = null; paintLots(); toast('Đã xếp lại theo thứ tự mở khóa'); });
 
 // ================= Boot: load the state once, then keep it fresh =================
 const bootEl = $('#boot');

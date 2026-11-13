@@ -39,13 +39,22 @@
     <button class="chip bulkbtn" id="bWater" type="button">Tưới hết</button>
     <button class="chip bulkbtn" id="bPlant" type="button">Gieo hết</button>
     <button class="chip bulkbtn" id="bMachines" type="button">Chế biến</button>
-    <button class="chip bulkbtn" id="bBarn" type="button">Chuồng</button>
     <button class="chip bulkbtn" id="bOrders" type="button">Đơn hàng</button>
+    <button class="chip bulkbtn" id="bFamily" type="button">Hàng xóm</button>
+    <button class="chip bulkbtn" id="bMore" type="button">Thêm</button>
     <button class="chip bulkbtn" id="bExpand" type="button" hidden>Mở rộng</button>
   </div>
   <div class="hint" id="hint">Chạm ô đất trống để gieo hạt đang chọn</div>
   <div class="chip seeds" style="border-radius: 22px" id="seeds" role="group" aria-label="Chọn hạt giống"></div>
 </div>
+
+<div class="visitbar chip" id="visitBar" hidden><span id="visitName">Đang thăm</span><button class="cta small" id="visitHome" type="button">Về nhà</button></div>
+
+<div class="chip visitacts" id="visitActs" role="group" aria-label="Thao tác khi thăm" hidden></div>
+
+<button class="cta critter" id="critter" type="button" hidden aria-label="Bắt sinh vật nhỏ để nhận kim cương"></button>
+
+<div class="visitbar chip" id="editBar" hidden><span id="editMsg"></span><button class="cta small" id="editReset" type="button">Xếp lại</button><button class="cta small" id="editDone" type="button">Xong</button></div>
 
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="lvlup"></div>

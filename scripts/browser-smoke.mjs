@@ -100,7 +100,7 @@ try {
   const openFarm = async () => {
     const farmPage = await context.newPage();
     farmPage.on('pageerror', (error) => pageErrors.push(error.message));
-    await farmPage.goto(`${base}/farm/`, { waitUntil: 'domcontentloaded' });
+    await farmPage.goto(`${base}/farm/?view=2d`, { waitUntil: 'domcontentloaded' });
     await farmPage.locator('.plot').first().waitFor();
     return farmPage;
   };
@@ -393,7 +393,7 @@ try {
   await friendContext.addCookies([{ name: 'lb_session', value: 'friend-smoke', url: base }]);
   const friendPage = await friendContext.newPage();
   friendPage.on('pageerror', (error) => pageErrors.push(error.message));
-  await friendPage.goto(`${base}/farm/`, { waitUntil: 'domcontentloaded' });
+  await friendPage.goto(`${base}/farm/?view=2d`, { waitUntil: 'domcontentloaded' });
   await friendPage.locator('.plot[data-idx="0"][data-kind="empty"]').waitFor();
   await friendPage.locator('.plot[data-idx="0"][data-kind="empty"]').click();
   await friendPage.locator('.seed-card[data-crop="luami"]').click();
@@ -1963,7 +1963,7 @@ try {
     db.prepare('UPDATE farmers SET skills_json = ? WHERE user_id = 2').run('{}');
     const progressVisitor = await progressContext.newPage();
     progressVisitor.on('pageerror', (error) => pageErrors.push(error.message));
-    await progressVisitor.goto(`${base}/farm/`, { waitUntil: 'domcontentloaded' });
+    await progressVisitor.goto(`${base}/farm/?view=2d`, { waitUntil: 'domcontentloaded' });
     await progressVisitor.locator('.dock-btn[data-sheet="more"]').click();
     await progressVisitor.locator('.more-card[data-sheet="family"]').click();
     await progressVisitor.locator('.sheet--family .family-member[data-visit="1"]').click();
@@ -2006,7 +2006,7 @@ try {
     await sceneContext.addCookies([{ name: 'lb_session', value: 'friend-smoke', url: base }]);
     const sceneVisitor = await sceneContext.newPage();
     sceneVisitor.on('pageerror', (error) => pageErrors.push(error.message));
-    await sceneVisitor.goto(`${base}/farm/`, { waitUntil: 'domcontentloaded' });
+    await sceneVisitor.goto(`${base}/farm/?view=2d`, { waitUntil: 'domcontentloaded' });
     assert.equal(await sceneVisitor.locator('.scene-banner .sb-pig, .scene-banner .sb-dog, .scene-banner .sb-hen2').count(), 0);
     await sceneVisitor.locator('.dock-btn[data-sheet="more"]').click();
     await sceneVisitor.locator('.more-card[data-sheet="family"]').click();
@@ -2222,7 +2222,7 @@ try {
     await inspectContext.addCookies([{ name: 'lb_session', value: 'friend-smoke', url: base }]);
     const inspector = await inspectContext.newPage();
     inspector.on('pageerror', error => pageErrors.push(error.message));
-    await inspector.goto(`${base}/farm/`, { waitUntil: 'domcontentloaded' });
+    await inspector.goto(`${base}/farm/?view=2d`, { waitUntil: 'domcontentloaded' });
     await inspector.locator('.dock-btn[data-sheet="more"]').click();
     await inspector.locator('.more-card[data-sheet="family"]').click();
     await inspector.locator('.sheet--family .family-member[data-visit="1"]').click();

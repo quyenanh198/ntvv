@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
+import { speedupCost } from '../server/src/game.js';
 
 function harness(extra = {}) {
   const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-cat-'));
@@ -76,4 +77,11 @@ test('renamed Chat users are picked up without a full upsert', async () => {
   name = 'Second Name';
   await app.inject({ method: 'GET', url: '/farm/api/state?slim=1' });
   assert.equal(db.prepare('SELECT name FROM farmers WHERE user_id = 9').get().name, 'Second Name');
+});
+
+test('the catalog speed-up step matches the server pricing rule', async () => {
+  const { app } = harness();
+  const step = (await app.inject({ method: 'GET', url: '/farm/api/catalog' })).json().speedupStepMs;
+  assert.equal(speedupCost(step), 1);
+  assert.equal(speedupCost(step + 1), 2);
 });

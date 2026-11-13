@@ -89,6 +89,7 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = resolve(__dirname, '../../public');
 const THREE_DIR = resolve(__dirname, '../../node_modules/three/build');
+const THREE_VERSION = JSON.parse(readFileSync(resolve(__dirname, '../../node_modules/three/package.json'), 'utf8')).version;
 
 const ME_CACHE_TTL_MS = 30_000;
 const ME_CACHE_MAX = 300;
@@ -215,6 +216,7 @@ export function buildApp({ config, db, logger = true }) {
     starMilestones: STAR_MILESTONES.map((m2) => ({ ...m2, gold: (m2.gold || 0) * GOLD_MULT })),
       luxury: LUXURY,
     machineUpgradeGold: MACHINE_UPGRADE_GOLD,
+    speedupStepMs: 5 * 60 * 1000, // one gem per started step of remaining time; the server charges, the client only shows an estimate
     lottery: LOTTERY,
     taxPerPlot: TAX_PER_PLOT,
     cansa: CANSA,
@@ -2784,7 +2786,7 @@ export function buildApp({ config, db, logger = true }) {
 
   app.register(staticPlugin, { root: PUBLIC_DIR, prefix: '/farm/', index: false });
   // three.js phục vụ từ chính gói npm đã ghim phiên bản, không qua CDN (CSP chỉ cho 'self').
-  app.register(staticPlugin, { root: THREE_DIR, prefix: '/farm/vendor/', index: false, decorateReply: false });
+  app.register(staticPlugin, { root: THREE_DIR, prefix: `/farm/vendor/${THREE_VERSION}/`, index: false, decorateReply: false });
 
   app.addHook('onSend', async (request, reply, payload) => {
     const url = request.raw.url || '';
@@ -2801,13 +2803,15 @@ export function buildApp({ config, db, logger = true }) {
     const isAsset =
       url.startsWith('/farm/') && !url.startsWith('/farm/api/') && url.split('?')[0] !== '/farm/' && !url.startsWith('/farm/index.html');
     if (isAsset) {
-      reply.header('cache-control', url.includes('?v=') ? 'public, max-age=31536000, immutable' : 'no-cache');
+      // three.js: phiên bản nằm trong đường dẫn nên cache bất biến, tải một lần cho cả những lần mở sau
+      reply.header('cache-control', url.includes('?v=') || url.startsWith('/farm/vendor/') ? 'public, max-age=31536000, immutable' : 'no-cache');
     }
     return payload;
   });
 
   const serveIndex = async (request, reply) => {
-    const html = request.query?.view === '3d' && INDEX_3D_HTML ? INDEX_3D_HTML : INDEX_HTML;
+    const want = request.query?.view === '2d' || request.query?.view === '3d' ? request.query.view : (config.defaultView === '2d' ? '2d' : '3d');
+    const html = want === '3d' && INDEX_3D_HTML ? INDEX_3D_HTML : INDEX_HTML;
     return reply.type('text/html; charset=utf-8').header('cache-control', 'no-store').send(html);
   };
   app.get('/farm/', serveIndex);

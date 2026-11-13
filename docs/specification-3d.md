@@ -321,16 +321,18 @@ Mỗi giai đoạn là một nhánh và một PR riêng, có tiêu chí nghiệm
 | P0 Chuẩn bị server | Xong | `/catalog` có ETag, `/state?slim=1` (5,9 KB so với 66,6 KB), cache gia đình, cấp cao nhất, LRU phiên, giảm ghi khi đọc, test giới hạn tần suất |
 | P1 Khung 3D | Xong | `/farm/?view=3d` tải đồ họa một lần khi mở trang (three.js ghim 0.149.0 phục vụ cùng nguồn, không cần CDN, không cần nới CSP); `net.js`, `store.js`, `art.js`, `main.js` |
 | P2 Vòng chơi chính | Xong | gieo, tưới, thu (lẻ và hàng loạt), bán qua xe tải, mua hạt (36 loại, khóa theo cấp), mở rộng đất, nông dân, hoạt cảnh; mọi kết quả do server trả về, client không tự cộng vàng hay EXP |
-| P3 Sản xuất | Làm một phần | Xong: sheet Chế biến cho cả 12 máy (xếp mẻ, lấy thành phẩm, mở theo cấp) và sheet Chuồng (mua, cho ăn, thu; server tự cho ăn và tự thu khi kho còn thức ăn), cối xay trong cảnh quay theo job thật của server. Sheet Đơn hàng (giao, bỏ đơn) cũng xong. Chưa làm: mô hình 3D cho 11 máy còn lại và chuồng, vật nuôi trong cảnh theo trạng thái server, ao cá, tăng tốc |
-| P4 Xã hội | Chưa làm | |
-| P5 Hệ thống phụ | Chưa làm | |
-| P6 Chuyển hẳn | Chưa làm | client 2D còn nguyên và vẫn là mặc định |
+| P3 Sản xuất | Xong | 12 máy: cối xay và 11 tòa nhà trên lưới ô đất phía đông cối xay và phía nam đường (bố cục động: mỗi tòa và mỗi khối ruộng nhận ô gần nhất theo thứ tự mở khóa, người chơi đổi chỗ trong "Thêm" > "Sắp xếp phố xưởng", lưu theo thiết bị; công trường khi chưa mở, hoạt cảnh xây khi lên cấp, quay và hơi nước khi chạy, huy hiệu khi xong), tất cả đọc từ job của server; sheet Chế biến có xếp mẻ, lấy thành phẩm, tăng tốc; sheet Chuồng, Đơn hàng; vật nuôi trong cảnh theo `me.animals` (đói thì cúi đầu, có sản phẩm thì có huy hiệu; tối đa 6 gà, 3 cừu, 3 lợn và 2 con mỗi loài khác); ao cá và nuôi thủy sản, trồng cây ăn quả, tăng tốc bằng kim cương là sheet trong menu "Thêm" |
+| P4 Xã hội | Xong | thăm hàng xóm; hái ké từng ô và hết; tưới giúp, thu giúp, trồng giúp (từng ô và hết); hái ké chuồng và máy; khám xét; tặng, xin, trả lời xin vàng; bảng kẻ trộm; chó canh vườn (thuê trong menu "Thêm"); nhiệm vụ và xếp hạng |
+| P5 Hệ thống phụ | Xong | sao và cột mốc, lễ hội, kỹ năng, xa xỉ phẩm (mua, đeo danh hiệu và khung), xổ số, bộ sưu tập, năng lượng và kim cương, thuế và nợ (hiện trong menu "Thêm"), sinh vật nhỏ nhảy ra theo lịch của server |
+| P6 Chuyển hẳn | Làm một phần | Xong: `/farm/` mở bản 3D mặc định; `?view=2d` mở client cũ; đặt `FARM_DEFAULT_VIEW=2d` để quay lại mà không đổi mã; thiết bị không có WebGL thấy nút sang bản cổ điển; e2e 3D chạy trong CI: Chromium chơi đủ luồng; WebKit chỉ kiểm tra khởi động và nạp state (GL mềm trên CI ~0,4 fps); Firefox headless không có WebGL nên chỉ kiểm tra màn hình dự phòng sang bản cổ điển. Cần thử tay trên máy có GPU thật cho hai engine này. Chưa làm: xóa client 2D (§10 yêu cầu một bản 3D chạy ổn với nhóm nhỏ ít nhất một tuần trước khi xóa) và viết lại `browser-smoke` cho 3D (hiện smoke vẫn kiểm tra client 2D qua `?view=2d`) |
 
 Giới hạn đã biết của bản hiện tại:
-- Cảnh 3D vẽ tối đa 60 ô (ruộng chính 12 ô và 4 khối mở rộng ở phía đông). Người có nhiều đất hơn thấy phần còn lại ở client 2D; cần mở rộng khung thế giới trước P6.
+- Cảnh 3D vẽ đủ 96 ô mà server có thể cấp (12 ô chính và bảy khối mở rộng). Máy yếu có thể chậm khi có đủ ô; chưa đo trên điện thoại cũ.
 - Cây trồng dùng 4 họ mô hình cộng cây ăn quả, nhuộm màu quả theo từng loại; 10 họ ở §4.3 chưa đủ.
-- Cây ăn quả có thể xem và thu hoạch, nhưng chưa có thao tác trồng cây ăn quả (`plant-tree`).
-- Vật nuôi trong cảnh chỉ để trang trí, chưa phản ánh trạng thái từ server.
+- Vật nuôi trong cảnh bị giới hạn số con hiển thị (xem P3); số thật vẫn nằm ở sheet Chuồng.
+- Ao cá và thủy sản chỉ có sheet, chưa có mô hình ao trong cảnh. Xa xỉ phẩm loại trang trí và thú cưng chưa hiện trong cảnh.
+- Chó canh vườn không có mô hình trong cảnh; chỉ biểu tượng 🐕 khi thăm nhà có chó.
+- Mô hình các tòa nhà và con vật là bản dựng bằng khối cơ bản, chưa qua vòng duyệt ảnh chụp chuẩn như §4.3.
 
 ## 9. Kiểm thử
 

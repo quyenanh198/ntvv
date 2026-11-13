@@ -6,24 +6,34 @@ import { join } from 'node:path';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const { buildApp } = await import(`${pathToFileURL(ROOT)}server/src/app.js`);
 const { openDb } = await import(`${pathToFileURL(ROOT)}server/src/db.js`);
-import { chromium } from 'playwright';
+import { chromium, firefox, webkit } from 'playwright';
+const engineName = process.env.NTVV_BROWSER || 'chromium';
 
 const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-e2e-'));
 const db = openDb(dataDir);
 const app = buildApp({ db, logger: false, config: { dataDir, fast: false, mockChatUser: { id: 1, username: 'e2e', display_name: 'E2E Farmer' } } });
+let threeHits = 0; // requests that actually reached the server, regardless of what the browser reports
+app.addHook('onRequest', async (req) => { if (req.raw.url.includes('/three.module.js')) threeHits += 1; });
 await app.listen({ port: 8091, host: '127.0.0.1' });
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const out = process.argv[2] || join(tmpdir(), 'ntvv-e2e-shots');
 mkdirSync(out, { recursive: true });
 const log = [];
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await ({ chromium, firefox, webkit })[engineName].launch(engineName === 'chromium' ? { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] } : {});
 // 1) under the server's real CSP: the client must boot without violations
 const cspPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
 const cspErrs = [];
 cspPage.on('console', (m) => { if (/Content Security Policy|violates/i.test(m.text())) cspErrs.push(m.text().slice(0, 140)); });
 cspPage.on('pageerror', (e) => cspErrs.push('pageerror ' + e.message));
 await cspPage.goto('http://127.0.0.1:8091/farm/?view=3d');
-await cspPage.waitForSelector('#boot[hidden]', { state: 'attached', timeout: 30000 });
+// engines without WebGL (headless Firefox on CI): the page must say so and offer the classic client, nothing else to play
+if (!(await cspPage.evaluate(() => !!(document.createElement('canvas').getContext('webgl2') || document.createElement('canvas').getContext('webgl'))))) {
+  await cspPage.waitForSelector('#bootMsg a[href="?view=2d"]', { timeout: 60000 });
+  console.log('PASS no WebGL on this engine: the page offers the classic client instead of hanging');
+  await browser.close(); await app.close(); process.exit(0);
+}
+try { await cspPage.waitForSelector('#boot[hidden]', { state: 'attached', timeout: 30000 }); }
+catch (e) { console.log('boot did not finish:', await cspPage.evaluate(() => document.querySelector('#bootTitle').textContent + ' / ' + document.querySelector('#bootMsg').textContent), JSON.stringify(cspErrs)); throw e; }
 await cspPage.waitForTimeout(1500);
 await cspPage.close();
 // 2) scripted waits need eval, so the driven session bypasses CSP
@@ -43,52 +53,54 @@ await page.screenshot({ path: `${out}/e2e-1-loaded.png` });
 let st = await page.evaluate(() => ({ gold: __farm.store.me.gold, level: __farm.store.me.level, plots: __farm.plots.length, plotsCount: __farm.store.me.plotsCount, seed: __farm.G.seed, boot: document.querySelector('#boot').hidden }));
 step('loads real state', st.plots === st.plotsCount && st.plots === 12 && st.boot, JSON.stringify(st));
 
+// CI WebKit has only software GL (about 0.4 fps there), which stretches every animation past any sane wait: boot and first state are the check on that engine
+if (engineName === 'webkit') { console.log('PASS webkit: 3D scene boots and loads server state (gameplay steps need a GPU, run on Chromium)'); await browser.close(); await app.close(); process.exit(0); }
 const goldBefore = st.gold;
 await page.evaluate(() => __farm.tapPlot(__farm.plots[0]));
-await page.waitForFunction(() => __farm.store.me.plots[0].crop, null, { timeout: 15000 });
+await page.waitForFunction(() => __farm.store.me.plots[0].crop, null, { timeout: 45000 }).catch(async (e) => { console.log('plant did not land:', await page.evaluate(() => document.querySelector('#toast').textContent), JSON.stringify(errs.slice(-5)), await page.evaluate(() => JSON.stringify({ fps: __farm.perf.gap.slice(-20), farmer: __farm.farmer.state, queue: __farm.farmer.queue.length, task: !!__farm.farmer.task, busy: __farm.plots[0].busy, pending: __farm.plots[0].pending }))); throw e; });
 st = await page.evaluate(() => ({ crop: __farm.store.me.plots[0].crop, gold: __farm.store.me.gold, state: __farm.plots[0].state }));
 step('plant via server', st.crop === 'luami' && st.gold < goldBefore, JSON.stringify(st));
 await page.screenshot({ path: `${out}/e2e-2-planted.png` });
 
 await page.evaluate(() => __farm.tapPlot(__farm.plots[0]));
-await page.waitForFunction(() => __farm.store.me.plots[0].watered, null, { timeout: 15000 });
+await page.waitForFunction(() => __farm.store.me.plots[0].watered, null, { timeout: 60000 });
 step('water via server', true);
 
 db.prepare('UPDATE plots SET ready_at = ?').run(Date.now() - 1000); await page.evaluate(() => __farm.refresh());
-await page.waitForFunction(() => __farm.plots[0].state === 'ripe', null, { timeout: 20000 });
+await page.waitForFunction(() => __farm.plots[0].state === 'ripe', null, { timeout: 60000 });
 await wait(800);
 await page.screenshot({ path: `${out}/e2e-3-ripe.png` });
 const invBefore = await page.evaluate(() => __farm.store.me.inventory.luami || 0);
 await page.evaluate(() => __farm.tapPlot(__farm.plots[0]));
-await page.waitForFunction(() => !__farm.store.me.plots[0].crop, null, { timeout: 20000 });
+await page.waitForFunction(() => !__farm.store.me.plots[0].crop, null, { timeout: 60000 });
 const invAfter = await page.evaluate(() => __farm.store.me.inventory.luami || 0);
 step('harvest via server', invAfter > invBefore, `inventory ${invBefore} -> ${invAfter}`);
 
 await page.click('#bPlant');
-await page.waitForFunction(() => __farm.store.me.plots.every((p) => p.crop), null, { timeout: 15000 });
+await page.waitForFunction(() => __farm.store.me.plots.every((p) => p.crop), null, { timeout: 60000 });
 step('plant-all fills every empty plot', true);
 db.prepare('UPDATE plots SET ready_at = ?').run(Date.now() - 1000);
 await page.evaluate(() => __farm.refresh());
 await wait(600);
 await page.screenshot({ path: `${out}/e2e-4-field.png` });
 await page.click('#bHarvest');
-await page.waitForFunction(() => __farm.store.me.plots.every((p) => !p.crop), null, { timeout: 15000 });
+await page.waitForFunction(() => __farm.store.me.plots.every((p) => !p.crop), null, { timeout: 60000 });
 step('harvest-all empties the field', true);
 
 const g0 = await page.evaluate(() => __farm.store.me.gold);
 await page.click('#khoBtn'); await wait(300);
 await page.screenshot({ path: `${out}/e2e-5-store.png` });
 await page.click('#sellAll');
-await page.waitForFunction(() => __farm.truck.state !== 'away', null, { timeout: 15000 });
+await page.waitForFunction(() => __farm.truck.state !== 'away', null, { timeout: 60000 });
 const held = await page.evaluate(() => ({ shown: document.querySelector('#gold').textContent, server: __farm.store.me.gold, hold: __farm.G.holdGold }));
 step('gold held while truck is on the road', held.hold !== null && held.server > g0, JSON.stringify(held));
-await page.waitForFunction(() => __farm.truck.state === 'away', null, { timeout: 30000 });
+await page.waitForFunction(() => __farm.truck.state === 'away', null, { timeout: 120000 });
 await wait(1200);
 const done = await page.evaluate(() => ({ shown: document.querySelector('#gold').textContent, server: __farm.store.me.gold, hold: __farm.G.holdGold }));
 step('gold released when truck leaves', done.hold === null && Number(done.shown.replace(/\D/g, '')) === done.server, JSON.stringify(done));
 await page.screenshot({ path: `${out}/e2e-6-sold.png` });
 
-await page.reload();
+await page.goto('http://127.0.0.1:8091/farm/?view=3d&again=1#debug', { waitUntil: 'load' }); // a normal second visit, not a forced reload
 await page.waitForFunction(() => window.__farm && window.__farm.store.me, null, { timeout: 30000 });
 const after = await page.evaluate(() => ({ gold: __farm.store.me.gold, plots: __farm.plots.length }));
 step('reload restores the same farm', after.gold === done.server && after.plots === 12, JSON.stringify(after));
@@ -100,40 +112,49 @@ step('expansion offered', !!nx, JSON.stringify(nx));
 db.prepare('UPDATE farmers SET xp = 100000, gold = 1000000 WHERE user_id = 1').run();
 db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'luami', 10) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 10").run();
 await page.evaluate(() => __farm.refresh());
-await page.waitForFunction(() => __farm.mill.state === 'idle', null, { timeout: 20000 });
+await page.waitForFunction(() => __farm.mill.state === 'idle', null, { timeout: 60000 });
 await page.click('#bMachines');
 await page.waitForSelector('#prodRows .cta');
 await page.screenshot({ path: `${out}/e2e-7-machines.png` });
 await page.evaluate(() => [...document.querySelectorAll('#prodRows .cta')].find((b) => b.textContent === 'Chế 1 mẻ').click());
-await page.waitForFunction(() => Object.keys(__farm.store.me.machines.coixay || {}).length > 0, null, { timeout: 15000 });
-await page.waitForFunction(() => __farm.mill.state === 'working', null, { timeout: 15000 });
+await page.waitForFunction(() => Object.keys(__farm.store.me.machines.coixay || {}).length > 0, null, { timeout: 60000 });
+await page.waitForFunction(() => __farm.mill.state === 'working', null, { timeout: 60000 });
 step('machine job queued by the server; mill starts working', await page.evaluate(() => __farm.store.me.inventory.luami === 8));
 db.prepare("UPDATE machine_jobs SET ready_at = ? WHERE kind = 'coixay'").run(Date.now() - 1000);
 await page.evaluate(() => __farm.refresh());
-await page.waitForFunction(() => __farm.mill.state === 'done', null, { timeout: 15000 });
+await page.waitForFunction(() => __farm.mill.state === 'done', null, { timeout: 60000 });
 await page.screenshot({ path: `${out}/e2e-8-mill-done.png` });
 await page.evaluate(() => [...document.querySelectorAll('#prodRows .cta')].find((b) => b.textContent === 'Lấy thành phẩm').click());
-await page.waitForFunction(() => (__farm.store.me.inventory.botmi || 0) >= 1 && __farm.mill.state === 'idle', null, { timeout: 15000 });
+await page.waitForFunction(() => (__farm.store.me.inventory.botmi || 0) >= 1 && __farm.mill.state === 'idle', null, { timeout: 60000 });
 step('finished goods collected; mill returns to idle', true);
 await page.click('#prodClose');
 
 // ---- P3: barn. Buy, feed, collect all go through the server ----
-await page.click('#bBarn');
+await page.click('#bMore'); await page.click('#prodRows .row:has-text("Chuồng trại") button');
 await page.waitForSelector('#prodRows .cta');
 await page.evaluate(() => [...document.querySelectorAll('#prodRows .row')].find((r) => r.textContent.includes('Gà') && r.querySelector('.cta:not(:disabled)')).querySelector('.cta').click());
-await page.waitForFunction(() => (__farm.store.me.animals || []).some((a) => a.kind === 'ga'), null, { timeout: 15000 });
+await page.waitForFunction(() => (__farm.store.me.animals || []).some((a) => a.kind === 'ga'), null, { timeout: 60000 });
 db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'thucan', 20) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 20").run();
 await page.evaluate(() => __farm.refresh());
 // the server auto-feeds hungry animals when feed is in the barn (autoTend); the UI must reflect that either way
 await page.evaluate(() => [...document.querySelectorAll('#prodRows .cta')].find((b) => b.textContent === 'Cho ăn' && !b.disabled)?.click());
-await page.waitForFunction(() => (__farm.store.me.animals || []).every((a) => a.ready_at != null), null, { timeout: 15000 });
+await page.waitForFunction(() => (__farm.store.me.animals || []).every((a) => a.ready_at != null), null, { timeout: 60000 });
 db.prepare('UPDATE animals SET ready_at = ?').run(Date.now() - 1000);
 await page.evaluate(() => __farm.refresh());
 await page.screenshot({ path: `${out}/e2e-9-barn.png` });
 // with feed in the barn the server also collects ripe products on its own
-await page.waitForFunction(() => (__farm.store.me.inventory.trung || 0) >= 1, null, { timeout: 15000 });
+await page.waitForFunction(() => (__farm.store.me.inventory.trung || 0) >= 1, null, { timeout: 60000 });
 step('barn: buy via the server; server feeds and collects with feed in stock', true);
+// the herd in the scene follows what the server says: a hen, then a cow bought through the sheet
+await page.waitForFunction(() => [...__farm.herd.ents.values()].some((e) => e.a.serverKind === 'ga'), null, { timeout: 60000 });
+await page.evaluate(() => [...document.querySelectorAll('#prodRows .row')].find((r) => r.querySelector('b')?.textContent === 'Bò' && r.querySelector('.cta:not(:disabled)'))?.querySelector('.cta').click());
+await page.waitForFunction(() => (__farm.store.me.animals || []).some((a) => a.kind === 'bo') && [...__farm.herd.ents.values()].some((e) => e.a.serverKind === 'bo'), null, { timeout: 60000 });
+step('herd in the scene follows the server: hen and cow appear', true);
 await page.click('#prodClose');
+await page.evaluate(() => { const cow = [...__farm.herd.ents.values()].find(e => e.a.serverKind === 'bo').a; __farm.camTarget.set(cow.g.position.x, 0, cow.g.position.z + 1); __farm.setZoom(1.4); });
+await wait(1500);
+await page.screenshot({ path: `${out}/e2e-p3-herd.png` });
+await page.evaluate(() => __farm.camTarget.set(2.5, 0, 4.2));
 
 // ---- P3: orders. Delivery pays out only when the server accepts it ----
 await page.evaluate(() => __farm.refresh());
@@ -146,14 +167,188 @@ await page.click('#bOrders');
 await page.waitForSelector('#prodRows .cta');
 await page.screenshot({ path: `${out}/e2e-10-orders.png` });
 await page.evaluate(() => [...document.querySelectorAll('#prodRows .cta')].find((b) => b.textContent === 'Giao hàng' && !b.disabled).click());
-await page.waitForFunction((id) => !__farm.store.me.orders.some((o) => o.id === id), order.id, { timeout: 15000 });
+await page.waitForFunction((id) => !__farm.store.me.orders.some((o) => o.id === id), order.id, { timeout: 60000 });
 const goldAfterOrder = await page.evaluate(() => __farm.store.me.gold);
 step('order delivered; gold granted by the server', goldAfterOrder > goldBeforeOrder, `${goldBeforeOrder} -> ${goldAfterOrder}`);
 await page.click('#prodClose');
 
+// ---- P4: visit a neighbour, poach a ripe plot, water-help a growing one ----
+const t0 = Date.now();
+db.prepare('INSERT INTO farmers (user_id, name, gold, gems, plots_count, created_at, xp) VALUES (2, ?, 100, 0, 12, ?, 500)').run('Hàng Xóm', t0);
+db.prepare("INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (2, 0, 'luami', ?, ?, 0)").run(t0 - 600000, t0 - 1000);
+db.prepare("INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (2, 1, 'carot', ?, ?, 0)").run(t0 - 1000, t0 + 3600000);
+const stockBefore = await page.evaluate(() => __farm.store.me.inventory.luami || 0);
+const goldBeforeVisit = await page.evaluate(() => __farm.store.me.gold);
+await page.evaluate(() => __farm.visitFarm(2));
+await page.waitForFunction(() => document.body.classList.contains('visiting'), null, { timeout: 60000 });
+await wait(500);
+await page.screenshot({ path: `${out}/e2e-11-visit.png` });
+step('visiting shows the neighbour\'s land', await page.evaluate(() => __farm.plots[0].state === 'ripe' && __farm.plots[1].state === 'growing' && document.querySelector('#visitName').textContent.includes('Hàng Xóm')));
+await page.evaluate(() => __farm.tapPlot(__farm.plots[0]));
+await page.waitForFunction((n) => (__farm.store.me.inventory.luami || 0) > n, stockBefore, { timeout: 60000 });
+step('poach: the server grants the item', true);
+await page.evaluate(() => __farm.tapPlot(__farm.plots[1]));
+await page.waitForFunction((g) => __farm.store.me.gold > g, goldBeforeVisit, { timeout: 60000 });
+step('water-help: the server pays the helper', true);
+// bulk poach, gift and ask, all decided by the server
+for (const i of [2, 3]) db.prepare("INSERT INTO plots (owner_id, idx, crop, planted_at, ready_at, watered) VALUES (2, ?, 'luami', ?, ?, 0)").run(i, t0 - 600000, t0 - 1000);
+await page.evaluate(() => __farm.visitFarm(2));
+await page.waitForFunction(() => [...document.querySelectorAll('#visitActs button')].some(b => b.textContent === 'Hái ké hết' && !b.disabled), null, { timeout: 60000 });
+const stock2 = await page.evaluate(() => __farm.store.me.inventory.luami || 0);
+await page.click('#visitActs button:has-text("Hái ké hết")');
+await page.waitForFunction((n) => (__farm.store.me.inventory.luami || 0) >= n + 2, stock2, { timeout: 60000 });
+step('poach-all: the server grants every ripe plot', true);
+await page.click('#visitActs button:has-text("Tặng vàng")');
+const goldPre = await page.evaluate(() => __farm.store.me.gold);
+await page.click('#prodRows .amounts button >> nth=0');
+await page.waitForFunction((g) => __farm.store.me.gold <= g - 100, goldPre, { timeout: 60000 });
+step('gold gift: server moves the gold', db.prepare('SELECT gold FROM farmers WHERE user_id = 2').get().gold > 100);
+await page.click('#prodClose');
+await page.click('#visitActs button:has-text("Xin vàng")');
+await page.click('#prodRows .amounts button >> nth=1');
+await page.waitForFunction(() => document.querySelector('#toast').textContent.includes('lời xin'), null, { timeout: 60000 });
+step('gold ask: request stored by the server', db.prepare("SELECT COUNT(*) n FROM gold_requests WHERE from_id = 1 AND to_id = 2 AND status = 'open'").get().n === 1);
+await page.click('#prodClose');
+await page.evaluate(() => __farm.leaveVisit());
+await page.click('#bMore'); await page.click('#prodRows .row:has-text("Xin/Cho vàng") button');
+await page.waitForFunction(() => document.querySelector('#prodRows').textContent.includes('Bạn xin Hàng Xóm'), null, { timeout: 60000 });
+step('requests sheet lists my ask', true);
+await page.click('#prodClose');
+await page.click('#bMore'); await page.click('#prodRows .row:has-text("Bảng kẻ trộm") button');
+await page.waitForFunction(() => document.querySelector('#prodTitle').textContent === 'Bảng kẻ trộm' && !document.querySelector('#prodRows').textContent.includes('Đang tải'), null, { timeout: 60000 });
+step('thief board opens from the server', true);
+await page.click('#prodClose');
+await page.evaluate(() => __farm.visitFarm(2));
+await page.evaluate(() => __farm.leaveVisit());
+step('back home restores my farm', await page.evaluate(() => !document.body.classList.contains('visiting') && __farm.plots[0].cropKey === null));
+await page.screenshot({ path: `${out}/e2e-12-home.png` });
+
+// ---- dynamic layout: farm blocks and workshops never overlap; the player can rearrange ----
+db.prepare('UPDATE farmers SET plots_count = 36 WHERE user_id = 1').run();
+await page.evaluate(() => __farm.refresh());
+await page.waitForFunction(() => __farm.plots.length === 36, null, { timeout: 60000 });
+const clash = await page.evaluate(() => {
+  const st = __farm.stations.list.filter((s) => s.placed), pl = __farm.plots.filter((p) => p.i >= 12);
+  let min = 1e9;
+  for (const s of st) for (const p of pl) min = Math.min(min, Math.hypot(s.x - p.x, s.z - p.z));
+  const sep = st.flatMap((a, i) => st.slice(i + 1).map((b) => Math.hypot(a.x - b.x, a.z - b.z)));
+  return { stations: st.length, blocks: pl.length / 12, minStationToPlot: +min.toFixed(1), minStationGap: +Math.min(...sep).toFixed(1) };
+});
+step('farm blocks and workshops share no lot', clash.minStationToPlot >= 3.2 && clash.minStationGap >= 5 && clash.blocks === 2, JSON.stringify(clash));
+await page.click('#bMore'); await page.click('#prodRows .row:has-text("Sắp xếp phố xưởng") button');
+await page.waitForFunction(() => document.body.classList.contains('editing'), null, { timeout: 15000 });
+const moved = await page.evaluate(() => {
+  const l = __farm.layout, key = [...l.items.keys()].find((k) => k.startsWith('station:'));
+  const from = { ...l.at(key) }; let free = null;
+  for (let r = 0; r < 7 && !free; r += 1) for (let c = 0; c < 6 && !free; c += 1) if (!l.occupantAt(c, r)) free = { c, r };
+  __farm.editCell({ c: from.c, r: from.r }); __farm.editCell(free);
+  return { key, free, now: { ...l.at(key) }, saved: !!localStorage.getItem('ntvv3d-layout-1') };
+});
+step('a workshop moved to a free lot and the choice is saved', moved.now.c === moved.free.c && moved.now.r === moved.free.r && moved.saved, JSON.stringify(moved));
+await wait(1500);
+await page.screenshot({ path: `${out}/e2e-p3-edit.png` });
+await page.click('#editDone');
+await page.reload({ waitUntil: 'load' });
+await page.waitForFunction(() => document.querySelector('#boot').hidden, null, { timeout: 60000 });
+step('after a reload the layout is the one the player chose', await page.evaluate((m) => { const v = __farm.layout.at(m.key); return v && v.c === m.free.c && v.r === m.free.r; }, moved));
+
+// ---- P3: the other eleven machines are buildings mirroring the server's jobs ----
+await page.waitForFunction(() => __farm.stations && __farm.stations.list.length === 11, null, { timeout: 60000 });
+step('eleven workshop buildings exist', true);
+const recipe = await page.evaluate(() => { const r = Object.values(__farm.store.catalog.machines.lonuong.recipes)[0]; return { id: r.id, in: r.in }; });
+for (const [item, n] of Object.entries(recipe.in)) db.prepare('INSERT INTO inventory (owner_id, item, qty) VALUES (1, ?, ?) ON CONFLICT(owner_id, item) DO UPDATE SET qty = ?').run(item, n * 3, n * 3);
+await page.evaluate(() => __farm.refresh());
+await page.click('#bMachines');
+await page.click('#prodTabs button:has-text("Lò nướng cá")');
+await page.click('#prodRows .row button:has-text("Chế 1 mẻ") >> nth=0');
+await page.waitForFunction(() => __farm.stations.byId('lonuong').state === 'working', null, { timeout: 60000 });
+step('machine job running; its building works', true);
+await page.click('#prodClose');
+await page.evaluate(() => { __farm.camTarget.set(27, 0, 0); __farm.setZoom(0.9); });
+await wait(1200);
+await page.screenshot({ path: `${out}/e2e-p3-street.png` });
+db.prepare("UPDATE machine_jobs SET ready_at = ? WHERE owner_id = 1 AND kind = 'lonuong'").run(Date.now() - 1000);
+await page.evaluate(() => __farm.refresh());
+await page.waitForFunction(() => __farm.stations.byId('lonuong').state === 'done' && __farm.stations.byId('lonuong').badge.visible, null, { timeout: 60000 });
+step('finished job shows the done badge on its building', true);
+await page.screenshot({ path: `${out}/e2e-p3-done.png` });
+await page.evaluate(() => __farm.camTarget.set(2.5, 0, 4.2));
+
+// ---- P5: secondary systems, every outcome decided by the server ----
+await page.click('#bMore');
+await page.waitForSelector('#prodRows .row');
+db.prepare('UPDATE farmers SET gems = gems + 50 WHERE user_id = 1').run(); db.prepare('DELETE FROM plots WHERE owner_id = 1 AND idx = 0').run(); await page.evaluate(() => __farm.refresh());
+const MODES = ['stars', 'festival', 'skills', 'luxury', 'lottery', 'collections', 'energy', 'dog', 'fish', 'trees', 'speed'];
+for (const mode of MODES) {
+  await page.evaluate((m) => document.querySelector('#bMore').click() || 0, mode);
+  const idx = MODES.indexOf(mode);
+  await page.click(`#prodRows .row:nth-of-type(${idx + 1}) button`);
+  await page.waitForFunction(() => document.querySelector('#prodRows').children.length > 1 && !document.querySelector('#prodRows').textContent.includes('Đang tải'), null, { timeout: 60000 });
+  if (mode === 'skills') {
+    const before = await page.evaluate(() => __farm.store.me.skills.points);
+    await page.click('#prodRows .row button:not([disabled])');
+    await page.waitForFunction((n) => __farm.store.me.skills.points < n, before, { timeout: 60000 });
+    step('skill learned; points decided by the server', true);
+  }
+  if (mode === 'dog') {
+    await page.click('#prodRows .row button:not([disabled])');
+    await page.waitForFunction(() => __farm.store.me.dog.active, null, { timeout: 60000 });
+    step('dog hired; server records it', true);
+  }
+  if (mode === 'fish') {
+    const before = await page.evaluate(() => __farm.store.me.energy.current);
+    await page.click('#prodRows .row button:has-text("Câu")');
+    await page.waitForFunction((n) => __farm.store.me.energy.current < n, before, { timeout: 60000 });
+    step('fishing costs energy; the server decides the catch', true);
+  }
+  if (mode === 'trees') {
+    await page.click('#prodRows .row button:has-text("Trồng"):not([disabled]) >> nth=0');
+    await page.waitForFunction(() => __farm.store.me.plots.some((p) => p.tree), null, { timeout: 60000 });
+    step('fruit tree planted by the server', true);
+  }
+  if (mode === 'speed') {
+    const g = await page.evaluate(() => __farm.store.me.gems);
+    await page.click('#prodRows .row button:has-text("Tăng tốc"):not([disabled]) >> nth=0');
+    await page.waitForFunction((n) => __farm.store.me.gems < n, g, { timeout: 60000 });
+    step('speed-up charged in gems by the server', true);
+  }
+  if (mode === 'lottery') {
+    const before = await page.evaluate(() => __farm.store.me.gold);
+    await page.click('#prodRows .amounts button >> nth=0');
+    await page.waitForFunction((g) => __farm.store.me.gold < g, before, { timeout: 60000 });
+    step('lottery ticket bought; server takes the gold', true);
+  }
+  await page.screenshot({ path: `${out}/e2e-p5-${mode}.png` });
+  step(`${mode} sheet renders from server state`, true);
+  await page.click('#prodClose');
+}
+db.prepare('UPDATE farmers SET critter_next_at = ? WHERE user_id = 1').run(Date.now() + 1500);
+await page.evaluate(() => __farm.refresh());
+await page.waitForSelector('#critter:not([hidden])', { timeout: 60000 });
+const gemsBefore = await page.evaluate(() => __farm.store.me.gems);
+await page.evaluate(() => document.querySelector('#critter').click());
+await page.waitForFunction((n) => __farm.store.me.gems > n, gemsBefore, { timeout: 60000 });
+step('critter caught within the server window; gems granted by the server', true);
+
+// ---- P4/P5: daily quests and the ranking come from the server ----
+await page.click('#bMore'); await page.click('#prodRows .row:has-text("Nhiệm vụ ngày") button');
+await page.waitForSelector('#prodRows .row');
+step('daily quests listed from the server', await page.evaluate(() => document.querySelectorAll('#prodRows .row').length >= 4));
+await page.click('#prodClose');
+await page.click('#bMore'); await page.click('#prodRows .row:has-text("Bảng xếp hạng") button');
+await page.waitForFunction(() => document.querySelector('#prodRows').textContent.includes('(bạn)'), null, { timeout: 60000 });
+step('ranking lists the player', true);
+await page.click('#prodClose');
+
+// ---- graphics load once: the second open takes three.js from the browser cache ----
+const mainLoads = reqs.filter((r) => r.includes('/3d/main.js'));
+// two browser contexts (the CSP check and the driven session) each download it once; the second visit in a context is served from its cache
+step('three.js downloaded once per browser; later opens come from the cache', threeHits === 2, 'server saw ' + threeHits + ' requests for 4 page loads');
+step('catalog not refetched in full after the first open', reqs.filter((r) => r.includes('/api/catalog')).length <= 3, `main.js ${mainLoads.length} loads`);
+
 const catalogCalls = reqs.filter((r) => r.includes('/api/catalog')).length;
 const stateCalls = reqs.filter((r) => r.includes('/api/state')).length;
-step('catalog requested once per page load', catalogCalls <= 2, `catalog ${catalogCalls}, state ${stateCalls}`);
+step('catalog requested once per page load', catalogCalls <= 3, `catalog ${catalogCalls}, state ${stateCalls}`);
 log.push(`${cspErrs.length ? 'FAIL' : 'PASS'} no CSP violations or page errors under the real CSP ${cspErrs.join(' ; ')}`);
 console.log(log.join('\n'));
 console.log('js errors:', errs.length ? errs.slice(0, 6).join(' | ') : 'none');
