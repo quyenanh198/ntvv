@@ -223,6 +223,35 @@ await page.evaluate(() => __farm.leaveVisit());
 step('back home restores my farm', await page.evaluate(() => !document.body.classList.contains('visiting') && __farm.plots[0].cropKey === null));
 await page.screenshot({ path: `${out}/e2e-12-home.png` });
 
+// ---- dynamic layout: farm blocks and workshops never overlap; the player can rearrange ----
+db.prepare('UPDATE farmers SET plots_count = 36 WHERE user_id = 1').run();
+await page.evaluate(() => __farm.refresh());
+await page.waitForFunction(() => __farm.plots.length === 36, null, { timeout: 60000 });
+const clash = await page.evaluate(() => {
+  const st = __farm.stations.list.filter((s) => s.placed), pl = __farm.plots.filter((p) => p.i >= 12);
+  let min = 1e9;
+  for (const s of st) for (const p of pl) min = Math.min(min, Math.hypot(s.x - p.x, s.z - p.z));
+  const sep = st.flatMap((a, i) => st.slice(i + 1).map((b) => Math.hypot(a.x - b.x, a.z - b.z)));
+  return { stations: st.length, blocks: pl.length / 12, minStationToPlot: +min.toFixed(1), minStationGap: +Math.min(...sep).toFixed(1) };
+});
+step('farm blocks and workshops share no lot', clash.minStationToPlot >= 3.2 && clash.minStationGap >= 5 && clash.blocks === 2, JSON.stringify(clash));
+await page.click('#bMore'); await page.click('#prodRows .row:has-text("Sắp xếp phố xưởng") button');
+await page.waitForFunction(() => document.body.classList.contains('editing'), null, { timeout: 15000 });
+const moved = await page.evaluate(() => {
+  const l = __farm.layout, key = [...l.items.keys()].find((k) => k.startsWith('station:'));
+  const from = { ...l.at(key) }; let free = null;
+  for (let r = 0; r < 7 && !free; r += 1) for (let c = 0; c < 6 && !free; c += 1) if (!l.occupantAt(c, r)) free = { c, r };
+  __farm.editCell({ c: from.c, r: from.r }); __farm.editCell(free);
+  return { key, free, now: { ...l.at(key) }, saved: !!localStorage.getItem('ntvv3d-layout-1') };
+});
+step('a workshop moved to a free lot and the choice is saved', moved.now.c === moved.free.c && moved.now.r === moved.free.r && moved.saved, JSON.stringify(moved));
+await wait(1500);
+await page.screenshot({ path: `${out}/e2e-p3-edit.png` });
+await page.click('#editDone');
+await page.reload({ waitUntil: 'load' });
+await page.waitForFunction(() => document.querySelector('#boot').hidden, null, { timeout: 60000 });
+step('after a reload the layout is the one the player chose', await page.evaluate((m) => { const v = __farm.layout.at(m.key); return v && v.c === m.free.c && v.r === m.free.r; }, moved));
+
 // ---- P3: the other eleven machines are buildings mirroring the server's jobs ----
 await page.waitForFunction(() => __farm.stations && __farm.stations.list.length === 11, null, { timeout: 60000 });
 step('eleven workshop buildings exist', true);
@@ -314,12 +343,12 @@ await page.click('#prodClose');
 // ---- graphics load once: the second open takes three.js from the browser cache ----
 const mainLoads = reqs.filter((r) => r.includes('/3d/main.js'));
 // two browser contexts (the CSP check and the driven session) each download it once; the second visit in a context is served from its cache
-step('three.js downloaded once per browser; later opens come from the cache', threeHits === 2, 'server saw ' + threeHits + ' requests for 3 page loads');
-step('catalog not refetched in full after the first open', reqs.filter((r) => r.includes('/api/catalog')).length <= 2, `main.js ${mainLoads.length} loads`);
+step('three.js downloaded once per browser; later opens come from the cache', threeHits === 2, 'server saw ' + threeHits + ' requests for 4 page loads');
+step('catalog not refetched in full after the first open', reqs.filter((r) => r.includes('/api/catalog')).length <= 3, `main.js ${mainLoads.length} loads`);
 
 const catalogCalls = reqs.filter((r) => r.includes('/api/catalog')).length;
 const stateCalls = reqs.filter((r) => r.includes('/api/state')).length;
-step('catalog requested once per page load', catalogCalls <= 2, `catalog ${catalogCalls}, state ${stateCalls}`);
+step('catalog requested once per page load', catalogCalls <= 3, `catalog ${catalogCalls}, state ${stateCalls}`);
 log.push(`${cspErrs.length ? 'FAIL' : 'PASS'} no CSP violations or page errors under the real CSP ${cspErrs.join(' ; ')}`);
 console.log(log.join('\n'));
 console.log('js errors:', errs.length ? errs.slice(0, 6).join(' | ') : 'none');

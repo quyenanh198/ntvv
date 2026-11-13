@@ -3,7 +3,8 @@ import { net, serverNow, api } from './net.js';
 import { store, refresh, act as doAct, subscribe } from './store.js';
 import { itemSprite } from './art.js';
 import { renderExtra } from './sheets.js';
-import { SLOTS, STATION_PATHS, createStations } from './stations.js';
+import { createStations } from './stations.js';
+import { GRID, ROWS, STREET_PATHS, createLayout, inDistrict, spanCenter } from './layout.js';
 import { PASTURE_FENCE, PASTURE_PATH, createHerd } from './herd.js';
 const $ = s => document.querySelector(s);
 const rand = (a = 0, b = 1) => a + Math.random() * (b - a);
@@ -14,7 +15,7 @@ if (THREE.ColorManagement) THREE.ColorManagement.legacyMode = false;
 let MILL_LEVEL = 10; // đọc lại từ catalog (coixay.level) khi tải xong
 const MILL_X = 13, MILL_Z = 2.2;
 const ROAD_Z = 12.6, STOP_X = 7.5, FAR = 50; // road lane, where the truck stops (stall), off-screen distance
-const PLOT_CAP = 60; // số ô vẽ được trong 3D hiện tại: 12 ô ruộng chính + 4 khối mở rộng
+const PLOT_CAP = 96; // every plot the server can grant (MAX_PLOTS): the 12 main plots plus seven farm blocks of 12
 // 36 cây trồng dùng 4 họ mô hình (+ cây ăn quả); mỗi cây có màu quả riêng.
 const FAMILY = {
   luami: ['wheat'], gao: ['wheat', 0xe8d98a], me: ['wheat', 0xc9b27a],
@@ -150,7 +151,7 @@ const PATHS = [
   { w: 1.1, pts: [[-4.9, 3.9], [-6.4, 3.9]] },                                                   // chicken yard
   { w: 1.0, pts: [[-4.9, 3.2], [-3.6, 3.2]] },                                                   // plot gate
 ];
-PATHS.push(...STATION_PATHS, PASTURE_PATH); // the workshop street east of the mill, the lane to the west pasture
+PATHS.push(...STREET_PATHS, PASTURE_PATH); // the workshop street east of the mill, the lane to the west pasture
 const ROAD = { w: 3.2, pts: [[-48, ROAD_Z], [48, ROAD_Z]] };
 // Paths bend gently through their points (centripetal Catmull-Rom); bed, stones and grass exclusion all follow the curve
 [...PATHS, ROAD].forEach(p => {
@@ -439,6 +440,7 @@ const stallGroup = stall(STOP_X, 10.1, 0);
 // trees, grass and flowers are built in buildFlora() once the merge helpers below exist
 const TREES = [[-16, -3, 1.2, true], [-15.5, 0.4, 1.1, false], [-4.5, -14.5, 1.3, true], [7.5, -16, 1.2, false], [18, -3, 1.2, true], [17.5, 9.5, 1, false], [-21, 0.6, 1.1, true], [-19, -12, 1.4, false], [21, -14, 1.3, false], [-3.5, -9.5, 0.8, false]];
 const PINES = [[-26.5, 0.6, 1.1], [-13, -14.5, 1.2], [16.5, -9.5, 1.1], [20, 3.5, 1.2], [-22, -6, 1.3], [22, -8, 1.2]];
+for (const L of [TREES, PINES]) for (let i = L.length - 1; i >= 0; i -= 1) if (inDistrict(L[i][0], L[i][1])) L.splice(i, 1); // the building district is cleared of hand-placed trees
 
 // ================= Delivery truck =================
 const truck = (() => {
@@ -539,7 +541,6 @@ const mill = (() => {
   const hit = new THREE.Mesh(new THREE.BoxGeometry(3, 3.8, 3.4), new THREE.MeshBasicMaterial({ visible: false }));
   hit.position.set(MILL_X, 1.9, MILL_Z + 0.4); hit.userData.mill = true; scene.add(hit);
   solids.push({ x: MILL_X, z: MILL_Z, r: 1.8 });
-  Object.values(SLOTS).forEach(([x, z]) => solids.push({ x, z, r: 2.7 }));
   return { g, site, groups, stone, crank, gear, grain, hopper, sack, hit, state: 'locked', buildT: -1, job: null, t: 0, loadN: 0, grindT: 0 };
 })();
 
@@ -567,7 +568,7 @@ rails.forEach(([x, z, L, ry], i) => {
 });
 railMesh.castShadow = railMesh.receiveShadow = true; scene.add(railMesh);
 
-const blocked = (x, z) => (x > -29.6 && x < -13.6 && z > 2.4 && z < 11.4) || (x > -4.4 && x < 8.4 && z > -2.2 && z < 8.1) || solids.some(s => Math.hypot(x - s.x, z - s.z) < s.r + 0.6) || (x > -12.6 && x < -5.4 && z > 3.2 && z < 8) || (x > 3 && x < 8.4 && z > -7.8 && z < -2.8) || z < -19 || Math.abs(z - ROAD_Z) < 2 || onPath(x, z) || (Math.abs(x - MILL_X) < 2.5 && Math.abs(z - MILL_Z) < 2.4);
+const blocked = (x, z) => inDistrict(x, z) || (x > -29.6 && x < -13.6 && z > 2.4 && z < 11.4) || (x > -4.4 && x < 8.4 && z > -2.2 && z < 8.1) || solids.some(s => Math.hypot(x - s.x, z - s.z) < s.r + 0.6) || (x > -12.6 && x < -5.4 && z > 3.2 && z < 8) || (x > 3 && x < 8.4 && z > -7.8 && z < -2.8) || z < -19 || Math.abs(z - ROAD_Z) < 2 || onPath(x, z) || (Math.abs(x - MILL_X) < 2.5 && Math.abs(z - MILL_Z) < 2.4);
 function scatter(geo, mat, count, colors, sy = [0.8, 1.2], area = 26) {
   const im = new THREE.InstancedMesh(geo, mat, count); const c = new THREE.Color();
   for (let i = 0; i < count; i++) {
@@ -848,11 +849,29 @@ const soilGeo = (() => { // one merged mesh per plot: bed + 4 furrows
 })();
 const markerGeo = new THREE.ConeGeometry(0.22, 0.45, 4); markerGeo.rotateX(Math.PI);
 const tagsEl = $('#tags');
+// Land plan: farm blocks and workshops share one grid east of the mill (layout.js); blocks get lots in the order they appear.
+let layout = null;
+const layoutKey = (me) => 'ntvv3d-layout-' + me.id;
+function initLayout(me) {
+  if (layout) return;
+  let saved = null; try { saved = JSON.parse(localStorage.getItem(layoutKey(me))); } catch { saved = null; }
+  layout = createLayout(saved, [MILL_X, MILL_Z]);
+}
+function saveLayout(me) { if (layout && layout.takeDirty()) { try { localStorage.setItem(layoutKey(me), JSON.stringify(layout.toJSON())); } catch { /* private mode: layout lasts for this visit */ } } }
+function syncLayout(me) {
+  initLayout(me);
+  for (let b = 0; b < Math.ceil((Math.min(me.plotsCount, PLOT_CAP) - 12) / 12); b += 1) layout.place('block:' + b, 3);
+  const ms = Object.values(cat().machines).filter(m => m.id !== 'coixay').sort((a, b) => a.level - b.level);
+  let upcoming = 2; // unlocked workshops, plus the next two as construction sites
+  for (const m of ms) { if (m.level <= me.level) layout.place('station:' + m.id, 1); else if (upcoming > 0) { upcoming -= 1; layout.place('station:' + m.id, 1); } }
+  saveLayout(me);
+}
 function plotPos(i) {
   if (i < 12) return [2 + ((i % 4) - 1.5) * 2.75, 3 + (Math.floor(i / 4) - 1) * 2.75];
-  const j = i - 12, b = Math.floor(j / 12), k = j % 12; // khối mở rộng ở phía đông, mỗi khối 12 ô
-  const bx = 25 + 13 * (b % 2), bz = 3 - Math.floor(b / 2) * 11.5;
-  return [bx + ((k % 4) - 1.5) * 2.75, bz + (Math.floor(k / 4) - 1) * 2.75];
+  const j = i - 12, b = Math.floor(j / 12), k = j % 12; // 6 x 2 plots in a block, three lots wide
+  layout.place('block:' + b, 3);
+  const [cx, cz] = layout.center('block:' + b) || [60, 0];
+  return [cx + ((k % 6) - 2.5) * 2.6, cz + (Math.floor(k / 6) - 0.5) * 2.6];
 }
 const hitTargets = [];
 function makePlot(i) {
@@ -1206,6 +1225,7 @@ function applyView(p, v, first) {
 }
 function onState() {
   const me = store.me, first = !lastMe;
+  syncLayout(me);
   MILL_LEVEL = cat().machines?.coixay?.level ?? MILL_LEVEL;
   if (!VISIT) { // đang đi thăm: cảnh hiện nhà người khác, trạng thái của mình chỉ cập nhật HUD
     ensurePlots(me.plotsCount, first);
@@ -1357,7 +1377,7 @@ let stations = null, stationsFirst = true, herd = null;
 function ensureHerd() { if (!herd) herd = createHerd({ THREE, scene, mesh, box, animals, hitTargets, bakeVC, makeHen: chicken, makeSheep: sheep, makePig: pig, rand, easeOutBack }); }
 function ensureStations() {
   if (stations || !store.catalog) return;
-  stations = createStations({ THREE, scene, mesh, box, toon, canvasTex, emit, easeOutBack, bakeVC, hitTargets, sfx, tagsEl, toScreen, place, cat, fmtClock, serverNow, camPos: camTarget,
+  stations = createStations({ layout, THREE, scene, mesh, box, toon, canvasTex, emit, easeOutBack, bakeVC, hitTargets, sfx, tagsEl, toScreen, place, cat, fmtClock, serverNow, camPos: camTarget,
     onUnlock: s => { camFocus = { v: new THREE.Vector3(s.x - 3, 0, s.z + 3), t: 2.6 }; const el = $('#lvlup'); el.textContent = `Mở khoá ${s.name}!`; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); } });
 }
 function tapStation(id) {
@@ -1571,7 +1591,7 @@ function tapAnimal(a) {
 // ================= Camera & input =================
 const camTarget = new THREE.Vector3(2.5, 0, 4.2), panVel = new THREE.Vector3();
 const EL = 0.84; // camera pitch (radians above horizon)
-function clampCam() { camTarget.x = THREE.MathUtils.clamp(camTarget.x, -32, 40); camTarget.z = THREE.MathUtils.clamp(camTarget.z, -16, 14); }
+function clampCam() { camTarget.x = THREE.MathUtils.clamp(camTarget.x, -32, 46); camTarget.z = THREE.MathUtils.clamp(camTarget.z, -16, 34); }
 let zoom = 1, zoomGoal = 1, intro = 1.7;
 function baseDist() { return innerWidth < innerHeight ? 40 : 27; }
 function placeCamera() {
@@ -1630,7 +1650,7 @@ function endPointer(e) {
   pointers.delete(e.pointerId); canvas.classList.remove('dragging');
   if (!drag || !drag.lt || performance.now() - drag.lt > 80) panVel.set(0, 0, 0); // a pause before release means no fling
   if (drag && !drag.moved && performance.now() - drag.t < 600 && pointers.size === 0) {
-    const h = pickAt(e.clientX, e.clientY);
+    const h = EDIT ? (editTap(e.clientX, e.clientY), null) : pickAt(e.clientX, e.clientY);
     if (h && h.plot) tapPlot(h.plot); else if (h && h.stall) openStore(); else if (h && h.animal) tapAnimal(h.animal); else if (h && h.truck) { initAudio(); sfx.horn(); truck.bounce = 1; } else if (h && h.mill) tapMill(); else if (h && h.station) tapStation(h.station);
   }
   if (pointers.size < 2) pinch = null;
@@ -1810,7 +1830,7 @@ function frame(t) {
   if (!document.hidden) adaptQuality(gap);
 }
 requestAnimationFrame(frame);
-if (location.hash === '#debug') window.__farm = { get stations() { return stations; }, get herd() { return herd; }, animals, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
+if (location.hash === '#debug') window.__farm = { get layout() { return layout; }, editCell, get EDIT() { return EDIT; }, get stations() { return stations; }, get herd() { return herd; }, animals, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
 
 // ================= Production: machines and barns, every outcome decided by the server =================
 const prodSheet = $('#prodSheet');
@@ -1992,7 +2012,7 @@ function collectRecipe(machine, r) {
   });
 }
 function openProd(mode, machine) {
-  initAudio(); prodMode = mode; if (machine) prodMachine = machine;
+  initAudio(); if (mode === 'layout') { startEdit(); return; } prodMode = mode; if (machine) prodMachine = machine;
   renderProd(); prodSheet.hidden = false; (prodSheet.querySelector('.tab:not(:disabled), .cta:not(:disabled)') || $('#prodClose')).focus();
 }
 $('#bMachines').addEventListener('click', () => openProd('machines'));
@@ -2024,6 +2044,7 @@ function showVisit() {
   ensurePlots(f.plotsCount, true);
   const byIdx = new Map(f.plots.map(v => [v.idx, v]));
   for (const p of plots) {
+    p.soil.visible = p.i < f.plotsCount; // plots built for a bigger neighbour stay hidden at a smaller farm
     const v = byIdx.get(p.i), acts = VISIT.myActs[p.i] || {};
     applyView(p, v || { idx: p.i, crop: null }, true);
     p.mat.color.set(0x7d4d2b); // tưới của người khác không đổi màu đất của nhà này
@@ -2082,7 +2103,7 @@ function leaveVisit() {
   for (const p of plots) { p.marker.visible = false; p.pending = null; }
   const me = store.me; ensurePlots(me.plotsCount, true);
   const byIdx = new Map(me.plots.map(v => [v.idx, v]));
-  for (const p of plots) applyView(p, byIdx.get(p.i) || { idx: p.i, crop: null }, true);
+  for (const p of plots) { p.soil.visible = p.i < me.plotsCount; applyView(p, byIdx.get(p.i) || { idx: p.i, crop: null }, true); }
   announce('Đã về nhà');
 }
 async function visitTap(p) {
@@ -2136,6 +2157,49 @@ critterBtn.addEventListener('click', async () => {
   try { const r = await doAct('/critter-catch', {}); toast(`Bắt được ${r.kind}! +${r.gems} kim cương`); announce(`Bắt được ${r.kind}, nhận ${r.gems} kim cương`); sfx.harvest(); } catch (e) { fail(e); }
 });
 $('#visitHome').addEventListener('click', leaveVisit);
+
+// ================= Edit mode: rearrange the workshops on the district grid =================
+// Purely a display preference kept on this device; the server never sees the layout.
+var EDIT = null; // { sel: layout key of the picked building }
+const editBar = $('#editBar'), lotGroup = new THREE.Group(), lotMeshes = [];
+lotGroup.visible = false; scene.add(lotGroup);
+function ensureLots() {
+  if (lotMeshes.length) return;
+  const geo = new THREE.PlaneGeometry(GRID.cw - 0.4, GRID.cd - 0.4); geo.rotateX(-Math.PI / 2);
+  for (let r = 0; r < ROWS; r += 1) for (let c = 0; c < GRID.cols; c += 1) {
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2, depthWrite: false }));
+    const [x, z] = spanCenter(c, r, 1); m.position.set(x, 0.1, z); m.userData.lot = { c, r }; lotGroup.add(m); lotMeshes.push(m);
+  }
+}
+function paintLots() {
+  for (const m of lotMeshes) {
+    const { c, r } = m.userData.lot, occ = layout.occupantAt(c, r);
+    const [col, op] = !occ ? [0xffffff, 0.2] : occ === EDIT.sel ? [0xffd54a, 0.7] : occ.startsWith('block') ? [0x8a5a32, 0.4] : [0x4aa3df, 0.4];
+    m.material.color.set(col); m.material.opacity = op;
+  }
+  $('#editMsg').textContent = EDIT.sel ? 'Chạm ô trống hoặc tòa khác để đổi chỗ' : 'Chạm một tòa nhà để chọn';
+}
+function startEdit() {
+  if (VISIT) { toast('Về nhà trước khi sắp xếp'); return; }
+  prodSheet.hidden = true; EDIT = { sel: null }; ensureLots(); lotGroup.visible = true; editBar.hidden = false; document.body.classList.add('editing');
+  camFocus = { v: new THREE.Vector3(GRID.x0 + GRID.cols * GRID.cw / 2 - 3, 0, 4), t: 1.5 }; paintLots(); announce('Chế độ sắp xếp phố xưởng');
+}
+function endEdit() { EDIT = null; lotGroup.visible = false; editBar.hidden = true; document.body.classList.remove('editing'); announce('Đã lưu cách sắp xếp'); }
+function editTap(cx, cy) { const pt = groundAt(cx, cy, new THREE.Vector3()); editCell(pt && layout.cellAt(pt.x, pt.z)); }
+function editCell(cell) {
+  if (!cell) return;
+  const occ = layout.occupantAt(cell.c, cell.r);
+  if (!EDIT.sel) {
+    if (!occ) { toast('Chạm một tòa nhà để chọn trước'); return; }
+    if (occ.startsWith('block')) { toast('Khối ruộng không di chuyển được'); return; }
+    EDIT.sel = occ;
+  } else if (occ === EDIT.sel) EDIT.sel = null;
+  else if (layout.move(EDIT.sel, cell.c, cell.r)) { saveLayout(store.me); sfx.thunk(); toast('Đã đổi chỗ'); EDIT.sel = null; }
+  else toast('Không đặt vào đây được');
+  paintLots();
+}
+$('#editDone').addEventListener('click', endEdit);
+$('#editReset').addEventListener('click', () => { layout.reset('station:'); syncLayout(store.me); EDIT.sel = null; paintLots(); toast('Đã xếp lại theo thứ tự mở khóa'); });
 
 // ================= Boot: load the state once, then keep it fresh =================
 const bootEl = $('#boot');

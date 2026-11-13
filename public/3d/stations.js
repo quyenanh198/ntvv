@@ -1,18 +1,6 @@
 // The eleven processing buildings besides the mill. Each one mirrors the server's jobs for its machine:
 // locked (construction site) -> building -> idle -> working -> done. The scene never decides anything;
 // it only draws what store.me.machines[id] says and opens the production sheet on tap.
-export const SLOTS = {
-  lonuong: [19, -5.5], bepan: [24.5, -5.5], quanoc: [30, -5.5], mayep: [35.5, -5.5],
-  quanvat: [19, 1.0], noimut: [24.5, 1.0], nhamaysua: [30, 1.0], lobanh: [35.5, 1.0],
-  mayrang: [19, 7.5], xuongdet: [24.5, 7.5], xuongcaocap: [30, 7.5],
-};
-export const STATION_PATHS = [
-  { w: 1.3, pts: [[14.6, -2.2], [37.5, -2.2]] },
-  { w: 1.3, pts: [[14.6, 4.2], [37.5, 4.2]] },
-  { w: 1.3, pts: [[14.6, -2.2], [14.6, 4.2]] },
-  { w: 1.1, pts: [[14.6, 4.2], [14.6, 10.4]] },
-  { w: 1.1, pts: [[14.6, 10.4], [31.5, 10.4]] },
-];
 const LOOK = { // wall, roof, trim
   bepan: [0xf2d9a8, 0xc8553d, 0x8a5a32], lonuong: [0xb9b2a3, 0x7a6f60, 0x4a3a2a], xuongcaocap: [0xe9e2d0, 0xd9a82f, 0x6b4423],
   quanvat: [0xf6e6c4, 0xe0553f, 0x8a5a32], quanoc: [0x9fd0e8, 0x2f7fa8, 0x6b4423], mayep: [0xd9b46c, 0x7fb04a, 0x6b4423],
@@ -21,7 +9,7 @@ const LOOK = { // wall, roof, trim
 };
 
 export function createStations(c) {
-  const { THREE, scene, mesh, box, toon, canvasTex, emit, easeOutBack, bakeVC, hitTargets, sfx, tagsEl, toScreen, place, cat, fmtClock, serverNow, camPos } = c;
+  const { THREE, scene, mesh, box, toon, canvasTex, emit, easeOutBack, bakeVC, hitTargets, sfx, tagsEl, toScreen, place, cat, fmtClock, serverNow, camPos, layout } = c;
   const list = [];
 
   function house(g, w, d, h, wall, roof, trim) {
@@ -133,9 +121,10 @@ export function createStations(c) {
     return s;
   }
 
-  for (const [id, [x, z]] of Object.entries(SLOTS)) {
+  for (const id of Object.keys(BUILD)) {
     const m = cat().machines[id]; if (!m) continue;
-    const root = new THREE.Group(); root.position.set(x, 0, z); scene.add(root);
+    const x = 0, z = 0; // set from the layout once the building has a lot; parked far below ground until then (its hit box must not catch taps)
+    const root = new THREE.Group(); root.position.set(0, -200, 0); root.visible = false; scene.add(root);
     const body = new THREE.Group(); root.add(body); body.visible = false;
     box(4.4, 0.12, 3.8, 0xb9ae98, 0, 0.04, 0, body);
     const built = BUILD[id](body, LOOK[id]);
@@ -147,12 +136,16 @@ export function createStations(c) {
     built.rotors.forEach(r => { r.base = r.o.position.clone(); });
     bakeVC(body, built.rotors.map(r => r.o)); bakeVC(site);
     const tag = document.createElement('div'); tag.className = 'tag sign'; tagsEl.appendChild(tag);
-    list.push({ id, x, z, root, body, site, badge, hit, tag, rotors: built.rotors, fx: built.fx, state: 'locked', level: m.level, name: m.name, buildT: -1, steamT: 0 });
+    list.push({ id, x, z, placed: false, root, body, site, badge, hit, tag, rotors: built.rotors, fx: built.fx, state: 'locked', level: m.level, name: m.name, buildT: -1, steamT: 0 });
   }
 
   const wp = new THREE.Vector3();
   function update(dt, time, me, first) {
     for (const s of list) {
+      const cell = layout.center('station:' + s.id);
+      if (!cell) { if (s.placed) { s.placed = false; s.root.visible = false; s.root.position.y = -200; } if (s.tag.style.display !== 'none') s.tag.style.display = 'none'; continue; }
+      if (!s.placed) { s.placed = true; s.root.visible = true; s.x = cell[0]; s.z = cell[1]; s.root.position.set(cell[0], 0, cell[1]); }
+      else if (Math.abs(s.x - cell[0]) + Math.abs(s.z - cell[1]) > 0.01) { const k = 1 - Math.exp(-8 * dt); s.x += (cell[0] - s.x) * k; s.z += (cell[1] - s.z) * k; s.root.position.set(s.x, 0, s.z); }
       const m = cat().machines[s.id], open = me.level >= m.level;
       const jobs = Object.values(me.machines?.[s.id] || {});
       const next = !open ? 'locked' : jobs.some(j => j.ready) ? 'done' : jobs.length ? 'working' : 'idle';
