@@ -1,7 +1,7 @@
 import * as THREE from '../vendor/0.149.0/three.module.js';
 import { net, serverNow, api } from './net.js';
 import { store, refresh, act as doAct, subscribe } from './store.js';
-import { itemSprite } from './art.js';
+import { itemSprite, animalSprite } from './art.js';
 import { renderExtra } from './sheets.js';
 import { createStations } from './stations.js';
 import { GRID, ROWS, STREET_PATHS, createLayout, inDistrict, spanCenter } from './layout.js';
@@ -1979,7 +1979,7 @@ function renderProd() {
     const head = document.createElement('p'); head.textContent = `Thức ăn gia súc trong kho: ${nf.format(feed)}. Còn thức ăn thì chuồng tự cho ăn và tự thu; hết thì bấm tay ở đây. Xay ngô ở Cối xay bột để có thêm.`; rows.appendChild(head);
     Object.entries(kinds).forEach(([kind, k]) => {
       const a = cat().animals[kind], row = document.createElement('div'); row.className = 'row job';
-      row.innerHTML = `<span class="emo">${a.emoji}</span><div><b>${a.name} ×${k.n}</b> ${k.hungry ? `<span class="state-chip">${k.hungry} đói</span>` : ''} ${k.ready ? `<span class="state-chip done">${k.ready} có ${itemName(a.product)}</span>` : ''}<small>Cho ăn ${a.feedQty} thức ăn mỗi con · ra ${itemName(a.product)} sau ${fmtDur(a.produceMs)}</small></div><div class="acts"></div>`;
+      row.innerHTML = `<img src="${animalSprite(kind)}" alt="" loading="lazy"><div><b>${a.name} ×${k.n}</b> ${k.hungry ? `<span class="state-chip">${k.hungry} đói</span>` : ''} ${k.ready ? `<span class="state-chip done">${k.ready} có ${itemName(a.product)}</span>` : ''}<small>Cho ăn ${a.feedQty} thức ăn mỗi con · ra ${itemName(a.product)} sau ${fmtDur(a.produceMs)}</small></div><div class="acts"></div>`;
       const acts = row.querySelector('.acts');
       const add = (label, on, disabled) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = label; b.disabled = disabled || prodBusy; b.addEventListener('click', on); acts.appendChild(b); };
       add('Cho ăn', () => prodAct('/feed', { kind }, r => toast(`Đã cho ${r.fed} con ăn`)), k.hungry < 1 || feed < a.feedQty);
@@ -1989,7 +1989,7 @@ function renderProd() {
     const buyHead = document.createElement('p'); buyHead.textContent = 'Mua vật nuôi'; buyHead.style.fontWeight = '800'; rows.appendChild(buyHead);
     Object.values(cat().animals).sort((a, b) => a.level - b.level).forEach(a => {
       const locked = a.level > me.level, row = document.createElement('div'); row.className = 'row job';
-      row.innerHTML = `<span class="emo">${a.emoji}</span><div><b>${a.name}</b><small>${locked ? `Mở ở cấp ${a.level}` : `${nf.format(a.price)} vàng`}</small></div><div class="acts"></div>`;
+      row.innerHTML = `<img src="${animalSprite(a.id)}" alt="" loading="lazy"><div><b>${a.name}</b><small>${locked ? `Mở ở cấp ${a.level}` : `${nf.format(a.price)} vàng`}</small></div><div class="acts"></div>`;
       const b = document.createElement('button'); b.type = 'button'; b.className = 'cta small'; b.textContent = 'Mua';
       b.disabled = locked || me.gold < a.price || prodBusy; b.addEventListener('click', () => prodAct('/buy-animal', { kind: a.id }, () => toast(`Đã mua ${a.name}`)));
       row.querySelector('.acts').appendChild(b); rows.appendChild(row);

@@ -70,19 +70,17 @@
 
 <div class="overlay" id="prodSheet" hidden>
   <div class="plank sheet wide" role="dialog" aria-labelledby="prodTitle">
-    <h2 id="prodTitle">Chế biến</h2>
+    <div class="sheethead"><h2 id="prodTitle">Chế biến</h2><button class="sheetclose" id="prodClose" type="button" aria-label="Đóng">×</button></div>
     <div class="tabs" id="prodTabs" role="tablist"></div>
     <div class="rows" id="prodRows"></div>
-    <div class="sheetfoot"><button class="ghost" id="prodClose" type="button">Đóng</button></div>
   </div>
 </div>
 
 <div class="overlay" id="store" hidden>
   <div class="plank sheet" role="dialog" aria-labelledby="storeTitle">
-    <h2 id="storeTitle">Kho nông sản</h2>
+    <div class="sheethead"><h2 id="storeTitle">Kho nông sản</h2><button class="sheetclose" id="storeClose" type="button" aria-label="Đóng">×</button></div>
     <div class="rows" id="storeRows"></div>
     <div class="sheetfoot">
-      <button class="ghost" id="storeClose" type="button">Đóng</button>
       <button class="cta" id="sellAll" type="button">Bán hết</button>
     </div>
   </div>

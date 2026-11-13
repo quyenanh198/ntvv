@@ -297,6 +297,12 @@ for (const mode of MODES) {
     await page.click('#prodRows .row button:not([disabled])');
     await page.waitForFunction((n) => __farm.store.me.skills.points < n, before, { timeout: 60000 });
     step('skill learned; points decided by the server', true);
+    step('close control stays visible in a long sheet', await page.evaluate(() => {
+      const sheet = document.querySelector('#prodSheet .sheet'); sheet.scrollTop = sheet.scrollHeight;
+      const button = document.querySelector('#prodClose').getBoundingClientRect();
+      const frame = sheet.getBoundingClientRect();
+      return button.top >= frame.top && button.bottom <= frame.bottom && button.right <= frame.right;
+    }));
   }
   if (mode === 'dog') {
     await page.click('#prodRows .row button:not([disabled])');
@@ -326,6 +332,12 @@ for (const mode of MODES) {
     await page.waitForFunction((g) => __farm.store.me.gold < g, before, { timeout: 60000 });
     step('lottery ticket bought; server takes the gold', true);
   }
+  if (mode === 'luxury') {
+    const lastArt = page.locator('#prodRows .row img').last();
+    await lastArt.scrollIntoViewIfNeeded();
+    step('decoration and pet art decodes in the sheet', await lastArt.evaluate(img => img.decode().then(() => img.naturalWidth > 0).catch(() => false)));
+  }
+  await page.waitForTimeout(400);
   await page.screenshot({ path: `${out}/e2e-p5-${mode}.png` });
   step(`${mode} sheet renders from server state`, true);
   await page.click('#prodClose');

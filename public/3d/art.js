@@ -1,4 +1,4 @@
-// Tên tranh vẽ tay (public/assets). id trong game là tiếng Việt, tên file tiếng Anh.
+﻿// Tên tranh vẽ tay (public/assets). id trong game là tiếng Việt, tên file tiếng Anh.
 const CROP_EN = {
   luami: 'wheat', carot: 'carrot', ngo: 'corn', khoaitay: 'potato', toi: 'garlic', rauthom: 'herbs', dualeo: 'cucumber',
   sa: 'lemongrass', bapcai: 'cabbage', dauphong: 'peanut', cachua: 'tomato', khoailang: 'sweet-potato', ot: 'chili',
@@ -7,14 +7,131 @@ const CROP_EN = {
   thom: 'pineapple', bongvai: 'cotton', duahau: 'watermelon', nho: 'grape', caphe: 'coffee', cansa: 'cannabis',
   hoahong: 'rose', oliu: 'olive', nam: 'mushroom', cacao: 'cacao', vani: 'vanilla',
 };
-const TREE_PNG = new Set(['cam', 'tao', 'xoai', 'thanhlong', 'chuoi', 'chanh', 'dua', 'dao', 'anhdao', 'quame', 'coc', 'quabo', 'saurieng']);
-const PRODUCT_PNG = { botmi: 'wheat-flour', botbap: 'corn-flour' };
-
 // Sprite của một vật phẩm trong kho: cây trồng dùng tranh chín, sản phẩm chế biến dùng tranh sản phẩm.
 export function itemSprite(id) {
+  if (ITEM_ICON[id]) return ITEM_ICON[id];
   if (CROP_EN[id]) return `assets/crops-v3/${CROP_EN[id]}-ripe.png`;
-  if (TREE_PNG.has(id)) return `assets/art/trees/${id}.png`;
-  if (PRODUCT_PNG[id]) return `assets/products-v3/${PRODUCT_PNG[id]}.png`;
   return null;
 }
 export const hasCropArt = (id) => id in CROP_EN;
+const ANIMAL_ICON = { ga: 'chicken_v3', bo: 'cow', cuu: 'sheep', vit: 'duck_v3', ong: 'bee_v3', de: 'goat_v3', heo: 'pig', cut: 'quail_v3', ngong: 'goose_v3', tho: 'rabbit_v3', gatay: 'turkey_v3', tam: 'silkworm_v3', trau: 'buffalo_v3', alpaca: 'alpaca_v3', huou: 'deer_v3' };
+export const animalSprite = id => ANIMAL_ICON[id] ? `assets/art/${ANIMAL_ICON[id]}.png` : null;
+export const luxurySprite = id => LUXURY_ART[id] || null;
+
+const ITEM_ICON = {
+    trung: 'assets/ui/egg.svg', botmi: 'assets/products-v3/wheat-flour.png',
+    botbap: 'assets/products-v3/corn-flour.png', botcacao: 'assets/products-v3/cocoa-powder.png',
+    thucan: 'assets/art/feed.png',
+    sua: 'assets/products-v3/cow-milk.png', len: 'assets/ui/wool.svg', matong: 'assets/products-v3/honey.png',
+    suade: 'assets/products-v3/goat-milk.png', thit: 'assets/products-v3/pork.png',
+    canuong: 'assets/products-v3/grilled-fish.png', bo: 'assets/products-v3/butter.png',
+    chaca: 'assets/products-v3/fish-cakes.png', cakho: 'assets/products-v3/pepper-braised-fish.png',
+    sushi: 'assets/products-v3/fish-sushi.png', lauca: 'assets/products-v3/fish-hotpot.png',
+    goicuon: 'assets/products-v3/fish-spring-rolls.png', tomnuong: 'assets/products-v3/grilled-shrimp.png',
+    catrakho: 'assets/products-v3/braised-pangasius.png', calocnuong: 'assets/products-v3/grilled-snakehead-fish.png',
+    cadieuhongchien: 'assets/products-v3/fried-red-tilapia.png', luonxao: 'assets/products-v3/lemongrass-chili-eel.png',
+    cuahap: 'assets/products-v3/steamed-lemongrass-crab.png', mucnuong: 'assets/products-v3/satay-grilled-squid.png',
+    banhcarot: 'assets/products-v3/carrot-cake.png',
+    chuoichien: 'assets/products-v3/banana-fritters.png', banhtom: 'assets/products-v3/shrimp-fritters.png',
+    bapxao: 'assets/products-v3/buttered-corn.png', botchien: 'assets/products-v3/fried-rice-cakes.png',
+    cavienchien: 'assets/products-v3/fried-fish-balls.png',
+    banhtrangtron: 'assets/products-v3/rice-paper-salad.png', chedauxanh: 'assets/products-v3/mung-bean-dessert.png',
+    keodauphong: 'assets/products-v3/peanut-brittle.png', khoailangken: 'assets/products-v3/sweet-potato-fritters.png',
+    merim: 'assets/products-v3/chili-tamarind.png', nemchua: 'assets/products-v3/cured-pork-rolls.png',
+    ocluoc: 'assets/products-v3/lemongrass-snails.png', trasa: 'assets/products-v3/honey-lemongrass-tea.png',
+    xoidauphong: 'assets/products-v3/peanut-sticky-rice.png',
+    banhxeo: 'assets/products-v3/crispy-pancake.png', cocdam: 'assets/products-v3/chili-ambarella.png',
+    khoailangnuong: 'assets/products-v3/roasted-sweet-potatoes.png', saurienchien: 'assets/products-v3/durian-fritters.png',
+    trasua: 'assets/products-v3/milk-tea.png', trungmuoi: 'assets/products-v3/salted-eggs.png', xucxich: 'assets/products-v3/pork-sausages.png',
+    tom: 'assets/products-v3/fresh-shrimp.png', cua: 'assets/products-v3/freshwater-crab.png', luon: 'assets/products-v3/farm-eel.png',
+    ech: 'assets/products-v3/farm-frog.png', muc: 'assets/products-v3/fresh-squid.png', lauech: 'assets/products-v3/frog-hotpot.png',
+    khoaichien: 'assets/products-v3/potato-fries.png', salad: 'assets/products-v3/garden-salad.png',
+    comchien: 'assets/products-v3/fried-rice.png', supbi: 'assets/products-v3/pumpkin-soup.png',
+    nuoccarot: 'assets/products-v3/carrot-juice.png', nuocduahau: 'assets/products-v3/watermelon-juice.png', mutdau: 'assets/products-v3/strawberry-jam.png',
+    mutcam: 'assets/products-v3/orange-marmalade.png', mutgung: 'assets/products-v3/ginger-preserve.png',
+    mutsaurieng: 'assets/products-v3/durian-jam.png', siro: 'assets/products-v3/dragon-fruit-syrup.png',
+    sinhtoxoai: 'assets/products-v3/mango-smoothie.png', nuocchanh: 'assets/products-v3/lemonade.png', nuocthom: 'assets/products-v3/pineapple-juice.png',
+    dauoliu: 'assets/products-v3/olive-oil.png', nuoccoc: 'assets/products-v3/ambarella-juice.png',
+    sotcachua: 'assets/products-v3/tomato-sauce.png', phomai: 'assets/products-v3/farm-cheese.png',
+    phomaide: 'assets/products-v3/goat-cheese.png', phomaitrau: 'assets/products-v3/buffalo-cheese.png',
+    suachua: 'assets/products-v3/strawberry-yogurt.png', kem: 'assets/products-v3/watermelon-ice-cream.png',
+    kemvani: 'assets/products-v3/vanilla-ice-cream.png', kemsaurieng: 'assets/products-v3/durian-ice-cream.png',
+    nuoccam: 'assets/products-v3/orange-juice.png', banhmi: 'assets/products-v3/egg-bread.png',
+    banhbi: 'assets/products-v3/pumpkin-pie.png', cuonlen: 'assets/products-v3/wool-roll.png',
+    vai: 'assets/products-v3/cotton-fabric.png', lua: 'assets/products-v3/silk-fabric.png',
+    khanlen: 'assets/products-v3/wool-scarf.png', khanalpaca: 'assets/products-v3/alpaca-scarf.png',
+    aolen: 'assets/products-v3/wool-sweater.png', mulen: 'assets/products-v3/rabbit-wool-hat.png',
+    banhtao: 'assets/products-v3/apple-pie.png', pizza: 'assets/products-v3/farm-pizza.png',
+    banhkem: 'assets/products-v3/strawberry-cake.png', banhmatong: 'assets/products-v3/honey-cake.png',
+    banhdua: 'assets/products-v3/pineapple-cake.png', banhgung: 'assets/products-v3/ginger-cake.png',
+    botgao: 'assets/products-v3/rice-flour.png', duongmia: 'assets/products-v3/cane-sugar.png', capherang: 'assets/products-v3/roasted-coffee.png',
+    caphesua: 'assets/products-v3/iced-milk-coffee.png', socola: 'assets/products-v3/milk-chocolate.png',
+    tratui: 'assets/products-v3/tea-bags.png',
+    trungcut: 'assets/products-v3/quail-eggs.png', trungvit: 'assets/products-v3/duck-eggs.png',
+    trungngong: 'assets/products-v3/goose-egg.png', longtho: 'assets/products-v3/rabbit-fur.png',
+    trunggatay: 'assets/products-v3/turkey-eggs.png', totam: 'assets/products-v3/silkworm-silk.png',
+    suatrau: 'assets/products-v3/buffalo-milk.png', longalpaca: 'assets/products-v3/alpaca-fleece.png',
+    nhunghuou: 'assets/products-v3/deer-velvet.png',
+    ruouvang: 'assets/products-v3/aged-grape-wine.png', caonhung: 'assets/products-v3/deer-antler-paste.png',
+    nuochoa: 'assets/products-v3/rose-perfume.png', hopphomai: 'assets/products-v3/premium-cheese-box.png',
+    aodai: 'assets/products-v3/silk-ao-dai.png', buatiec: 'assets/products-v3/family-feast.png',
+    hopqua: 'assets/products-v3/farm-gift-box.png', caphehaohang: 'assets/products-v3/premium-coffee.png',
+    oc: 'assets/products-v3/apple-snail.png', ochuong: 'assets/products-v3/spotted-babylon-snail.png',
+    ocbantay: 'assets/products-v3/spider-conch-shell.png', ocvunang: 'assets/products-v3/limpet-shell.png',
+    octuva: 'assets/products-v3/trumpet-snail-shell.png', ocmongtay: 'assets/products-v3/razor-clam-shell.png',
+    ocgai: 'assets/products-v3/spiny-snail-shell.png', ocgiac: 'assets/products-v3/conch-shell.png',
+    ocbong: 'assets/products-v3/flower-snail-shell.png', occana: 'assets/products-v3/olive-snail-shell.png',
+    ocdua: 'assets/products-v3/coconut-snail-shell.png', ocda: 'assets/products-v3/stone-snail-shell.png',
+    ocgao: 'assets/products-v3/rice-snail-shell.png', oclac: 'assets/products-v3/striped-snail-shell.png',
+    ocmit: 'assets/products-v3/jackfruit-snail-shell.png', ocnhay: 'assets/products-v3/jumping-snail-shell.png',
+    octoi: 'assets/products-v3/garlic-snail-shell.png',
+    ocluocsa: 'assets/products-v3/boiled-apple-snails.png', ocrangmuoiot: 'assets/products-v3/chili-salt-apple-snails.png',
+    ochuongxaotoi: 'assets/products-v3/garlic-babylon-snails.png', ochuongxaosate: 'assets/products-v3/satay-babylon-snails.png',
+    ocnhoixaome: 'assets/products-v3/tamarind-pond-snails.png', ocnhoixaotoi: 'assets/products-v3/garlic-pond-snails.png',
+    oclenxaobo: 'assets/products-v3/butter-mud-creeper-snails.png', oclennuongmohanh: 'assets/products-v3/scallion-grilled-mud-creeper-snails.png',
+    ocdangnuongmohanh: 'assets/products-v3/scallion-grilled-bitter-snails.png', ocdanghapsa: 'assets/products-v3/lemongrass-steamed-bitter-snails.png',
+    ocmorangmuoiot: 'assets/products-v3/chili-salt-moon-snails.png', ocmoluocsa: 'assets/products-v3/lemongrass-moon-snails.png',
+    ocgaoxaodua: 'assets/products-v3/coconut-rice-snails.png', ocgaoxaobo: 'assets/products-v3/butter-rice-snails.png',
+    ocduahapsa: 'assets/products-v3/lemongrass-coconut-snails.png', ocduaxaodua: 'assets/products-v3/coconut-sauce-snails.png',
+    ocmitxaosate: 'assets/products-v3/satay-jackfruit-snails.png', ocmitnuongphomai: 'assets/products-v3/cheese-jackfruit-snails.png',
+    oclacnuongphomai: 'assets/products-v3/cheese-striped-snails.png', oclacxaome: 'assets/products-v3/tamarind-striped-snails.png',
+    ocbongluocsa: 'assets/products-v3/lemongrass-flower-snails.png', ocbongrangmuoiot: 'assets/products-v3/chili-salt-flower-snails.png',
+    ocdaxaotoi: 'assets/products-v3/garlic-stone-snails.png', ocdaxaosate: 'assets/products-v3/satay-stone-snails.png',
+    ocgaixaome: 'assets/products-v3/tamarind-spiny-snails.png', ocgaixaotoi: 'assets/products-v3/garlic-spiny-snails.png',
+    ocmongtayxaobo: 'assets/products-v3/butter-razor-clams.png', ocmongtaynuongmohanh: 'assets/products-v3/scallion-grilled-razor-clams.png',
+    ocgiacnuongmohanh: 'assets/products-v3/scallion-grilled-conch.png', ocgiachapsa: 'assets/products-v3/lemongrass-steamed-conch.png',
+    octoirangmuoiot: 'assets/products-v3/chili-salt-garlic-snails.png', octoiluocsa: 'assets/products-v3/lemongrass-garlic-snails.png',
+    ocnhayxaodua: 'assets/products-v3/coconut-jumping-snails.png', ocnhayxaobo: 'assets/products-v3/butter-jumping-snails.png',
+    occanahapsa: 'assets/products-v3/lemongrass-olive-snails.png', occanaxaodua: 'assets/products-v3/coconut-olive-snails.png',
+    ocbantayxaosate: 'assets/products-v3/satay-spider-conch.png', ocbantaynuongphomai: 'assets/products-v3/cheese-spider-conch.png',
+    ocvunangnuongphomai: 'assets/products-v3/cheese-limpets.png', ocvunangxaome: 'assets/products-v3/tamarind-limpets.png',
+    octuvaluocsa: 'assets/products-v3/lemongrass-trumpet-snails.png', octuvarangmuoiot: 'assets/products-v3/chili-salt-trumpet-snails.png',
+    ocnhoi: 'assets/products-v3/pond-snail.png', oclen: 'assets/products-v3/mud-creeper-snail.png',
+    ocdang: 'assets/products-v3/bitter-snail.png', ocmo: 'assets/products-v3/moon-snail.png',
+    cam: 'assets/art/trees/cam-qua.png', tao: 'assets/art/trees/tao-qua.png', xoai: 'assets/art/trees/xoai-qua.png', thanhlong: 'assets/art/trees/thanhlong-qua.png',
+    chuoi: 'assets/art/trees/chuoi-qua.png', chanh: 'assets/art/trees/chanh-qua.png', dua: 'assets/art/trees/dua-qua.png', dao: 'assets/art/trees/dao-qua.png', anhdao: 'assets/art/trees/anhdao-qua.png',
+    quame: 'assets/art/trees/quame-qua.png', coc: 'assets/art/trees/coc-qua.png',
+    quabo: 'assets/art/trees/quabo-qua.png', saurieng: 'assets/art/trees/saurieng-qua.png',
+    canho: 'assets/ui/fish-canho.svg', caro: 'assets/ui/fish-caro.svg', cachep: 'assets/ui/fish-cachep.svg', cakoi: 'assets/ui/fish-cakoi.svg',
+    catra: 'assets/ui/fish-catra.svg', dieuhong: 'assets/ui/fish-dieuhong.svg', caloc: 'assets/ui/fish-caloc.svg', cachim: 'assets/ui/fish-cachim.svg',
+  };
+
+const LUXURY_ART = {
+    vuonhoa: 'assets/decor-v3/flower-garden.png', denlong: 'assets/decor-v3/garden-lantern.png',
+    daiphunnuoc: 'assets/decor-v3/stone-fountain.png', caugo: 'assets/decor-v3/wooden-bridge.png',
+    bunhin: 'assets/decor-v3/scarecrow.png',
+    coixaygio: 'assets/scene-v3/windmill_v3-224.png', xekeo: 'assets/decor-v3/wooden-handcart.png',
+    tuongga: 'assets/decor-v3/golden-rooster-statue.png', hosen: 'assets/decor-v3/lotus-pond.png',
+    conglang: 'assets/decor-v3/village-gate.png', gheda: 'assets/decor-v3/stone-garden-bench.png',
+    bangten: 'assets/decor-v3/farm-sign.png',
+    chuongbocau: 'assets/decor-v3/garden-dovecote.png', caythong: 'assets/decor-v3/decorative-pine.png',
+    thuyen: 'assets/decor-v3/wooden-rowboat.png', laudaicat: 'assets/decor-v3/sandcastle.png',
+    tuongbovang: 'assets/decor-v3/golden-cow-statue.png', vuonbonsai: 'assets/decor-v3/bonsai-garden.png',
+    phaohoa: 'assets/decor-v3/fireworks-display.png', thapdongho: 'assets/decor-v3/village-clock-tower.png',
+    tuongda: 'assets/decor-v3/ancient-stone-statue.png', biethu: 'assets/decor-v3/garden-villa.png',
+    petcho: 'assets/pets-v3/companion-dog.png', petmeo: 'assets/pets-v3/companion-cat.png',
+    pettho: 'assets/art/rabbit_v3.png', petvet: 'assets/pets-v3/companion-parrot.png',
+    petrua: 'assets/pets-v3/golden-turtle.png', petkylan: 'assets/pets-v3/gentle-unicorn.png',
+    petrong: 'assets/pets-v3/baby-dragon.png',
+  };
+

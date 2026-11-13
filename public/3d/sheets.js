@@ -1,6 +1,8 @@
 // Secondary systems as sheets: stars, festival, skills, decorations, lottery, collections, energy, dog, tax.
 // Every number shown comes from the server state; every button is one server call whose result replaces the state.
+import { itemSprite, luxurySprite } from './art.js';
 const medal = (n) => ['🥇', '🥈', '🥉'][n] || String(n + 1);
+const art = (path, emoji) => path ? `<img src="${path}" alt="" loading="lazy">` : `<span class="emo">${emoji}</span>`;
 
 export const MORE_ENTRIES = [
   ['stars', '⭐', 'Sao và cột mốc'], ['festival', '🎪', 'Lễ hội'], ['skills', '🧠', 'Kỹ năng'], ['luxury', '👑', 'Danh hiệu và trang trí'],
@@ -68,7 +70,7 @@ export function renderExtra(mode, c) {
       para({ title: 'Danh hiệu', frame: 'Khung tên', decor: 'Trang trí', pet: 'Thú cưng' }[kind], true);
       for (const x of list) {
         const owned = lx.owned.includes(x.id), worn = lx.title === x.id || lx.frame === x.id;
-        const r = el(`<span class="emo">${x.emoji}</span><div><b>${x.name}</b> ${worn ? '<span class="state-chip done">Đang dùng</span>' : ''}<small>${x.desc} · ${nf.format(x.price)} vàng</small></div><div class="acts"></div>`);
+        const r = el(`${art(luxurySprite(x.id), x.emoji)}<div><b>${x.name}</b> ${worn ? '<span class="state-chip done">Đang dùng</span>' : ''}<small>${x.desc} · ${nf.format(x.price)} vàng</small></div><div class="acts"></div>`);
         if (!owned) btn(acts(r), 'Mua', () => prodAct('/luxury-buy', { item: x.id }, () => toast(`Đã mua ${x.name}`)), me.gold < x.price);
         else if (kind === 'title' || kind === 'frame') btn(acts(r), worn ? 'Bỏ' : 'Dùng', () => prodAct('/luxury-equip', { item: worn ? '' : x.id, kind }, () => toast(worn ? 'Đã bỏ' : `Đang dùng ${x.name}`)));
         else btn(acts(r), 'Đã có', () => {}, true);
@@ -116,12 +118,12 @@ export function renderExtra(mode, c) {
     para(`Nuôi thủy sản: ${farm.used}/${farm.capacity} chỗ`, true);
     for (const b of farm.batches) {
       const sp = cat().fishFarm[b.species], left = Math.max(0, b.readyAt - serverNow());
-      r = el(`<span class="emo">${sp.emoji}</span><div><b>${sp.name} ×${b.qty}</b> ${b.ready ? '<span class="state-chip done">Chín rồi</span>' : `<span class="state-chip run">Còn ${fmtDur(left)}</span>`}</div><div class="acts"></div>`);
+      r = el(`${art(itemSprite(sp.product), sp.emoji)}<div><b>${sp.name} ×${b.qty}</b> ${b.ready ? '<span class="state-chip done">Chín rồi</span>' : `<span class="state-chip run">Còn ${fmtDur(left)}</span>`}</div><div class="acts"></div>`);
       btn(acts(r), 'Thu hoạch', () => prodAct('/fish-harvest', { id: b.id }, () => toast(`Đã thu ${sp.name}`)), !b.ready);
     }
     for (const sp of Object.values(cat().fishFarm).sort((a, b) => a.level - b.level)) {
       const locked = sp.level > me.level;
-      r = el(`<span class="emo">${sp.emoji}</span><div><b>${sp.name}</b><small>${locked ? `Mở ở cấp ${sp.level}` : `${nf.format(sp.fry)} vàng mỗi con · ${fmtDur(sp.growMs)}`}</small></div><div class="acts"></div>`);
+      r = el(`${art(itemSprite(sp.product), sp.emoji)}<div><b>${sp.name}</b><small>${locked ? `Mở ở cấp ${sp.level}` : `${nf.format(sp.fry)} vàng mỗi con · ${fmtDur(sp.growMs)}`}</small></div><div class="acts"></div>`);
       btn(acts(r), 'Thả 1', () => prodAct('/fish-stock', { species: sp.id, qty: 1 }, () => toast(`Đã thả ${sp.name}`)), locked || me.gold < sp.fry || farm.used >= farm.capacity);
       btn(acts(r), 'Thả tối đa', () => prodAct('/fish-stock', { species: sp.id, qty: 'max' }, () => toast(`Đã thả đầy ${sp.name}`)), locked || me.gold < sp.fry || farm.used >= farm.capacity);
     }
@@ -134,7 +136,7 @@ export function renderExtra(mode, c) {
     para(empty < 0 ? 'Không còn ô trống để trồng cây.' : `Cây ăn quả cho trái nhiều lần. Cây sẽ trồng ở ô trống số ${empty + 1}.`);
     for (const t of Object.values(cat().trees).sort((a, b) => a.level - b.level)) {
       const locked = t.level > me.level;
-      const r = el(`<span class="emo">${t.emoji}</span><div><b>${t.name}</b><small>${locked ? `Mở ở cấp ${t.level}` : `${nf.format(t.price)} vàng · lớn sau ${fmtDur(t.growMs)} · ${t.yield} quả mỗi mùa`}</small></div><div class="acts"></div>`);
+      const r = el(`${art(itemSprite(t.id), t.emoji)}<div><b>${t.name}</b><small>${locked ? `Mở ở cấp ${t.level}` : `${nf.format(t.price)} vàng · lớn sau ${fmtDur(t.growMs)} · ${t.yield} quả mỗi mùa`}</small></div><div class="acts"></div>`);
       btn(acts(r), 'Trồng', () => prodAct('/plant-tree', { idx: empty, tree: t.id }, () => toast(`Đã trồng cây ${t.name}`)), locked || empty < 0 || me.gold < t.price);
     }
     return true;
