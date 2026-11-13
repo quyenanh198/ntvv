@@ -1106,6 +1106,12 @@ const cat = () => store.catalog;
 const info = (id) => cat().crops[id] || cat().trees?.[id] || cat().goods[id] || null;
 const announce = (text) => { $('#farm-announcer').textContent = text; };
 const seedsEl = $('#seeds');
+const seedToggle = $('#seedToggle');
+seedToggle.addEventListener('click', () => {
+  const collapsed = seedToggle.closest('.tray').classList.toggle('seeds-collapsed');
+  seedToggle.setAttribute('aria-expanded', String(!collapsed));
+  seedToggle.querySelector('span').textContent = collapsed ? '⌄' : '⌃';
+});
 function tweenText(el, to) {
   const from = el._v ?? to; el._v = to;
   if (from === to) { el.textContent = to; return; }
@@ -1166,6 +1172,7 @@ function renderSeeds() {
       initAudio();
       if (locked) { toast(`${c.name} mở ở cấp ${c.level}`); return; }
       G.seed = c.id; seedsKey = ''; renderSeeds(); toast(`Đã chọn hạt ${c.name}`);
+      seedToggle.closest('.tray').classList.add('seeds-collapsed'); seedToggle.setAttribute('aria-expanded', 'false'); seedToggle.querySelector('span').textContent = '⌄';
     });
     seedsEl.appendChild(b);
   });
@@ -1423,7 +1430,7 @@ function updateMill(dt, time) {
   }
   // label over the mill
   let txt = 'Cối xay bột', cls = 'tag sign';
-  if (M.state === 'locked' || M.state === 'pending') txt = `Cối xay bột · cấp ${MILL_LEVEL}`;
+  if (M.state === 'locked' || M.state === 'pending') { txt = `Cối xay bột · cấp ${MILL_LEVEL}`; cls = 'tag sign locked'; }
   else if (M.state === 'working') {
     const cur = Object.values(store.me.machines?.coixay || {}).find(j => !j.ready);
     const left = cur ? Math.max(0, Math.ceil(((cur.currentReadyAt || cur.readyAt) - serverNow()) / 1000)) : 0;

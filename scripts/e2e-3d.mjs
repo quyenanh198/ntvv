@@ -50,6 +50,14 @@ await page.goto('http://127.0.0.1:8091/farm/?view=3d#debug');
 await page.waitForFunction(() => window.__farm && window.__farm.store.me, null, { timeout: 30000 });
 await wait(1500);
 await page.screenshot({ path: `${out}/e2e-1-loaded.png` });
+step('seed picker opens and collapses without hiding selection', await page.evaluate(() => {
+  const tray = document.querySelector('.tray'), toggle = document.querySelector('#seedToggle');
+  const collapsed = tray.classList.contains('seeds-collapsed') && toggle.getAttribute('aria-expanded') === 'false';
+  toggle.click();
+  const expanded = !tray.classList.contains('seeds-collapsed') && toggle.getAttribute('aria-expanded') === 'true' && document.querySelectorAll('#seeds .seed').length > 1;
+  toggle.click();
+  return collapsed && expanded && tray.classList.contains('seeds-collapsed') && !!document.querySelector('#seeds .seed[aria-pressed="true"]');
+}));
 let st = await page.evaluate(() => ({ gold: __farm.store.me.gold, level: __farm.store.me.level, plots: __farm.plots.length, plotsCount: __farm.store.me.plotsCount, seed: __farm.G.seed, boot: document.querySelector('#boot').hidden }));
 step('loads real state', st.plots === st.plotsCount && st.plots === 12 && st.boot, JSON.stringify(st));
 

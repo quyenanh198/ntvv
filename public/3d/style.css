@@ -97,6 +97,10 @@ button:focus-visible { outline: 3px solid var(--water); outline-offset: 2px; }
 .meta i.clock { background: none; border: 1.5px solid currentColor; box-sizing: border-box; }
 .seed[aria-pressed="true"] { border-color: var(--leaf); background: #f1fbe6; transform: translateY(-4px); box-shadow: 0 0 0 2px var(--leaf), 0 8px 16px rgba(79, 157, 47, .25); }
 .seed[aria-pressed="true"] img { transform: scale(1.1) rotate(-4deg); }
+.seed-toggle { min-height: 36px; padding: 2px 14px; font: 800 13px var(--f-ui); color: var(--wood-dark); cursor: pointer; pointer-events: auto; }
+.seed-toggle span { margin-left: 6px; font-size: 18px; vertical-align: -1px; }
+.tray.seeds-collapsed .seed:not([aria-pressed="true"]) { display: none; }
+.tray.seeds-collapsed .seeds { width: auto; }
 
 /* Labels over the 3D world */
 #tags { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
@@ -204,8 +208,10 @@ button:focus-visible { outline: 3px solid var(--water); outline-offset: 2px; }
   .bulk { box-sizing: border-box; width: 100%; flex-wrap: nowrap; justify-content: flex-start; gap: 6px; overflow-x: auto; scrollbar-width: thin; padding: 4px 2px 8px; -webkit-overflow-scrolling: touch; }
   .bulkbtn { flex: 0 0 auto; padding: 0 13px; font-size: 13px; }
   #bHarvest:not(:disabled), #bPlant:not(:disabled) { background: #e2f4cf; border-color: #5a9b3b; color: #285c12; }
-  .tag.sign { width: 25px; height: 25px; box-sizing: border-box; padding: 0; font-size: 0; justify-content: center; box-shadow: 0 2px 7px rgba(60, 35, 10, .2); }
-  .tag.sign::before { content: '⌂'; font-size: 17px; line-height: 1; }
+  .tag.sign.locked { width: 25px; height: 25px; box-sizing: border-box; padding: 0; font-size: 0; justify-content: center; box-shadow: 0 2px 7px rgba(60, 35, 10, .2); }
+  .tag.sign.locked::before { content: '🔒'; font-size: 13px; line-height: 1; }
+  .tray.seeds-collapsed .seed { flex-direction: row; min-width: 132px; text-align: left; padding: 4px 12px 4px 4px; }
+  .tray.seeds-collapsed .seeds { padding: 4px; }
 }
 .row .emo { font-size: 30px; width: 48px; text-align: center; }
 

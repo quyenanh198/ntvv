@@ -178,7 +178,7 @@ export function createStations(c) {
       if (!show) { if (s.tag.style.display !== 'none') s.tag.style.display = 'none'; continue; }
       const left = Math.max(0, ...jobs.filter(j => !j.ready).map(j => Math.ceil(((j.currentReadyAt || j.readyAt) - serverNow()) / 1000)));
       let txt = s.name, cls = 'tag sign';
-      if (s.state === 'locked' || (s.state === 'building' && !s.body.visible)) txt = `${s.name} · cấp ${s.level}`;
+      if (s.state === 'locked' || (s.state === 'building' && !s.body.visible)) { txt = `${s.name} · cấp ${s.level}`; cls = 'tag sign locked'; }
       else if (s.state === 'working') { txt = `${s.name} · ${fmtClock(left)}`; cls = 'tag'; } else if (s.state === 'done') { txt = 'Xong! Chạm để lấy'; cls = 'tag ready'; }
       if (s.tag.dataset.t !== txt) { s.tag.textContent = txt; s.tag.className = cls; s.tag.dataset.t = txt; }
       const p = toScreen(s.x, 4.6, s.z);
