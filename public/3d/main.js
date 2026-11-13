@@ -4,6 +4,7 @@ import { store, refresh, act as doAct, subscribe } from './store.js';
 import { itemSprite } from './art.js';
 import { renderExtra } from './sheets.js';
 import { SLOTS, STATION_PATHS, createStations } from './stations.js';
+import { PASTURE_FENCE, PASTURE_PATH, createHerd } from './herd.js';
 const $ = s => document.querySelector(s);
 const rand = (a = 0, b = 1) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -142,7 +143,7 @@ const PATHS = [
   { w: 1.1, pts: [[-4.9, 3.9], [-6.4, 3.9]] },                                                   // chicken yard
   { w: 1.0, pts: [[-4.9, 3.2], [-3.6, 3.2]] },                                                   // plot gate
 ];
-PATHS.push(...STATION_PATHS); // the workshop street east of the mill
+PATHS.push(...STATION_PATHS, PASTURE_PATH); // the workshop street east of the mill, the lane to the west pasture
 const ROAD = { w: 3.2, pts: [[-48, ROAD_Z], [48, ROAD_Z]] };
 // Paths bend gently through their points (centripetal Catmull-Rom); bed, stones and grass exclusion all follow the curve
 [...PATHS, ROAD].forEach(p => {
@@ -429,8 +430,8 @@ greenhouse(10.5, -5.2, -0.25);
 coop(-10.6, 1.8, 0.35);
 const stallGroup = stall(STOP_X, 10.1, 0);
 // trees, grass and flowers are built in buildFlora() once the merge helpers below exist
-const TREES = [[-16, -3, 1.2, true], [-15.5, 8.5, 1.1, false], [-4.5, -14.5, 1.3, true], [7.5, -16, 1.2, false], [18, -3, 1.2, true], [17.5, 9.5, 1, false], [-19.5, 9.5, 1.1, true], [-19, -12, 1.4, false], [21, -14, 1.3, false], [-3.5, -9.5, 0.8, false]];
-const PINES = [[-17.5, 1.5, 1.1], [-13, -14.5, 1.2], [16.5, -9.5, 1.1], [20, 3.5, 1.2], [-22, -6, 1.3], [22, -8, 1.2]];
+const TREES = [[-16, -3, 1.2, true], [-15.5, 0.4, 1.1, false], [-4.5, -14.5, 1.3, true], [7.5, -16, 1.2, false], [18, -3, 1.2, true], [17.5, 9.5, 1, false], [-21, 0.6, 1.1, true], [-19, -12, 1.4, false], [21, -14, 1.3, false], [-3.5, -9.5, 0.8, false]];
+const PINES = [[-26.5, 0.6, 1.1], [-13, -14.5, 1.2], [16.5, -9.5, 1.1], [20, 3.5, 1.2], [-22, -6, 1.3], [22, -8, 1.2]];
 
 // ================= Delivery truck =================
 const truck = (() => {
@@ -541,6 +542,7 @@ function fence(pts) { for (let i = 0; i < pts.length - 1; i++) fenceSegs.push([p
 fence([[-3.9, 2.2], [-3.9, -1.7], [7.9, -1.7], [7.9, 7.6], [-3.9, 7.6], [-3.9, 4.2]]); // plots, gap on the left
 fence([[-12.2, 3.6], [-12.2, 7.6], [-5.8, 7.6], [-5.8, 4.4]]);                       // chicken yard
 fence([[3.4, -7.4], [8, -7.4], [8, -3.2], [3.4, -3.2], [3.4, -5.6]]);                 // sheep pen
+fence(PASTURE_FENCE);                                                                  // west pasture
 const posts = [], rails = [];
 fenceSegs.forEach(([[ax, az], [bx, bz]]) => {
   const L = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(L / 1.3));
@@ -558,7 +560,7 @@ rails.forEach(([x, z, L, ry], i) => {
 });
 railMesh.castShadow = railMesh.receiveShadow = true; scene.add(railMesh);
 
-const blocked = (x, z) => (x > -4.4 && x < 8.4 && z > -2.2 && z < 8.1) || solids.some(s => Math.hypot(x - s.x, z - s.z) < s.r + 0.6) || (x > -12.6 && x < -5.4 && z > 3.2 && z < 8) || (x > 3 && x < 8.4 && z > -7.8 && z < -2.8) || z < -19 || Math.abs(z - ROAD_Z) < 2 || onPath(x, z) || (Math.abs(x - MILL_X) < 2.5 && Math.abs(z - MILL_Z) < 2.4);
+const blocked = (x, z) => (x > -29.6 && x < -13.6 && z > 2.4 && z < 11.4) || (x > -4.4 && x < 8.4 && z > -2.2 && z < 8.1) || solids.some(s => Math.hypot(x - s.x, z - s.z) < s.r + 0.6) || (x > -12.6 && x < -5.4 && z > 3.2 && z < 8) || (x > 3 && x < 8.4 && z > -7.8 && z < -2.8) || z < -19 || Math.abs(z - ROAD_Z) < 2 || onPath(x, z) || (Math.abs(x - MILL_X) < 2.5 && Math.abs(z - MILL_Z) < 2.4);
 function scatter(geo, mat, count, colors, sy = [0.8, 1.2], area = 26) {
   const im = new THREE.InstancedMesh(geo, mat, count); const c = new THREE.Color();
   for (let i = 0; i < count; i++) {
@@ -971,9 +973,6 @@ function pig(x, z) {
   const a = { g, head, kind: 'pig', speed: 0.6, area: [3.9, -6.9, 7.5, -3.7], tx: x, tz: z, wait: rand(0, 3), peck: 0, hop: 0, vy: 0 };
   g.userData.animal = a; animals.push(a);
 }
-const hen1 = chicken(-9, 5.5, false), hen2 = chicken(-7.5, 6.3, true); chicken(-10.5, 6.5, false);
-chick(hen1, 0.5, -0.4); chick(hen1, -0.5, -0.5); chick(hen2, 0.4, -0.5); chick(hen2, -0.3, -0.6);
-sheep(5, -5.8); sheep(6.8, -4.4); pig(4.6, -4.3);
 
 // butterflies
 const flies = [];
@@ -1216,7 +1215,7 @@ function onState() {
     else if (lastMe.level < MILL_LEVEL) { mill.state = 'pending'; setTimeout(unlockMill, 1700); }
   }
   lastMe = me;
-  renderSeeds(); renderHUD(); ensureStations();
+  renderSeeds(); renderHUD(); ensureStations(); ensureHerd(); if (!VISIT) herd.sync(me);
 }
 subscribe(onState);
 
@@ -1347,7 +1346,8 @@ function tapMill() {
   openProd('machines', 'coixay');
 }
 // The other eleven machines live on the workshop street; they are built once the catalog (names, levels) is known.
-let stations = null, stationsFirst = true;
+let stations = null, stationsFirst = true, herd = null;
+function ensureHerd() { if (!herd) herd = createHerd({ THREE, scene, mesh, box, animals, hitTargets, bakeVC, makeHen: chicken, makeSheep: sheep, makePig: pig, rand, easeOutBack }); }
 function ensureStations() {
   if (stations || !store.catalog) return;
   stations = createStations({ THREE, scene, mesh, box, toon, canvasTex, emit, easeOutBack, bakeVC, hitTargets, sfx, tagsEl, toScreen, place, cat, fmtClock, serverNow, camPos: camTarget,
@@ -1557,14 +1557,14 @@ function tapAnimal(a) {
   initAudio();
   if (a.hop > 0) return;
   a.vy = 5.5; a.hop = 0.001;
-  ({ hen: sfx.cluck, chick: sfx.peep, sheep: sfx.baa, pig: sfx.oink })[a.kind]();
+  ({ hen: sfx.cluck, chick: sfx.peep, sheep: sfx.baa, pig: sfx.oink })[a.kind]?.();
   emit(a.g.position.x, 1, a.g.position.z, 0xff7aa2, 8, { speed: 1, up: 2.5, grav: -0.5, life: 1, size: 0.16 });
 }
 
 // ================= Camera & input =================
 const camTarget = new THREE.Vector3(2.5, 0, 4.2), panVel = new THREE.Vector3();
 const EL = 0.84; // camera pitch (radians above horizon)
-function clampCam() { camTarget.x = THREE.MathUtils.clamp(camTarget.x, -14, 40); camTarget.z = THREE.MathUtils.clamp(camTarget.z, -16, 14); }
+function clampCam() { camTarget.x = THREE.MathUtils.clamp(camTarget.x, -32, 40); camTarget.z = THREE.MathUtils.clamp(camTarget.z, -16, 14); }
 let zoom = 1, zoomGoal = 1, intro = 1.7;
 function baseDist() { return innerWidth < innerHeight ? 40 : 27; }
 function placeCamera() {
@@ -1784,6 +1784,7 @@ function frame(t) {
   updateAnimals(dt, time);
   updateTruck(dt, time);
   updateMill(dt, time);
+  if (herd) herd.update(dt, time);
   if (stations && store.me) { stations.update(dt, time, store.me, stationsFirst); stationsFirst = false; }
   sails.rotation.z -= dt * 0.7;
   clouds.forEach(c => { c.position.x += c.userData.speed * dt; if (c.position.x > 75) c.position.x = -75; });
@@ -1802,7 +1803,7 @@ function frame(t) {
   if (!document.hidden) adaptQuality(gap);
 }
 requestAnimationFrame(frame);
-if (location.hash === '#debug') window.__farm = { get stations() { return stations; }, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
+if (location.hash === '#debug') window.__farm = { get stations() { return stations; }, get herd() { return herd; }, animals, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
 
 // ================= Production: machines and barns, every outcome decided by the server =================
 const prodSheet = $('#prodSheet');
@@ -1813,7 +1814,7 @@ const itemsText = (m) => Object.entries(m || {}).map(([id, n]) => `${n} ${itemNa
 function renderProd() {
   const me = store.me, rows = $('#prodRows'), tabs = $('#prodTabs');
   rows.innerHTML = ''; tabs.innerHTML = '';
-  if (renderExtra(prodMode, { rows, me, cat, nf, api, prodAct, toast, fail, serverNow, fmtDur, open: openProd, setTitle: t => { $('#prodTitle').textContent = t; }, busy: () => prodBusy, mode: () => prodMode })) return;
+  if (renderExtra(prodMode, { rows, me, cat, nf, api, prodAct, toast, fail, serverNow, fmtDur, itemName, open: openProd, setTitle: t => { $('#prodTitle').textContent = t; }, busy: () => prodBusy, mode: () => prodMode })) return;
   if (prodMode === 'machines') {
     $('#prodTitle').textContent = 'Chế biến';
     const ms = Object.values(cat().machines).sort((a, b) => a.level - b.level);
@@ -1840,6 +1841,7 @@ function renderProd() {
       add('Chế 1 mẻ', () => runRecipe(m.id, r, 1), maxN < 1);
       if (maxN > 1) add(`Chế ${maxN} mẻ`, () => runRecipe(m.id, r, maxN), false);
       if (j && j.ready) add('Lấy thành phẩm', () => collectRecipe(m.id, r), false);
+      if (j && !j.ready) add('Tăng tốc', () => prodAct('/speedup', { target: 'machine', kind: m.id, recipe: r.id }, () => toast('Đã tăng tốc')), me.gems < 1);
       rows.appendChild(row);
     });
   } else if (prodMode === 'quests') {

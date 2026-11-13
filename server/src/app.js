@@ -216,6 +216,7 @@ export function buildApp({ config, db, logger = true }) {
     starMilestones: STAR_MILESTONES.map((m2) => ({ ...m2, gold: (m2.gold || 0) * GOLD_MULT })),
       luxury: LUXURY,
     machineUpgradeGold: MACHINE_UPGRADE_GOLD,
+    speedupStepMs: 5 * 60 * 1000, // one gem per started step of remaining time; the server charges, the client only shows an estimate
     lottery: LOTTERY,
     taxPerPlot: TAX_PER_PLOT,
     cansa: CANSA,

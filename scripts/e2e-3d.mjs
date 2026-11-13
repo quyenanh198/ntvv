@@ -135,7 +135,16 @@ await page.screenshot({ path: `${out}/e2e-9-barn.png` });
 // with feed in the barn the server also collects ripe products on its own
 await page.waitForFunction(() => (__farm.store.me.inventory.trung || 0) >= 1, null, { timeout: 15000 });
 step('barn: buy via the server; server feeds and collects with feed in stock', true);
+// the herd in the scene follows what the server says: a hen, then a cow bought through the sheet
+await page.waitForFunction(() => [...__farm.herd.ents.values()].some((e) => e.a.serverKind === 'ga'), null, { timeout: 15000 });
+await page.evaluate(() => [...document.querySelectorAll('#prodRows .row')].find((r) => r.querySelector('b')?.textContent === 'Bò' && r.querySelector('.cta:not(:disabled)'))?.querySelector('.cta').click());
+await page.waitForFunction(() => (__farm.store.me.animals || []).some((a) => a.kind === 'bo') && [...__farm.herd.ents.values()].some((e) => e.a.serverKind === 'bo'), null, { timeout: 15000 });
+step('herd in the scene follows the server: hen and cow appear', true);
 await page.click('#prodClose');
+await page.evaluate(() => { const cow = [...__farm.herd.ents.values()].find(e => e.a.serverKind === 'bo').a; __farm.camTarget.set(cow.g.position.x, 0, cow.g.position.z + 1); __farm.setZoom(1.4); });
+await wait(1500);
+await page.screenshot({ path: `${out}/e2e-p3-herd.png` });
+await page.evaluate(() => __farm.camTarget.set(2.5, 0, 4.2));
 
 // ---- P3: orders. Delivery pays out only when the server accepts it ----
 await page.evaluate(() => __farm.refresh());
@@ -229,9 +238,11 @@ await page.evaluate(() => __farm.camTarget.set(2.5, 0, 4.2));
 // ---- P5: secondary systems, every outcome decided by the server ----
 await page.click('#bMore');
 await page.waitForSelector('#prodRows .row');
-for (const mode of ['stars', 'festival', 'skills', 'luxury', 'lottery', 'collections', 'energy', 'dog']) {
+db.prepare('UPDATE farmers SET gems = gems + 50 WHERE user_id = 1').run(); db.prepare('DELETE FROM plots WHERE owner_id = 1 AND idx = 0').run(); await page.evaluate(() => __farm.refresh());
+const MODES = ['stars', 'festival', 'skills', 'luxury', 'lottery', 'collections', 'energy', 'dog', 'fish', 'trees', 'speed'];
+for (const mode of MODES) {
   await page.evaluate((m) => document.querySelector('#bMore').click() || 0, mode);
-  const idx = ['stars', 'festival', 'skills', 'luxury', 'lottery', 'collections', 'energy', 'dog'].indexOf(mode);
+  const idx = MODES.indexOf(mode);
   await page.click(`#prodRows .row:nth-of-type(${idx + 1}) button`);
   await page.waitForFunction(() => document.querySelector('#prodRows').children.length > 1 && !document.querySelector('#prodRows').textContent.includes('Đang tải'), null, { timeout: 15000 });
   if (mode === 'skills') {
@@ -244,6 +255,23 @@ for (const mode of ['stars', 'festival', 'skills', 'luxury', 'lottery', 'collect
     await page.click('#prodRows .row button:not([disabled])');
     await page.waitForFunction(() => __farm.store.me.dog.active, null, { timeout: 15000 });
     step('dog hired; server records it', true);
+  }
+  if (mode === 'fish') {
+    const before = await page.evaluate(() => __farm.store.me.energy.current);
+    await page.click('#prodRows .row button:has-text("Câu")');
+    await page.waitForFunction((n) => __farm.store.me.energy.current < n, before, { timeout: 15000 });
+    step('fishing costs energy; the server decides the catch', true);
+  }
+  if (mode === 'trees') {
+    await page.click('#prodRows .row button:has-text("Trồng"):not([disabled]) >> nth=0');
+    await page.waitForFunction(() => __farm.store.me.plots.some((p) => p.tree), null, { timeout: 15000 });
+    step('fruit tree planted by the server', true);
+  }
+  if (mode === 'speed') {
+    const g = await page.evaluate(() => __farm.store.me.gems);
+    await page.click('#prodRows .row button:has-text("Tăng tốc"):not([disabled]) >> nth=0');
+    await page.waitForFunction((n) => __farm.store.me.gems < n, g, { timeout: 15000 });
+    step('speed-up charged in gems by the server', true);
   }
   if (mode === 'lottery') {
     const before = await page.evaluate(() => __farm.store.me.gold);

@@ -5,7 +5,7 @@ const medal = (n) => ['🥇', '🥈', '🥉'][n] || String(n + 1);
 export const MORE_ENTRIES = [
   ['stars', '⭐', 'Sao và cột mốc'], ['festival', '🎪', 'Lễ hội'], ['skills', '🧠', 'Kỹ năng'], ['luxury', '👑', 'Danh hiệu và trang trí'],
   ['lottery', '🎟️', 'Xổ số làng'], ['collections', '📚', 'Bộ sưu tập'], ['energy', '⚡', 'Năng lượng và kim cương'], ['dog', '🐕', 'Chó canh vườn'],
-  ['barn', '🐄', 'Chuồng trại'], ['quests', '📜', 'Nhiệm vụ ngày'], ['board', '🏆', 'Bảng xếp hạng'], ['thief', '🥷', 'Bảng kẻ trộm'], ['gold', '💝', 'Xin/Cho vàng'],
+  ['fish', '🎣', 'Ao cá'], ['trees', '🌳', 'Trồng cây ăn quả'], ['speed', '⏩', 'Tăng tốc bằng kim cương'], ['barn', '🐄', 'Chuồng trại'], ['quests', '📜', 'Nhiệm vụ ngày'], ['board', '🏆', 'Bảng xếp hạng'], ['thief', '🥷', 'Bảng kẻ trộm'], ['gold', '💝', 'Xin/Cho vàng'],
 ];
 
 export function renderExtra(mode, c) {
@@ -104,6 +104,49 @@ export function renderExtra(mode, c) {
     btn(acts(r), 'Mua', () => prodAct('/buy-energy', {}, () => toast(`Đã mua ${e.buyAmount} năng lượng`)), me.gems < e.buyGems);
     para('Đổi vàng lấy kim cương', true);
     for (const p of cat().gemPacks) { r = el(`<span class="emo">💎</span><div><b>${p.gems} kim cương</b><small>${nf.format(p.gold)} vàng</small></div><div class="acts"></div>`); btn(acts(r), 'Đổi', () => prodAct('/buy-gems', { pack: p.id }, () => toast(`Đã đổi ${p.gems} kim cương`)), me.gold < p.gold); }
+    return true;
+  }
+  if (mode === 'fish') {
+    const fc = cat().fishing, pond = me.pond, farm = me.fishFarm; setTitle('Ao cá');
+    if (me.level < fc.level) { para(`Ao cá mở ở cấp ${fc.level}.`); return true; }
+    para(`Năng lượng: ${me.energy.current}/${me.energy.max}. Mỗi lần câu tốn ${fc.energyCost} năng lượng, được ${pond.fishPerCast} cá.`);
+    let r = el(`<span class="emo">🎣</span><div><b>Câu cá</b><small>Ao cấp ${pond.level} · ${pond.fishPerCast} cá mỗi lần</small></div><div class="acts"></div>`);
+    btn(acts(r), 'Câu', () => prodAct('/fish', {}, (x) => toast(`Câu được ${x.caught.map((id) => c.itemName(id)).join(', ')}`)), me.energy.current < fc.energyCost);
+    if (pond.next) { r = el(`<span class="emo">⬆️</span><div><b>Nâng ao lên cấp ${pond.next.level}</b><small>${pond.next.fishPerCast} cá mỗi lần · ${nf.format(pond.next.gold)} vàng</small></div><div class="acts"></div>`); btn(acts(r), 'Nâng cấp', () => prodAct('/upgrade-pond', {}, () => toast('Đã nâng cấp ao')), me.gold < pond.next.gold); }
+    para(`Nuôi thủy sản: ${farm.used}/${farm.capacity} chỗ`, true);
+    for (const b of farm.batches) {
+      const sp = cat().fishFarm[b.species], left = Math.max(0, b.readyAt - serverNow());
+      r = el(`<span class="emo">${sp.emoji}</span><div><b>${sp.name} ×${b.qty}</b> ${b.ready ? '<span class="state-chip done">Chín rồi</span>' : `<span class="state-chip run">Còn ${fmtDur(left)}</span>`}</div><div class="acts"></div>`);
+      btn(acts(r), 'Thu hoạch', () => prodAct('/fish-harvest', { id: b.id }, () => toast(`Đã thu ${sp.name}`)), !b.ready);
+    }
+    for (const sp of Object.values(cat().fishFarm).sort((a, b) => a.level - b.level)) {
+      const locked = sp.level > me.level;
+      r = el(`<span class="emo">${sp.emoji}</span><div><b>${sp.name}</b><small>${locked ? `Mở ở cấp ${sp.level}` : `${nf.format(sp.fry)} vàng mỗi con · ${fmtDur(sp.growMs)}`}</small></div><div class="acts"></div>`);
+      btn(acts(r), 'Thả 1', () => prodAct('/fish-stock', { species: sp.id, qty: 1 }, () => toast(`Đã thả ${sp.name}`)), locked || me.gold < sp.fry || farm.used >= farm.capacity);
+      btn(acts(r), 'Thả tối đa', () => prodAct('/fish-stock', { species: sp.id, qty: 'max' }, () => toast(`Đã thả đầy ${sp.name}`)), locked || me.gold < sp.fry || farm.used >= farm.capacity);
+    }
+    return true;
+  }
+  if (mode === 'trees') {
+    setTitle('Trồng cây ăn quả');
+    const taken = new Set(me.plots.filter((p) => p.crop).map((p) => p.idx)); let empty = -1;
+    for (let i = 0; i < me.plotsCount; i += 1) if (!taken.has(i)) { empty = i; break; }
+    para(empty < 0 ? 'Không còn ô trống để trồng cây.' : `Cây ăn quả cho trái nhiều lần. Cây sẽ trồng ở ô trống số ${empty + 1}.`);
+    for (const t of Object.values(cat().trees).sort((a, b) => a.level - b.level)) {
+      const locked = t.level > me.level;
+      const r = el(`<span class="emo">${t.emoji}</span><div><b>${t.name}</b><small>${locked ? `Mở ở cấp ${t.level}` : `${nf.format(t.price)} vàng · lớn sau ${fmtDur(t.growMs)} · ${t.yield} quả mỗi mùa`}</small></div><div class="acts"></div>`);
+      btn(acts(r), 'Trồng', () => prodAct('/plant-tree', { idx: empty, tree: t.id }, () => toast(`Đã trồng cây ${t.name}`)), locked || empty < 0 || me.gold < t.price);
+    }
+    return true;
+  }
+  if (mode === 'speed') {
+    const step = cat().speedupStepMs; setTitle('Tăng tốc bằng kim cương');
+    const gems = (ms) => Math.max(1, Math.ceil(ms / step));
+    para(`Kim cương: ${me.gems}. Giá tính theo thời gian còn lại, server quyết định giá cuối cùng.`);
+    let n = 0;
+    for (const p of me.plots) if (p.crop && !p.ready) { n += 1; const ms = Math.max(0, p.readyAt - serverNow()); const r = el(`<span class="emo">🌱</span><div><b>Ô ${p.idx + 1}</b><small>Còn ${fmtDur(ms)} · khoảng ${gems(ms)} kim cương</small></div><div class="acts"></div>`); btn(acts(r), 'Tăng tốc', () => prodAct('/speedup', { target: 'plot', idx: p.idx }, () => toast('Đã tăng tốc')), me.gems < gems(ms)); }
+    for (const [kind, jobs] of Object.entries(me.machines || {})) for (const j of Object.values(jobs)) if (!j.ready) { n += 1; const ms = Math.max(0, (j.currentReadyAt || j.readyAt) - serverNow()); const rec = cat().machines[kind]?.recipes[j.recipe]; const r = el(`<span class="emo">⚙️</span><div><b>${cat().machines[kind]?.name} · ${rec?.name || j.recipe}</b><small>Còn ${fmtDur(ms)} · khoảng ${gems(ms)} kim cương</small></div><div class="acts"></div>`); btn(acts(r), 'Tăng tốc', () => prodAct('/speedup', { target: 'machine', kind, recipe: j.recipe }, () => toast('Đã tăng tốc')), me.gems < gems(ms)); }
+    if (!n) rows.innerHTML += '<div class="empty">Không có gì đang chờ.</div>';
     return true;
   }
   if (mode === 'dog') {
