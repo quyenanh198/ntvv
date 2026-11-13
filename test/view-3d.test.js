@@ -13,17 +13,26 @@ function harness() {
   return { app, db };
 }
 
-test('?view=3d serves the 3D shell and plain /farm/ still serves the 2D client', async () => {
+test('/farm/ serves the 3D shell by default; ?view=2d keeps the old client reachable', async () => {
   const { app } = harness();
-  const three = await app.inject({ method: 'GET', url: '/farm/?view=3d' });
-  assert.equal(three.statusCode, 200);
-  assert.match(three.body, /<canvas id="c"/);
-  assert.match(three.body, /3d\/main\.js\?v=test-rel/, 'boot version is injected into asset URLs');
-  assert.doesNotMatch(three.body, /__BOOT__/);
-  assert.equal(three.headers['cache-control'], 'no-store');
-  const two = await app.inject({ method: 'GET', url: '/farm/' });
+  for (const url of ['/farm/', '/farm/?view=3d']) {
+    const three = await app.inject({ method: 'GET', url });
+    assert.equal(three.statusCode, 200, url);
+    assert.match(three.body, /<canvas id="c"/, url);
+    assert.match(three.body, /3d\/main\.js\?v=test-rel/, 'boot version is injected into asset URLs');
+    assert.doesNotMatch(three.body, /__BOOT__/);
+    assert.equal(three.headers['cache-control'], 'no-store');
+  }
+  const two = await app.inject({ method: 'GET', url: '/farm/?view=2d' });
   assert.equal(two.statusCode, 200);
   assert.doesNotMatch(two.body, /<canvas id="c"/);
+});
+
+test('FARM_DEFAULT_VIEW=2d rolls the default back without a code change', async () => {
+  const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-3d-'));
+  const app = buildApp({ db: openDb(dataDir), logger: false, config: { dataDir, release: 'test-rel', defaultView: '2d', mockChatUser: { id: 3, username: 'v', display_name: 'V' } } });
+  assert.doesNotMatch((await app.inject({ method: 'GET', url: '/farm/' })).body, /<canvas id="c"/);
+  assert.match((await app.inject({ method: 'GET', url: '/farm/?view=3d' })).body, /<canvas id="c"/);
 });
 
 test('the 3D client modules and the pinned three build are served from the same origin', async () => {

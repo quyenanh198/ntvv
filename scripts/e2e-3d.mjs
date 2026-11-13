@@ -6,7 +6,8 @@ import { join } from 'node:path';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const { buildApp } = await import(`${pathToFileURL(ROOT)}server/src/app.js`);
 const { openDb } = await import(`${pathToFileURL(ROOT)}server/src/db.js`);
-import { chromium } from 'playwright';
+import { chromium, firefox, webkit } from 'playwright';
+const engineName = process.env.NTVV_BROWSER || 'chromium';
 
 const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-e2e-'));
 const db = openDb(dataDir);
@@ -18,7 +19,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const out = process.argv[2] || join(tmpdir(), 'ntvv-e2e-shots');
 mkdirSync(out, { recursive: true });
 const log = [];
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const browser = await ({ chromium, firefox, webkit })[engineName].launch(engineName === 'chromium' ? { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] } : {});
 // 1) under the server's real CSP: the client must boot without violations
 const cspPage = await browser.newPage({ viewport: { width: 390, height: 844 } });
 const cspErrs = [];

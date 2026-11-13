@@ -11,6 +11,7 @@ const config = {
   chatApiUrl: (process.env.CHAT_API_URL || 'http://chat:8082').replace(/\/$/, ''),
   internalSecret: process.env.FARM_INTERNAL_SECRET || null,
   fast: process.env.FARM_FAST === '1', // test: cây lớn nhanh gấp 60 lần
+  defaultView: process.env.FARM_DEFAULT_VIEW === '2d' ? '2d' : '3d', // 2d = quay lại client cũ không cần đổi mã
 };
 
 const db = openDb(config.dataDir);

@@ -34,6 +34,13 @@ const G = { seed: null, holdGold: null }; // seed: hạt đang chọn; holdGold:
 
 // ================= Renderer =================
 const canvas = $('#c');
+// Without WebGL there is no scene to draw: say so and offer the classic client instead of hanging on the loading card.
+if (!(document.createElement('canvas').getContext('webgl2') || document.createElement('canvas').getContext('webgl'))) {
+  $('#bootTitle').textContent = 'Thiết bị chưa hỗ trợ đồ họa 3D';
+  const msg = $('#bootMsg'); msg.textContent = 'Bạn vẫn chơi được bằng bản cổ điển. ';
+  const a = document.createElement('a'); a.href = '?view=2d'; a.textContent = 'Mở bản cổ điển'; msg.appendChild(a);
+  throw new Error('webgl-unavailable');
+}
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputEncoding = THREE.sRGBEncoding;

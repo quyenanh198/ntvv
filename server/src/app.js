@@ -2810,7 +2810,8 @@ export function buildApp({ config, db, logger = true }) {
   });
 
   const serveIndex = async (request, reply) => {
-    const html = request.query?.view === '3d' && INDEX_3D_HTML ? INDEX_3D_HTML : INDEX_HTML;
+    const want = request.query?.view === '2d' || request.query?.view === '3d' ? request.query.view : (config.defaultView === '2d' ? '2d' : '3d');
+    const html = want === '3d' && INDEX_3D_HTML ? INDEX_3D_HTML : INDEX_HTML;
     return reply.type('text/html; charset=utf-8').header('cache-control', 'no-store').send(html);
   };
   app.get('/farm/', serveIndex);
