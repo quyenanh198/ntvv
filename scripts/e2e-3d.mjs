@@ -26,6 +26,12 @@ const cspErrs = [];
 cspPage.on('console', (m) => { if (/Content Security Policy|violates/i.test(m.text())) cspErrs.push(m.text().slice(0, 140)); });
 cspPage.on('pageerror', (e) => cspErrs.push('pageerror ' + e.message));
 await cspPage.goto('http://127.0.0.1:8091/farm/?view=3d');
+// engines without WebGL (headless Firefox on CI): the page must say so and offer the classic client, nothing else to play
+if (!(await cspPage.evaluate(() => !!(document.createElement('canvas').getContext('webgl2') || document.createElement('canvas').getContext('webgl'))))) {
+  await cspPage.waitForSelector('#bootMsg a[href="?view=2d"]', { timeout: 15000 });
+  console.log('PASS no WebGL on this engine: the page offers the classic client instead of hanging');
+  await browser.close(); await app.close(); process.exit(0);
+}
 try { await cspPage.waitForSelector('#boot[hidden]', { state: 'attached', timeout: 30000 }); }
 catch (e) { console.log('boot did not finish:', await cspPage.evaluate(() => document.querySelector('#bootTitle').textContent + ' / ' + document.querySelector('#bootMsg').textContent), JSON.stringify(cspErrs)); throw e; }
 await cspPage.waitForTimeout(1500);
@@ -49,7 +55,7 @@ step('loads real state', st.plots === st.plotsCount && st.plots === 12 && st.boo
 
 const goldBefore = st.gold;
 await page.evaluate(() => __farm.tapPlot(__farm.plots[0]));
-await page.waitForFunction(() => __farm.store.me.plots[0].crop, null, { timeout: 45000 }).catch(async (e) => { console.log('plant did not land:', await page.evaluate(() => document.querySelector('#toast').textContent), JSON.stringify(errs.slice(-5))); throw e; });
+await page.waitForFunction(() => __farm.store.me.plots[0].crop, null, { timeout: 45000 }).catch(async (e) => { console.log('plant did not land:', await page.evaluate(() => document.querySelector('#toast').textContent), JSON.stringify(errs.slice(-5)), await page.evaluate(() => JSON.stringify({ fps: __farm.perf.gap.slice(-20), farmer: __farm.farmer.state, queue: __farm.farmer.queue.length, task: !!__farm.farmer.task, busy: __farm.plots[0].busy, pending: __farm.plots[0].pending }))); throw e; });
 st = await page.evaluate(() => ({ crop: __farm.store.me.plots[0].crop, gold: __farm.store.me.gold, state: __farm.plots[0].state }));
 step('plant via server', st.crop === 'luami' && st.gold < goldBefore, JSON.stringify(st));
 await page.screenshot({ path: `${out}/e2e-2-planted.png` });
