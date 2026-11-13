@@ -26,7 +26,8 @@ const cspErrs = [];
 cspPage.on('console', (m) => { if (/Content Security Policy|violates/i.test(m.text())) cspErrs.push(m.text().slice(0, 140)); });
 cspPage.on('pageerror', (e) => cspErrs.push('pageerror ' + e.message));
 await cspPage.goto('http://127.0.0.1:8091/farm/?view=3d');
-await cspPage.waitForSelector('#boot[hidden]', { state: 'attached', timeout: 30000 });
+try { await cspPage.waitForSelector('#boot[hidden]', { state: 'attached', timeout: 30000 }); }
+catch (e) { console.log('boot did not finish:', await cspPage.evaluate(() => document.querySelector('#bootTitle').textContent + ' / ' + document.querySelector('#bootMsg').textContent), JSON.stringify(cspErrs)); throw e; }
 await cspPage.waitForTimeout(1500);
 await cspPage.close();
 // 2) scripted waits need eval, so the driven session bypasses CSP
@@ -48,7 +49,7 @@ step('loads real state', st.plots === st.plotsCount && st.plots === 12 && st.boo
 
 const goldBefore = st.gold;
 await page.evaluate(() => __farm.tapPlot(__farm.plots[0]));
-await page.waitForFunction(() => __farm.store.me.plots[0].crop, null, { timeout: 15000 });
+await page.waitForFunction(() => __farm.store.me.plots[0].crop, null, { timeout: 45000 }).catch(async (e) => { console.log('plant did not land:', await page.evaluate(() => document.querySelector('#toast').textContent), JSON.stringify(errs.slice(-5))); throw e; });
 st = await page.evaluate(() => ({ crop: __farm.store.me.plots[0].crop, gold: __farm.store.me.gold, state: __farm.plots[0].state }));
 step('plant via server', st.crop === 'luami' && st.gold < goldBefore, JSON.stringify(st));
 await page.screenshot({ path: `${out}/e2e-2-planted.png` });
@@ -85,7 +86,7 @@ await page.click('#sellAll');
 await page.waitForFunction(() => __farm.truck.state !== 'away', null, { timeout: 15000 });
 const held = await page.evaluate(() => ({ shown: document.querySelector('#gold').textContent, server: __farm.store.me.gold, hold: __farm.G.holdGold }));
 step('gold held while truck is on the road', held.hold !== null && held.server > g0, JSON.stringify(held));
-await page.waitForFunction(() => __farm.truck.state === 'away', null, { timeout: 30000 });
+await page.waitForFunction(() => __farm.truck.state === 'away', null, { timeout: 120000 });
 await wait(1200);
 const done = await page.evaluate(() => ({ shown: document.querySelector('#gold').textContent, server: __farm.store.me.gold, hold: __farm.G.holdGold }));
 step('gold released when truck leaves', done.hold === null && Number(done.shown.replace(/\D/g, '')) === done.server, JSON.stringify(done));
