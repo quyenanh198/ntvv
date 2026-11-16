@@ -1848,6 +1848,7 @@ const itemsText = (m) => Object.entries(m || {}).map(([id, n]) => `${n} ${itemNa
 function renderProd() {
   const me = store.me, rows = $('#prodRows'), tabs = $('#prodTabs');
   rows.innerHTML = ''; tabs.innerHTML = '';
+  rows.classList.toggle('more-grid', prodMode === 'more');
   if (renderExtra(prodMode, { rows, me, cat, nf, api, prodAct, toast, fail, serverNow, fmtDur, itemName, open: openProd, setTitle: t => { $('#prodTitle').textContent = t; }, busy: () => prodBusy, mode: () => prodMode })) return;
   if (prodMode === 'machines') {
     $('#prodTitle').textContent = 'Chế biến';

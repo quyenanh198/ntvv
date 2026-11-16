@@ -17,6 +17,7 @@
     "balance:progression": "node scripts/progression-report.mjs --write",
     "browser:smoke": "node scripts/browser-smoke.mjs",
     "e2e:3d": "node scripts/e2e-3d.mjs",
+    "ui:audit:3d": "node scripts/ui-audit-3d.mjs",
     "test": "node --test"
   },
   "dependencies": {

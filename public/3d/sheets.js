@@ -3,6 +3,7 @@
 import { itemSprite, luxurySprite } from './art.js';
 const medal = (n) => ['🥇', '🥈', '🥉'][n] || String(n + 1);
 const art = (path, emoji) => path ? `<img src="${path}" alt="" loading="lazy">` : `<span class="emo">${emoji}</span>`;
+const MORE_ART = { stars: 'star', festival: 'menu-festival', skills: 'menu-skills', luxury: 'menu-luxury', lottery: 'menu-events', collections: 'menu-collections', energy: 'menu-energy', fish: 'menu-fishing', speed: 'menu-energy', barn: 'menu-barns', quests: 'menu-quests', board: 'menu-leaderboard', gold: 'menu-money' };
 
 export const MORE_ENTRIES = [
   ['stars', '⭐', 'Sao và cột mốc'], ['festival', '🎪', 'Lễ hội'], ['skills', '🧠', 'Kỹ năng'], ['luxury', '👑', 'Danh hiệu và trang trí'],
@@ -22,7 +23,12 @@ export function renderExtra(mode, c) {
     setTitle('Thêm');
     const t = me.tax, d = me.debts;
     para(`Thuế đất mỗi ngày: ${nf.format(t.today)} vàng${t.unlockLevel > me.level ? ` (bắt đầu ở cấp ${t.unlockLevel})` : ' — tự trừ khi sang ngày mới'}.${d && d.owe ? ` Nợ phạt chó: ${nf.format(d.owe)} vàng, tự trừ dần từ vàng của bạn.` : ''}`);
-    for (const [id, emoji, label] of MORE_ENTRIES) { const r = el(`<span class="emo">${emoji}</span><div><b>${label}</b></div><div class="acts"></div>`); btn(acts(r), 'Mở', () => open(id)); }
+    for (const [id, emoji, label] of MORE_ENTRIES) {
+      const r = el('', 'row more-card'), b = document.createElement('button');
+      b.type = 'button'; b.className = 'more-choice';
+      b.innerHTML = `${art(MORE_ART[id] && `assets/ui/${MORE_ART[id]}.svg`, emoji)}<b>${label}</b>`;
+      b.addEventListener('click', () => open(id)); r.appendChild(b);
+    }
     return true;
   }
   if (mode === 'stars') {

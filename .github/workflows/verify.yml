@@ -34,6 +34,8 @@ jobs:
         run: npm run browser:smoke
       - name: Play the 3D client against the real server
         run: npm run e2e:3d -- artifacts/e2e-3d/chromium
+      - name: Audit 3D layout at phone, tablet, and desktop widths
+        run: npm run ui:audit:3d -- artifacts/ui-audit-3d
       - name: Save browser screenshots
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -42,6 +44,7 @@ jobs:
           path: |
             artifacts/browser/
             artifacts/e2e-3d/
+            artifacts/ui-audit-3d/
           if-no-files-found: ignore
       - name: Verify generated reports
         run: |
