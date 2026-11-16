@@ -430,9 +430,31 @@ function pine(x, z, s = 1) {
   mesh(merge(p), treeMat, x, 0, z).scale.setScalar(s);
   solids.push({ x, z, r: s });
 }
+function fishingPond(x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  const rim = mesh(new THREE.CylinderGeometry(2.45, 2.6, 0.18, 32), 0x9b8054, 0, 0.06, 0, g);
+  rim.scale.z = 0.72;
+  const water = mesh(new THREE.CylinderGeometry(2.18, 2.18, 0.04, 32), 0x3c9dbc, 0, 0.17, 0, g, false);
+  water.scale.z = 0.7; water.userData.pond = true;
+  for (let i = 0; i < 16; i++) {
+    const a = i * Math.PI * 2 / 16, px = Math.cos(a) * 2.35, pz = Math.sin(a) * 1.73;
+    mesh(new THREE.IcosahedronGeometry(0.32 + (i % 3) * 0.05, 0), i % 3 ? 0xcbbd9d : 0xe4d8b7, px, 0.21, pz, g).scale.set(1.3, 0.55, 0.9);
+  }
+  for (const [px, pz] of [[-0.9, -0.35], [0.6, 0.4], [1.35, -0.25]]) {
+    const leaf = mesh(new THREE.CircleGeometry(0.29, 12), 0x70ad48, px, 0.21, pz, g, false);
+    leaf.rotation.x = -Math.PI / 2;
+  }
+  for (const [px, pz] of [[-2.1, -0.9], [-1.8, 1.0], [2.1, 0.75]]) {
+    for (let i = 0; i < 3; i++) box(0.05, 0.65 + i * 0.12, 0.05, 0x5a9144, px + i * 0.12, 0.35, pz, g);
+    mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.3, 8), 0x8e6240, px + 0.12, 0.76, pz, g);
+  }
+  solids.push({ x, z, r: 2.7 });
+  return water;
+}
 
 farmhouse(-9.5, -8.6, 0.25);
 barn(1.8, -11);
+const pondHit = fishingPond(5.3, -6.2);
 windmill(13.5, -12.5);
 greenhouse(10.5, -5.2, -0.25);
 coop(-10.6, 1.8, 0.35);
@@ -1615,11 +1637,11 @@ function resize() {
 window.addEventListener('resize', resize); resize();
 
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-hitTargets.push(stallHit, truck.g, mill.hit, ...animals.map(a => a.g)); // ô đất tự thêm vào khi được tạo
+hitTargets.push(stallHit, truck.g, mill.hit, pondHit, ...animals.map(a => a.g)); // ô đất tự thêm vào khi được tạo
 function pickAt(cx, cy) {
   ndc.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
   const hits = ray.intersectObjects(hitTargets, true);
-  for (const h of hits) { let o = h.object; while (o) { if (o.userData.plot || o.userData.stall || o.userData.animal || o.userData.truck || o.userData.mill || o.userData.station) return o.userData; o = o.parent; } }
+  for (const h of hits) { let o = h.object; while (o) { if (o.userData.plot || o.userData.stall || o.userData.animal || o.userData.truck || o.userData.mill || o.userData.pond || o.userData.station) return o.userData; o = o.parent; } }
   return null;
 }
 function groundAt(cx, cy, out) {
@@ -1658,7 +1680,7 @@ function endPointer(e) {
   if (!drag || !drag.lt || performance.now() - drag.lt > 80) panVel.set(0, 0, 0); // a pause before release means no fling
   if (drag && !drag.moved && performance.now() - drag.t < 600 && pointers.size === 0) {
     const h = EDIT ? (editTap(e.clientX, e.clientY), null) : pickAt(e.clientX, e.clientY);
-    if (h && h.plot) tapPlot(h.plot); else if (h && h.stall) openStore(); else if (h && h.animal) tapAnimal(h.animal); else if (h && h.truck) { initAudio(); sfx.horn(); truck.bounce = 1; } else if (h && h.mill) tapMill(); else if (h && h.station) tapStation(h.station);
+    if (h && h.plot) tapPlot(h.plot); else if (h && h.stall) openStore(); else if (h && h.animal) tapAnimal(h.animal); else if (h && h.truck) { initAudio(); sfx.horn(); truck.bounce = 1; } else if (h && h.mill) tapMill(); else if (h && h.pond) openProd('fish'); else if (h && h.station) tapStation(h.station);
   }
   if (pointers.size < 2) pinch = null;
   if (pointers.size === 0) drag = null;
@@ -1735,7 +1757,7 @@ mill.groups.forEach(gp => bakeVC(gp, [mill.stone, mill.grain]));
 
 // tiny parts (eyes, buttons, beaks) cast shadows nobody sees but cost a draw call each
 scene.traverse(o => { if (o.isMesh && !o.isInstancedMesh) { if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); const s = new THREE.Vector3(); o.getWorldScale(s); if (o.geometry.boundingSphere.radius * Math.max(s.x, s.y, s.z) < 0.16) o.castShadow = false; } });
-mergeStatic(new Set([sun, sun.target, farmer.root, truck.g, mill.g, mill.site, mill.hit, sails, ...animals.map(a => a.g), ...clouds, ...flies.map(f => f.g), ...plots.flatMap(p => [p.crop, p.marker])]));
+mergeStatic(new Set([sun, sun.target, farmer.root, truck.g, mill.g, mill.site, mill.hit, pondHit, sails, ...animals.map(a => a.g), ...clouds, ...flies.map(f => f.g), ...plots.flatMap(p => [p.crop, p.marker])]));
 
 // Drop resolution, then shadow detail, when frames stay slow (weak phones)
 let qualT = 0;
@@ -1837,7 +1859,7 @@ function frame(t) {
   if (!document.hidden) adaptQuality(gap);
 }
 requestAnimationFrame(frame);
-if (location.hash === '#debug') window.__farm = { get layout() { return layout; }, editCell, get EDIT() { return EDIT; }, get stations() { return stations; }, get herd() { return herd; }, animals, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
+if (location.hash === '#debug') window.__farm = { get layout() { return layout; }, editCell, get EDIT() { return EDIT; }, get stations() { return stations; }, get herd() { return herd; }, animals, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, pondHit, toScreen, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
 
 // ================= Production: machines and barns, every outcome decided by the server =================
 const prodSheet = $('#prodSheet');

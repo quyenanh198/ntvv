@@ -50,6 +50,11 @@ await page.goto('http://127.0.0.1:8091/farm/?view=3d#debug');
 await page.waitForFunction(() => window.__farm && window.__farm.store.me, null, { timeout: 30000 });
 await wait(1500);
 await page.screenshot({ path: `${out}/e2e-1-loaded.png` });
+const pond = await page.evaluate(() => __farm.toScreen(5.8, 0.2, -6.2));
+await page.mouse.click(pond.x, pond.y);
+await page.waitForFunction(() => !document.querySelector('#prodSheet').hidden && document.querySelector('#prodTitle').textContent === 'Ao cá');
+step('3D pond opens the fish sheet', true);
+await page.click('#prodClose');
 step('seed picker opens and collapses without hiding selection', await page.evaluate(() => {
   const tray = document.querySelector('.tray'), toggle = document.querySelector('#seedToggle');
   const collapsed = tray.classList.contains('seeds-collapsed') && toggle.getAttribute('aria-expanded') === 'false';
