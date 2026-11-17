@@ -21,6 +21,10 @@ try {
     await page.goto(`${address}/farm/?view=3d#debug`);
     await page.waitForFunction(() => window.__farm?.store.me && document.querySelector('#boot').hidden, null, { timeout: 30000 });
     await page.screenshot({ path: `${out}/farm-${width}.png` });
+    assert.equal(await page.evaluate(() => [...document.querySelectorAll('#tags .tag')].every(el => {
+      const style = getComputedStyle(el); if (style.visibility === 'hidden' || style.display === 'none') return true;
+      const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight - 210;
+    })), true, `${width}px world labels fit`);
     await page.click('#bMore');
     await page.waitForSelector('#prodSheet:not([hidden])');
     await page.waitForTimeout(400);

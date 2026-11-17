@@ -1902,6 +1902,9 @@ function adaptQuality(gap) {
 
 // keep world labels fully on screen
 const place = (el, s, m = 40) => {
+  const visible = !s.behind && s.x >= -m && s.x <= innerWidth + m && s.y >= 80 && s.y <= innerHeight - 220;
+  if (el._visible !== visible) { el._visible = visible; el.style.visibility = visible ? '' : 'hidden'; }
+  if (!visible) return;
   const tf = `translate(${Math.round(THREE.MathUtils.clamp(s.x, m, innerWidth - m))}px, ${Math.round(s.y)}px) translate(-50%, -100%)`;
   if (el._tf !== tf) { el._tf = tf; el.style.transform = tf; } // no style work while the camera is still
 };
