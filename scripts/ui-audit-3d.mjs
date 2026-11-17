@@ -73,6 +73,19 @@ try {
       console.log(`Full gallery draw calls: ${await page.evaluate(() => __farm.renderer.info.render.calls)}`);
       db.prepare('DELETE FROM luxury WHERE owner_id = 1').run();
       db.prepare('UPDATE farmers SET dog_until = 0 WHERE user_id = 1').run();
+      db.prepare("INSERT INTO animals (owner_id, kind, ready_at) VALUES (1, 'ga', NULL)").run();
+      await page.evaluate(() => __farm.refresh());
+      await page.waitForFunction(() => [...__farm.herd.ents.values()].some(e => e.a.serverKind === 'ga'));
+      await page.evaluate(() => {
+        const hen = __farm.store.me.animals.find(a => a.kind === 'ga');
+        __farm.herd.sync({ ...__farm.store.me, animals: [{ ...hen, ready_at: Date.now() - 1000, ready: true }] });
+        const a = [...__farm.herd.ents.values()].find(e => e.a.serverKind === 'ga').a;
+        __farm.camTarget.set(a.g.position.x, 0, a.g.position.z); __farm.setZoom(1.5);
+      });
+      await page.waitForFunction(() => [...__farm.herd.ents.values()].some(e => e.a.serverKind === 'ga' && e.a.flag.userData.icon.material.map?.userData.ready));
+      await page.waitForTimeout(600);
+      await page.screenshot({ path: `${out}/animal-product-390.png` });
+      db.prepare('DELETE FROM animals WHERE owner_id = 1').run();
     }
     if (width === 1280) {
       await page.click('#storeClose');

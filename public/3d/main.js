@@ -1532,7 +1532,7 @@ function tapMill() {
 }
 // The other eleven machines live on the workshop street; they are built once the catalog (names, levels) is known.
 let stations = null, stationsFirst = true, herd = null;
-function ensureHerd() { if (!herd) herd = createHerd({ THREE, scene, mesh, box, animals, hitTargets, bakeVC, makeHen: chicken, makeSheep: sheep, makePig: pig, rand, easeOutBack }); }
+function ensureHerd() { if (!herd) herd = createHerd({ THREE, scene, mesh, box, animals, hitTargets, bakeVC, makeHen: chicken, makeSheep: sheep, makePig: pig, rand, easeOutBack, itemSprite, cat }); }
 function ensureStations() {
   if (stations || !store.catalog) return;
   stations = createStations({ layout, THREE, scene, mesh, box, toon, canvasTex, emit, easeOutBack, bakeVC, hitTargets, sfx, tagsEl, toScreen, place, cat, fmtClock, serverNow, camPos: camTarget,

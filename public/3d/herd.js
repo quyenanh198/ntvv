@@ -16,8 +16,24 @@ const LOOK = {
 };
 
 export function createHerd(c) {
-  const { THREE, scene, mesh, box, animals, hitTargets, bakeVC, makeHen, makeSheep, makePig, rand, easeOutBack } = c;
+  const { THREE, scene, mesh, box, animals, hitTargets, bakeVC, makeHen, makeSheep, makePig, rand, easeOutBack, itemSprite, cat } = c;
   const ents = new Map(); // server animal id -> { a, base scale }
+  const textures = new Map();
+  const iconTexture = id => {
+    const path = itemSprite(id);
+    if (!path) return null;
+    if (!textures.has(path)) {
+      const canvas = document.createElement('canvas'); canvas.width = canvas.height = 64;
+      const ctx = canvas.getContext('2d'); ctx.fillStyle = '#285d40'; ctx.strokeStyle = '#f0ca78'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(32, 32, 28, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      const texture = new THREE.CanvasTexture(canvas); texture.encoding = THREE.sRGBEncoding; texture.userData.ready = false;
+      const img = new Image();
+      img.onload = () => { ctx.drawImage(img, 10, 10, 44, 44); texture.needsUpdate = true; texture.userData.ready = true; };
+      img.src = path;
+      textures.set(path, texture);
+    }
+    return textures.get(path);
+  };
 
   function quad(kind, [, body, accent, size, ex]) {
     const g = new THREE.Group(), s = ex.wide ? 1.15 : 1, tall = ex.tall ? 0.18 : 0;
@@ -62,7 +78,12 @@ export function createHerd(c) {
     }
     g.scale.setScalar(1.2); return { g, head };
   }
-  const marker = () => { const m = new THREE.Group(); box(0.28, 0.24, 0.28, 0xf2b532, 0, 0, 0, m); box(0.24, 0.05, 0.24, 0xfff2b0, 0, 0.14, 0, m); m.visible = false; return m; };
+  const marker = () => {
+    const m = new THREE.Group();
+    const icon = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }));
+    icon.scale.set(0.86, 0.86, 1); m.add(icon); m.userData.icon = icon;
+    m.visible = false; return m;
+  };
 
   function spawn(kind, index) {
     let a;
@@ -79,7 +100,8 @@ export function createHerd(c) {
     }
     hitTargets.push(a.g); bakeVC(a.head); bakeVC(a.g, [a.head]);
     a.serverKind = kind;
-    a.flag = marker(); a.flag.position.y = 2.1; a.g.add(a.flag);
+    a.flag = marker(); a.flagY = kind === 'ga' || look?.[0] === 'bird' ? 1.3 : kind === 'cuu' || kind === 'heo' ? 1.55 : 1.75;
+    a.flag.position.y = a.flagY; a.g.add(a.flag);
     a.g.userData.animal = a; return a;
   }
 
@@ -90,15 +112,19 @@ export function createHerd(c) {
     const idx = {};
     for (const [id, an] of want) {
       if (!ents.has(id)) { idx[an.kind] = (idx[an.kind] || 0) + 1; const a = spawn(an.kind, idx[an.kind]); const base = a.g.scale.clone(); a.g.scale.multiplyScalar(0.01); a.grow = 0; ents.set(id, { a, base }); }
-      const e = ents.get(id); e.a.status = an.ready_at == null ? 'hungry' : an.ready ? 'ready' : 'fed'; e.a.flag.visible = e.a.status === 'ready';
+      const e = ents.get(id); e.a.status = an.ready_at == null ? 'hungry' : an.ready ? 'ready' : 'fed';
+      const product = cat().animals[an.kind]?.product;
+      e.a.flag.userData.icon.material.map = iconTexture(e.a.status === 'hungry' ? 'thucan' : product);
+      e.a.flag.userData.icon.material.needsUpdate = true;
+      e.a.flag.visible = e.a.status !== 'fed';
     }
   }
   function update(dt, time) {
     for (const e of ents.values()) {
       const a = e.a;
       if (a.grow < 1) { a.grow = Math.min(1, a.grow + dt * 1.6); a.g.scale.copy(e.base).multiplyScalar(Math.max(0.01, easeOutBack(a.grow))); }
-      if (a.status === 'hungry') a.head.rotation.x = Math.max(a.head.rotation.x, 0.55 + Math.sin(time * 2 + a.tx) * 0.05);
-      if (a.flag.visible) { a.flag.position.y = 2.1 + Math.sin(time * 4 + a.tx) * 0.1; a.flag.rotation.y += dt * 2; }
+      a.head.rotation.x += ((a.status === 'hungry' ? 0.55 + Math.sin(time * 2 + a.tx) * 0.05 : 0) - a.head.rotation.x) * Math.min(1, dt * 5);
+      if (a.flag.visible) a.flag.position.y = a.flagY + Math.sin(time * 4 + a.tx) * 0.1;
     }
   }
   return { sync, update, ents };

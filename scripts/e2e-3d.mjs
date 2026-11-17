@@ -164,6 +164,19 @@ await page.click('#bMore'); await page.click('#prodRows .row:has-text("Chuồng 
 await page.waitForSelector('#prodRows .cta');
 await page.evaluate(() => [...document.querySelectorAll('#prodRows .row')].find((r) => r.textContent.includes('Gà') && r.querySelector('.cta:not(:disabled)')).querySelector('.cta').click());
 await page.waitForFunction(() => (__farm.store.me.animals || []).some((a) => a.kind === 'ga'), null, { timeout: 60000 });
+await page.waitForFunction(() => [...__farm.herd.ents.values()].some(e => e.a.serverKind === 'ga' && e.a.status === 'hungry' && e.a.flag.visible && e.a.flag.userData.icon.material.map?.userData.ready));
+step('hungry animal shows the feed art', true);
+await page.evaluate(() => {
+  const chicken = __farm.store.me.animals.find(a => a.kind === 'ga');
+  __farm.herd.sync({ ...__farm.store.me, animals: [{ ...chicken, ready_at: Date.now() - 1000, ready: true }] });
+});
+await page.waitForFunction(() => [...__farm.herd.ents.values()].some(e => e.a.serverKind === 'ga' && e.a.status === 'ready' && e.a.flag.visible && e.a.flag.userData.icon.material.map?.userData.ready));
+step('ready animal shows its product art', true);
+await page.evaluate(() => { document.querySelector('#prodSheet').hidden = true; const a = [...__farm.herd.ents.values()].find(e => e.a.serverKind === 'ga').a; __farm.camTarget.set(a.g.position.x, 0, a.g.position.z); __farm.setZoom(1.5); });
+await page.waitForTimeout(700);
+await page.screenshot({ path: `${out}/e2e-animal-product-bubble.png` });
+await page.evaluate(() => { document.querySelector('#prodSheet').hidden = false; __farm.camTarget.set(2.5, 0, 4.2); __farm.setZoom(1); });
+await page.evaluate(() => __farm.herd.sync(__farm.store.me));
 db.prepare("INSERT INTO inventory (owner_id, item, qty) VALUES (1, 'thucan', 20) ON CONFLICT(owner_id, item) DO UPDATE SET qty = 20").run();
 await page.evaluate(() => __farm.refresh());
 // the server auto-feeds hungry animals when feed is in the barn (autoTend); the UI must reflect that either way
