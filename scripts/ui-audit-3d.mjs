@@ -74,6 +74,16 @@ try {
       db.prepare('DELETE FROM luxury WHERE owner_id = 1').run();
       db.prepare('UPDATE farmers SET dog_until = 0 WHERE user_id = 1').run();
     }
+    if (width === 1280) {
+      await page.click('#storeClose');
+      await page.evaluate(() => {
+        const ids = ['luami', 'ngo', 'carot', 'bingo', 'nho', 'cachua', 'tra', 'bapcai', 'hoahong', 'nam'];
+        ids.forEach((id, i) => { const p = __farm.plots[i]; p.crop.geometry = __farm.template(id, 'ripe'); p.crop.visible = true; });
+        __farm.camTarget.set(2, 0, 3); __farm.setZoom(1.15);
+      });
+      await page.waitForTimeout(400);
+      await page.screenshot({ path: `${out}/crop-families-1280.png` });
+    }
     assert.deepEqual(errors, [], `${width}px browser errors`);
     console.log(`PASS 3D UI ${width}px`);
     await page.close();
