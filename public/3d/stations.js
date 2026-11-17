@@ -9,8 +9,24 @@ const LOOK = { // wall, roof, trim
 };
 
 export function createStations(c) {
-  const { THREE, scene, mesh, box, toon, canvasTex, emit, easeOutBack, bakeVC, hitTargets, sfx, tagsEl, toScreen, place, cat, fmtClock, serverNow, camPos, layout } = c;
+  const { THREE, scene, mesh, box, toon, canvasTex, emit, easeOutBack, bakeVC, hitTargets, sfx, tagsEl, toScreen, place, cat, itemSprite, fmtClock, serverNow, camPos, layout } = c;
   const list = [];
+  const productTextures = new Map();
+  function productTexture(id) {
+    const path = itemSprite(id);
+    if (!path) return null;
+    if (!productTextures.has(path)) {
+      const t = canvasTex(64, 64, ctx => {
+        ctx.fillStyle = '#285d40'; ctx.strokeStyle = '#f0ca78'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(32, 32, 28, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      });
+      t.userData.ready = false;
+      const img = new Image();
+      img.onload = () => { t.image.getContext('2d').drawImage(img, 10, 10, 44, 44); t.needsUpdate = true; t.userData.ready = true; };
+      img.src = path; productTextures.set(path, t);
+    }
+    return productTextures.get(path);
+  }
 
   function house(g, w, d, h, wall, roof, trim) {
     box(w, h, d, wall, 0, h / 2, 0, g);
@@ -129,8 +145,8 @@ export function createStations(c) {
     box(4.4, 0.12, 3.8, 0xb9ae98, 0, 0.04, 0, body);
     const built = BUILD[id](body, LOOK[id]);
     const site = siteFor(m.name, m.level); root.add(site);
-    const badge = new THREE.Group(); badge.position.set(0, 4.3, 0); badge.visible = false; root.add(badge);
-    box(0.6, 0.5, 0.6, 0xf2b532, 0, 0, 0, badge); box(0.5, 0.08, 0.5, 0xfff2b0, 0, 0.28, 0, badge);
+    const badge = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }));
+    badge.position.set(0, 4.3, 0); badge.scale.set(1.1, 1.1, 1); badge.visible = false; root.add(badge);
     const hit = new THREE.Mesh(new THREE.BoxGeometry(4.4, 3.8, 3.8), new THREE.MeshBasicMaterial({ visible: false }));
     hit.position.set(0, 1.9, 0); hit.userData.station = id; root.add(hit); hitTargets.push(hit);
     built.rotors.forEach(r => { r.base = r.o.position.clone(); });
@@ -172,7 +188,13 @@ export function createStations(c) {
         if (s.steamT <= 0) { s.steamT = 0.22; wp.set(s.fx[0], s.fx[1], s.fx[2]); s.root.localToWorld(wp); emit(wp.x, wp.y, wp.z, 0xf4f4f0, 1, { speed: 0.35, up: 1.3, grav: -0.5, life: 1.4, size: 0.34, spread: 0.2 }); }
       }
       s.badge.visible = s.state === 'done';
-      if (s.badge.visible) { s.badge.position.y = 4.3 + Math.sin(time * 4) * 0.15; s.badge.rotation.y += dt * 1.5; }
+      if (s.badge.visible) {
+        const job = jobs.find(j => j.ready), product = Object.keys(m.recipes[job?.recipe]?.out || {})[0];
+        if (product !== s.badge.userData.product) {
+          s.badge.material.map = productTexture(product); s.badge.material.needsUpdate = true; s.badge.userData.product = product;
+        }
+        s.badge.position.y = 4.3 + Math.sin(time * 4) * 0.15;
+      }
       // labels only where they help: busy, finished or locked buildings, or any building the camera is close to
       const show = s.state !== 'idle' ? near : Math.hypot(s.x - camPos.x, s.z - camPos.z) < 6;
       if (!show) { if (s.tag.style.display !== 'none') s.tag.style.display = 'none'; continue; }
@@ -181,7 +203,7 @@ export function createStations(c) {
       if (s.state === 'locked' || (s.state === 'building' && !s.body.visible)) { txt = `${s.name} · cấp ${s.level}`; cls = 'tag sign locked'; }
       else if (s.state === 'working') { txt = `${s.name} · ${fmtClock(left)}`; cls = 'tag'; } else if (s.state === 'done') { txt = 'Xong! Chạm để lấy'; cls = 'tag ready'; }
       if (s.tag.dataset.t !== txt) { s.tag.textContent = txt; s.tag.className = cls; s.tag.dataset.t = txt; }
-      const p = toScreen(s.x, 4.6, s.z);
+      const p = toScreen(s.x, s.state === 'done' ? 5.4 : 4.6, s.z);
       if (p.behind) s.tag.style.display = 'none'; else { s.tag.style.display = ''; place(s.tag, p, 70); }
     }
   }

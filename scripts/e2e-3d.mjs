@@ -315,12 +315,17 @@ await page.screenshot({ path: `${out}/e2e-p3-street.png` });
 db.prepare("UPDATE machine_jobs SET ready_at = ? WHERE owner_id = 1 AND kind = 'lonuong'").run(Date.now() - 1000);
 await page.evaluate(() => __farm.refresh());
 await page.waitForFunction(() => __farm.stations.byId('lonuong').state === 'done' && __farm.stations.byId('lonuong').badge.visible, null, { timeout: 60000 });
-step('finished job shows the done badge on its building', true);
+await page.waitForFunction(() => __farm.stations.byId('lonuong').badge.material.map?.userData.ready);
+step('finished job shows its product art on the building', await page.evaluate(() => __farm.stations.byId('lonuong').badge.userData.product === 'canuong'));
 await page.evaluate(() => { const s = __farm.stations.byId('lonuong'); __farm.camTarget.set(s.x, 0, s.z); __farm.setZoom(1.05); });
 await wait(700);
 step('finished workshop label fits the view', await page.evaluate(() => {
   const tag = __farm.stations.byId('lonuong').tag, r = tag.getBoundingClientRect(), style = getComputedStyle(tag);
   return style.display !== 'none' && style.visibility !== 'hidden' && r.top >= 0 && r.bottom <= innerHeight - 210 && r.left >= 0 && r.right <= innerWidth;
+}));
+step('finished product art stays clear of its label', await page.evaluate(() => {
+  const s = __farm.stations.byId('lonuong');
+  return s.tag.getBoundingClientRect().bottom < __farm.toScreen(s.x, s.badge.position.y, s.z).y - 12;
 }));
 await page.screenshot({ path: `${out}/e2e-p3-done.png` });
 await page.evaluate(() => __farm.camTarget.set(2.5, 0, 4.2));

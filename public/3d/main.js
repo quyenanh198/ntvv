@@ -1535,7 +1535,7 @@ let stations = null, stationsFirst = true, herd = null;
 function ensureHerd() { if (!herd) herd = createHerd({ THREE, scene, mesh, box, animals, hitTargets, bakeVC, makeHen: chicken, makeSheep: sheep, makePig: pig, rand, easeOutBack, itemSprite, cat }); }
 function ensureStations() {
   if (stations || !store.catalog) return;
-  stations = createStations({ layout, THREE, scene, mesh, box, toon, canvasTex, emit, easeOutBack, bakeVC, hitTargets, sfx, tagsEl, toScreen, place, cat, fmtClock, serverNow, camPos: camTarget,
+  stations = createStations({ layout, THREE, scene, mesh, box, toon, canvasTex, emit, easeOutBack, bakeVC, hitTargets, sfx, tagsEl, toScreen, place, cat, itemSprite, fmtClock, serverNow, camPos: camTarget,
     onUnlock: s => { camFocus = { v: new THREE.Vector3(s.x - 3, 0, s.z + 3), t: 2.6 }; const el = $('#lvlup'); el.textContent = `Mở khoá ${s.name}!`; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); } });
 }
 function tapStation(id) {
