@@ -461,7 +461,7 @@ coop(-10.6, 1.8, 0.35);
 const stallGroup = stall(STOP_X, 10.1, 0);
 // trees, grass and flowers are built in buildFlora() once the merge helpers below exist
 const TREES = [[-16, -3, 1.2, true], [-15.5, 0.4, 1.1, false], [-4.5, -14.5, 1.3, true], [7.5, -16, 1.2, false], [18, -3, 1.2, true], [17.5, 9.5, 1, false], [-21, 0.6, 1.1, true], [21, -14, 1.3, false], [-3.5, -9.5, 0.8, false]];
-const PINES = [[-26.5, 0.6, 1.1], [-13, -14.5, 1.2], [16.5, -9.5, 1.1], [20, 3.5, 1.2], [-22, -6, 1.3], [22, -8, 1.2]];
+const PINES = [[-26.5, 0.6, 1.1], [-13, -14.5, 1.2], [16.5, -9.5, 1.1], [20, 3.5, 1.2], [22, -8, 1.2]];
 for (const L of [TREES, PINES]) for (let i = L.length - 1; i >= 0; i -= 1) if (inDistrict(L[i][0], L[i][1])) L.splice(i, 1); // the building district is cleared of hand-placed trees
 
 // ================= Delivery truck =================
@@ -1339,19 +1339,21 @@ function applyView(p, v, first) {
 }
 const luxuryScene = new Map(), luxuryLoader = new THREE.TextureLoader();
 function syncLuxuryScene(luxury) {
-  const ids = [...(luxury?.decor || []), ...(luxury?.pets || [])];
+  const decor = luxury?.decor || [], pets = luxury?.pets || [], ids = [...decor, ...pets];
   for (const [id, sprite] of luxuryScene) if (!ids.includes(id)) { scene.remove(sprite); sprite.material.map.dispose(); sprite.material.dispose(); luxuryScene.delete(id); }
   for (const id of ids) {
-    if (luxuryScene.has(id)) continue;
-    const path = luxurySprite(id); if (!path) continue;
-    const texture = luxuryLoader.load(path); texture.encoding = THREE.sRGBEncoding;
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
-    const pet = cat().luxury[id]?.kind === 'pet';
-    const n = Object.values(cat().luxury).filter(item => item.kind === (pet ? 'pet' : 'decor')).findIndex(item => item.id === id);
-    const col = n ? (n - 1) % 5 - 2 : 0, row = n ? Math.floor((n - 1) / 5) - 2 : 0;
-    sprite.position.set(pet ? -17 + n % 4 * 1.7 : -21 + col * 2.2, pet ? 0.95 : 1.15, pet ? -10 + Math.floor(n / 4) * 1.7 : -13 + row * 2.2);
-    sprite.scale.set(pet ? 2 : 2.5, pet ? 2 : 2.5, 1);
-    scene.add(sprite); luxuryScene.set(id, sprite);
+    let sprite = luxuryScene.get(id);
+    if (!sprite) {
+      const path = luxurySprite(id); if (!path) continue;
+      const texture = luxuryLoader.load(path); texture.encoding = THREE.sRGBEncoding;
+      sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
+      scene.add(sprite); luxuryScene.set(id, sprite);
+    }
+    const pet = pets.includes(id), n = pet ? pets.indexOf(id) : decor.indexOf(id);
+    const row = Math.floor(n / 5), count = Math.min(5, decor.length - row * 5);
+    sprite.position.set(pet ? -17 + n % 4 * 2.2 : -21 + (n % 5 - (count - 1) / 2) * 2.9,
+      pet ? 0.95 : 1.15, pet ? -10 + Math.floor(n / 4) * 2.2 : -13 + (row - (Math.ceil(decor.length / 5) - 1) / 2) * 2.9);
+    sprite.scale.set(pet ? 1.8 : 2.1, pet ? 1.8 : 2.1, 1);
   }
 }
 let guardDogSprite;

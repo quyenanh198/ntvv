@@ -63,6 +63,10 @@ try {
       for (const id of artIds) db.prepare('INSERT OR IGNORE INTO luxury (owner_id, item, at) VALUES (1, ?, ?)').run(id, Date.now());
       await page.evaluate(() => __farm.refresh());
       await page.waitForFunction(count => __farm.luxuryScene.size === count && [...__farm.luxuryScene.values()].every(sprite => sprite.material.map.image?.width > 0), artIds.length);
+      assert.equal(await page.evaluate(() => {
+        const ids = __farm.store.me.luxury.decor, sprites = ids.map(id => __farm.luxuryScene.get(id));
+        return sprites.every((a, i) => sprites.slice(i + 1).every(b => a.position.distanceTo(b.position) > a.scale.x));
+      }), true, 'decorations do not share space');
       await page.evaluate(() => __farm.camTarget.set(-21, 0, -13));
       await page.waitForTimeout(600);
       await page.screenshot({ path: `${out}/gallery-full-390.png` });
