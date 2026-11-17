@@ -70,6 +70,11 @@ step('seed picker opens and collapses without hiding selection', await page.eval
 }));
 let st = await page.evaluate(() => ({ gold: __farm.store.me.gold, level: __farm.store.me.level, plots: __farm.plots.length, plotsCount: __farm.store.me.plotsCount, seed: __farm.G.seed, boot: document.querySelector('#boot').hidden }));
 step('loads real state', st.plots === st.plotsCount && st.plots === 12 && st.boot, JSON.stringify(st));
+step('every catalog crop has growing and ripe 3D geometry', await page.evaluate(() =>
+  Object.keys(__farm.store.catalog.crops).every(id => ['growing', 'ripe'].every(stage => {
+    const geo = __farm.template(id, stage);
+    return geo.attributes.position.count > 0 && Number.isFinite(geo.boundingSphere.radius);
+  }))));
 
 // CI WebKit has only software GL (about 0.4 fps there), which stretches every animation past any sane wait: boot and first state are the check on that engine
 if (engineName === 'webkit') { console.log('PASS webkit: 3D scene boots and loads server state (gameplay steps need a GPU, run on Chromium)'); await browser.close(); await app.close(); process.exit(0); }

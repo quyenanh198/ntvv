@@ -328,10 +328,10 @@ Mỗi giai đoạn là một nhánh và một PR riêng, có tiêu chí nghiệm
 
 Giới hạn đã biết của bản hiện tại:
 - Cảnh 3D vẽ đủ 96 ô mà server có thể cấp (12 ô chính và bảy khối mở rộng). Máy yếu có thể chậm khi có đủ ô; chưa đo trên điện thoại cũ.
-- Cây trồng dùng 4 họ mô hình cộng cây ăn quả, nhuộm màu quả theo từng loại; 10 họ ở §4.3 chưa đủ.
+- Cây trồng dùng đủ 10 họ mô hình trong §4.3 cộng cây ăn quả, nhuộm màu quả theo từng loại; ảnh chụp chuẩn cạnh sprite 2D chưa được duyệt.
 - Vật nuôi trong cảnh bị giới hạn số con hiển thị (xem P3); số thật vẫn nằm ở sheet Chuồng.
-- Ao cá và thủy sản chỉ có sheet, chưa có mô hình ao trong cảnh. Xa xỉ phẩm loại trang trí và thú cưng chưa hiện trong cảnh.
-- Chó canh vườn không có mô hình trong cảnh; chỉ biểu tượng 🐕 khi thăm nhà có chó.
+- Ao cá có mô hình trong cảnh để mở sheet thủy sản; xa xỉ phẩm loại trang trí và thú cưng hiện bằng tranh vẽ trong cảnh.
+- Chó canh vườn hiện bằng tranh vẽ gần nhà; hoạt cảnh chạy quanh ruộng vẫn chưa có.
 - Mô hình các tòa nhà và con vật là bản dựng bằng khối cơ bản, chưa qua vòng duyệt ảnh chụp chuẩn như §4.3.
 
 ## 9. Kiểm thử

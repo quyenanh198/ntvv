@@ -16,17 +16,17 @@ let MILL_LEVEL = 10; // đọc lại từ catalog (coixay.level) khi tải xong
 const MILL_X = 13, MILL_Z = 2.2;
 const ROAD_Z = 12.6, STOP_X = 7.5, FAR = 50; // road lane, where the truck stops (stall), off-screen distance
 const PLOT_CAP = 96; // every plot the server can grant (MAX_PLOTS): the 12 main plots plus seven farm blocks of 12
-// 36 cây trồng dùng 4 họ mô hình (+ cây ăn quả); mỗi cây có màu quả riêng.
+// 36 cây trồng dùng 10 họ mô hình (+ cây ăn quả); mỗi cây có màu quả riêng.
 const FAMILY = {
   luami: ['wheat'], gao: ['wheat', 0xe8d98a], me: ['wheat', 0xc9b27a],
   ngo: ['corn'], mia: ['corn', 0x8dbf4a], huongduong: ['corn', 0xf6c21c],
   carot: ['carrot'], khoaitay: ['carrot', 0xd9b26f], hanhtay: ['carrot', 0xd9a0c8], toi: ['carrot', 0xf3efe6], gung: ['carrot', 0xd9b872],
-  khoailang: ['carrot', 0xb0486e], dauphong: ['carrot', 0xd9b078], bapcai: ['carrot', 0x9ccf6a], bongcai: ['carrot', 0xf1eedc],
-  tra: ['carrot', 0x6fa84a], rauthom: ['carrot', 0x5faa4a], sa: ['carrot', 0x9cc86a], cansa: ['carrot', 0x5a9a3c], hoahong: ['carrot', 0xe0405a],
-  bongvai: ['carrot', 0xf6f2ea], nam: ['carrot', 0xe8dcc0],
-  bingo: ['pumpkin'], duahau: ['pumpkin', 0x4f9d4a], dualeo: ['pumpkin', 0x6fb84a], cachua: ['pumpkin', 0xe23b2e], catim: ['pumpkin', 0x6a3a8c],
-  ot: ['pumpkin', 0xd93a2a], dautay: ['pumpkin', 0xe0405a], nho: ['pumpkin', 0x7a4aa0], caphe: ['pumpkin', 0xc23b3b], cacao: ['pumpkin', 0xb8742e],
-  oliu: ['pumpkin', 0x7c8a3c], dauxanh: ['pumpkin', 0x7aa84a], thom: ['pumpkin', 0xe0b030], vani: ['pumpkin', 0xd8d0a0],
+  khoailang: ['carrot', 0xb0486e], dauphong: ['carrot', 0xd9b078], bapcai: ['brassica', 0x9ccf6a], bongcai: ['brassica', 0xf1eedc],
+  tra: ['leafy', 0x6fa84a], rauthom: ['leafy', 0x5faa4a], sa: ['leafy', 0x9cc86a], cansa: ['leafy', 0x5a9a3c], hoahong: ['flower', 0xe0405a],
+  bongvai: ['flower', 0xf6f2ea], nam: ['mushroom', 0xe8dcc0],
+  bingo: ['pumpkin'], duahau: ['pumpkin', 0x4f9d4a], dualeo: ['vine', 0x6fb84a], cachua: ['berry', 0xe23b2e], catim: ['berry', 0x6a3a8c],
+  ot: ['berry', 0xd93a2a], dautay: ['berry', 0xe0405a], nho: ['vine', 0x7a4aa0], caphe: ['berry', 0xc23b3b], cacao: ['berry', 0xb8742e],
+  oliu: ['berry', 0x7c8a3c], dauxanh: ['berry', 0x7aa84a], thom: ['special', 0xe0b030], vani: ['vine', 0xd8d0a0],
 };
 const TREE_COL = { cam: 0xf28a1c, tao: 0xe0402e, xoai: 0xf2b532, thanhlong: 0xe0405a, chanh: 0xc8d84a, dua: 0x8a6a3a, saurieng: 0xc8b84a,
   quabo: 0x4f7a3a, dao: 0xf4a8a0, anhdao: 0xd93a6a, coc: 0x9cc84a, chuoi: 0xf2d230, quame: 0x8a5a2a };
@@ -813,6 +813,91 @@ const BUILD = {
     };
     if (ripe) { pk(0.15, 0.1, 0.62, 0xf28a1c); pk(-0.6, -0.45, 0.36, 0xee7e16); }
     else pk(0.1, 0.05, 0.3, 0x9cc24a);
+    return merge(p);
+  },
+  vine(ripe) {
+    const p = [];
+    for (const x of [-0.65, 0.65]) {
+      limb(p, UG.cyl, 0xa67845, x, 0, -0.7, 0.045, 1.6, 0, 0);
+      limb(p, UG.cyl, 0xa67845, x, 0, 0.7, 0.045, 1.6, 0, 0);
+      for (const y of [0.55, 1.1, 1.55]) limb(p, UG.cyl, 0xb78b55, x, y, -0.7, 0.026, 1.4, Math.PI / 2, 0);
+    }
+    for (let i = 0; i < 12; i++) {
+      const x = (i % 4 - 1.5) * 0.42, z = (Math.floor(i / 4) - 1) * 0.5, y = 0.55 + i % 3 * 0.35;
+      part(p, UG.ico, vary(0x4d9a42), x, y, z, 0.25, 0.06, 0.18, 0, i);
+      if (ripe && i % 2 === 0) for (let k = 0; k < 3; k++) part(p, UG.sph, 0xe44435, x + k * 0.09, y - 0.17 - k * 0.08, z, 0.09, 0.11, 0.09);
+    }
+    return merge(p);
+  },
+  berry(ripe) {
+    const p = [];
+    grid(3, 3, 0.65, 0.62, (x, z) => {
+      for (let k = 0; k < 5; k++) {
+        const a = k * Math.PI * 2 / 5, h = ripe ? 0.65 : 0.38;
+        limb(p, UG.cone, vary(0x4b9b38), x, 0, z, 0.08, h, 0.35, a, 0.5);
+        part(p, UG.ico, vary(0x5baa42), x + Math.sin(a) * 0.25, h * 0.8, z + Math.cos(a) * 0.25, 0.23, 0.15, 0.2);
+        if (ripe && k % 2 === 0) part(p, UG.sph, 0xe23b2e, x + Math.sin(a) * 0.31, h * 0.65, z + Math.cos(a) * 0.31, 0.11, 0.12, 0.11);
+      }
+    });
+    return merge(p);
+  },
+  leafy(ripe) {
+    const p = [];
+    grid(3, 3, 0.62, 0.58, (x, z) => {
+      for (let k = 0; k < 8; k++) {
+        const a = k * Math.PI * 2 / 8, h = ripe ? 0.6 : 0.36;
+        part(p, UG.ico, vary(k % 2 ? 0x4f9d35 : 0x79b84b), x + Math.sin(a) * 0.17, h * 0.55 + k % 3 * 0.06, z + Math.cos(a) * 0.17, 0.22, 0.09, 0.12, 0.45, a);
+      }
+    });
+    return merge(p);
+  },
+  brassica(ripe) {
+    const p = [];
+    grid(3, 3, 0.65, 0.62, (x, z) => {
+      const r = ripe ? 0.3 : 0.19;
+      for (let k = 0; k < 7; k++) {
+        const a = k * Math.PI * 2 / 7;
+        part(p, UG.ico, vary(0x5ca83b), x + Math.sin(a) * r, 0.15, z + Math.cos(a) * r, 0.21, 0.12, 0.16, 0.4, a);
+      }
+      part(p, UG.sph, ripe ? 0xf1eedc : 0x8fca68, x, ripe ? 0.28 : 0.18, z, r * 0.8, r * 0.7, r * 0.8);
+    });
+    return merge(p);
+  },
+  flower(ripe) {
+    const p = [];
+    grid(3, 3, 0.63, 0.6, (x, z) => {
+      const h = ripe ? 0.85 : 0.48;
+      limb(p, UG.cyl, 0x4f9d38, x, 0, z, 0.035, h, 0, 0);
+      for (let k = 0; k < 5; k++) {
+        const a = k * Math.PI * 2 / 5;
+        part(p, UG.ico, 0x5eaa42, x + Math.sin(a) * 0.18, h * 0.5, z + Math.cos(a) * 0.18, 0.14, 0.05, 0.11, 0.4, a);
+        if (ripe) part(p, UG.sph, 0xe54b65, x + Math.sin(a) * 0.12, h, z + Math.cos(a) * 0.12, 0.12, 0.06, 0.08);
+      }
+      if (ripe) part(p, UG.sph, 0xf2c950, x, h, z, 0.08, 0.07, 0.08);
+    });
+    return merge(p);
+  },
+  special(ripe) {
+    const p = [];
+    grid(3, 3, 0.65, 0.6, (x, z) => {
+      for (let k = 0; k < 5; k++) {
+        const a = k * Math.PI * 2 / 5, h = ripe ? 0.6 : 0.35;
+        limb(p, UG.cone, 0x5ca33b, x, 0, z, 0.08, h, 0.65, a, 0.3);
+      }
+      if (ripe) {
+        part(p, UG.sph, 0xe8a83c, x, 0.45, z, 0.19, 0.33, 0.19);
+        for (let k = 0; k < 5; k++) part(p, UG.cone, 0x4b9d3e, x, 0.8, z, 0.08, 0.26, 0.6, k * Math.PI * 2 / 5);
+      }
+    });
+    return merge(p);
+  },
+  mushroom(ripe) {
+    const p = [];
+    grid(4, 3, 0.5, 0.58, (x, z) => {
+      const h = ripe ? rand(0.35, 0.55) : 0.2;
+      part(p, UG.cyl, 0xf1e5c5, x, h * 0.45, z, 0.055, h * 0.9, 0.055);
+      part(p, UG.sph, ripe ? 0xcc704c : 0x9ab671, x, h, z, ripe ? 0.21 : 0.13, 0.1, ripe ? 0.21 : 0.13);
+    });
     return merge(p);
   },
 };
@@ -1885,7 +1970,7 @@ function frame(t) {
   if (!document.hidden) adaptQuality(gap);
 }
 requestAnimationFrame(frame);
-if (location.hash === '#debug') window.__farm = { get layout() { return layout; }, editCell, get EDIT() { return EDIT; }, get stations() { return stations; }, get herd() { return herd; }, animals, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, pondHit, toScreen, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
+if (location.hash === '#debug') window.__farm = { get layout() { return layout; }, editCell, get EDIT() { return EDIT; }, get stations() { return stations; }, get herd() { return herd; }, animals, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, pondHit, toScreen, tapMill, template, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
 
 if (location.hash === '#debug') Object.defineProperty(window.__farm, 'luxuryScene', { get: () => luxuryScene });
 if (location.hash === '#debug') Object.defineProperty(window.__farm, 'guardDogSprite', { get: () => guardDogSprite });
