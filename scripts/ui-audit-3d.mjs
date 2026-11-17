@@ -49,10 +49,14 @@ try {
       await page.click('#storeClose');
       await page.evaluate(() => __farm.refresh());
       await page.waitForFunction(() => __farm.luxuryScene.size === 2 && [...__farm.luxuryScene.values()].every(sprite => sprite.material.map.image?.width > 0));
+      await page.waitForFunction(() => __farm.guardDogSprite?.visible);
+      const dogStart = await page.evaluate(() => __farm.guardDogSprite.position.clone().toArray());
+      await page.waitForTimeout(1200);
+      assert.equal(await page.evaluate(start => __farm.guardDogSprite.position.distanceTo({ x: start[0], y: start[1], z: start[2] }) > 0.5, dogStart), true, 'guard dog patrols');
       await page.evaluate(() => { __farm.camTarget.set(-19, 0, -13); __farm.setZoom(0.8); });
       await page.waitForTimeout(500);
       await page.screenshot({ path: `${out}/gallery-390.png` });
-      await page.evaluate(() => __farm.camTarget.set(-8, 0, -5));
+      await page.evaluate(() => __farm.camTarget.set(__farm.guardDogSprite.position.x, 0, __farm.guardDogSprite.position.z));
       await page.waitForTimeout(500);
       await page.screenshot({ path: `${out}/guard-dog-390.png` });
       const artIds = Object.values(LUXURY).filter(item => item.kind === 'decor' || item.kind === 'pet').map(item => item.id);

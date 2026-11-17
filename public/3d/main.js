@@ -1359,7 +1359,7 @@ function syncGuardDog(active) {
   if (active && !guardDogSprite) {
     const texture = luxuryLoader.load('assets/pets-v3/companion-dog.png'); texture.encoding = THREE.sRGBEncoding;
     guardDogSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
-    guardDogSprite.position.set(-7.2, 1.1, -4.3); guardDogSprite.scale.set(2.2, 2.2, 1); scene.add(guardDogSprite);
+    guardDogSprite.position.set(-5, 1.1, 3); guardDogSprite.scale.set(2.2, 2.2, 1); scene.add(guardDogSprite);
   }
   if (guardDogSprite) guardDogSprite.visible = !!active;
 }
@@ -1896,6 +1896,10 @@ function frame(t) {
   const w0 = performance.now(), gap = t - last;
   const dt = Math.min(gap / 1000, 0.05); last = t; time += dt;
   windU.value = time;
+  if (guardDogSprite?.visible) {
+    const a = time * 0.45 + Math.PI;
+    guardDogSprite.position.set(2 + Math.cos(a) * 7, 1.1 + Math.abs(Math.sin(time * 7)) * 0.08, 3 + Math.sin(a) * 5);
+  }
   zoom += (zoomGoal - zoom) * (1 - Math.exp(-8 * dt));
   if (intro > 1) intro = Math.max(1, intro - dt * 0.9 * (intro - 0.95));
   if (!$('#boot').hidden) intro = Math.max(intro, 1.25);
