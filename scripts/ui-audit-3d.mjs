@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { chromium } from 'playwright';
 import { buildApp } from '../server/src/app.js';
 import { openDb } from '../server/src/db.js';
+import { LUXURY } from '../server/src/game.js';
 
 const out = process.argv[2] || 'artifacts/ui-audit-3d';
 mkdirSync(out, { recursive: true });
@@ -41,6 +42,30 @@ try {
     await page.screenshot({ path: `${out}/inventory-${width}.png` });
     assert.equal(await page.locator('#storeTitle').textContent(), 'Kho nông sản');
     assert.equal(await page.locator('#store .sheet').evaluate(el => el.scrollWidth > el.clientWidth), false, `${width}px inventory overflow`);
+    if (width === 390) {
+      db.prepare('INSERT INTO luxury (owner_id, item, at) VALUES (1, ?, ?)').run('vuonhoa', Date.now());
+      db.prepare('INSERT INTO luxury (owner_id, item, at) VALUES (1, ?, ?)').run('petcho', Date.now());
+      db.prepare('UPDATE farmers SET dog_until = ? WHERE user_id = 1').run(Date.now() + 3600000);
+      await page.click('#storeClose');
+      await page.evaluate(() => __farm.refresh());
+      await page.waitForFunction(() => __farm.luxuryScene.size === 2 && [...__farm.luxuryScene.values()].every(sprite => sprite.material.map.image?.width > 0));
+      await page.evaluate(() => { __farm.camTarget.set(-19, 0, -13); __farm.setZoom(0.8); });
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: `${out}/gallery-390.png` });
+      await page.evaluate(() => __farm.camTarget.set(-8, 0, -5));
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: `${out}/guard-dog-390.png` });
+      const artIds = Object.values(LUXURY).filter(item => item.kind === 'decor' || item.kind === 'pet').map(item => item.id);
+      for (const id of artIds) db.prepare('INSERT OR IGNORE INTO luxury (owner_id, item, at) VALUES (1, ?, ?)').run(id, Date.now());
+      await page.evaluate(() => __farm.refresh());
+      await page.waitForFunction(count => __farm.luxuryScene.size === count && [...__farm.luxuryScene.values()].every(sprite => sprite.material.map.image?.width > 0), artIds.length);
+      await page.evaluate(() => __farm.camTarget.set(-21, 0, -13));
+      await page.waitForTimeout(600);
+      await page.screenshot({ path: `${out}/gallery-full-390.png` });
+      console.log(`Full gallery draw calls: ${await page.evaluate(() => __farm.renderer.info.render.calls)}`);
+      db.prepare('DELETE FROM luxury WHERE owner_id = 1').run();
+      db.prepare('UPDATE farmers SET dog_until = 0 WHERE user_id = 1').run();
+    }
     assert.deepEqual(errors, [], `${width}px browser errors`);
     console.log(`PASS 3D UI ${width}px`);
     await page.close();

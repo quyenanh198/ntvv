@@ -1,7 +1,7 @@
 import * as THREE from '../vendor/0.149.0/three.module.js';
 import { net, serverNow, api } from './net.js';
 import { store, refresh, act as doAct, subscribe } from './store.js';
-import { itemSprite, animalSprite } from './art.js';
+import { itemSprite, animalSprite, luxurySprite } from './art.js';
 import { renderExtra } from './sheets.js';
 import { createStations } from './stations.js';
 import { GRID, ROWS, STREET_PATHS, createLayout, inDistrict, spanCenter } from './layout.js';
@@ -460,7 +460,7 @@ greenhouse(10.5, -5.2, -0.25);
 coop(-10.6, 1.8, 0.35);
 const stallGroup = stall(STOP_X, 10.1, 0);
 // trees, grass and flowers are built in buildFlora() once the merge helpers below exist
-const TREES = [[-16, -3, 1.2, true], [-15.5, 0.4, 1.1, false], [-4.5, -14.5, 1.3, true], [7.5, -16, 1.2, false], [18, -3, 1.2, true], [17.5, 9.5, 1, false], [-21, 0.6, 1.1, true], [-19, -12, 1.4, false], [21, -14, 1.3, false], [-3.5, -9.5, 0.8, false]];
+const TREES = [[-16, -3, 1.2, true], [-15.5, 0.4, 1.1, false], [-4.5, -14.5, 1.3, true], [7.5, -16, 1.2, false], [18, -3, 1.2, true], [17.5, 9.5, 1, false], [-21, 0.6, 1.1, true], [21, -14, 1.3, false], [-3.5, -9.5, 0.8, false]];
 const PINES = [[-26.5, 0.6, 1.1], [-13, -14.5, 1.2], [16.5, -9.5, 1.1], [20, 3.5, 1.2], [-22, -6, 1.3], [22, -8, 1.2]];
 for (const L of [TREES, PINES]) for (let i = L.length - 1; i >= 0; i -= 1) if (inDistrict(L[i][0], L[i][1])) L.splice(i, 1); // the building district is cleared of hand-placed trees
 
@@ -1252,6 +1252,32 @@ function applyView(p, v, first) {
     p.mat.color.set(0x7d4d2b);
   }
 }
+const luxuryScene = new Map(), luxuryLoader = new THREE.TextureLoader();
+function syncLuxuryScene(luxury) {
+  const ids = [...(luxury?.decor || []), ...(luxury?.pets || [])];
+  for (const [id, sprite] of luxuryScene) if (!ids.includes(id)) { scene.remove(sprite); sprite.material.map.dispose(); sprite.material.dispose(); luxuryScene.delete(id); }
+  for (const id of ids) {
+    if (luxuryScene.has(id)) continue;
+    const path = luxurySprite(id); if (!path) continue;
+    const texture = luxuryLoader.load(path); texture.encoding = THREE.sRGBEncoding;
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
+    const pet = cat().luxury[id]?.kind === 'pet';
+    const n = Object.values(cat().luxury).filter(item => item.kind === (pet ? 'pet' : 'decor')).findIndex(item => item.id === id);
+    const col = n ? (n - 1) % 5 - 2 : 0, row = n ? Math.floor((n - 1) / 5) - 2 : 0;
+    sprite.position.set(pet ? -17 + n % 4 * 1.7 : -21 + col * 2.2, pet ? 0.95 : 1.15, pet ? -10 + Math.floor(n / 4) * 1.7 : -13 + row * 2.2);
+    sprite.scale.set(pet ? 2 : 2.5, pet ? 2 : 2.5, 1);
+    scene.add(sprite); luxuryScene.set(id, sprite);
+  }
+}
+let guardDogSprite;
+function syncGuardDog(active) {
+  if (active && !guardDogSprite) {
+    const texture = luxuryLoader.load('assets/pets-v3/companion-dog.png'); texture.encoding = THREE.sRGBEncoding;
+    guardDogSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
+    guardDogSprite.position.set(-7.2, 1.1, -4.3); guardDogSprite.scale.set(2.2, 2.2, 1); scene.add(guardDogSprite);
+  }
+  if (guardDogSprite) guardDogSprite.visible = !!active;
+}
 function onState() {
   const me = store.me, first = !lastMe;
   syncLayout(me);
@@ -1271,7 +1297,7 @@ function onState() {
     else if (lastMe.level < MILL_LEVEL) { mill.state = 'pending'; setTimeout(unlockMill, 1700); }
   }
   lastMe = me;
-  renderSeeds(); renderHUD(); ensureStations(); ensureHerd(); if (!VISIT) herd.sync(me);
+  renderSeeds(); renderHUD(); ensureStations(); ensureHerd(); if (!VISIT) { herd.sync(me); syncLuxuryScene(me.luxury); syncGuardDog(me.dog?.active); }
 }
 subscribe(onState);
 
@@ -1861,6 +1887,8 @@ function frame(t) {
 requestAnimationFrame(frame);
 if (location.hash === '#debug') window.__farm = { get layout() { return layout; }, editCell, get EDIT() { return EDIT; }, get stations() { return stations; }, get herd() { return herd; }, animals, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, pondHit, toScreen, tapMill, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
 
+if (location.hash === '#debug') Object.defineProperty(window.__farm, 'luxuryScene', { get: () => luxuryScene });
+if (location.hash === '#debug') Object.defineProperty(window.__farm, 'guardDogSprite', { get: () => guardDogSprite });
 // ================= Production: machines and barns, every outcome decided by the server =================
 const prodSheet = $('#prodSheet');
 let prodMode = null, prodMachine = 'coixay', prodBusy = false;
@@ -2071,6 +2099,8 @@ ERR.own_farm = 'Đây là nhà bạn'; ERR.already_poached = 'Bạn đã hái ô
 ERR.caught_by_dog = 'Chó canh vườn bắt được bạn!'; ERR.not_ready = 'Cây chưa chín';
 function showVisit() {
   const f = VISIT.farm;
+  syncLuxuryScene(f.luxury);
+  syncGuardDog(f.dogUntil > serverNow());
   ensurePlots(f.plotsCount, true);
   const byIdx = new Map(f.plots.map(v => [v.idx, v]));
   for (const p of plots) {
@@ -2130,6 +2160,8 @@ async function visitFarm(id) {
 }
 function leaveVisit() {
   VISIT = null; visitBar.hidden = true; $('#visitActs').hidden = true; document.body.classList.remove('visiting');
+  syncLuxuryScene(store.me.luxury);
+  syncGuardDog(store.me.dog?.active);
   for (const p of plots) { p.marker.visible = false; p.pending = null; }
   const me = store.me; ensurePlots(me.plotsCount, true);
   const byIdx = new Map(me.plots.map(v => [v.idx, v]));

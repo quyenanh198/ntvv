@@ -55,6 +55,11 @@ await page.mouse.click(pond.x, pond.y);
 await page.waitForFunction(() => !document.querySelector('#prodSheet').hidden && document.querySelector('#prodTitle').textContent === 'Ao cá');
 step('3D pond opens the fish sheet', true);
 await page.click('#prodClose');
+db.prepare('INSERT INTO luxury (owner_id, item, at) VALUES (1, ?, ?)').run('vuonhoa', Date.now());
+db.prepare('INSERT INTO luxury (owner_id, item, at) VALUES (1, ?, ?)').run('petcho', Date.now());
+await page.evaluate(() => __farm.refresh());
+await page.waitForFunction(() => __farm.luxuryScene.size === 2 && [...__farm.luxuryScene.values()].every(sprite => sprite.material.map.image?.width > 0));
+step('owned decoration and pet appear in the 3D scene', true);
 step('seed picker opens and collapses without hiding selection', await page.evaluate(() => {
   const tray = document.querySelector('.tray'), toggle = document.querySelector('#seedToggle');
   const collapsed = tray.classList.contains('seeds-collapsed') && toggle.getAttribute('aria-expanded') === 'false';
@@ -197,6 +202,7 @@ await page.waitForFunction(() => document.body.classList.contains('visiting'), n
 await wait(500);
 await page.screenshot({ path: `${out}/e2e-11-visit.png` });
 step('visiting shows the neighbour\'s land', await page.evaluate(() => __farm.plots[0].state === 'ripe' && __farm.plots[1].state === 'growing' && document.querySelector('#visitName').textContent.includes('Hàng Xóm')));
+step('visitor scene hides my decorations', await page.evaluate(() => __farm.luxuryScene.size === 0));
 await page.evaluate(() => __farm.tapPlot(__farm.plots[0]));
 await page.waitForFunction((n) => (__farm.store.me.inventory.luami || 0) > n, stockBefore, { timeout: 60000 });
 step('poach: the server grants the item', true);
@@ -234,6 +240,7 @@ await page.click('#prodClose');
 await page.evaluate(() => __farm.visitFarm(2));
 await page.evaluate(() => __farm.leaveVisit());
 step('back home restores my farm', await page.evaluate(() => !document.body.classList.contains('visiting') && __farm.plots[0].cropKey === null));
+step('returning home restores my decoration and pet', await page.evaluate(() => __farm.luxuryScene.size === 2));
 await page.screenshot({ path: `${out}/e2e-12-home.png` });
 
 // ---- dynamic layout: farm blocks and workshops never overlap; the player can rearrange ----
@@ -313,6 +320,8 @@ for (const mode of MODES) {
     await page.click('#prodRows .row button:not([disabled])');
     await page.waitForFunction(() => __farm.store.me.dog.active, null, { timeout: 60000 });
     step('dog hired; server records it', true);
+    await page.waitForFunction(() => __farm.guardDogSprite?.visible && __farm.guardDogSprite.material.map.image?.width > 0);
+    step('active guard dog appears in the 3D scene', true);
   }
   if (mode === 'fish') {
     const before = await page.evaluate(() => __farm.store.me.energy.current);
