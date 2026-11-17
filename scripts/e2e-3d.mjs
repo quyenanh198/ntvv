@@ -75,6 +75,13 @@ step('every catalog crop has growing and ripe 3D geometry', await page.evaluate(
     const geo = __farm.template(id, stage);
     return geo.attributes.position.count > 0 && Number.isFinite(geo.boundingSphere.radius);
   }))));
+step('tree species have distinct canopies and fruit stock changes their model', await page.evaluate(() => {
+  const ids = Object.keys(__farm.store.catalog.trees);
+  const models = ids.map(id => [__farm.template(id, 'grow'), __farm.template(id, 'ripe', 0), __farm.template(id, 'ripe', 12)]);
+  return ids.length === 13 && models.every(([grow, empty, full]) => grow.attributes.position.count > 0
+    && full.attributes.position.count > empty.attributes.position.count)
+    && new Set(['cam', 'dua', 'xoai'].map(id => Array.from(__farm.template(id, 'grow').attributes.position.array).map(n => n.toFixed(2)).join(','))).size === 3;
+}));
 
 // CI WebKit has only software GL (about 0.4 fps there), which stretches every animation past any sane wait: boot and first state are the check on that engine
 if (engineName === 'webkit') { console.log('PASS webkit: 3D scene boots and loads server state (gameplay steps need a GPU, run on Chromium)'); await browser.close(); await app.close(); process.exit(0); }
@@ -341,6 +348,17 @@ for (const mode of MODES) {
     await page.click('#prodRows .row button:has-text("Trồng"):not([disabled]) >> nth=0');
     await page.waitForFunction(() => __farm.store.me.plots.some((p) => p.tree), null, { timeout: 60000 });
     step('fruit tree planted by the server', true);
+    db.prepare('UPDATE plots SET fruit_stock = 6 WHERE owner_id = 1 AND tree = 1').run();
+    await page.evaluate(() => __farm.refresh());
+    await page.waitForFunction(() => __farm.plots.some(p => p.isTree && p.stage === 'ripe:6' && p.tag.textContent.includes('×6')));
+    const fruitVertices = await page.evaluate(() => __farm.plots.find(p => p.isTree).crop.geometry.attributes.position.count);
+    db.prepare('UPDATE plots SET fruit_stock = 2 WHERE owner_id = 1 AND tree = 1').run();
+    await page.evaluate(() => __farm.refresh());
+    await page.waitForFunction(() => __farm.plots.some(p => p.isTree && p.stage === 'ripe:2' && p.tag.textContent.includes('×2')));
+    step('tree fruit model and count follow server stock', await page.evaluate(before => __farm.plots.find(p => p.isTree).crop.geometry.attributes.position.count < before, fruitVertices));
+    db.prepare('UPDATE plots SET fruit_stock = 0 WHERE owner_id = 1 AND tree = 1').run();
+    await page.evaluate(() => __farm.refresh());
+    await page.waitForFunction(() => __farm.plots.some(p => p.isTree && p.fruits === 0 && p.state === 'growing'));
   }
   if (mode === 'speed') {
     const g = await page.evaluate(() => __farm.store.me.gems);

@@ -328,7 +328,7 @@ Mỗi giai đoạn là một nhánh và một PR riêng, có tiêu chí nghiệm
 
 Giới hạn đã biết của bản hiện tại:
 - Cảnh 3D vẽ đủ 96 ô mà server có thể cấp (12 ô chính và bảy khối mở rộng). Máy yếu có thể chậm khi có đủ ô; chưa đo trên điện thoại cũ.
-- Cây trồng dùng đủ 10 họ mô hình trong §4.3 cộng cây ăn quả, nhuộm màu quả theo từng loại; ảnh chụp chuẩn cạnh sprite 2D chưa được duyệt.
+- Cây trồng dùng đủ 10 họ mô hình trong §4.3; cây ăn quả có ba khung tán, màu quả và nhãn số quả theo server (tối đa 12 quả dựng trên mô hình để giữ hiệu năng). Ảnh chụp chuẩn cạnh sprite 2D chưa được duyệt.
 - Vật nuôi trong cảnh bị giới hạn số con hiển thị (xem P3); số thật vẫn nằm ở sheet Chuồng.
 - Ao cá có mô hình trong cảnh để mở sheet thủy sản; xa xỉ phẩm loại trang trí và thú cưng hiện bằng tranh vẽ trong cảnh.
 - Chó canh vườn hiện bằng tranh vẽ và tuần tra quanh ruộng chính; chưa có mô hình 3D riêng.

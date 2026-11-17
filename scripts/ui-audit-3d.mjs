@@ -76,6 +76,11 @@ try {
     }
     if (width === 1280) {
       await page.click('#storeClose');
+      assert.equal(await page.evaluate(() => {
+        const ids = Object.keys(__farm.store.catalog.trees);
+        return ids.length === 13 && ids.every(id => __farm.template(id, 'ripe', 12).attributes.position.count > __farm.template(id, 'ripe', 0).attributes.position.count)
+          && new Set(['cam', 'dua', 'xoai'].map(id => Array.from(__farm.template(id, 'grow').attributes.position.array).map(n => n.toFixed(2)).join(','))).size === 3;
+      }), true, 'tree canopies and fruit stock');
       await page.evaluate(() => {
         const ids = ['luami', 'ngo', 'carot', 'bingo', 'nho', 'cachua', 'tra', 'bapcai', 'hoahong', 'nam'];
         ids.forEach((id, i) => { const p = __farm.plots[i]; p.crop.geometry = __farm.template(id, 'ripe'); p.crop.visible = true; });
@@ -83,6 +88,12 @@ try {
       });
       await page.waitForTimeout(400);
       await page.screenshot({ path: `${out}/crop-families-1280.png` });
+      await page.evaluate(() => {
+        const ids = ['cam', 'dua', 'xoai', 'chuoi', 'tao', 'saurieng', 'quabo', 'thanhlong', 'dao', 'chanh'];
+        ids.forEach((id, i) => { const p = __farm.plots[i]; p.crop.geometry = __farm.template(id, 'ripe', 6); });
+      });
+      await page.waitForTimeout(300);
+      await page.screenshot({ path: `${out}/tree-families-1280.png` });
     }
     assert.deepEqual(errors, [], `${width}px browser errors`);
     console.log(`PASS 3D UI ${width}px`);

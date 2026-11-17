@@ -30,6 +30,8 @@ const FAMILY = {
 };
 const TREE_COL = { cam: 0xf28a1c, tao: 0xe0402e, xoai: 0xf2b532, thanhlong: 0xe0405a, chanh: 0xc8d84a, dua: 0x8a6a3a, saurieng: 0xc8b84a,
   quabo: 0x4f7a3a, dao: 0xf4a8a0, anhdao: 0xd93a6a, coc: 0x9cc84a, chuoi: 0xf2d230, quame: 0x8a5a2a };
+const TROPICAL_TREES = new Set(['dua', 'chuoi']);
+const DENSE_TREES = new Set(['xoai', 'saurieng', 'thanhlong']);
 const cropColor = (id) => (FAMILY[id] && FAMILY[id][1]) ?? TREE_COL[id] ?? 0xf2b532;
 const G = { seed: null, holdGold: null }; // seed: hạt đang chọn; holdGold: vàng hiển thị chờ xe tải đi khỏi
 
@@ -901,12 +903,24 @@ const BUILD = {
     return merge(p);
   },
 };
-BUILD.tree = function (ripe) {
+BUILD.tree = function (ripe, id, fruits = 7) {
   const p = [];
-  part(p, UG.cyl, 0x7a5230, 0, 0.45, 0, 0.1, 0.9, 0.1);
-  [[0, 1.15, 0, 0.6, 0x5a9e36], [0.35, 0.95, 0.1, 0.4, 0x4f9431], [-0.35, 1.0, -0.1, 0.42, 0x4f9431], [0, 1.5, 0, 0.4, 0x6db542]]
-    .forEach(([x, y, z, r, c]) => part(p, UG.sph, vary(c, 0.01, 0.03), x, y, z, r, r * 0.9, r));
-  if (ripe) for (let i = 0; i < 7; i++) { const a = i / 7 * 6.28; part(p, UG.ico, 0xe0402e, Math.cos(a) * 0.5, 1.1 + 0.25 * Math.sin(i * 2.1), Math.sin(a) * 0.5, 0.1, 0.1, 0.1); }
+  const tropical = TROPICAL_TREES.has(id), dense = DENSE_TREES.has(id);
+  part(p, UG.cyl, 0x7a5230, 0, tropical ? 0.75 : 0.45, 0, tropical ? 0.075 : 0.1, tropical ? 1.5 : 0.9, tropical ? 0.075 : 0.1);
+  if (tropical) for (let i = 0; i < 9; i++) {
+    const a = i / 9 * Math.PI * 2;
+    part(p, UG.cone, vary(i % 2 ? 0x4f9d3d : 0x6aad47), Math.sin(a) * 0.47, 1.46, Math.cos(a) * 0.47, 0.26, 1.25, 0.14, 0.7, a);
+  } else {
+    const crown = dense
+      ? [[0, 1.15, 0, 0.7], [0.48, 1.05, 0.16, 0.5], [-0.48, 1.06, -0.13, 0.5], [0, 1.55, 0, 0.53]]
+      : [[0, 1.15, 0, 0.6], [0.35, 0.95, 0.1, 0.4], [-0.35, 1, -0.1, 0.42], [0, 1.5, 0, 0.4]];
+    crown.forEach(([x, y, z, r], i) => part(p, UG.sph, vary(i % 2 ? 0x4f9431 : 0x6db542, 0.01, 0.03), x, y, z, r, r * 0.9, r));
+  }
+  if (ripe) for (let i = 0; i < fruits; i++) {
+    const a = i * 2.4, radius = tropical ? 0.27 : dense ? 0.69 : 0.52;
+    const y = tropical ? 1.35 - i % 3 * 0.09 : 1.02 + (i % 4) * 0.14;
+    part(p, UG.ico, 0xe0402e, Math.cos(a) * radius, y, Math.sin(a) * radius, 0.1, 0.12, 0.1);
+  }
   return merge(p);
 };
 // Quả/củ (màu ấm) được nhuộm theo từng loại cây; lá giữ nguyên màu xanh.
@@ -921,13 +935,15 @@ function recolor(geo, tint) {
   col.needsUpdate = true;
 }
 const templates = {};
-function template(id, stage) {
-  const key = stage === 'seed' ? 'seed' : id + stage;
+function template(id, stage, fruits = 7) {
+  // shortcut: draw at most 12 fruits per tree; the label shows the full stock when fruit counts grow large.
+  const tree = TREE_COL[id] !== undefined, visibleFruits = Math.min(12, Math.max(0, fruits));
+  const key = stage === 'seed' ? 'seed' : id + stage + (tree && stage === 'ripe' ? visibleFruits : '');
   if (!templates[key]) {
     if (stage === 'seed') templates[key] = BUILD.seed();
     else {
       const [fam, tint] = FAMILY[id] || (TREE_COL[id] !== undefined ? ['tree', TREE_COL[id]] : ['wheat']);
-      const g = BUILD[fam](stage === 'ripe');
+      const g = BUILD[fam](stage === 'ripe', id, visibleFruits);
       if (tint != null && stage === 'ripe') recolor(g, tint);
       templates[key] = g;
     }
@@ -988,7 +1004,7 @@ function makePlot(i) {
   const crop = new THREE.Mesh(template('luami', 'seed'), cropMat); crop.position.set(x, 0.3, z); crop.visible = false; crop.castShadow = true; scene.add(crop);
   const marker = mesh(markerGeo, toon(0xff9a2e, {}), x, 2.2, z); marker.visible = false;
   const tag = document.createElement('div'); tag.className = 'tag'; tag.hidden = true; tagsEl.appendChild(tag);
-  const plot = { i, x, z, soil, mat, crop, marker, tag, state: 'empty', stage: null, cropKey: null, isTree: false, serverReady: false, watered: false, plantedAt: 0, readyAt: 0, dur: 1, pending: null, busy: false, pop: 1, out: 0, birth: 1 };
+  const plot = { i, x, z, soil, mat, crop, marker, tag, state: 'empty', stage: null, cropKey: null, isTree: false, fruits: 0, serverReady: false, watered: false, plantedAt: 0, readyAt: 0, dur: 1, pending: null, busy: false, pop: 1, out: 0, birth: 1 };
   soil.userData.plot = plot; plots.push(plot); hitTargets.push(soil);
   return plot;
 }
@@ -1321,7 +1337,7 @@ function applyView(p, v, first) {
   if (v.crop) {
     p.cropKey = v.crop; p.isTree = !!v.tree; p.plantedAt = v.plantedAt / 1000;
     p.readyAt = (v.readyAt ?? v.plantedAt) / 1000; p.dur = Math.max(1, p.readyAt - p.plantedAt);
-    p.serverReady = !!v.ready; p.watered = !!v.watered;
+    p.serverReady = !!v.ready; p.watered = !!v.watered; p.fruits = v.fruits || 0;
     if (p.state === 'empty') { p.state = 'growing'; p.stage = null; p.out = 0; p.crop.position.y = 0.3; }
     else if (p.state === 'ripe' && !p.serverReady && p.isTree) { p.state = 'growing'; p.stage = null; }
     p.mat.color.set(p.watered ? 0x55331c : 0x7d4d2b);
@@ -1333,7 +1349,7 @@ function applyView(p, v, first) {
       emit(p.x, 0.8, p.z, 0x7fc44a, 14, { speed: 2, up: 3, size: 0.14, spread: 0.7 });
       p.out = 1; sfx.harvest();
     } else p.crop.visible = false;
-    Object.assign(p, { state: 'empty', stage: null, cropKey: null, watered: false, isTree: false, serverReady: false });
+    Object.assign(p, { state: 'empty', stage: null, cropKey: null, watered: false, isTree: false, fruits: 0, serverReady: false });
     p.mat.color.set(0x7d4d2b);
   }
 }
@@ -1921,10 +1937,10 @@ function frame(t) {
       const prog = (n - p.plantedAt) / p.dur;
       // Cây thường chín khi đồng hồ tới readyAt; cây ăn quả chỉ chín khi server báo còn quả.
       const ripeNow = p.serverReady || (!p.isTree && n >= p.readyAt);
-      const stage = ripeNow ? 'ripe' : prog < 0.3 ? 'seed' : 'grow';
+      const stage = ripeNow ? 'ripe' + (p.isTree ? ':' + Math.min(12, p.fruits) : '') : prog < 0.3 ? 'seed' : 'grow';
       if (stage !== p.stage) {
-        p.stage = stage; p.crop.geometry = template(p.cropKey, stage); p.crop.visible = true; p.pop = 0;
-        if (stage === 'ripe') { p.state = 'ripe'; sfx.ripe(); emit(p.x, 1, p.z, 0xfff2a0, 14, { speed: 1, up: 2, grav: -0.5, life: 1.2, size: 0.15, spread: 0.8 }); if (hovered === p) { hovered = null; setHover(p); } }
+        p.stage = stage; p.crop.geometry = template(p.cropKey, ripeNow ? 'ripe' : stage, p.fruits); p.crop.visible = true; p.pop = 0;
+        if (ripeNow && p.state !== 'ripe') { p.state = 'ripe'; sfx.ripe(); emit(p.x, 1, p.z, 0xfff2a0, 14, { speed: 1, up: 2, grav: -0.5, life: 1.2, size: 0.15, spread: 0.8 }); if (hovered === p) { hovered = null; setHover(p); } }
       }
       p.pop = Math.min(1, p.pop + dt * 2.6);
       const s = 0.55 + 0.45 * easeOutBack(p.pop);
@@ -1937,6 +1953,10 @@ function frame(t) {
         p.tag.hidden = sc.behind; p.tag.className = 'tag' + (p.watered ? ' wet' : '');
         const txt = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
         if (p.tag.dataset.t !== txt + p.watered) { p.tag.innerHTML = `<span class="drop"></span>${txt}`; p.tag.dataset.t = txt + p.watered; }
+      } else if (p.isTree) {
+        const txt = `${info(p.cropKey)?.emoji || '🍎'} ×${p.fruits}`;
+        p.tag.hidden = sc.behind; p.tag.className = 'tag fruit';
+        if (p.tag.dataset.t !== txt) { p.tag.textContent = txt; p.tag.dataset.t = txt; }
       } else if (!p.tag.hidden) { p.tag.hidden = true; p.tag.dataset.t = ''; } // ô chín: cây nảy và lấp lánh, không cần nhãn
       if (!p.tag.hidden) place(p.tag, sc);
     } else {
