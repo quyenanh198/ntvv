@@ -58,8 +58,10 @@ export function createStations(c) {
       house(g, 3.8, 2.8, 2.0, wall, roof, trim);
       const gA = rotor(g, -1.2, 1.4, 1.52), gB = rotor(g, 0.5, 1.15, 1.52);
       [[gA, 0.55], [gB, 0.4]].forEach(([r, rad]) => { cyl(rad, rad, 0.14, 0xb89a3f, 0, 0, 0, r, 16).rotation.x = Math.PI / 2; for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; box(0.16, 0.2, 0.14, 0x8a7430, Math.cos(a) * (rad + 0.08), Math.sin(a) * (rad + 0.08), 0, r).rotation.z = a; } });
+      const hammer = rotor(g, 1.15, 1.75, 1.52);
+      box(0.1, 1.0, 0.1, 0x6b4423, 0, 0.45, 0, hammer); box(0.55, 0.25, 0.3, 0xb9b2a3, 0, 0.98, 0, hammer);
       cyl(0.25, 0.3, 1.5, 0x6b4423, 1.4, 2.8, -0.8, g, 8);
-      return { rotors: [{ o: gA, axis: 'z', speed: 1.6 }, { o: gB, axis: 'z', speed: -2.2 }], fx: [1.4, 3.6, -0.8] };
+      return { rotors: [{ o: gA, axis: 'z', speed: 1.6 }, { o: gB, axis: 'z', speed: -2.2 }, { o: hammer, axis: 'sway', speed: 5, amp: 0.38 }], fx: [1.4, 3.6, -0.8] };
     },
     quanvat(g, [wall, roof, trim]) {
       [[-1.5, -0.9], [1.5, -0.9], [-1.5, 1.0], [1.5, 1.0]].forEach(([x, z]) => box(0.14, 2.1, 0.14, trim, x, 1.05, z, g));
@@ -94,15 +96,17 @@ export function createStations(c) {
       box(2.6, 1.8, 2.2, wall, -0.6, 0.9, 0, g); box(2.8, 0.18, 2.4, roof, -0.6, 1.9, 0, g);
       cyl(0.8, 0.8, 3.0, 0xe2e6ea, 1.5, 1.5, -0.4, g, 16); mesh(new THREE.SphereGeometry(0.8, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), roof, 1.5, 3.0, -0.4, g);
       const fan = rotor(g, 1.5, 2.2, 0.42); for (let i = 0; i < 4; i++) { const b = box(0.12, 0.7, 0.05, 0x7a8a99, -Math.sin(i * Math.PI / 2) * 0.35, Math.cos(i * Math.PI / 2) * 0.35, 0, fan); b.rotation.z = i * Math.PI / 2; }
+      const churn = rotor(g, 1.5, 1.45, 0.55); box(0.12, 0.75, 0.12, 0xf4f4ef, 0, 0.38, 0, churn); box(0.6, 0.12, 0.24, 0x7a8a99, 0, 0.05, 0, churn);
       box(0.7, 1.0, 0.1, trim, -0.6, 0.5, 1.13, g); box(1.2, 0.5, 0.1, 0x6fb7e8, -1.0, 1.3, 1.13, g);
       cyl(0.35, 0.35, 0.9, 0xd0d6dc, -2.3, 0.45, 1.0, g);
-      return { rotors: [{ o: fan, axis: 'z', speed: 4 }], fx: [-1.4, 2.4, 0] };
+      return { rotors: [{ o: fan, axis: 'z', speed: 4 }, { o: churn, axis: 'bob', speed: 5, amp: 0.35 }], fx: [-1.4, 2.4, 0] };
     },
     lobanh(g, [wall, roof, trim]) {
       house(g, 3.2, 2.4, 1.6, wall, roof, trim); box(0.55, 1.8, 0.55, 0x8a3a25, -1.2, 2.5, -0.6, g);
+      const ovenGlow = rotor(g, 0, 0.55, 1.32); box(0.5, 0.65, 0.04, 0xffa43a, 0, 0, 0, ovenGlow);
       const wheel = rotor(g, 1.85, 0.9, 0.9); cyl(0.5, 0.5, 0.08, 0x6b4423, 0, 0, 0, wheel, 12).rotation.x = Math.PI / 2;
       for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; mesh(new THREE.SphereGeometry(0.15, 8, 6), 0xe0a050, Math.cos(a) * 0.38, Math.sin(a) * 0.38, 0, wheel).scale.set(1.3, 0.8, 1); }
-      return { rotors: [{ o: wheel, axis: 'z', speed: 2.2 }], fx: [-1.2, 3.6, -0.6] };
+      return { rotors: [{ o: wheel, axis: 'z', speed: 2.2 }, { o: ovenGlow, axis: 'pulse', speed: 6 }], fx: [-1.2, 3.6, -0.6] };
     },
     mayrang(g, [wall, roof, trim]) {
       box(0.2, 1.7, 0.2, trim, -1.1, 0.85, 0, g); box(0.2, 1.7, 0.2, trim, 1.1, 0.85, 0, g); box(2.6, 0.2, 1.4, wall, 0, 0.1, 0, g);
@@ -180,8 +184,8 @@ export function createStations(c) {
         for (const r of s.rotors) {
           if (r.axis === 'y') r.o.rotation.y += dt * r.speed; else if (r.axis === 'x') r.o.rotation.x += dt * r.speed; else if (r.axis === 'z') r.o.rotation.z += dt * r.speed;
           else if (r.axis === 'pulse') r.o.scale.setScalar(1 + Math.sin(time * r.speed) * 0.25);
-          else if (r.axis === 'bob') r.o.position.y = r.base.y + Math.abs(Math.sin(time * r.speed)) * 0.12;
-          else if (r.axis === 'sway') r.o.rotation.z = Math.sin(time * r.speed) * 0.15;
+          else if (r.axis === 'bob') r.o.position.y = r.base.y + Math.abs(Math.sin(time * r.speed)) * (r.amp || 0.12);
+          else if (r.axis === 'sway') r.o.rotation.z = Math.sin(time * r.speed) * (r.amp || 0.15);
           else if (r.axis === 'slide') r.o.position.x = r.base.x + Math.sin(time * r.speed) * r.amp;
         }
         s.steamT -= dt;
