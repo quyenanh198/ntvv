@@ -907,9 +907,9 @@ BUILD.tree = function (ripe, id, fruits = 7) {
   const p = [];
   const tropical = TROPICAL_TREES.has(id), dense = DENSE_TREES.has(id);
   part(p, UG.cyl, 0x7a5230, 0, tropical ? 0.75 : 0.45, 0, tropical ? 0.075 : 0.1, tropical ? 1.5 : 0.9, tropical ? 0.075 : 0.1);
-  if (tropical) for (let i = 0; i < 9; i++) {
-    const a = i / 9 * Math.PI * 2;
-    part(p, UG.cone, vary(i % 2 ? 0x4f9d3d : 0x6aad47), Math.sin(a) * 0.47, 1.46, Math.cos(a) * 0.47, 0.26, 1.25, 0.14, 0.7, a);
+  if (tropical) for (let i = 0; i < 8; i++) {
+    const a = i / 8 * Math.PI * 2;
+    part(p, UG.sph, vary(i % 2 ? 0x4f9d3d : 0x6aad47), Math.sin(a) * 0.57, 1.53, Math.cos(a) * 0.57, 0.24, 0.07, 0.7, -0.25, a);
   } else {
     const crown = dense
       ? [[0, 1.15, 0, 0.7], [0.48, 1.05, 0.16, 0.5], [-0.48, 1.06, -0.13, 0.5], [0, 1.55, 0, 0.53]]
@@ -921,7 +921,7 @@ BUILD.tree = function (ripe, id, fruits = 7) {
     const y = tropical ? 1.35 - i % 3 * 0.09 : 1.02 + (i % 4) * 0.14;
     part(p, UG.ico, 0xe0402e, Math.cos(a) * radius, y, Math.sin(a) * radius, 0.1, 0.12, 0.1);
   }
-  return merge(p);
+  return merge(p).scale(1.25, 1.3, 1.25);
 };
 // Quả/củ (màu ấm) được nhuộm theo từng loại cây; lá giữ nguyên màu xanh.
 function recolor(geo, tint) {
