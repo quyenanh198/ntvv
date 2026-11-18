@@ -1375,9 +1375,19 @@ function syncLuxuryScene(luxury) {
 let guardDogSprite;
 function syncGuardDog(active) {
   if (active && !guardDogSprite) {
-    const texture = luxuryLoader.load('assets/pets-v3/companion-dog.png'); texture.encoding = THREE.sRGBEncoding;
-    guardDogSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
-    guardDogSprite.position.set(-5, 1.1, 3); guardDogSprite.scale.set(2.2, 2.2, 1); scene.add(guardDogSprite);
+    const dog = new THREE.Group(), fur = 0xb8743f, cream = 0xf4dcc0, dark = 0x392b26;
+    const body = mesh(new THREE.SphereGeometry(0.48, 10, 8), fur, 0, 0.65, 0, dog); body.scale.set(0.78, 0.7, 1.35);
+    const chest = mesh(new THREE.SphereGeometry(0.3, 8, 6), cream, 0, 0.64, 0.34, dog); chest.scale.set(0.9, 1.1, 0.48);
+    const head = mesh(new THREE.SphereGeometry(0.32, 10, 8), fur, 0, 0.91, 0.52, dog); head.scale.set(0.95, 0.9, 1);
+    const muzzle = mesh(new THREE.SphereGeometry(0.18, 8, 6), cream, 0, 0.81, 0.79, dog); muzzle.scale.set(1.2, 0.68, 1.1);
+    mesh(new THREE.SphereGeometry(0.07, 6, 5), dark, 0, 0.85, 0.97, dog);
+    [-1, 1].forEach(side => {
+      const ear = mesh(new THREE.ConeGeometry(0.14, 0.31, 5), dark, side * 0.22, 1.23, 0.47, dog); ear.rotation.z = -side * 0.22;
+      mesh(new THREE.SphereGeometry(0.045, 5, 4), dark, side * 0.14, 0.99, 0.77, dog);
+      [-0.35, 0.35].forEach(z => box(0.16, 0.43, 0.18, fur, side * 0.29, 0.25, z, dog));
+    });
+    const tail = mesh(new THREE.ConeGeometry(0.12, 0.56, 6), fur, 0, 0.89, -0.63, dog); tail.rotation.x = -0.65;
+    dog.userData.tail = tail; dog.position.set(-5, 0, 3); scene.add(dog); guardDogSprite = dog;
   }
   if (guardDogSprite) guardDogSprite.visible = !!active;
 }
@@ -1920,7 +1930,9 @@ function frame(t) {
   windU.value = time;
   if (guardDogSprite?.visible) {
     const a = time * 0.45 + Math.PI;
-    guardDogSprite.position.set(2 + Math.cos(a) * 7, 1.1 + Math.abs(Math.sin(time * 7)) * 0.08, 3 + Math.sin(a) * 5);
+    guardDogSprite.position.set(2 + Math.cos(a) * 7, Math.abs(Math.sin(time * 7)) * 0.08, 3 + Math.sin(a) * 5);
+    guardDogSprite.rotation.y = Math.atan2(-7 * Math.sin(a), 5 * Math.cos(a));
+    guardDogSprite.userData.tail.rotation.z = Math.sin(time * 9) * 0.4;
   }
   zoom += (zoomGoal - zoom) * (1 - Math.exp(-8 * dt));
   if (intro > 1) intro = Math.max(1, intro - dt * 0.9 * (intro - 0.95));

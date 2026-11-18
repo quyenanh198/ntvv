@@ -331,7 +331,7 @@ Giới hạn đã biết của bản hiện tại:
 - Cây trồng dùng đủ 10 họ mô hình trong §4.3; cây ăn quả có ba khung tán, màu quả và nhãn số quả theo server (tối đa 12 quả dựng trên mô hình để giữ hiệu năng). Ảnh chụp chuẩn cạnh sprite 2D chưa được duyệt.
 - Vật nuôi trong cảnh bị giới hạn số con hiển thị (xem P3); số thật vẫn nằm ở sheet Chuồng.
 - Ao cá có mô hình trong cảnh để mở sheet thủy sản; xa xỉ phẩm loại trang trí và thú cưng hiện bằng tranh vẽ trong cảnh.
-- Chó canh vườn hiện bằng tranh vẽ và tuần tra quanh ruộng chính; chưa có mô hình 3D riêng.
+- Chó canh vườn có mô hình 3D riêng, quay theo hướng chạy và tuần tra quanh ruộng chính.
 - Mô hình các tòa nhà và con vật là bản dựng bằng khối cơ bản, chưa qua vòng duyệt ảnh chụp chuẩn như §4.3.
 
 ## 9. Kiểm thử

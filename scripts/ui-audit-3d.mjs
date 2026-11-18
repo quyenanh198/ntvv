@@ -54,6 +54,7 @@ try {
       await page.evaluate(() => __farm.refresh());
       await page.waitForFunction(() => __farm.luxuryScene.size === 2 && [...__farm.luxuryScene.values()].every(sprite => sprite.material.map.image?.width > 0));
       await page.waitForFunction(() => __farm.guardDogSprite?.visible);
+      assert.equal(await page.evaluate(() => __farm.guardDogSprite.isGroup && __farm.guardDogSprite.children.length >= 10), true, 'guard dog is a 3D model');
       const dogStart = await page.evaluate(() => __farm.guardDogSprite.position.clone().toArray());
       await page.waitForTimeout(1200);
       assert.equal(await page.evaluate(start => __farm.guardDogSprite.position.distanceTo({ x: start[0], y: start[1], z: start[2] }) > 0.5, dogStart), true, 'guard dog patrols');
