@@ -129,19 +129,19 @@ try {
       await page.evaluate(() => {
         __farm.store.me.level = 50;
         for (const s of __farm.stations.list) if (s.state === 'locked') { s.state = 'idle'; s.site.visible = false; s.body.visible = true; }
-        for (const id of ['xuongcaocap', 'nhamaysua', 'lobanh']) {
+        for (const id of ['xuongcaocap', 'nhamaysua', 'lobanh', 'quanvat', 'quanoc']) {
           __farm.layout.place('station:' + id);
           const s = __farm.stations.byId(id), recipe = Object.values(__farm.store.catalog.machines[id].recipes)[0];
           s.state = 'working'; s.body.visible = true; s.site.visible = false;
           __farm.store.me.machines[id] = { [recipe.id]: { recipe: recipe.id, ready: false, readyAt: Date.now() + 600000 } };
         }
       });
-      for (const [id, axis] of [['xuongcaocap', 'sway'], ['nhamaysua', 'bob'], ['lobanh', 'pulse']]) {
+      for (const [id, axis] of [['xuongcaocap', 'sway'], ['nhamaysua', 'bob'], ['lobanh', 'pulse'], ['quanvat', 'flip'], ['quanoc', 'sway']]) {
         await page.waitForFunction(name => __farm.stations.byId(name).placed, id);
         await page.evaluate(name => { const s = __farm.stations.byId(name); __farm.camTarget.set(s.x, 0, s.z); __farm.setZoom(0.65); }, id);
         await page.waitForTimeout(350);
-        const before = await page.evaluate(({ id, axis }) => { const o = __farm.stations.byId(id).rotors.find(r => r.axis === axis).o; return axis === 'bob' ? o.position.y : axis === 'sway' ? o.rotation.z : o.scale.x; }, { id, axis });
-        await page.waitForFunction(({ id, axis, before }) => { const o = __farm.stations.byId(id).rotors.find(r => r.axis === axis).o; return Math.abs((axis === 'bob' ? o.position.y : axis === 'sway' ? o.rotation.z : o.scale.x) - before) > 0.04; }, { id, axis, before });
+        const before = await page.evaluate(({ id, axis }) => { const o = __farm.stations.byId(id).rotors.find(r => r.axis === axis).o; return axis === 'bob' || axis === 'flip' ? o.position.y : axis === 'sway' ? o.rotation.z : o.scale.x; }, { id, axis });
+        await page.waitForFunction(({ id, axis, before }) => { const o = __farm.stations.byId(id).rotors.find(r => r.axis === axis).o; return Math.abs((axis === 'bob' || axis === 'flip' ? o.position.y : axis === 'sway' ? o.rotation.z : o.scale.x) - before) > 0.04; }, { id, axis, before });
         await page.screenshot({ path: `${out}/workshop-${id}-1280.png` });
       }
     }

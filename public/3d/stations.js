@@ -67,15 +67,17 @@ export function createStations(c) {
       [[-1.5, -0.9], [1.5, -0.9], [-1.5, 1.0], [1.5, 1.0]].forEach(([x, z]) => box(0.14, 2.1, 0.14, trim, x, 1.05, z, g));
       for (let i = 0; i < 8; i++) box(0.4, 0.1, 2.2, i % 2 ? 0xf6f1e6 : roof, -1.4 + i * 0.4, 2.15 - (i % 2 ? 0.02 : 0), 0.05, g).rotation.x = 0.08;
       box(3.0, 0.9, 0.7, wall, 0, 0.45, 0.8, g); box(3.1, 0.1, 0.8, trim, 0, 0.93, 0.8, g);
-      const rack = rotor(g, 0, 1.3, -0.1); cyl(0.07, 0.07, 1.4, 0x6b4423, 0, 0, 0, rack, 6).rotation.z = Math.PI / 2;
-      [-0.5, 0, 0.5].forEach(x => mesh(new THREE.SphereGeometry(0.17, 8, 6), 0xd9944a, x, -0.12, 0, rack));
-      return { rotors: [{ o: rack, axis: 'x', speed: 3 }], fx: [0, 2.0, -0.4] };
+      const pan = rotor(g, 0, 1.25, 1.15); cyl(0.55, 0.48, 0.14, 0x3a3a3a, 0, 0, 0, pan); box(0.12, 0.1, 0.85, trim, 0, 0, 0.8, pan);
+      [-0.25, 0, 0.25].forEach((x, i) => mesh(new THREE.SphereGeometry(0.14, 8, 6), i % 2 ? 0x7fb04a : 0xd9944a, x, 0.11, -0.08, pan));
+      return { rotors: [{ o: pan, axis: 'flip', speed: 4 }], fx: [0, 2.0, 1.15] };
     },
     quanoc(g, [wall, roof, trim]) {
       house(g, 3.0, 2.2, 1.5, wall, roof, trim);
       const shell = rotor(g, 0, 2.6, 1.3); mesh(new THREE.SphereGeometry(0.55, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), 0xf3b9c4, 0, 0, 0, shell).rotation.x = -Math.PI / 2 + 0.3;
       cyl(0.5, 0.42, 0.55, 0x3a3a3a, 1.9, 0.3, 1.0, g); const lid = rotor(g, 1.9, 0.62, 1.0); mesh(new THREE.SphereGeometry(0.25, 8, 6), 0xd9d9d9, 0, 0, 0, lid);
-      return { rotors: [{ o: lid, axis: 'bob', speed: 7 }, { o: shell, axis: 'sway', speed: 2 }], fx: [1.9, 1.2, 1.0] };
+      box(0.08, 0.5, 0.08, trim, -1.45, 1.9, 1.55, g);
+      const lantern = rotor(g, -1.45, 1.62, 1.55); cyl(0.2, 0.2, 0.4, 0xf2a34c, 0, -0.22, 0, lantern, 8); cyl(0.24, 0.24, 0.06, trim, 0, -0.02, 0, lantern, 8);
+      return { rotors: [{ o: lid, axis: 'bob', speed: 7 }, { o: lantern, axis: 'sway', speed: 2, amp: 0.22 }], fx: [1.9, 1.2, 1.0] };
     },
     mayep(g, [wall, roof, trim]) {
       box(2.6, 0.3, 2.0, trim, 0, 0.15, 0, g); [-1, 1].forEach(s => box(0.2, 2.4, 0.2, wall, s * 0.9, 1.5, -0.2, g)); box(2.1, 0.2, 0.3, wall, 0, 2.6, -0.2, g);
@@ -186,6 +188,7 @@ export function createStations(c) {
           else if (r.axis === 'pulse') r.o.scale.setScalar(1 + Math.sin(time * r.speed) * 0.25);
           else if (r.axis === 'bob') r.o.position.y = r.base.y + Math.abs(Math.sin(time * r.speed)) * (r.amp || 0.12);
           else if (r.axis === 'sway') r.o.rotation.z = Math.sin(time * r.speed) * (r.amp || 0.15);
+          else if (r.axis === 'flip') { r.o.rotation.z = Math.sin(time * r.speed) * 0.2; r.o.position.y = r.base.y + Math.abs(Math.sin(time * r.speed)) * 0.25; }
           else if (r.axis === 'slide') r.o.position.x = r.base.x + Math.sin(time * r.speed) * r.amp;
         }
         s.steamT -= dt;
