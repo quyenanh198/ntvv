@@ -1074,7 +1074,7 @@ function chicken(x, z, brown) {
   const body = brown ? 0xc8742e : 0xfafafa;
   const b = mesh(new THREE.SphereGeometry(0.28, 12, 10), body, 0, 0.36, 0, g); b.scale.set(0.9, 0.85, 1.15);
   const tail = mesh(new THREE.ConeGeometry(0.15, 0.3, 6), body, 0, 0.52, -0.3, g); tail.rotation.x = -0.9;
-  const head = new THREE.Group(); head.position.set(0, 0.64, 0.24); head.scale.setScalar(1.35); g.add(head); g.scale.setScalar(1.15);
+  const head = new THREE.Group(); head.position.set(0, 0.64, 0.24); head.scale.setScalar(1.35); g.add(head); g.scale.setScalar(1.35);
   mesh(new THREE.SphereGeometry(0.15, 10, 8), body, 0, 0, 0, head);
   mesh(new THREE.ConeGeometry(0.045, 0.13, 5), 0xf0a020, 0, -0.02, 0.17, head).rotation.x = Math.PI / 2;
   box(0.04, 0.12, 0.14, 0xe0402e, 0, 0.15, 0.02, head);
@@ -1703,6 +1703,7 @@ function updateTruck(dt, time) {
 function updateAnimals(dt, time) {
   for (const a of animals) {
     const g = a.g, pos = g.position;
+    if (a.kind === 'prop') continue;
     let moving = false;
     if (a.kind === 'chick') {
       const m = a.follow.g.position, ry = a.follow.g.rotation.y;
@@ -1729,7 +1730,7 @@ function updateAnimals(dt, time) {
   }
   // grown animals keep a body's width apart, and stay inside their pen or yard
   for (let i = 0; i < animals.length; i++) for (let j = i + 1; j < animals.length; j++) {
-    const a = animals[i], b = animals[j]; if (a.kind === 'chick' || b.kind === 'chick') continue;
+    const a = animals[i], b = animals[j]; if (a.kind === 'chick' || b.kind === 'chick' || a.kind === 'prop' || b.kind === 'prop') continue;
     const dx = b.g.position.x - a.g.position.x, dz = b.g.position.z - a.g.position.z, d = Math.hypot(dx, dz), min = 1.15;
     if (d < min && d > 1e-4) { const k = (min - d) / 2 / d; a.g.position.x -= dx * k; a.g.position.z -= dz * k; b.g.position.x += dx * k; b.g.position.z += dz * k; }
   }

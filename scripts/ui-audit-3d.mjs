@@ -111,6 +111,20 @@ try {
       });
       await page.waitForTimeout(300);
       await page.screenshot({ path: `${out}/tree-families-1280.png` });
+      await page.evaluate(() => {
+        const animals = Object.keys(__farm.store.catalog.animals).map((kind, i) => ({ id: 1000 + i, kind, ready_at: Date.now() + 3600000, ready: false }));
+        __farm.herd.sync({ ...__farm.store.me, animals });
+        __farm.camTarget.set(-21, 0, 7); __farm.setZoom(1.1);
+      });
+      await page.waitForFunction(() => __farm.herd.ents.size === 15);
+      await page.waitForTimeout(600);
+      const herdDrawCalls = await page.evaluate(() => __farm.renderer.info.render.calls);
+      assert.ok(herdDrawCalls <= 160, `all species use ${herdDrawCalls} draw calls`);
+      console.log(`All species draw calls: ${herdDrawCalls}`);
+      await page.screenshot({ path: `${out}/animal-pasture-1280.png` });
+      await page.evaluate(() => __farm.camTarget.set(0, 0, 0));
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: `${out}/animal-pens-1280.png` });
     }
     assert.deepEqual(errors, [], `${width}px browser errors`);
     console.log(`PASS 3D UI ${width}px`);

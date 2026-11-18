@@ -52,7 +52,7 @@ export function createHerd(c) {
     const legH = 0.42 + tall * 2;
     [[-0.2, -0.3], [0.2, -0.3], [-0.2, 0.3], [0.2, 0.3]].forEach(([x, z]) => mesh(new THREE.CylinderGeometry(0.05, 0.05, legH, 5), accent, x * s, legH / 2, z, g));
     mesh(new THREE.SphereGeometry(0.08, 6, 4), accent, 0, 0.7 + tall, -0.58, g);
-    g.scale.setScalar(size); return { g, head };
+    g.scale.setScalar(Math.max(size, 0.85)); return { g, head };
   }
   function bird(kind, [, body, accent, size, ex]) {
     const g = new THREE.Group();
@@ -65,7 +65,7 @@ export function createHerd(c) {
     mesh(new THREE.ConeGeometry(0.05, 0.14, 5), accent, 0, -0.02, 0.17, head).rotation.x = Math.PI / 2;
     [-0.06, 0.06].forEach(x => mesh(new THREE.SphereGeometry(0.02, 5, 4), 0x1a1a1a, x, 0.04, 0.11, head));
     [-0.1, 0.1].forEach(x => mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.2, 4), accent, x, 0.1, 0, g));
-    g.scale.setScalar(size * 1.15); return { g, head };
+    g.scale.setScalar(Math.max(1, size * 1.35)); return { g, head };
   }
   function staticProp(kind) {
     const g = new THREE.Group(), head = new THREE.Group(); g.add(head);
