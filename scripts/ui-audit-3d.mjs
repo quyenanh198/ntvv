@@ -39,10 +39,14 @@ try {
     assert.equal(await page.locator('#prodTitle').textContent(), 'Sao và cột mốc');
     await page.click('#prodClose');
     await page.click('#bMachines');
+    await page.waitForSelector('#prodSheet:not([hidden])');
+    await page.locator('#prodSheet').evaluate(el => el.getAnimations({ subtree: true }).forEach(a => a.finish()));
     await page.screenshot({ path: `${out}/machines-${width}.png` });
     assert.equal(await page.locator('#prodTitle').textContent(), 'Chế biến');
     await page.click('#prodClose');
     await page.click('#khoBtn');
+    await page.waitForSelector('#store:not([hidden])');
+    await page.locator('#store').evaluate(el => el.getAnimations({ subtree: true }).forEach(a => a.finish()));
     await page.screenshot({ path: `${out}/inventory-${width}.png` });
     assert.equal(await page.locator('#storeTitle').textContent(), 'Kho nông sản');
     assert.equal(await page.locator('#store .sheet').evaluate(el => el.scrollWidth > el.clientWidth), false, `${width}px inventory overflow`);
@@ -75,6 +79,10 @@ try {
       await page.evaluate(() => __farm.camTarget.set(-21, 0, -13));
       await page.waitForTimeout(600);
       await page.screenshot({ path: `${out}/gallery-full-390.png` });
+      assert.equal(await page.evaluate(() => [...__farm.luxuryScene.values()].every(sprite => {
+        const p = __farm.toScreen(sprite.position.x, sprite.position.y, sprite.position.z);
+        return p.x > 25 && p.x < innerWidth - 25 && p.y > 70 && p.y < innerHeight - 230;
+      })), true, 'gallery fits mobile view');
       console.log(`Full gallery draw calls: ${await page.evaluate(() => __farm.renderer.info.render.calls)}`);
       db.prepare('DELETE FROM luxury WHERE owner_id = 1').run();
       db.prepare('UPDATE farmers SET dog_until = 0 WHERE user_id = 1').run();

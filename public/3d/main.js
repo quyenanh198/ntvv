@@ -1357,7 +1357,7 @@ const luxuryScene = new Map(), luxuryLoader = new THREE.TextureLoader();
 function syncLuxuryScene(luxury) {
   const decor = luxury?.decor || [], pets = luxury?.pets || [], ids = [...decor, ...pets];
   for (const [id, sprite] of luxuryScene) if (!ids.includes(id)) { scene.remove(sprite); sprite.material.map.dispose(); sprite.material.dispose(); luxuryScene.delete(id); }
-  for (const id of ids) {
+  for (const [n, id] of ids.entries()) {
     let sprite = luxuryScene.get(id);
     if (!sprite) {
       const path = luxurySprite(id); if (!path) continue;
@@ -1365,11 +1365,10 @@ function syncLuxuryScene(luxury) {
       sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
       scene.add(sprite); luxuryScene.set(id, sprite);
     }
-    const pet = pets.includes(id), n = pet ? pets.indexOf(id) : decor.indexOf(id);
-    const row = Math.floor(n / 5), count = Math.min(5, decor.length - row * 5);
-    sprite.position.set(pet ? -17 + n % 4 * 2.2 : -21 + (n % 5 - (count - 1) / 2) * 2.9,
-      pet ? 0.95 : 1.15, pet ? -10 + Math.floor(n / 4) * 2.2 : -13 + (row - (Math.ceil(decor.length / 5) - 1) / 2) * 2.9);
-    sprite.scale.set(pet ? 1.8 : 2.1, pet ? 1.8 : 2.1, 1);
+    const row = Math.floor(n / 4), count = Math.min(4, ids.length - row * 4);
+    sprite.position.set(-21 + (n % 4 - (count - 1) / 2) * 2.15,
+      pets.includes(id) ? 0.95 : 1.15, -14 + (row - (Math.ceil(ids.length / 4) - 1) / 2) * 2.0);
+    sprite.scale.set(pets.includes(id) ? 1.65 : 1.8, pets.includes(id) ? 1.65 : 1.8, 1);
   }
 }
 let guardDogSprite;
