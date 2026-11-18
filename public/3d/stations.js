@@ -157,12 +157,16 @@ export function createStations(c) {
     const site = siteFor(m.name, m.level); root.add(site);
     const badge = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }));
     badge.position.set(0, 4.3, 0); badge.scale.set(1.1, 1.1, 1); badge.visible = false; root.add(badge);
+    const crates = Array.from({ length: 5 }, (_, i) => {
+      const crate = box(0.55, 0.3, 0.55, i % 2 ? 0x8a5a32 : 0xa87947, 2.25, 0.25 + i * 0.38, 1.0, root);
+      crate.visible = false; return crate;
+    });
     const hit = new THREE.Mesh(new THREE.BoxGeometry(4.4, 3.8, 3.8), new THREE.MeshBasicMaterial({ visible: false }));
     hit.position.set(0, 1.9, 0); hit.userData.station = id; root.add(hit); hitTargets.push(hit);
     built.rotors.forEach(r => { r.base = r.o.position.clone(); });
     bakeVC(body, built.rotors.map(r => r.o)); bakeVC(site);
     const tag = document.createElement('div'); tag.className = 'tag sign'; tagsEl.appendChild(tag);
-    list.push({ id, x, z, placed: false, root, body, site, badge, hit, tag, rotors: built.rotors, fx: built.fx, state: 'locked', level: m.level, name: m.name, buildT: -1, steamT: 0 });
+    list.push({ id, x, z, placed: false, root, body, site, badge, crates, hit, tag, rotors: built.rotors, fx: built.fx, state: 'locked', level: m.level, name: m.name, buildT: -1, steamT: 0 });
   }
 
   const wp = new THREE.Vector3();
@@ -174,6 +178,7 @@ export function createStations(c) {
       else if (Math.abs(s.x - cell[0]) + Math.abs(s.z - cell[1]) > 0.01) { const k = 1 - Math.exp(-8 * dt); s.x += (cell[0] - s.x) * k; s.z += (cell[1] - s.z) * k; s.root.position.set(s.x, 0, s.z); }
       const m = cat().machines[s.id], open = me.level >= m.level;
       const jobs = Object.values(me.machines?.[s.id] || {});
+      const queued = jobs.reduce((n, j) => n + (j.queue || 0), 0);
       const next = !open ? 'locked' : jobs.some(j => j.ready) ? 'done' : jobs.length ? 'working' : 'idle';
       if (s.state === 'building') {
         s.buildT += dt; s.site.scale.setScalar(Math.max(0.001, 1 - s.buildT / 0.3)); if (s.buildT > 0.3) s.site.visible = false;
@@ -185,6 +190,7 @@ export function createStations(c) {
         else { s.state = 'building'; s.buildT = 0; if (c.onUnlock) c.onUnlock(s); }
       } else if (s.state !== 'locked') s.state = next === 'locked' ? s.state : next;
       if (s.state === 'locked') { s.site.visible = true; s.body.visible = false; }
+      s.crates.forEach((crate, i) => { crate.visible = (s.state === 'working' || s.state === 'done') && i < Math.min(queued, 5); });
       const near = Math.hypot(s.x - camPos.x, s.z - camPos.z) < 34;
       if (s.state === 'working' && near) {
         for (const r of s.rotors) {
@@ -213,6 +219,7 @@ export function createStations(c) {
       let txt = s.name, cls = 'tag sign';
       if (s.state === 'locked' || (s.state === 'building' && !s.body.visible)) { txt = `${s.name} · cấp ${s.level}`; cls = 'tag sign locked'; }
       else if (s.state === 'working') { txt = `${s.name} · ${fmtClock(left)}`; cls = 'tag'; } else if (s.state === 'done') { txt = 'Xong! Chạm để lấy'; cls = 'tag ready'; }
+      if (queued > 1) txt += ` · 📦${queued}`;
       if (s.tag.dataset.t !== txt) { s.tag.textContent = txt; s.tag.className = cls; s.tag.dataset.t = txt; }
       const p = toScreen(s.x, s.state === 'done' ? 5.4 : 4.6, s.z);
       if (p.behind) s.tag.style.display = 'none'; else { s.tag.style.display = ''; place(s.tag, p, 70); }

@@ -16,6 +16,11 @@ const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--ena
 try {
   for (const width of [320, 390, 768, 1280]) {
     const page = await browser.newPage({ viewport: { width, height: 844 }, deviceScaleFactor: 1 });
+    // Keep synthetic visual states stable while the real server refresh timer would replace them.
+    await page.addInitScript(() => {
+      const set = window.setInterval;
+      window.setInterval = (fn, ms, ...args) => ms === 20_000 ? 0 : set(fn, ms, ...args);
+    });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(`${address}/farm/?view=3d#debug`);
@@ -139,18 +144,24 @@ try {
         for (const s of __farm.stations.list) if (s.state === 'locked') { s.state = 'idle'; s.site.visible = false; s.body.visible = true; }
         for (const id of ['xuongcaocap', 'nhamaysua', 'lobanh', 'quanvat', 'quanoc', 'bepan', 'mayep', 'noimut']) {
           __farm.layout.place('station:' + id);
-          const s = __farm.stations.byId(id), recipe = Object.values(__farm.store.catalog.machines[id].recipes)[0];
-          s.state = 'working'; s.body.visible = true; s.site.visible = false;
-          __farm.store.me.machines[id] = { [recipe.id]: { recipe: recipe.id, ready: false, readyAt: Date.now() + 600000 } };
         }
       });
       for (const [id, axis] of [['xuongcaocap', 'sway'], ['nhamaysua', 'bob'], ['lobanh', 'pulse'], ['quanvat', 'flip'], ['quanoc', 'sway'], ['bepan', 'pulse'], ['mayep', 'pulse'], ['noimut', 'pulse']]) {
         await page.waitForFunction(name => __farm.stations.byId(name).placed, id);
-        await page.evaluate(name => { const s = __farm.stations.byId(name); __farm.camTarget.set(s.x, 0, s.z); __farm.setZoom(0.65); }, id);
+        await page.evaluate(name => {
+          const s = __farm.stations.byId(name), recipe = Object.values(__farm.store.catalog.machines[name].recipes)[0];
+          __farm.store.me.level = 50;
+          __farm.store.me.machines[name] = { [recipe.id]: { recipe: recipe.id, ready: false, readyAt: Date.now() + 600000, queue: name === 'quanvat' ? 7 : 1 } };
+          s.state = 'working'; s.body.visible = true; s.site.visible = false;
+          __farm.camTarget.set(s.x, 0, s.z); __farm.setZoom(0.65);
+        }, id);
         await page.waitForTimeout(350);
         const before = await page.evaluate(({ id, axis }) => { const o = __farm.stations.byId(id).rotors.find(r => r.axis === axis).o; return axis === 'bob' || axis === 'flip' ? o.position.y : axis === 'sway' ? o.rotation.z : o.scale.x; }, { id, axis });
         await page.waitForFunction(({ id, axis, before }) => { const o = __farm.stations.byId(id).rotors.find(r => r.axis === axis).o; return Math.abs((axis === 'bob' || axis === 'flip' ? o.position.y : axis === 'sway' ? o.rotation.z : o.scale.x) - before) > 0.04; }, { id, axis, before });
         await page.screenshot({ path: `${out}/workshop-${id}-1280.png` });
+        if (id === 'quanvat') assert.equal(await page.evaluate(() => {
+          const s = __farm.stations.byId('quanvat'); return s.crates.filter(c => c.visible).length === 5 && s.tag.textContent.includes('📦7');
+        }), true, 'queue crates and total follow server state');
       }
     }
     assert.deepEqual(errors, [], `${width}px browser errors`);
