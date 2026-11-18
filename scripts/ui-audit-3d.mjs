@@ -129,14 +129,14 @@ try {
       await page.evaluate(() => {
         __farm.store.me.level = 50;
         for (const s of __farm.stations.list) if (s.state === 'locked') { s.state = 'idle'; s.site.visible = false; s.body.visible = true; }
-        for (const id of ['xuongcaocap', 'nhamaysua', 'lobanh', 'quanvat', 'quanoc']) {
+        for (const id of ['xuongcaocap', 'nhamaysua', 'lobanh', 'quanvat', 'quanoc', 'bepan', 'mayep', 'noimut']) {
           __farm.layout.place('station:' + id);
           const s = __farm.stations.byId(id), recipe = Object.values(__farm.store.catalog.machines[id].recipes)[0];
           s.state = 'working'; s.body.visible = true; s.site.visible = false;
           __farm.store.me.machines[id] = { [recipe.id]: { recipe: recipe.id, ready: false, readyAt: Date.now() + 600000 } };
         }
       });
-      for (const [id, axis] of [['xuongcaocap', 'sway'], ['nhamaysua', 'bob'], ['lobanh', 'pulse'], ['quanvat', 'flip'], ['quanoc', 'sway']]) {
+      for (const [id, axis] of [['xuongcaocap', 'sway'], ['nhamaysua', 'bob'], ['lobanh', 'pulse'], ['quanvat', 'flip'], ['quanoc', 'sway'], ['bepan', 'pulse'], ['mayep', 'pulse'], ['noimut', 'pulse']]) {
         await page.waitForFunction(name => __farm.stations.byId(name).placed, id);
         await page.evaluate(name => { const s = __farm.stations.byId(name); __farm.camTarget.set(s.x, 0, s.z); __farm.setZoom(0.65); }, id);
         await page.waitForTimeout(350);

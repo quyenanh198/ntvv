@@ -46,7 +46,8 @@ export function createStations(c) {
     bepan(g, [wall, roof, trim]) {
       house(g, 3.2, 2.4, 1.6, wall, roof, trim); box(0.45, 1.4, 0.45, 0x8a5a32, 1.1, 2.3, -0.6, g);
       cyl(0.4, 0.34, 0.4, 0x4a4a4a, -2.0, 0.45, 1.0, g); const lid = rotor(g, -2.0, 0.72, 1.0); mesh(new THREE.SphereGeometry(0.22, 8, 6), 0xd9d9d9, 0, 0.05, 0, lid);
-      return { rotors: [{ o: lid, axis: 'y', speed: 4 }], fx: [1.1, 3.1, -0.6] };
+      const bubbles = rotor(g, -2.0, 0.92, 1.0); [[-0.2, 0], [0.1, 0.16], [0.22, -0.12]].forEach(([x, z]) => mesh(new THREE.SphereGeometry(0.07, 6, 5), 0xf4f4ef, x, 0, z, bubbles));
+      return { rotors: [{ o: lid, axis: 'y', speed: 4 }, { o: bubbles, axis: 'pulse', speed: 7 }], fx: [-2.0, 1.1, 1.0] };
     },
     lonuong(g, [wall, roof, trim]) {
       mesh(new THREE.SphereGeometry(1.5, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), toon(wall, { flatShading: true }), 0, 0, 0, g);
@@ -84,15 +85,18 @@ export function createStations(c) {
       const screw = rotor(g, 0, 1.6, -0.2); cyl(0.16, 0.16, 1.9, 0xb8b8b8, 0, 0, 0, screw, 8); for (let i = 0; i < 6; i++) box(0.5, 0.06, 0.1, 0x8a8a8a, 0, -0.8 + i * 0.32, 0, screw);
       cyl(0.62, 0.62, 0.9, trim, 0, 0.75, 0.2, g); mesh(new THREE.ConeGeometry(0.7, 0.6, 12, 1, true), 0xe0e0e0, 0, 2.2, -0.2, g);
       cyl(0.5, 0.5, 0.8, roof, 1.5, 0.7, 0.9, g); mesh(new THREE.SphereGeometry(0.3, 8, 6), 0xffa43a, 1.5, 1.2, 0.9, g);
-      return { rotors: [{ o: screw, axis: 'y', speed: 5 }], fx: [0, 3.0, -0.2] };
+      box(1.0, 0.12, 0.12, 0xb8b8b8, 1.0, 1.9, 0.9, g);
+      const juice = rotor(g, 1.5, 1.55, 0.9); cyl(0.065, 0.065, 0.7, 0xffa43a, 0, 0, 0, juice, 6);
+      return { rotors: [{ o: screw, axis: 'y', speed: 5 }, { o: juice, axis: 'pulse', speed: 5 }], fx: [0, 3.0, -0.2] };
     },
     noimut(g, [wall, roof, trim]) {
       cyl(1.3, 1.5, 0.7, 0x8a4a35, 0, 0.35, 0, g, 12);
       mesh(new THREE.SphereGeometry(1.15, 16, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), 0xb87333, 0, 1.55, 0, g).scale.y = 0.9;
       mesh(new THREE.CylinderGeometry(1.15, 1.15, 0.08, 18), 0xe0556a, 0, 1.55, 0, g);
       const pad = rotor(g, 0, 1.6, 0); box(1.9, 0.1, 0.16, 0x6b4423, 0, 0, 0, pad); cyl(0.07, 0.07, 1.1, 0x6b4423, 0, 0.55, 0, pad, 6);
+      const bubbles = rotor(g, 0, 1.66, 0); [[-0.65, 0.3], [0.5, -0.35], [0.6, 0.5]].forEach(([x, z]) => mesh(new THREE.SphereGeometry(0.12, 7, 5), 0xffc0a0, x, 0, z, bubbles));
       box(0.18, 1.8, 0.18, trim, -1.7, 0.9, -0.8, g); box(0.7, 0.5, 0.5, 0xe0556a, 1.7, 0.25, 0.9, g);
-      return { rotors: [{ o: pad, axis: 'y', speed: 2.4 }], fx: [0, 2.4, 0] };
+      return { rotors: [{ o: pad, axis: 'y', speed: 2.4 }, { o: bubbles, axis: 'pulse', speed: 6 }], fx: [0, 2.4, 0] };
     },
     nhamaysua(g, [wall, roof, trim]) {
       box(2.6, 1.8, 2.2, wall, -0.6, 0.9, 0, g); box(2.8, 0.18, 2.4, roof, -0.6, 1.9, 0, g);
