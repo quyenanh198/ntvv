@@ -47,6 +47,14 @@ test('slim state omits the catalog but reports its version', async () => {
   assert.ok(JSON.stringify(slim).length < JSON.stringify(full).length / 2, 'slim state is far smaller');
 });
 
+test('machine state exposes the actual batch duration for visual progress', async () => {
+  const { app, db } = harness();
+  await app.inject({ method: 'GET', url: '/farm/api/state?slim=1' });
+  db.prepare("INSERT INTO machine_jobs (owner_id, kind, recipe, ready_at, queue_count) VALUES (7, 'coixay', 'botmi', ?, 2)").run(Date.now() + 60_000);
+  const state = (await app.inject({ method: 'GET', url: '/farm/api/state?slim=1' })).json();
+  assert.ok(state.me.machines.coixay.botmi.cycleMs > 0);
+});
+
 test('write requests are rate limited at 90 per minute and answer 429', async () => {
   const { app } = harness();
   let limited = null;

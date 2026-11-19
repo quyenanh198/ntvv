@@ -179,6 +179,7 @@ export function createStations(c) {
       const m = cat().machines[s.id], open = me.level >= m.level;
       const jobs = Object.values(me.machines?.[s.id] || {});
       const queued = jobs.reduce((n, j) => n + (j.queue || 0), 0);
+      const processing = jobs.find(j => j.processing) || jobs.find(j => !j.ready);
       const next = !open ? 'locked' : jobs.some(j => j.ready) ? 'done' : jobs.length ? 'working' : 'idle';
       if (s.state === 'building') {
         s.buildT += dt; s.site.scale.setScalar(Math.max(0.001, 1 - s.buildT / 0.3)); if (s.buildT > 0.3) s.site.visible = false;
@@ -192,7 +193,7 @@ export function createStations(c) {
       if (s.state === 'locked') { s.site.visible = true; s.body.visible = false; }
       s.crates.forEach((crate, i) => { crate.visible = (s.state === 'working' || s.state === 'done') && i < Math.min(queued, 5); });
       const near = Math.hypot(s.x - camPos.x, s.z - camPos.z) < 34;
-      if (s.state === 'working' && near) {
+      if (processing && near) {
         for (const r of s.rotors) {
           if (r.axis === 'y') r.o.rotation.y += dt * r.speed; else if (r.axis === 'x') r.o.rotation.x += dt * r.speed; else if (r.axis === 'z') r.o.rotation.z += dt * r.speed;
           else if (r.axis === 'pulse') r.o.scale.setScalar(1 + Math.sin(time * r.speed) * 0.25);
@@ -220,8 +221,14 @@ export function createStations(c) {
       if (s.state === 'locked' || (s.state === 'building' && !s.body.visible)) { txt = `${s.name} · cấp ${s.level}`; cls = 'tag sign locked'; }
       else if (s.state === 'working') { txt = `${s.name} · ${fmtClock(left)}`; cls = 'tag'; } else if (s.state === 'done') { txt = 'Xong! Chạm để lấy'; cls = 'tag ready'; }
       if (queued > 1) txt += ` · 📦${queued}`;
+      if (processing?.cycleMs) {
+        const remaining = (processing.currentReadyAt || processing.readyAt) - serverNow();
+        const pct = Math.max(0, Math.min(100, Math.round(100 * (1 - remaining / processing.cycleMs))));
+        if (s.tag.dataset.progress !== String(pct)) { s.tag.style.setProperty('--progress', `${pct}%`); s.tag.dataset.progress = String(pct); }
+        cls += ' progress';
+      }
       if (s.tag.dataset.t !== txt) { s.tag.textContent = txt; s.tag.className = cls; s.tag.dataset.t = txt; }
-      const p = toScreen(s.x, s.state === 'done' ? 5.4 : 4.6, s.z);
+      const p = toScreen(s.x, s.state === 'done' ? 4.8 : 4.6, s.z);
       if (p.behind) s.tag.style.display = 'none'; else { s.tag.style.display = ''; place(s.tag, p, 70); }
     }
   }

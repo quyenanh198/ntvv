@@ -151,7 +151,7 @@ try {
         await page.evaluate(name => {
           const s = __farm.stations.byId(name), recipe = Object.values(__farm.store.catalog.machines[name].recipes)[0];
           __farm.store.me.level = 50;
-          __farm.store.me.machines[name] = { [recipe.id]: { recipe: recipe.id, ready: false, readyAt: Date.now() + 600000, queue: name === 'quanvat' ? 7 : 1 } };
+          __farm.store.me.machines[name] = { [recipe.id]: { recipe: recipe.id, ready: false, processing: true, readyAt: Date.now() + 300000, currentReadyAt: Date.now() + 300000, cycleMs: 600000, queue: name === 'quanvat' ? 7 : 1 } };
           s.state = 'working'; s.body.visible = true; s.site.visible = false;
           __farm.camTarget.set(s.x, 0, s.z); __farm.setZoom(0.65);
         }, id);
@@ -160,8 +160,24 @@ try {
         await page.waitForFunction(({ id, axis, before }) => { const o = __farm.stations.byId(id).rotors.find(r => r.axis === axis).o; return Math.abs((axis === 'bob' || axis === 'flip' ? o.position.y : axis === 'sway' ? o.rotation.z : o.scale.x) - before) > 0.04; }, { id, axis, before });
         await page.screenshot({ path: `${out}/workshop-${id}-1280.png` });
         if (id === 'quanvat') assert.equal(await page.evaluate(() => {
-          const s = __farm.stations.byId('quanvat'); return s.crates.filter(c => c.visible).length === 5 && s.tag.textContent.includes('📦7');
-        }), true, 'queue crates and total follow server state');
+          const s = __farm.stations.byId('quanvat'), progress = Number(s.tag.dataset.progress);
+          return s.crates.filter(c => c.visible).length === 5 && s.tag.textContent.includes('📦7') && progress >= 40 && progress <= 60;
+        }), true, 'queue crates, total and progress follow server state');
+        if (id === 'quanvat') {
+          const beforeReady = await page.evaluate(() => {
+            const job = Object.values(__farm.store.me.machines.quanvat)[0]; job.ready = true; job.completed = 1;
+            return __farm.stations.byId('quanvat').rotors[0].o.position.y;
+          });
+          await page.waitForFunction(before => {
+            const s = __farm.stations.byId('quanvat');
+            return s.badge.visible && Math.abs(s.rotors[0].o.position.y - before) > 0.04;
+          }, beforeReady);
+          assert.equal(await page.evaluate(() => {
+            const tag = __farm.stations.byId('quanvat').tag, r = tag.getBoundingClientRect();
+            return tag.textContent.includes('Xong!') && r.top >= 0 && r.bottom < innerHeight - 210;
+          }), true, 'ready label stays visible above the product');
+          await page.screenshot({ path: `${out}/workshop-queue-ready-1280.png` });
+        }
       }
     }
     assert.deepEqual(errors, [], `${width}px browser errors`);

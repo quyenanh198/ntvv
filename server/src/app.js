@@ -870,6 +870,7 @@ export function buildApp({ config, db, logger = true }) {
             recipe: row.recipe,
             readyAt: row.ready_at,
             currentReadyAt: progress.currentReadyAt,
+            cycleMs: cycle,
             ready: progress.completed > 0,
             ...progress,
             queue: total,
