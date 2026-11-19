@@ -534,6 +534,10 @@ const mill = (() => {
   mesh(new THREE.SphereGeometry(0.42, 14, 10), 0xefe3c4, 0, 0.45, 0, sack).scale.set(1, 1.15, 0.95);
   mesh(new THREE.CylinderGeometry(0.12, 0.18, 0.18, 10), 0xd8c8a0, 0, 0.95, 0, sack);
   sack.scale.setScalar(0.001);
+  const crates = Array.from({ length: 5 }, (_, i) => {
+    const crate = box(0.5, 0.28, 0.5, i % 2 ? 0x8a5a32 : 0xa87947, 1.75, 0.25 + i * 0.36, 1.25, g);
+    crate.visible = false; return crate;
+  });
   const groups = [frame, stones, hopper, gear, crank, chute];
   groups.forEach(o => { o.visible = false; o.scale.setScalar(0.001); });
   // construction site shown while locked: staked-out plot, lumber, stone blocks, wheelbarrow, painted sign
@@ -565,7 +569,7 @@ const mill = (() => {
   const hit = new THREE.Mesh(new THREE.BoxGeometry(3, 3.8, 3.4), new THREE.MeshBasicMaterial({ visible: false }));
   hit.position.set(MILL_X, 1.9, MILL_Z + 0.4); hit.userData.mill = true; scene.add(hit);
   solids.push({ x: MILL_X, z: MILL_Z, r: 1.8 });
-  return { g, site, groups, stone, crank, gear, grain, hopper, sack, hit, state: 'locked', buildT: -1, job: null, t: 0, loadN: 0, grindT: 0 };
+  return { g, site, groups, stone, crank, gear, grain, hopper, sack, crates, hit, state: 'locked', buildT: -1, job: null, t: 0, loadN: 0, grindT: 0 };
 })();
 
 // ================= Fences, flowers, decoration (instanced) =================
@@ -1557,6 +1561,10 @@ const setGrain = lv => { mill.grain.visible = lv > 0.02; const s = 0.35 + 0.65 *
 const millV = new THREE.Vector3();
 function updateMill(dt, time) {
   const M = mill;
+  const jobs = Object.values(store.me?.machines?.coixay || {}), cur = jobs.find(j => j.processing) || jobs.find(j => !j.ready);
+  const queued = jobs.reduce((n, j) => n + (j.queue || 0), 0);
+  const cycle = cur && (cur.cycleMs || cat().machines.coixay.recipes[cur.recipe]?.ms || 1);
+  const k = cur ? THREE.MathUtils.clamp(1 - ((cur.currentReadyAt || cur.readyAt) - serverNow()) / cycle, 0, 1) : 1;
   if (M.state === 'building') {
     M.buildT += dt;
     M.site.scale.setScalar(Math.max(0.001, 1 - M.buildT / 0.3)); if (M.buildT > 0.3) M.site.visible = false;
@@ -1569,34 +1577,40 @@ function updateMill(dt, time) {
       M.state = 'idle'; sfx.level();
       [0xffd23f, 0x7fe07a, 0x5fd0ff].forEach(c => emit(MILL_X, 3, MILL_Z, c, 16, { speed: 3, up: 5, grav: 6, life: 1.3, size: 0.16 }));
     }
-  } else if (M.state === 'working') {
-    const cur = Object.values(store.me.machines?.coixay || {}).find(j => !j.ready);
-    const cyc = cur ? (cat().machines.coixay.recipes[cur.recipe]?.ms || 1) : 1;
+  } else if (M.state === 'working' || (M.state === 'done' && cur)) {
     if (cur && M.grainFor !== cur.recipe) { M.grainFor = cur.recipe; M.grain.material.color.set(cropColor(Object.keys(cat().machines.coixay.recipes[cur.recipe].in)[0])); }
-    const k = cur ? THREE.MathUtils.clamp(1 - ((cur.currentReadyAt || cur.readyAt) - serverNow()) / cyc, 0, 1) : 1;
     M.stone.rotation.y += dt * 3.2; M.crank.rotation.x += dt * 3.2; M.gear.rotation.z -= dt * 2.4;
     M.g.position.x = MILL_X + Math.sin(time * 45) * 0.012;
-    setGrain(1 - k); M.sack.scale.setScalar(Math.max(0.001, 0.2 + 0.8 * k));
+    setGrain(1 - k);
     if (Math.random() < dt * 14) { const a = rand(0, 6.28); millV.set(Math.cos(a) * 0.9, 2.15, Math.sin(a) * 0.9); M.g.localToWorld(millV); emit(millV.x, millV.y, millV.z, 0xfaf6ea, 1, { speed: 0.5, up: 0.8, grav: -0.4, life: 1.1, size: 0.22, spread: 0.05 }); }
     M.grindT -= dt; if (M.grindT <= 0) { M.grindT = 0.55; sfx.grind(); }
-    if (k >= 1) { M.state = 'done'; M.g.position.x = MILL_X; sfx.ripe(); M.sack.getWorldPosition(millV); emit(millV.x, 1.4, millV.z, 0xfff6b0, 16, { speed: 1, up: 2, grav: -0.5, life: 1.2, size: 0.15 }); }
+    if (M.state === 'working') {
+      M.sack.scale.setScalar(Math.max(0.001, 0.2 + 0.8 * k));
+      if (k >= 1) { M.state = 'done'; M.g.position.x = MILL_X; sfx.ripe(); M.sack.getWorldPosition(millV); emit(millV.x, 1.4, millV.z, 0xfff6b0, 16, { speed: 1, up: 2, grav: -0.5, life: 1.2, size: 0.15 }); }
+    } else { const b = Math.sin(time * 5) * 0.05; M.sack.scale.set(1 + b, 1 - b, 1 + b); }
   } else if (M.state === 'done') {
     const b = Math.sin(time * 5) * 0.05; M.sack.scale.set(1 + b, 1 - b, 1 + b);
     if (Math.random() < dt * 2) { M.sack.getWorldPosition(millV); emit(millV.x + rand(-0.5, 0.5), rand(1, 1.6), millV.z + rand(-0.5, 0.5), 0xfff6b0, 1, { speed: 0.1, up: 0.6, grav: -0.3, life: 1, size: 0.13, spread: 0 }); }
   } else if (M.state === 'collect') {
     M.t += dt; const k = Math.min(1, M.t / 0.5);
     M.sack.position.y = Math.sin(k * Math.PI) * 0.8; M.sack.scale.setScalar(Math.max(0.001, 1 - k));
-    if (k >= 1) { M.state = 'idle'; M.sack.position.y = 0; setGrain(0); }
+    if (k >= 1) { M.state = jobs.some(j => j.ready) ? 'done' : cur ? 'working' : 'idle'; M.sack.position.y = 0; if (M.state === 'idle') setGrain(0); }
   }
+  M.crates.forEach((crate, i) => { crate.visible = (M.state === 'working' || M.state === 'done') && i < Math.min(queued, 5); });
   // label over the mill
   let txt = 'Cối xay bột', cls = 'tag sign';
   if (M.state === 'locked' || M.state === 'pending') { txt = `Cối xay bột · cấp ${MILL_LEVEL}`; cls = 'tag sign locked'; }
   else if (M.state === 'working') {
-    const cur = Object.values(store.me.machines?.coixay || {}).find(j => !j.ready);
     const left = cur ? Math.max(0, Math.ceil(((cur.currentReadyAt || cur.readyAt) - serverNow()) / 1000)) : 0;
     txt = `Đang xay · ${fmtClock(left)}`; cls = 'tag';
   }
   else if (M.state === 'done') { txt = 'Xong! Chạm để lấy'; cls = 'tag ready'; }
+  if (queued > 1) txt += ` · 📦${queued}`;
+  if (cur?.cycleMs) {
+    const pct = Math.max(0, Math.min(100, Math.round(100 * (1 - ((cur.currentReadyAt || cur.readyAt) - serverNow()) / cur.cycleMs))));
+    if (millTag.dataset.progress !== String(pct)) { millTag.style.setProperty('--progress', `${pct}%`); millTag.dataset.progress = String(pct); }
+    cls += ' progress';
+  }
   if (millTag.dataset.t !== txt) { millTag.textContent = txt; millTag.className = cls; millTag.dataset.t = txt; }
   place(millTag, toScreen(MILL_X, 4.3, MILL_Z), 70);
 }

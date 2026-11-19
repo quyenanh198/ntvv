@@ -179,6 +179,25 @@ try {
           await page.screenshot({ path: `${out}/workshop-queue-ready-1280.png` });
         }
       }
+      await page.evaluate(() => {
+        const m = __farm.mill, recipe = Object.values(__farm.store.catalog.machines.coixay.recipes)[0];
+        __farm.store.me.level = 50;
+        __farm.store.me.machines.coixay = { [recipe.id]: { recipe: recipe.id, ready: false, processing: true, readyAt: Date.now() + 300000, currentReadyAt: Date.now() + 300000, cycleMs: 600000, queue: 7 } };
+        m.state = 'working'; m.site.visible = false; m.groups.forEach(g => { g.visible = true; g.scale.setScalar(1); });
+        __farm.camTarget.set(m.g.position.x, 0, m.g.position.z); __farm.setZoom(0.65);
+      });
+      await page.waitForFunction(() => __farm.mill.crates.filter(c => c.visible).length === 5);
+      assert.equal(await page.evaluate(() => {
+        const tag = [...document.querySelectorAll('#tags .tag')].find(el => el.textContent.includes('Đang xay'));
+        return !!tag && tag.textContent.includes('📦7') && Number(tag.dataset.progress) >= 40 && Number(tag.dataset.progress) <= 60;
+      }), true, 'mill queue and progress follow server state');
+      await page.evaluate(() => { Object.values(__farm.store.me.machines.coixay)[0].ready = true; __farm.mill.state = 'done'; });
+      const stoneBefore = await page.evaluate(() => __farm.mill.stone.rotation.y);
+      await page.waitForFunction(before => Math.abs(__farm.mill.stone.rotation.y - before) > 0.04, stoneBefore);
+      await page.screenshot({ path: `${out}/mill-queue-ready-1280.png` });
+      await page.evaluate(() => { Object.values(__farm.store.me.machines.coixay)[0].ready = false; __farm.mill.state = 'collect'; __farm.mill.t = 0; });
+      await page.waitForFunction(() => __farm.mill.state === 'working');
+      assert.equal(await page.evaluate(() => __farm.mill.crates.filter(c => c.visible).length === 5), true, 'mill resumes after collecting one batch');
     }
     assert.deepEqual(errors, [], `${width}px browser errors`);
     console.log(`PASS 3D UI ${width}px`);

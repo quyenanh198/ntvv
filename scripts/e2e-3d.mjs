@@ -356,7 +356,7 @@ for (const mode of MODES) {
     await page.click('#prodRows .row button:not([disabled])');
     await page.waitForFunction(() => __farm.store.me.dog.active, null, { timeout: 60000 });
     step('dog hired; server records it', true);
-    await page.waitForFunction(() => __farm.guardDogSprite?.visible && __farm.guardDogSprite.material.map.image?.width > 0);
+    await page.waitForFunction(() => __farm.guardDogSprite?.visible && __farm.guardDogSprite.isGroup && __farm.guardDogSprite.children.length >= 10);
     step('active guard dog appears in the 3D scene', true);
     const dogStart = await page.evaluate(() => __farm.guardDogSprite.position.clone().toArray());
     await page.waitForTimeout(1200);
