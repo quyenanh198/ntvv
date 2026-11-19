@@ -1753,9 +1753,13 @@ function updateAnimals(dt, time) {
   }
   // grown animals keep a body's width apart, and stay inside their pen or yard
   for (let i = 0; i < animals.length; i++) for (let j = i + 1; j < animals.length; j++) {
-    const a = animals[i], b = animals[j]; if (a.kind === 'chick' || b.kind === 'chick' || a.kind === 'prop' || b.kind === 'prop') continue;
+    const a = animals[i], b = animals[j]; if (a.kind === 'chick' || b.kind === 'chick' || (a.kind === 'prop' && b.kind === 'prop')) continue;
     const dx = b.g.position.x - a.g.position.x, dz = b.g.position.z - a.g.position.z, d = Math.hypot(dx, dz), min = 1.15;
-    if (d < min && d > 1e-4) { const k = (min - d) / 2 / d; a.g.position.x -= dx * k; a.g.position.z -= dz * k; b.g.position.x += dx * k; b.g.position.z += dz * k; }
+    if (d < min && d > 1e-4) {
+      const k = (min - d) / d;
+      if (a.kind !== 'prop') { a.g.position.x -= dx * k * (b.kind === 'prop' ? 1 : 0.5); a.g.position.z -= dz * k * (b.kind === 'prop' ? 1 : 0.5); }
+      if (b.kind !== 'prop') { b.g.position.x += dx * k * (a.kind === 'prop' ? 1 : 0.5); b.g.position.z += dz * k * (a.kind === 'prop' ? 1 : 0.5); }
+    }
   }
   for (const a of animals) if (a.area) {
     const [x0, z0, x1, z1] = a.area, p = a.g.position;
