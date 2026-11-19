@@ -68,15 +68,22 @@ export function createHerd(c) {
     g.scale.setScalar(Math.max(1, size * 1.35)); return { g, head };
   }
   function staticProp(kind) {
-    const g = new THREE.Group(), head = new THREE.Group(); g.add(head);
+    const g = new THREE.Group(), head = new THREE.Group(), movers = []; g.add(head);
     if (kind === 'ong') {
       [0, 1, 2, 3].forEach(i => mesh(new THREE.CylinderGeometry(0.42 - i * 0.06, 0.46 - i * 0.06, 0.22, 10), i % 2 ? 0xd9a82f : 0xf0c64a, 0, 0.12 + i * 0.21, 0, g));
       box(0.2, 0.08, 0.04, 0x3a2a14, 0, 0.2, 0.44, g); box(0.5, 0.06, 0.6, 0x8a5a32, 0, 0.02, 0.1, g);
+      for (let i = 0; i < 3; i++) {
+        const bee = new THREE.Group(); g.add(bee); movers.push(bee);
+        mesh(new THREE.SphereGeometry(0.12, 7, 5), 0xf0c64a, 0, 0, 0, bee).scale.set(1.2, 0.7, 0.8);
+        box(0.04, 0.13, 0.15, 0x3a2a14, 0, 0, -0.02, bee);
+        [-1, 1].forEach(side => mesh(new THREE.SphereGeometry(0.08, 6, 4), 0xe9f5f0, side * 0.1, 0.1, 0, bee).scale.set(1, 0.25, 0.65));
+      }
     } else {
       box(0.9, 0.12, 0.6, 0x9a6a3e, 0, 0.3, 0, g); [-0.4, 0.4].forEach(x => [-0.25, 0.25].forEach(z => box(0.06, 0.3, 0.06, 0x6b4423, x, 0.15, z, g)));
-      box(0.8, 0.05, 0.5, 0x6fb04a, 0, 0.38, 0, g); [[-0.2, 0.1], [0.1, -0.1], [0.25, 0.12], [-0.05, -0.15]].forEach(([x, z]) => mesh(new THREE.SphereGeometry(0.06, 6, 4), 0xfaf6ea, x, 0.43, z, g).scale.set(1.8, 0.8, 0.8));
+      box(0.8, 0.05, 0.5, 0x6fb04a, 0, 0.38, 0, g);
+      [-0.15, 0, 0.15].forEach(z => { const worm = new THREE.Group(); worm.position.z = z; g.add(worm); movers.push(worm); mesh(new THREE.SphereGeometry(0.08, 7, 5), 0xfaf6ea, 0, 0.43, 0, worm).scale.set(1.8, 0.8, 0.8); });
     }
-    g.scale.setScalar(1.2); return { g, head };
+    g.scale.setScalar(1.2); return { g, head, movers };
   }
   const marker = () => {
     const m = new THREE.Group();
@@ -95,10 +102,10 @@ export function createHerd(c) {
       const built = look[0] === 'quad' ? quad(kind, look) : look[0] === 'bird' ? bird(kind, look) : staticProp(kind);
       const [x0, z0, x1, z1] = PASTURE, x = rand(x0, x1), z = rand(z0, z1), still = look[0].startsWith('static');
       built.g.position.set(x, 0, z); scene.add(built.g);
-      a = { g: built.g, head: built.head, kind: still ? 'prop' : (look[0] === 'bird' ? 'hen' : 'sheep'), speed: still ? 0 : look[0] === 'bird' ? 0.9 : 0.6, area: still ? null : PASTURE, tx: x, tz: z, wait: rand(0, 3), peck: 0, hop: 0, vy: 0 };
+      a = { g: built.g, head: built.head, movers: built.movers, kind: still ? 'prop' : (look[0] === 'bird' ? 'hen' : 'sheep'), speed: still ? 0 : look[0] === 'bird' ? 0.9 : 0.6, area: still ? null : PASTURE, tx: x, tz: z, wait: rand(0, 3), peck: 0, hop: 0, vy: 0 };
       built.g.userData.animal = a; animals.push(a);
     }
-    hitTargets.push(a.g); bakeVC(a.head); bakeVC(a.g, [a.head]);
+    hitTargets.push(a.g); bakeVC(a.head); bakeVC(a.g, [a.head, ...(a.movers || [])]);
     a.serverKind = kind;
     a.flag = marker(); a.flagY = kind === 'ga' || look?.[0] === 'bird' ? 1.3 : kind === 'cuu' || kind === 'heo' ? 1.55 : 1.75;
     a.flag.position.y = a.flagY; a.g.add(a.flag);
@@ -124,6 +131,10 @@ export function createHerd(c) {
       const a = e.a;
       if (a.grow < 1) { a.grow = Math.min(1, a.grow + dt * 1.6); a.g.scale.copy(e.base).multiplyScalar(Math.max(0.01, easeOutBack(a.grow))); }
       a.head.rotation.x += ((a.status === 'hungry' ? 0.55 + Math.sin(time * 2 + a.tx) * 0.05 : 0) - a.head.rotation.x) * Math.min(1, dt * 5);
+      a.movers?.forEach((m, i) => {
+        if (a.serverKind === 'ong') { const angle = time * 2 + i * 2.1; m.position.set(Math.cos(angle) * 0.65, 0.65 + Math.sin(time * 4 + i) * 0.15, Math.sin(angle) * 0.5); m.rotation.y = -angle; }
+        else m.position.x = Math.sin(time * 0.9 + i * 2) * 0.24;
+      });
       if (a.flag.visible) a.flag.position.y = a.flagY + Math.sin(time * 4 + a.tx) * 0.1;
     }
   }

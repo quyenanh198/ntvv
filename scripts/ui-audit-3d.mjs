@@ -131,6 +131,17 @@ try {
         __farm.camTarget.set(-21, 0, 7); __farm.setZoom(1.1);
       });
       await page.waitForFunction(() => __farm.herd.ents.size === 15);
+      for (const kind of ['ong', 'tam']) {
+        const start = await page.evaluate(name => {
+          const a = [...__farm.herd.ents.values()].find(e => e.a.serverKind === name).a;
+          return { count: a.movers.length, pos: a.movers[0].position.toArray() };
+        }, kind);
+        assert.equal(start.count, 3, `${kind} has animated creatures`);
+        await page.waitForFunction(({ name, pos }) => {
+          const a = [...__farm.herd.ents.values()].find(e => e.a.serverKind === name).a;
+          return a.movers[0].position.distanceTo({ x: pos[0], y: pos[1], z: pos[2] }) > 0.08;
+        }, { name: kind, pos: start.pos });
+      }
       await page.waitForTimeout(600);
       const herdDrawCalls = await page.evaluate(() => __farm.renderer.info.render.calls);
       assert.ok(herdDrawCalls <= 160, `all species use ${herdDrawCalls} draw calls`);
