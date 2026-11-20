@@ -123,6 +123,9 @@ try {
       await page.waitForTimeout(350);
       await page.screenshot({ path: `${out}/crop-grape-1280.png` });
       assert.equal(await page.evaluate(() => __farm.template('nho', 'ripe').attributes.position.count > __farm.template('dualeo', 'ripe').attributes.position.count), true, 'grape vines have distinct bunches');
+      await page.evaluate(() => { const p = __farm.plots[9]; __farm.camTarget.set(p.x, 0, p.z); });
+      await page.waitForTimeout(350);
+      await page.screenshot({ path: `${out}/crop-mushroom-1280.png` });
       await page.evaluate(() => {
         const ids = ['cam', 'dua', 'xoai', 'chuoi', 'tao', 'saurieng', 'quabo', 'thanhlong', 'dao', 'chanh'];
         ids.forEach((id, i) => { const p = __farm.plots[i]; p.crop.geometry = __farm.template(id, 'ripe', 6); });

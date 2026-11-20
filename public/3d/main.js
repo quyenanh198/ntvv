@@ -907,7 +907,7 @@ const BUILD = {
     grid(4, 3, 0.5, 0.58, (x, z) => {
       const h = ripe ? rand(0.35, 0.55) : 0.2;
       part(p, UG.cyl, 0xf1e5c5, x, h * 0.45, z, 0.055, h * 0.9, 0.055);
-      part(p, UG.sph, ripe ? 0xcc704c : 0x9ab671, x, h, z, ripe ? 0.21 : 0.13, 0.1, ripe ? 0.21 : 0.13);
+      part(p, UG.sph, ripe ? vary(0xb87347, 0.01, 0.04) : 0x9ab671, x, h, z, ripe ? 0.24 : 0.13, ripe ? 0.13 : 0.1, ripe ? 0.24 : 0.13);
     });
     return merge(p);
   },
@@ -953,7 +953,7 @@ function template(id, stage, fruits = 7) {
     else {
       const [fam, tint] = FAMILY[id] || (TREE_COL[id] !== undefined ? ['tree', TREE_COL[id]] : ['wheat']);
       const g = BUILD[fam](stage === 'ripe', id, visibleFruits);
-      if (tint != null && stage === 'ripe') recolor(g, tint);
+      if (tint != null && stage === 'ripe' && fam !== 'mushroom') recolor(g, tint);
       templates[key] = g;
     }
   }
