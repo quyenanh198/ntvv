@@ -119,6 +119,11 @@ try {
       });
       await page.waitForTimeout(400);
       await page.screenshot({ path: `${out}/crop-families-1280.png` });
+      await page.evaluate(() => { __farm.plots[6].crop.geometry = __farm.template('bongcai', 'ripe'); __farm.camTarget.set(2, 0, 3); __farm.setZoom(0.85); });
+      await page.waitForTimeout(350);
+      await page.screenshot({ path: `${out}/crop-cabbage-cauliflower-1280.png` });
+      assert.notDeepEqual(await page.evaluate(() => Array.from(__farm.template('bapcai', 'ripe').attributes.color.array)), await page.evaluate(() => Array.from(__farm.template('bongcai', 'ripe').attributes.color.array)), 'cabbage and cauliflower heads have different colors');
+      await page.evaluate(() => { __farm.plots[6].crop.geometry = __farm.template('tra', 'ripe'); });
       await page.evaluate(() => { __farm.plots[3].crop.geometry = __farm.template('duahau', 'ripe'); __farm.camTarget.set(__farm.plots[3].x, 0, __farm.plots[3].z); __farm.setZoom(0.7); });
       await page.waitForTimeout(350);
       await page.screenshot({ path: `${out}/crop-watermelon-1280.png` });

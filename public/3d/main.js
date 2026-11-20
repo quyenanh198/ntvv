@@ -884,7 +884,7 @@ const BUILD = {
     });
     return merge(p);
   },
-  brassica(ripe) {
+  brassica(ripe, id) {
     const p = [];
     grid(3, 3, 0.65, 0.62, (x, z) => {
       const r = ripe ? 0.3 : 0.19;
@@ -892,7 +892,7 @@ const BUILD = {
         const a = k * Math.PI * 2 / 7;
         part(p, UG.ico, vary(0x5ca83b), x + Math.sin(a) * r, 0.15, z + Math.cos(a) * r, 0.21, 0.12, 0.16, 0.4, a);
       }
-      part(p, UG.sph, ripe ? 0xf1eedc : 0x8fca68, x, ripe ? 0.28 : 0.18, z, r * 0.8, r * 0.7, r * 0.8);
+      part(p, UG.sph, ripe ? (id === 'bapcai' ? 0x9ccf6a : 0xf1eedc) : 0x8fca68, x, ripe ? 0.28 : 0.18, z, r * 0.8, r * 0.7, r * 0.8);
     });
     return merge(p);
   },
@@ -975,7 +975,7 @@ function template(id, stage, fruits = 7) {
     else {
       const [fam, tint] = FAMILY[id] || (TREE_COL[id] !== undefined ? ['tree', TREE_COL[id]] : ['wheat']);
       const g = BUILD[fam](stage === 'ripe', id, visibleFruits);
-      if (tint != null && stage === 'ripe' && id !== 'huongduong' && fam !== 'mushroom') recolor(g, tint);
+      if (tint != null && stage === 'ripe' && id !== 'huongduong' && fam !== 'mushroom' && fam !== 'brassica') recolor(g, tint);
       templates[key] = g;
     }
   }
