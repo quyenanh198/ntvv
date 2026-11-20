@@ -773,7 +773,7 @@ const BUILD = {
     });
     return merge(p);
   },
-  corn(ripe) {
+  corn(ripe, id) {
     const p = [];
     grid(3, 3, 0.68, 0.66, (x, z) => {
       const h = ripe ? rand(1.45, 1.7) : rand(0.7, 0.9);
@@ -783,7 +783,14 @@ const BUILD = {
         const y = 0.15 + k / nl * h * 0.75;
         limb(p, UG.cone, vary(0x5f9e34), x, y, z, 0.08, (ripe ? 0.85 : 0.5) * (1 - k / nl * 0.4), rand(0.85, 1.15), k * 2.4 + rand(-0.3, 0.3), 0.22);
       }
-      if (ripe) {
+      if (ripe && id === 'huongduong') {
+        const y = h + 0.08;
+        part(p, UG.sph, 0x6b3f1c, x, y, z, 0.2, 0.08, 0.2, -0.35);
+        for (let k = 0; k < 10; k++) {
+          const a = k / 10 * Math.PI * 2;
+          part(p, UG.sph, k % 2 ? 0xffd23f : 0xf6b91c, x + Math.cos(a) * 0.26, y, z + Math.sin(a) * 0.26, 0.16, 0.055, 0.08, -0.35, a);
+        }
+      } else if (ripe) {
         const yaw = rand(0, 6), y = h * 0.55;
         const sx = x + Math.sin(yaw) * 0.08, sz = z + Math.cos(yaw) * 0.08;
         part(p, UG.sph, vary(0xf7c844), sx + Math.sin(yaw) * 0.06, y + 0.12, sz + Math.cos(yaw) * 0.06, 0.09, 0.2, 0.09, 0.35, yaw);
@@ -953,7 +960,7 @@ function template(id, stage, fruits = 7) {
     else {
       const [fam, tint] = FAMILY[id] || (TREE_COL[id] !== undefined ? ['tree', TREE_COL[id]] : ['wheat']);
       const g = BUILD[fam](stage === 'ripe', id, visibleFruits);
-      if (tint != null && stage === 'ripe' && fam !== 'mushroom') recolor(g, tint);
+      if (tint != null && stage === 'ripe' && id !== 'huongduong' && fam !== 'mushroom') recolor(g, tint);
       templates[key] = g;
     }
   }

@@ -119,6 +119,11 @@ try {
       });
       await page.waitForTimeout(400);
       await page.screenshot({ path: `${out}/crop-families-1280.png` });
+      await page.evaluate(() => { const p = __farm.plots[1]; p.crop.geometry = __farm.template('huongduong', 'ripe'); __farm.camTarget.set(p.x, 0, p.z); __farm.setZoom(0.65); });
+      await page.waitForTimeout(350);
+      await page.screenshot({ path: `${out}/crop-sunflower-1280.png` });
+      assert.equal(await page.evaluate(() => new Set(Array.from(__farm.template('huongduong', 'ripe').attributes.color.array).map(v => v.toFixed(2))).size > 10), true, 'sunflower keeps contrasting center and petals');
+      await page.evaluate(() => { __farm.plots[1].crop.geometry = __farm.template('ngo', 'ripe'); });
       await page.evaluate(() => { const p = __farm.plots[4]; __farm.camTarget.set(p.x, 0, p.z); __farm.setZoom(0.65); });
       await page.waitForTimeout(350);
       await page.screenshot({ path: `${out}/crop-grape-1280.png` });
