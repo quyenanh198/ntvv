@@ -120,6 +120,15 @@ try {
       await page.waitForTimeout(400);
       await page.screenshot({ path: `${out}/crop-families-1280.png` });
       await page.evaluate(() => {
+        __farm.plots[1].crop.geometry = __farm.template('mia', 'ripe');
+        __farm.plots[4].crop.geometry = __farm.template('dualeo', 'ripe');
+        __farm.camTarget.set(2, 0, 3); __farm.setZoom(0.85);
+      });
+      await page.waitForTimeout(350);
+      await page.screenshot({ path: `${out}/crop-cane-cucumber-1280.png` });
+      assert.equal(await page.evaluate(() => __farm.template('mia', 'ripe').attributes.position.count !== __farm.template('ngo', 'ripe').attributes.position.count && __farm.template('dualeo', 'ripe').attributes.position.count !== __farm.template('vani', 'ripe').attributes.position.count), true, 'cane and cucumber use distinct ripe geometry');
+      await page.evaluate(() => { __farm.plots[1].crop.geometry = __farm.template('ngo', 'ripe'); __farm.plots[4].crop.geometry = __farm.template('nho', 'ripe'); });
+      await page.evaluate(() => {
         __farm.plots[5].crop.geometry = __farm.template('sa', 'ripe');
         __farm.plots[7].crop.geometry = __farm.template('cansa', 'ripe');
         __farm.camTarget.set(2, 0, 3); __farm.setZoom(0.85);

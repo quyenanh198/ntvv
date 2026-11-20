@@ -783,7 +783,10 @@ const BUILD = {
         const y = 0.15 + k / nl * h * 0.75;
         limb(p, UG.cone, vary(0x5f9e34), x, y, z, 0.08, (ripe ? 0.85 : 0.5) * (1 - k / nl * 0.4), rand(0.85, 1.15), k * 2.4 + rand(-0.3, 0.3), 0.22);
       }
-      if (ripe && id === 'huongduong') {
+      if (ripe && id === 'mia') {
+        for (let k = 1; k < 6; k++) part(p, UG.cyl, 0xc3d77a, x, k * h / 6, z, 0.075, 0.035, 0.075);
+        for (let k = 0; k < 3; k++) limb(p, UG.cone, 0x82b954, x, h * 0.88, z, 0.035, 0.4, 0.55, k * 2.1, 0.3);
+      } else if (ripe && id === 'huongduong') {
         const y = h + 0.08;
         part(p, UG.sph, 0x6b3f1c, x, y, z, 0.2, 0.08, 0.2, -0.35);
         for (let k = 0; k < 10; k++) {
@@ -851,6 +854,9 @@ const BUILD = {
           const row = Math.floor(k / 3), col = k % 3;
           part(p, UG.sph, 0xe44435, x + (col - 1) * 0.12 + row * 0.03, y - 0.17 - row * 0.13, z + 0.1, 0.095, 0.11, 0.095);
         }
+      } else if (ripe && id === 'dualeo' && i % 2 === 0) {
+        part(p, UG.sph, 0x2f7e36, x, y - 0.34, z + 0.28, 0.1, 0.39, 0.1, 0.14);
+        part(p, UG.sph, 0x3b8a3c, x + 0.18, y - 0.39, z - 0.26, 0.09, 0.35, 0.09, -0.12);
       } else if (ripe && i % 2 === 0) for (let k = 0; k < 3; k++) part(p, UG.sph, 0xe44435, x + k * 0.09, y - 0.17 - k * 0.08, z, 0.09, 0.11, 0.09);
     }
     return merge(p);
