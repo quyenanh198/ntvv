@@ -124,6 +124,15 @@ try {
       await page.screenshot({ path: `${out}/crop-sunflower-1280.png` });
       assert.equal(await page.evaluate(() => new Set(Array.from(__farm.template('huongduong', 'ripe').attributes.color.array).map(v => v.toFixed(2))).size > 10), true, 'sunflower keeps contrasting center and petals');
       await page.evaluate(() => { __farm.plots[1].crop.geometry = __farm.template('ngo', 'ripe'); });
+      await page.evaluate(() => {
+        __farm.plots[5].crop.geometry = __farm.template('catim', 'ripe');
+        __farm.plots[6].crop.geometry = __farm.template('ot', 'ripe');
+        __farm.camTarget.set(2, 0, 3); __farm.setZoom(0.85);
+      });
+      await page.waitForTimeout(350);
+      await page.screenshot({ path: `${out}/crop-eggplant-chili-1280.png` });
+      assert.equal(await page.evaluate(() => ['catim', 'ot'].every(id => __farm.template(id, 'ripe').attributes.position.count !== __farm.template('cachua', 'ripe').attributes.position.count)), true, 'eggplant and chili have distinct fruit geometry');
+      await page.evaluate(() => { __farm.plots[5].crop.geometry = __farm.template('cachua', 'ripe'); __farm.plots[6].crop.geometry = __farm.template('tra', 'ripe'); });
       await page.evaluate(() => { const p = __farm.plots[4]; __farm.camTarget.set(p.x, 0, p.z); __farm.setZoom(0.65); });
       await page.waitForTimeout(350);
       await page.screenshot({ path: `${out}/crop-grape-1280.png` });

@@ -847,14 +847,21 @@ const BUILD = {
     }
     return merge(p);
   },
-  berry(ripe) {
+  berry(ripe, id) {
     const p = [];
     grid(3, 3, 0.65, 0.62, (x, z) => {
       for (let k = 0; k < 5; k++) {
         const a = k * Math.PI * 2 / 5, h = ripe ? 0.65 : 0.38;
         limb(p, UG.cone, vary(0x4b9b38), x, 0, z, 0.08, h, 0.35, a, 0.5);
         part(p, UG.ico, vary(0x5baa42), x + Math.sin(a) * 0.25, h * 0.8, z + Math.cos(a) * 0.25, 0.23, 0.15, 0.2);
-        if (ripe && k % 2 === 0) part(p, UG.sph, 0xe23b2e, x + Math.sin(a) * 0.31, h * 0.65, z + Math.cos(a) * 0.31, 0.11, 0.12, 0.11);
+        if (ripe && k % 2 === 0) {
+          const fx = x + Math.sin(a) * 0.31, fz = z + Math.cos(a) * 0.31;
+          if (id === 'catim') {
+            part(p, UG.sph, 0xe23b2e, fx, h * 0.55, fz, 0.13, 0.22, 0.13, 0.3, a);
+            part(p, UG.cone, 0x4b9b38, fx, h * 0.85, fz, 0.12, 0.1, 0.12, Math.PI, a);
+          } else if (id === 'ot') part(p, UG.cone, 0xe23b2e, x + Math.sin(a) * 0.44, h * 0.82, z + Math.cos(a) * 0.44, 0.075, 0.3, 0.075, Math.PI - 0.25, a);
+          else part(p, UG.sph, 0xe23b2e, fx, h * 0.65, fz, 0.11, 0.12, 0.11);
+        }
       }
     });
     return merge(p);
