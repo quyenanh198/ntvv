@@ -226,7 +226,7 @@ try {
       await page.waitForTimeout(600);
       assert.equal(await page.evaluate(() => {
         const herd = [...__farm.herd.ents.values()].map(e => e.a).filter(a => !['ga', 'cuu', 'heo'].includes(a.serverKind));
-        return herd.every((a, i) => herd.slice(i + 1).every(b => Math.hypot(a.g.position.x - b.g.position.x, a.g.position.z - b.g.position.z) > 1.1));
+        return herd.every((a, i) => herd.slice(i + 1).every(b => Math.hypot(a.g.position.x - b.g.position.x, a.g.position.z - b.g.position.z) > 1.5));
       }), true, 'pasture animals and fixed props keep space');
       const herdDrawCalls = await page.evaluate(() => __farm.renderer.info.render.calls);
       assert.ok(herdDrawCalls <= 160, `all species use ${herdDrawCalls} draw calls`);

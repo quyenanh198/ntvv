@@ -104,11 +104,10 @@ export function createHerd(c) {
       const [x0, z0, x1, z1] = PASTURE, still = look[0].startsWith('static');
       const occupied = animals.filter(a => a.serverKind && a.g.position.x >= x0 && a.g.position.x <= x1);
       let x = x0, z = z0, best = -1;
-      for (let attempt = 0; attempt < 24; attempt++) {
+      for (let attempt = 0; attempt < 40; attempt++) {
         const px = rand(x0, x1), pz = rand(z0, z1);
         const gap = Math.min(Infinity, ...occupied.map(a => Math.hypot(px - a.g.position.x, pz - a.g.position.z)));
         if (gap > best) { x = px; z = pz; best = gap; }
-        if (gap >= 1.6) break;
       }
       built.g.position.set(x, 0, z); scene.add(built.g);
       a = { g: built.g, head: built.head, movers: built.movers, kind: still ? 'prop' : (look[0] === 'bird' ? 'hen' : 'sheep'), speed: still ? 0 : look[0] === 'bird' ? 0.9 : 0.6, area: still ? null : PASTURE, tx: x, tz: z, wait: rand(0, 3), peck: 0, hop: 0, vy: 0 };
