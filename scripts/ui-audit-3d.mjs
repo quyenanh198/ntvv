@@ -120,6 +120,14 @@ try {
       await page.waitForTimeout(400);
       await page.screenshot({ path: `${out}/crop-families-1280.png` });
       await page.evaluate(() => {
+        ['khoaitay', 'hanhtay', 'toi'].forEach((id, i) => { __farm.plots[i + 5].crop.geometry = __farm.template(id, 'ripe'); });
+        __farm.camTarget.set(2, 0, 3); __farm.setZoom(0.85);
+      });
+      await page.waitForTimeout(350);
+      await page.screenshot({ path: `${out}/crop-root-variants-1280.png` });
+      assert.equal(await page.evaluate(() => new Set(['carot', 'khoaitay', 'hanhtay', 'toi'].map(id => __farm.template(id, 'ripe').attributes.position.count)).size), 4, 'root crops have distinct produce geometry');
+      await page.evaluate(() => { ['cachua', 'tra', 'bapcai'].forEach((id, i) => { __farm.plots[i + 5].crop.geometry = __farm.template(id, 'ripe'); }); });
+      await page.evaluate(() => {
         __farm.plots[1].crop.geometry = __farm.template('mia', 'ripe');
         __farm.plots[4].crop.geometry = __farm.template('dualeo', 'ripe');
         __farm.camTarget.set(2, 0, 3); __farm.setZoom(0.85);

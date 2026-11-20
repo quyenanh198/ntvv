@@ -803,10 +803,22 @@ const BUILD = {
     });
     return merge(p);
   },
-  carrot(ripe) {
+  carrot(ripe, id) {
     const p = [];
     grid(3, 4, 0.62, 0.5, (x, z) => {
-      if (ripe) part(p, UG.cone, vary(0xf07c1e, 0.015, 0.05), x, 0.13, z, 0.16, 0.42, 0.16, Math.PI, 0);
+      if (ripe) {
+        const root = vary(0xf07c1e, 0.015, 0.05);
+        if (id === 'khoaitay') part(p, UG.sph, root, x, 0.12, z, 0.2, 0.14, 0.24, 0, rand(0, 6));
+        else if (id === 'hanhtay') {
+          part(p, UG.sph, root, x, 0.14, z, 0.2, 0.2, 0.2);
+          part(p, UG.cone, root, x, 0.35, z, 0.08, 0.17, 0.08);
+        } else if (id === 'toi') {
+          for (let k = 0; k < 5; k++) {
+            const a = k / 5 * Math.PI * 2;
+            part(p, UG.sph, root, x + Math.sin(a) * 0.09, 0.12, z + Math.cos(a) * 0.09, 0.1, 0.15, 0.1);
+          }
+        } else part(p, UG.cone, root, x, 0.13, z, 0.16, 0.42, 0.16, Math.PI, 0);
+      }
       const n = ripe ? 6 : 4, base = ripe ? 0.14 : 0.02;
       for (let k = 0; k < n; k++) {
         const tip = limb(p, UG.cone, vary(0x4f9d2f), x, base, z, 0.035, ripe ? rand(0.4, 0.55) : rand(0.22, 0.3), rand(0.25, 0.6), k / n * 6.28 + rand(-0.2, 0.2), 0.4);
