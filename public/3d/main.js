@@ -874,9 +874,24 @@ const BUILD = {
     });
     return merge(p);
   },
-  leafy(ripe) {
+  leafy(ripe, id) {
     const p = [];
     grid(3, 3, 0.62, 0.58, (x, z) => {
+      if (id === 'sa') {
+        for (let k = 0; k < 9; k++) {
+          const a = k * Math.PI * 2 / 9;
+          limb(p, UG.cone, k % 2 ? 0x9cc86a : 0x6fa84a, x, 0, z, 0.045, ripe ? 0.9 : 0.48, 0.25 + k % 3 * 0.12, a, 0.24);
+        }
+        return;
+      }
+      if (id === 'cansa') {
+        limb(p, UG.cyl, 0x5a9a3c, x, 0, z, 0.035, ripe ? 0.67 : 0.38, 0, 0);
+        for (let k = 0; k < 7; k++) {
+          const a = k * Math.PI * 2 / 7;
+          limb(p, UG.cone, k % 2 ? 0x4b8f38 : 0x6bac45, x, ripe ? 0.49 : 0.29, z, 0.075, ripe ? 0.42 : 0.25, 1.1, a, 0.3);
+        }
+        return;
+      }
       for (let k = 0; k < 8; k++) {
         const a = k * Math.PI * 2 / 8, h = ripe ? 0.6 : 0.36;
         part(p, UG.ico, vary(k % 2 ? 0x4f9d35 : 0x79b84b), x + Math.sin(a) * 0.17, h * 0.55 + k % 3 * 0.06, z + Math.cos(a) * 0.17, 0.22, 0.09, 0.12, 0.45, a);

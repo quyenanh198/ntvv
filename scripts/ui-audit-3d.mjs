@@ -119,6 +119,15 @@ try {
       });
       await page.waitForTimeout(400);
       await page.screenshot({ path: `${out}/crop-families-1280.png` });
+      await page.evaluate(() => {
+        __farm.plots[5].crop.geometry = __farm.template('sa', 'ripe');
+        __farm.plots[7].crop.geometry = __farm.template('cansa', 'ripe');
+        __farm.camTarget.set(2, 0, 3); __farm.setZoom(0.85);
+      });
+      await page.waitForTimeout(350);
+      await page.screenshot({ path: `${out}/crop-leafy-variants-1280.png` });
+      assert.equal(await page.evaluate(() => new Set(['sa', 'tra', 'cansa'].map(id => __farm.template(id, 'ripe').attributes.position.count)).size), 3, 'leafy crops have distinct silhouettes');
+      await page.evaluate(() => { __farm.plots[5].crop.geometry = __farm.template('cachua', 'ripe'); __farm.plots[7].crop.geometry = __farm.template('bapcai', 'ripe'); });
       await page.evaluate(() => { __farm.plots[6].crop.geometry = __farm.template('bongcai', 'ripe'); __farm.camTarget.set(2, 0, 3); __farm.setZoom(0.85); });
       await page.waitForTimeout(350);
       await page.screenshot({ path: `${out}/crop-cabbage-cauliflower-1280.png` });
