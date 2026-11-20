@@ -230,7 +230,7 @@ button:focus-visible { outline: 3px solid var(--water); outline-offset: 2px; }
 @media (min-width: 700px) { #prodRows.more-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 .sheet.wide { width: min(560px, 100%); max-height: calc(100% - 8px); overflow-y: auto; }
-.tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.tabs { display: flex; flex: none; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
 #prodSheet .tabs:not(:empty) { position: sticky; top: 72px; z-index: 1; padding-block: 4px 8px; background: #fff8e8; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab { flex: 0 0 auto; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1.5px solid #ead9b4; background: #fffdf7; font: 700 14px var(--f-ui); color: var(--wood-dark); cursor: pointer; }

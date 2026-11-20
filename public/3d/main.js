@@ -2109,7 +2109,7 @@ function frame(t) {
   if (!document.hidden) adaptQuality(gap);
 }
 requestAnimationFrame(frame);
-if (location.hash === '#debug') window.__farm = { get layout() { return layout; }, editCell, get EDIT() { return EDIT; }, get stations() { return stations; }, get herd() { return herd; }, animals, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, camTarget, mill, pondHit, toScreen, tapMill, template, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
+if (location.hash === '#debug') window.__farm = { get layout() { return layout; }, editCell, get EDIT() { return EDIT; }, get stations() { return stations; }, get herd() { return herd; }, animals, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, openProd, camTarget, mill, pondHit, toScreen, tapMill, template, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
 
 if (location.hash === '#debug') Object.defineProperty(window.__farm, 'luxuryScene', { get: () => luxuryScene });
 if (location.hash === '#debug') Object.defineProperty(window.__farm, 'guardDogSprite', { get: () => guardDogSprite });
@@ -2134,6 +2134,10 @@ function renderProd() {
       t.textContent = locked ? `${m.name} · cấp ${m.level}` : m.name;
       t.addEventListener('click', () => { prodMachine = m.id; renderProd(); });
       tabs.appendChild(t);
+    });
+    requestAnimationFrame(() => {
+      const activeTab = tabs.querySelector('[aria-selected="true"]');
+      if (activeTab) tabs.scrollLeft = activeTab.offsetLeft - tabs.offsetLeft - (tabs.clientWidth - activeTab.clientWidth) / 2;
     });
     const m = prodMachine && cat().machines[prodMachine];
     if (!m) { rows.innerHTML = '<div class="empty">Chưa mở máy nào. Lên cấp để mở máy chế biến.</div>'; return; }
@@ -2295,7 +2299,9 @@ function collectRecipe(machine, r) {
 }
 function openProd(mode, machine) {
   initAudio(); if (mode === 'layout') { startEdit(); return; } prodMode = mode; if (machine) prodMachine = machine;
-  renderProd(); prodSheet.hidden = false; (prodSheet.querySelector('.tab:not(:disabled), .cta:not(:disabled)') || $('#prodClose')).focus();
+  renderProd(); prodSheet.hidden = false; prodSheet.querySelector('.sheet').scrollTop = 0;
+  const target = prodSheet.querySelector('.tab[aria-selected="true"], .tab:not(:disabled), .cta:not(:disabled)') || $('#prodClose');
+  target.focus();
 }
 $('#bMachines').addEventListener('click', () => openProd('machines'));
 $('#bOrders').addEventListener('click', () => openProd('orders'));

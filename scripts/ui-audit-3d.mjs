@@ -48,6 +48,20 @@ try {
     await page.locator('#prodSheet').evaluate(el => el.getAnimations({ subtree: true }).forEach(a => a.finish()));
     await page.screenshot({ path: `${out}/machines-${width}.png` });
     assert.equal(await page.locator('#prodTitle').textContent(), 'Chế biến');
+    if (width === 390) {
+      await page.evaluate(() => { __farm.store.me.level = 100; __farm.openProd('machines', 'xuongcaocap'); });
+      await page.locator('#prodSheet').evaluate(el => el.getAnimations({ subtree: true }).forEach(a => a.finish()));
+      await page.waitForTimeout(100);
+      await page.screenshot({ path: `${out}/machines-selected-390.png` });
+      const selectedTab = await page.evaluate(() => {
+        const row = document.querySelector('#prodTabs').getBoundingClientRect();
+        const tab = document.querySelector('#prodTabs [aria-selected="true"]').getBoundingClientRect();
+        const tabs = document.querySelector('#prodTabs'), selected = tabs.querySelector('[aria-selected="true"]'), sheet = document.querySelector('#prodSheet .sheet');
+        return { row: [row.left, row.right, row.top, row.bottom], tab: [tab.left, tab.right, tab.top, tab.bottom], scrollLeft: tabs.scrollLeft, scrollWidth: tabs.scrollWidth, clientWidth: tabs.clientWidth, offsetLeft: selected.offsetLeft, sheetScroll: sheet.scrollTop };
+      });
+      assert.equal(selectedTab.tab[0] >= selectedTab.row[0] && selectedTab.tab[1] <= selectedTab.row[1] && selectedTab.tab[3] - selectedTab.tab[2] >= 44, true, `selected late workshop tab is fully visible on mobile: ${JSON.stringify(selectedTab)}`);
+      await page.evaluate(() => { __farm.store.me.level = 1; });
+    }
     await page.click('#prodClose');
     await page.click('#khoBtn');
     await page.waitForSelector('#store:not([hidden])');
