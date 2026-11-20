@@ -875,6 +875,21 @@ const BUILD = {
   },
   berry(ripe, id) {
     const p = [];
+    if (id === 'cacao') {
+      grid(2, 2, 0.95, 0.9, (x, z) => {
+        const h = ripe ? 0.95 : 0.52;
+        limb(p, UG.cyl, 0x76502e, x, 0, z, 0.065, h, 0, 0);
+        for (let k = 0; k < 7; k++) {
+          const a = k * Math.PI * 2 / 7;
+          part(p, UG.ico, vary(0x5baa42), x + Math.sin(a) * 0.27, h * (0.78 + k % 2 * 0.15), z + Math.cos(a) * 0.27, 0.27, 0.08, 0.16, 0.3, a);
+        }
+        if (ripe) for (let k = 0; k < 3; k++) {
+          const a = k * Math.PI * 2 / 3;
+          part(p, UG.sph, 0xe23b2e, x + Math.sin(a) * 0.34, h * 0.59, z + Math.cos(a) * 0.34, 0.13, 0.22, 0.13, 0.2, a);
+        }
+      });
+      return merge(p);
+    }
     grid(3, 3, 0.65, 0.62, (x, z) => {
       for (let k = 0; k < 5; k++) {
         const a = k * Math.PI * 2 / 5, h = ripe ? 0.65 : 0.38;
@@ -886,6 +901,11 @@ const BUILD = {
             part(p, UG.sph, 0xe23b2e, fx, h * 0.55, fz, 0.13, 0.22, 0.13, 0.3, a);
             part(p, UG.cone, 0x4b9b38, fx, h * 0.85, fz, 0.12, 0.1, 0.12, Math.PI, a);
           } else if (id === 'ot') part(p, UG.cone, 0xe23b2e, x + Math.sin(a) * 0.44, h * 0.82, z + Math.cos(a) * 0.44, 0.075, 0.3, 0.075, Math.PI - 0.25, a);
+          else if (id === 'dautay') {
+            const sx = x + Math.sin(a) * 0.42, sz = z + Math.cos(a) * 0.42;
+            part(p, UG.cone, 0xe23b2e, sx, h * 0.8, sz, 0.15, 0.23, 0.15, Math.PI, a);
+            part(p, UG.ico, 0x3d8e36, sx, h, sz, 0.12, 0.035, 0.12);
+          }
           else part(p, UG.sph, 0xe23b2e, fx, h * 0.65, fz, 0.11, 0.12, 0.11);
         }
       }

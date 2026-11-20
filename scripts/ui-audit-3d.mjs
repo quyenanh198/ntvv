@@ -120,6 +120,15 @@ try {
       await page.waitForTimeout(400);
       await page.screenshot({ path: `${out}/crop-families-1280.png` });
       await page.evaluate(() => {
+        __farm.plots[5].crop.geometry = __farm.template('dautay', 'ripe');
+        __farm.plots[6].crop.geometry = __farm.template('cacao', 'ripe');
+        __farm.camTarget.set(2, 0, 3); __farm.setZoom(0.85);
+      });
+      await page.waitForTimeout(350);
+      await page.screenshot({ path: `${out}/crop-strawberry-cacao-1280.png` });
+      assert.equal(await page.evaluate(() => ['dautay', 'cacao'].every(id => __farm.template(id, 'ripe').attributes.position.count !== __farm.template('cachua', 'ripe').attributes.position.count)), true, 'strawberry and cacao have distinct fruit geometry');
+      await page.evaluate(() => { __farm.plots[5].crop.geometry = __farm.template('cachua', 'ripe'); __farm.plots[6].crop.geometry = __farm.template('tra', 'ripe'); });
+      await page.evaluate(() => {
         ['khoaitay', 'hanhtay', 'toi'].forEach((id, i) => { __farm.plots[i + 5].crop.geometry = __farm.template(id, 'ripe'); });
         __farm.camTarget.set(2, 0, 3); __farm.setZoom(0.85);
       });
