@@ -821,7 +821,7 @@ const BUILD = {
     else pk(0.1, 0.05, 0.3, 0x9cc24a);
     return merge(p);
   },
-  vine(ripe) {
+  vine(ripe, id) {
     const p = [];
     for (const x of [-0.65, 0.65]) {
       limb(p, UG.cyl, 0xa67845, x, 0, -0.7, 0.045, 1.6, 0, 0);
@@ -829,9 +829,14 @@ const BUILD = {
       for (const y of [0.55, 1.1, 1.55]) limb(p, UG.cyl, 0xb78b55, x, y, -0.7, 0.026, 1.4, Math.PI / 2, 0);
     }
     for (let i = 0; i < 12; i++) {
-      const x = (i % 4 - 1.5) * 0.42, z = (Math.floor(i / 4) - 1) * 0.5, y = 0.55 + i % 3 * 0.35;
-      part(p, UG.ico, vary(0x4d9a42), x, y, z, 0.25, 0.06, 0.18, 0, i);
-      if (ripe && i % 2 === 0) for (let k = 0; k < 3; k++) part(p, UG.sph, 0xe44435, x + k * 0.09, y - 0.17 - k * 0.08, z, 0.09, 0.11, 0.09);
+      const x = (i % 4 - 1.5) * 0.42, z = (Math.floor(i / 4) - 1) * 0.5, y = id === 'nho' ? 0.85 + i % 3 * 0.25 : 0.55 + i % 3 * 0.35;
+      part(p, UG.ico, vary(0x4d9a42), x, y, z, id === 'nho' ? 0.34 : 0.25, id === 'nho' ? 0.09 : 0.06, id === 'nho' ? 0.25 : 0.18, 0, i);
+      if (ripe && id === 'nho' && i % 2 === 0) {
+        for (let k = 0; k < 8; k++) {
+          const row = Math.floor(k / 3), col = k % 3;
+          part(p, UG.sph, 0xe44435, x + (col - 1) * 0.12 + row * 0.03, y - 0.17 - row * 0.13, z + 0.1, 0.095, 0.11, 0.095);
+        }
+      } else if (ripe && i % 2 === 0) for (let k = 0; k < 3; k++) part(p, UG.sph, 0xe44435, x + k * 0.09, y - 0.17 - k * 0.08, z, 0.09, 0.11, 0.09);
     }
     return merge(p);
   },
