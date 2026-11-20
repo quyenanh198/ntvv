@@ -1,6 +1,7 @@
 // The herd in the scene follows store.me.animals: how many of each kind the server says you own,
 // which are hungry (no feed yet) and which have a product ready. Nothing here changes any state.
 export const PASTURE = [-28.2, 3.8, -15, 10.0]; // west pasture for the kinds without a dedicated pen
+export const SHEEP_PEN = [-17.8, -8.8, -14.2, -4.8];
 export const PASTURE_FENCE = [[-14.2, 8.4], [-14.2, 3], [-29, 3], [-29, 10.8], [-14.2, 10.8], [-14.2, 10.6]];
 export const PASTURE_PATH = { w: 1.2, pts: [[-4.9, 9.5], [-14.5, 9.5], [-17, 9.5]] };
 const CAP = { ga: 6, cuu: 3, heo: 3 }, DEFAULT_CAP = 2;
@@ -96,8 +97,8 @@ export function createHerd(c) {
     let a;
     const look = LOOK[kind];
     if (kind === 'ga') { a = makeHen(rand(-11, -7), rand(4.4, 7), index % 2 === 1); }
-    else if (kind === 'cuu') { makeSheep(rand(4.2, 7.2), rand(-6.5, -4)); a = animals[animals.length - 1]; }
-    else if (kind === 'heo') { makePig(rand(4.2, 7.2), rand(-6.5, -4)); a = animals[animals.length - 1]; }
+    else if (kind === 'cuu') { makeSheep(rand(SHEEP_PEN[0], SHEEP_PEN[2]), rand(SHEEP_PEN[1], SHEEP_PEN[3])); a = animals[animals.length - 1]; }
+    else if (kind === 'heo') { makePig(rand(SHEEP_PEN[0], SHEEP_PEN[2]), rand(SHEEP_PEN[1], SHEEP_PEN[3])); a = animals[animals.length - 1]; }
     else {
       const built = look[0] === 'quad' ? quad(kind, look) : look[0] === 'bird' ? bird(kind, look) : staticProp(kind);
       const [x0, z0, x1, z1] = PASTURE, still = look[0].startsWith('static');

@@ -5,7 +5,7 @@ import { itemSprite, animalSprite, luxurySprite } from './art.js';
 import { renderExtra } from './sheets.js';
 import { createStations } from './stations.js';
 import { GRID, ROWS, STREET_PATHS, createLayout, inDistrict, spanCenter } from './layout.js';
-import { PASTURE_FENCE, PASTURE_PATH, createHerd } from './herd.js';
+import { PASTURE_FENCE, PASTURE_PATH, SHEEP_PEN, createHerd } from './herd.js';
 const $ = s => document.querySelector(s);
 const rand = (a = 0, b = 1) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -148,7 +148,7 @@ const PATHS = [
   { w: 1.3, pts: [[STOP_X + 1.6, 9.5], [11.0, 8.7], [12.3, 4.6]] },                              // stall to the mill
   { w: 1.3, pts: [[-4.9, -0.4], [-2.4, -2.5], [9.2, -2.5], [13.6, -3.0], [13.2, -10.6]] },       // north lane to the windmill
   { w: 1.1, pts: [[1.8, -2.5], [1.8, -8.3]] },                                                   // barn door
-  { w: 1.0, pts: [[1.8, -6.5], [3.3, -6.5]] },                                                   // sheep pen gate
+  { w: 1.0, pts: [[-8.2, -5.6], [-13.6, -6.6]] },                                                 // sheep pen gate
   { w: 1.0, pts: [[13.6, -3.0], [12.7, -4.6]] },                                                 // greenhouse
   { w: 1.1, pts: [[-4.9, 3.9], [-6.4, 3.9]] },                                                   // chicken yard
   { w: 1.0, pts: [[-4.9, 3.2], [-3.6, 3.2]] },                                                   // plot gate
@@ -462,7 +462,7 @@ greenhouse(10.5, -5.2, -0.25);
 coop(-10.6, 1.8, 0.35);
 const stallGroup = stall(STOP_X, 10.1, 0);
 // trees, grass and flowers are built in buildFlora() once the merge helpers below exist
-const TREES = [[-16, -3, 1.2, true], [-15.5, 0.4, 1.1, false], [-4.5, -14.5, 1.3, true], [7.5, -16, 1.2, false], [18, -3, 1.2, true], [17.5, 9.5, 1, false], [-21, 0.6, 1.1, true], [21, -14, 1.3, false], [-3.5, -9.5, 0.8, false]];
+const TREES = [[-23, -11, 1.2, true], [-22, -2, 1.1, false], [-4.5, -14.5, 1.3, true], [7.5, -16, 1.2, false], [18, -3, 1.2, true], [17.5, 9.5, 1, false], [-21, 0.6, 1.1, true], [21, -14, 1.3, false], [-3.5, -9.5, 0.8, false]];
 const PINES = [[-26.5, 0.6, 1.1], [-13, -14.5, 1.2], [16.5, -9.5, 1.1], [20, 3.5, 1.2], [22, -8, 1.2]];
 for (const L of [TREES, PINES]) for (let i = L.length - 1; i >= 0; i -= 1) if (inDistrict(L[i][0], L[i][1])) L.splice(i, 1); // the building district is cleared of hand-placed trees
 
@@ -577,7 +577,7 @@ const fenceSegs = [];
 function fence(pts) { for (let i = 0; i < pts.length - 1; i++) fenceSegs.push([pts[i], pts[i + 1]]); }
 fence([[-3.9, 2.2], [-3.9, -1.7], [7.9, -1.7], [7.9, 7.6], [-3.9, 7.6], [-3.9, 4.2]]); // plots, gap on the left
 fence([[-12.2, 3.6], [-12.2, 7.6], [-5.8, 7.6], [-5.8, 4.4]]);                       // chicken yard
-fence([[3.4, -7.4], [8, -7.4], [8, -3.2], [3.4, -3.2], [3.4, -5.6]]);                 // sheep pen
+fence([[-13.6, -6.1], [-13.6, -4.2], [-18.4, -4.2], [-18.4, -9.4], [-13.6, -9.4], [-13.6, -7.1]]); // sheep pen
 fence(PASTURE_FENCE);                                                                  // west pasture
 const posts = [], rails = [];
 fenceSegs.forEach(([[ax, az], [bx, bz]]) => {
@@ -596,7 +596,7 @@ rails.forEach(([x, z, L, ry], i) => {
 });
 railMesh.castShadow = railMesh.receiveShadow = true; scene.add(railMesh);
 
-const blocked = (x, z) => inDistrict(x, z) || (x > -29.6 && x < -13.6 && z > 2.4 && z < 11.4) || (x > -4.4 && x < 8.4 && z > -2.2 && z < 8.1) || solids.some(s => Math.hypot(x - s.x, z - s.z) < s.r + 0.6) || (x > -12.6 && x < -5.4 && z > 3.2 && z < 8) || (x > 3 && x < 8.4 && z > -7.8 && z < -2.8) || z < -19 || Math.abs(z - ROAD_Z) < 2 || onPath(x, z) || (Math.abs(x - MILL_X) < 2.5 && Math.abs(z - MILL_Z) < 2.4);
+const blocked = (x, z) => inDistrict(x, z) || (x > -29.6 && x < -13.6 && z > 2.4 && z < 11.4) || (x > -4.4 && x < 8.4 && z > -2.2 && z < 8.1) || solids.some(s => Math.hypot(x - s.x, z - s.z) < s.r + 0.6) || (x > -12.6 && x < -5.4 && z > 3.2 && z < 8) || (x > -18.4 && x < -13.6 && z > -9.4 && z < -4.2) || (x > 3 && x < 8.4 && z > -7.8 && z < -2.8) || z < -19 || Math.abs(z - ROAD_Z) < 2 || onPath(x, z) || (Math.abs(x - MILL_X) < 2.5 && Math.abs(z - MILL_Z) < 2.4);
 function scatter(geo, mat, count, colors, sy = [0.8, 1.2], area = 26) {
   const im = new THREE.InstancedMesh(geo, mat, count); const c = new THREE.Color();
   for (let i = 0; i < count; i++) {
@@ -1188,7 +1188,7 @@ function sheep(x, z) {
   [-1, 1].forEach(s => { const e = mesh(new THREE.SphereGeometry(0.08, 6, 4), 0x3d3431, s * 0.2, 0.04, -0.02, head); e.scale.set(1, 0.4, 0.6); });
   [-0.06, 0.06].forEach(ex => mesh(new THREE.SphereGeometry(0.025, 5, 4), 0xffffff, ex, 0.05, 0.2, head));
   [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.2], [0.18, 0.2]].forEach(([lx, lz]) => mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.4, 5), 0x3d3431, lx, 0.2, lz, g));
-  const a = { g, head, kind: 'sheep', speed: 0.7, area: [3.9, -6.9, 7.5, -3.7], tx: x, tz: z, wait: rand(0, 3), peck: 0, hop: 0, vy: 0 };
+  const a = { g, head, kind: 'sheep', speed: 0.7, area: SHEEP_PEN, tx: x, tz: z, wait: rand(0, 3), peck: 0, hop: 0, vy: 0 };
   g.userData.animal = a; animals.push(a);
 }
 function pig(x, z) {
@@ -1203,7 +1203,7 @@ function pig(x, z) {
   [-0.09, 0.09].forEach(ex => mesh(new THREE.SphereGeometry(0.03, 5, 4), 0x2a1a10, ex, 0.07, 0.22, head));
   [[-0.2, -0.25], [0.2, -0.25], [-0.2, 0.25], [0.2, 0.25]].forEach(([lx, lz]) => mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.26, 6), pink, lx, 0.13, lz, g));
   const tl = mesh(new THREE.TorusGeometry(0.06, 0.02, 4, 10, 4.5), pink, 0, 0.6, -0.52, g); tl.rotation.y = Math.PI / 2;
-  const a = { g, head, kind: 'pig', speed: 0.6, area: [3.9, -6.9, 7.5, -3.7], tx: x, tz: z, wait: rand(0, 3), peck: 0, hop: 0, vy: 0 };
+  const a = { g, head, kind: 'pig', speed: 0.6, area: SHEEP_PEN, tx: x, tz: z, wait: rand(0, 3), peck: 0, hop: 0, vy: 0 };
   g.userData.animal = a; animals.push(a);
 }
 

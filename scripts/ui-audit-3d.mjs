@@ -232,6 +232,13 @@ try {
       assert.ok(herdDrawCalls <= 160, `all species use ${herdDrawCalls} draw calls`);
       console.log(`All species draw calls: ${herdDrawCalls}`);
       await page.screenshot({ path: `${out}/animal-pasture-1280.png` });
+      assert.equal(await page.evaluate(() => ['cuu', 'heo'].every(kind => {
+        const a = [...__farm.herd.ents.values()].find(e => e.a.serverKind === kind).a;
+        return a.g.position.x < -13.6 && Math.hypot(a.g.position.x - 5.3, a.g.position.z + 6.2) > 10;
+      })), true, 'sheep and pigs stay clear of the fishing pond');
+      await page.evaluate(() => { __farm.camTarget.set(-16, 0, -6.6); __farm.setZoom(0.85); });
+      await page.waitForTimeout(350);
+      await page.screenshot({ path: `${out}/animal-sheep-pen-1280.png` });
       await page.evaluate(() => __farm.camTarget.set(0, 0, 0));
       await page.waitForTimeout(500);
       await page.screenshot({ path: `${out}/animal-pens-1280.png` });
