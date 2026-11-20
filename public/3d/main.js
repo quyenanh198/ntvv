@@ -812,12 +812,20 @@ const BUILD = {
     });
     return merge(p);
   },
-  pumpkin(ripe) {
+  pumpkin(ripe, id) {
     const p = [];
     const leaf = (x, z, s) => part(p, UG.ico, vary(0x5f9e3c), x, 0.12, z, 0.42 * s, 0.07, 0.34 * s, rand(-0.15, 0.15), rand(0, 6));
     [[-0.75, -0.7], [0.75, -0.65], [-0.8, 0.7], [0.8, 0.75], [0, -0.85], [0.05, 0.85]].forEach(([x, z]) => leaf(x, z, ripe ? 1 : 0.75));
     limb(p, UG.cyl, 0x6c9a3a, -0.8, 0.05, -0.6, 0.03, 1.6, Math.PI / 2, 1.7);
     const pk = (x, z, r, col) => {
+      if (id === 'duahau') {
+        part(p, UG.sph, vary(0x4f9d4a), x, r * 0.72, z, r, r * 0.72, r * 0.83);
+        for (let k = 0; k < 8; k++) {
+          const a = k / 8 * Math.PI * 2;
+          part(p, UG.sph, 0x286c39, x + Math.cos(a) * r * 0.83, r * 0.75, z + Math.sin(a) * r * 0.69, r * 0.08, r * 0.56, r * 0.07, 0.1, a);
+        }
+        return;
+      }
       for (let k = 0; k < 8; k++) {
         const a = k / 8 * Math.PI * 2;
         part(p, UG.sph, vary(col, 0.01, 0.04), x + Math.cos(a) * r * 0.42, r * 0.62, z + Math.sin(a) * r * 0.42, r * 0.56, r * 0.6, r * 0.56, 0, -a);

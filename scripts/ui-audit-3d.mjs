@@ -119,6 +119,11 @@ try {
       });
       await page.waitForTimeout(400);
       await page.screenshot({ path: `${out}/crop-families-1280.png` });
+      await page.evaluate(() => { __farm.plots[3].crop.geometry = __farm.template('duahau', 'ripe'); __farm.camTarget.set(__farm.plots[3].x, 0, __farm.plots[3].z); __farm.setZoom(0.7); });
+      await page.waitForTimeout(350);
+      await page.screenshot({ path: `${out}/crop-watermelon-1280.png` });
+      assert.notEqual(await page.evaluate(() => __farm.template('duahau', 'ripe').attributes.position.count), await page.evaluate(() => __farm.template('bingo', 'ripe').attributes.position.count), 'watermelon has distinct fruit geometry');
+      await page.evaluate(() => { __farm.plots[3].crop.geometry = __farm.template('bingo', 'ripe'); });
       await page.evaluate(() => { const p = __farm.plots[1]; p.crop.geometry = __farm.template('huongduong', 'ripe'); __farm.camTarget.set(p.x, 0, p.z); __farm.setZoom(0.65); });
       await page.waitForTimeout(350);
       await page.screenshot({ path: `${out}/crop-sunflower-1280.png` });
