@@ -1,6 +1,10 @@
 # Mobile startup transfer baseline
 
-The CI Chromium smoke check opens a fresh level-1 farm at 320px, waits for the first plot and the page load event, then records same-origin Performance Resource Timing entries. Its JSON and screenshots are saved as a CI artifact. The sample includes HTTP transfer overhead and only resources loaded before that observation point; external fonts and later gameplay assets are excluded.
+## 3D client sample
+
+The 3D browser smoke check opens the default `/farm/` route at 320, 390, 768, and 1280px and saves per-resource transfer data in `artifacts/browser-3d/`. A local Chromium 320px sample transferred 1,610,366 B without HTTP compression. The served Three.js module accounted for 1,172,821 B. This local measurement cannot be compared directly with the 1.0 MB **compressed** target in `docs/specification-3d.md`; a release check must measure the deployed server's compressed responses. The 2D baseline below remains relevant while the classic fallback is available.
+
+The classic-client Chromium smoke check (`npm run browser:smoke:2d`) opens a fresh level-1 farm at 320px, waits for the first plot and the page load event, then records same-origin Performance Resource Timing entries. Its JSON and screenshots are saved as a CI artifact. The sample includes HTTP transfer overhead and only resources loaded before that observation point; external fonts and later gameplay assets are excluded.
 
 | Branch revision | Local transfer | Image transfer | Local requests | Images |
 | --- | ---: | ---: | ---: | ---: |

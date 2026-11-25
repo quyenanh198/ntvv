@@ -30,8 +30,10 @@ jobs:
         run: npm test
       - name: Install headless Chromium
         run: npx playwright install --with-deps --only-shell chromium
-      - name: Check responsive farm and order sheet
+      - name: Check responsive 3D farm and menus
         run: npm run browser:smoke
+      - name: Check classic client while fallback remains available
+        run: npm run browser:smoke:2d
       - name: Play the 3D client against the real server
         run: npm run e2e:3d -- artifacts/e2e-3d/chromium
       - name: Audit 3D layout at phone, tablet, and desktop widths
@@ -43,6 +45,7 @@ jobs:
           name: farm-browser-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             artifacts/browser/
+            artifacts/browser-3d/
             artifacts/e2e-3d/
             artifacts/ui-audit-3d/
           if-no-files-found: ignore
@@ -79,8 +82,10 @@ jobs:
         run: npm ci
       - name: Install browser engine
         run: npx playwright install --with-deps ${{ matrix.browser }}
-      - name: Run full gameplay and layout walkthrough
+      - name: Check 3D startup and fallback on this engine
         run: npm run browser:smoke
+      - name: Check classic client while fallback remains available
+        run: npm run browser:smoke:2d
       - name: Play the 3D client on this engine
         run: npm run e2e:3d -- artifacts/e2e-3d/${{ matrix.browser }}
       - name: Save engine screenshots
@@ -90,5 +95,6 @@ jobs:
           name: farm-browser-${{ matrix.browser }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             artifacts/browser/${{ matrix.browser }}/
+            artifacts/browser-3d/${{ matrix.browser }}/
             artifacts/e2e-3d/${{ matrix.browser }}/
           if-no-files-found: ignore
