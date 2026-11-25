@@ -1422,7 +1422,7 @@ function renderBulk() {
   $('#bHarvest').disabled = !ripe || busyBulk; $('#bWater').disabled = !dry || busyBulk; $('#bPlant').disabled = !empty || busyBulk;
   const nx = me.expandNext, bx = $('#bExpand');
   bx.hidden = !nx;
-  if (nx) { bx.textContent = `Mở rộng +${nx.plots} ô · ${nf.format(nx.gold)}`; bx.disabled = busyBulk || me.level < nx.level || me.gold < nx.gold; bx.title = me.level < nx.level ? `Cần cấp ${nx.level}` : ''; }
+  if (nx) { bx.textContent = `Mở đất · ${nf.format(nx.gold)}`; bx.setAttribute('aria-label', `Mở rộng thêm ${nx.plots} ô đất, giá ${nf.format(nx.gold)} vàng, cần cấp ${nx.level}`); bx.disabled = busyBulk || me.level < nx.level || me.gold < nx.gold; bx.title = me.level < nx.level ? `Cần cấp ${nx.level}` : ''; }
 }
 
 const ERR = {
