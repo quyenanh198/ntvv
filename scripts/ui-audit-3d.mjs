@@ -241,9 +241,10 @@ try {
         const herd = [...__farm.herd.ents.values()].map(e => e.a).filter(a => !['ga', 'cuu', 'heo'].includes(a.serverKind));
         return herd.every((a, i) => herd.slice(i + 1).every(b => Math.hypot(a.g.position.x - b.g.position.x, a.g.position.z - b.g.position.z) > 1.5));
       }), true, 'pasture animals and fixed props keep space');
-      const herdDrawCalls = await page.evaluate(() => __farm.renderer.info.render.calls);
+      const { calls: herdDrawCalls, triangles } = await page.evaluate(() => ({ calls: __farm.renderer.info.render.calls, triangles: __farm.renderer.info.render.triangles }));
       assert.ok(herdDrawCalls <= 160, `all species use ${herdDrawCalls} draw calls`);
-      console.log(`All species draw calls: ${herdDrawCalls}`);
+      assert.ok(triangles <= 350_000, `all species use ${triangles} triangles`);
+      console.log(`All species: ${herdDrawCalls} draw calls, ${triangles} triangles`);
       await page.screenshot({ path: `${out}/animal-pasture-1280.png` });
       assert.equal(await page.evaluate(() => ['cuu', 'heo'].every(kind => {
         const a = [...__farm.herd.ents.values()].find(e => e.a.serverKind === kind).a;

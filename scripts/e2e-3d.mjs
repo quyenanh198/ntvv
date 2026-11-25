@@ -397,9 +397,13 @@ for (const mode of MODES) {
     step('lottery ticket bought; server takes the gold', true);
   }
   if (mode === 'luxury') {
-    const lastArt = page.locator('#prodRows .row img').last();
-    await lastArt.scrollIntoViewIfNeeded();
-    step('decoration and pet art decodes in the sheet', await lastArt.evaluate(img => img.decode().then(() => img.naturalWidth > 0).catch(() => false)));
+    await page.waitForFunction(async () => {
+      const img = [...document.querySelectorAll('#prodRows .row img')].at(-1);
+      if (!img) return false;
+      img.scrollIntoView({ block: 'nearest' });
+      try { await img.decode(); return img.isConnected && img.naturalWidth > 0; } catch { return false; }
+    }, null, { timeout: 60000 });
+    step('decoration and pet art decodes in the sheet', true);
   }
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${out}/e2e-p5-${mode}.png` });
