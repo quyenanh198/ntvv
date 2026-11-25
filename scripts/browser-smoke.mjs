@@ -62,8 +62,20 @@ try {
       const violations = await page.evaluate(() => axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }).then(result => result.violations.map(({ id, nodes }) => ({ id, targets: nodes.map(node => node.target) }))));
       writeFileSync(join(out, 'accessibility-menu-320.json'), `${JSON.stringify(violations, null, 2)}\n`);
       assert.deepEqual(violations, [], '320px menu accessibility');
+      await page.locator('#prodClose').focus();
+      await page.keyboard.press('Shift+Tab');
+      assert.equal(await page.evaluate(() => document.querySelector('#prodSheet').contains(document.activeElement)), true, 'Shift+Tab stays in the sheet');
+      await page.keyboard.press('Escape');
+      assert.equal(await page.evaluate(() => document.activeElement?.id), 'bMore', 'Escape returns focus to the opener');
+      await page.locator('#khoBtn').click();
+      await page.locator('#storeClose').focus();
+      await page.keyboard.press('Shift+Tab');
+      assert.equal(await page.evaluate(() => document.querySelector('#store').contains(document.activeElement)), true, 'Shift+Tab stays in inventory');
+      await page.keyboard.press('Escape');
+      assert.equal(await page.evaluate(() => document.activeElement?.id), 'khoBtn', 'inventory returns focus to the opener');
+    } else {
+      await page.locator('#prodClose').click();
     }
-    await page.locator('#prodClose').click();
     assert.deepEqual(errors, [], `${width}px browser errors`);
     const resources = await page.evaluate(() => performance.getEntriesByType('resource').filter(e => new URL(e.name).origin === location.origin && !e.name.endsWith('/farm/axe.min.js')).map(e => ({ path: new URL(e.name).pathname, transfer: e.transferSize, encoded: e.encodedBodySize })));
     writeFileSync(join(out, `transfer-${width}.json`), `${JSON.stringify(resources, null, 2)}\n`);

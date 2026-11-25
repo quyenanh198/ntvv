@@ -7,6 +7,28 @@ import { createStations } from './stations.js';
 import { GRID, ROWS, STREET_PATHS, createLayout, inDistrict, spanCenter } from './layout.js';
 import { PASTURE_FENCE, PASTURE_PATH, SHEEP_PEN, createHerd } from './herd.js';
 const $ = s => document.querySelector(s);
+function showDialog(overlay, focus) {
+  if (overlay.hidden) overlay._returnFocus = document.activeElement;
+  overlay.hidden = false;
+  focus.focus();
+}
+function hideDialog(overlay, fallback) {
+  if (overlay.hidden) return;
+  overlay.hidden = true;
+  const target = overlay._returnFocus;
+  (target?.isConnected && !target.closest('[hidden]') ? target : $(fallback))?.focus();
+}
+window.addEventListener('keydown', e => {
+  const overlay = [$('#prodSheet'), $('#store')].find(el => !el.hidden);
+  if (!overlay) return;
+  if (e.key === 'Escape') { e.preventDefault(); hideDialog(overlay, overlay.id === 'store' ? '#khoBtn' : '#bMore'); return; }
+  if (e.key !== 'Tab') return;
+  const controls = [...overlay.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href]')].filter(el => el.getClientRects().length);
+  if (!controls.length) return;
+  const first = controls[0], last = controls.at(-1);
+  if (e.shiftKey && (document.activeElement === first || !overlay.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && (document.activeElement === last || !overlay.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+});
 const rand = (a = 0, b = 1) => a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 if (THREE.ColorManagement) THREE.ColorManagement.legacyMode = false;
@@ -1611,16 +1633,16 @@ function openStore() {
   if (!any) rows.innerHTML = '<div class="empty">Kho đang trống. Thu hoạch cây chín để có hàng bán.</div>';
   const sb = $('#sellAll'); sb.disabled = !total; sb.textContent = total ? `Bán hết · khoảng ${nf.format(total)} vàng` : 'Bán hết';
   if (truck.state !== 'away') { sb.disabled = true; sb.textContent = 'Xe tải đang chở hàng…'; }
-  $('#store').hidden = false; (sb.disabled ? $('#storeClose') : sb).focus();
+  showDialog($('#store'), sb.disabled ? $('#storeClose') : sb);
 }
 $('#khoBtn').addEventListener('click', openStore);
-$('#storeClose').addEventListener('click', () => { $('#store').hidden = true; });
-$('#store').addEventListener('click', e => { if (e.target.id === 'store') $('#store').hidden = true; });
+$('#storeClose').addEventListener('click', () => hideDialog($('#store'), '#khoBtn'));
+$('#store').addEventListener('click', e => { if (e.target.id === 'store') hideDialog($('#store'), '#khoBtn'); });
 $('#sellAll').addEventListener('click', async () => {
   if (truck.state !== 'away') return;
   const items = Object.entries(store.me.inventory).filter(([id, n]) => n > 0 && (info(id)?.sell || 0) > 0);
   if (!items.length) return;
-  $('#store').hidden = true;
+  hideDialog($('#store'), '#khoBtn');
   G.holdGold = store.me.gold; // vàng chỉ nhảy lên khi xe tải rời đi
   let total = 0; const kinds = []; let units = 0;
   for (const [id, n] of items) {
@@ -1637,7 +1659,6 @@ $('#muteBtn').addEventListener('click', () => {
   $('#muteBtn').setAttribute('aria-label', muted ? 'Bật âm thanh' : 'Tắt âm thanh');
   if (master) master.gain.value = muted ? 0 : 0.6;
 });
-window.addEventListener('keydown', e => { if (e.key === 'Escape') $('#store').hidden = true; });
 
 // ================= Mill: building animation only (work comes with the machines phase) =================
 let camFocus = null;
@@ -2330,15 +2351,14 @@ function collectRecipe(machine, r) {
 }
 function openProd(mode, machine) {
   initAudio(); if (mode === 'layout') { startEdit(); return; } prodMode = mode; if (machine) prodMachine = machine;
-  renderProd(); prodSheet.hidden = false; prodSheet.querySelector('.sheet').scrollTop = 0;
+  renderProd(); prodSheet.querySelector('.sheet').scrollTop = 0;
   const target = prodSheet.querySelector('.tab[aria-selected="true"], .tab:not(:disabled), .cta:not(:disabled)') || $('#prodClose');
-  target.focus();
+  showDialog(prodSheet, target);
 }
 $('#bMachines').addEventListener('click', () => openProd('machines'));
 $('#bOrders').addEventListener('click', () => openProd('orders'));
-$('#prodClose').addEventListener('click', () => { prodSheet.hidden = true; });
-prodSheet.addEventListener('click', e => { if (e.target === prodSheet) prodSheet.hidden = true; });
-window.addEventListener('keydown', e => { if (e.key === 'Escape') prodSheet.hidden = true; });
+$('#prodClose').addEventListener('click', () => hideDialog(prodSheet, '#bMore'));
+prodSheet.addEventListener('click', e => { if (e.target === prodSheet) hideDialog(prodSheet, '#bMore'); });
 subscribe(() => { if (!prodSheet.hidden) renderProd(); });
 
 // ---- the mill in the scene mirrors the server's coixay jobs ----
