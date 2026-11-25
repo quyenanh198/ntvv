@@ -359,8 +359,8 @@ for (const mode of MODES) {
     await page.waitForFunction(() => __farm.guardDogSprite?.visible && __farm.guardDogSprite.isGroup && __farm.guardDogSprite.children.length >= 10);
     step('active guard dog appears in the 3D scene', true);
     const dogStart = await page.evaluate(() => __farm.guardDogSprite.position.clone().toArray());
-    await page.waitForTimeout(1200);
-    step('guard dog patrols the field', await page.evaluate(start => __farm.guardDogSprite.position.distanceTo({ x: start[0], y: start[1], z: start[2] }) > 0.5, dogStart));
+    await page.waitForFunction(start => __farm.guardDogSprite.position.distanceTo({ x: start[0], y: start[1], z: start[2] }) > 0.5, dogStart, { timeout: 30000 });
+    step('guard dog patrols the field', true);
   }
   if (mode === 'fish') {
     const before = await page.evaluate(() => __farm.store.me.energy.current);

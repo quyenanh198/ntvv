@@ -210,8 +210,9 @@ button:focus-visible { outline: 3px solid var(--water); outline-offset: 2px; }
   .seed { flex: 0 0 82px; }
   .seeds { gap: 6px; }
   .tray { gap: 6px; }
-  .bulk { box-sizing: border-box; width: 100%; flex-wrap: nowrap; justify-content: flex-start; gap: 6px; overflow-x: auto; scrollbar-width: thin; padding: 4px 2px 8px; -webkit-overflow-scrolling: touch; }
-  .bulkbtn { flex: 0 0 auto; padding: 0 13px; font-size: 13px; }
+  .bulk { box-sizing: border-box; width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 7px; border-radius: 20px; background: rgba(255, 248, 229, .9); box-shadow: 0 4px 18px rgba(61, 48, 27, .2); }
+  .bulkbtn { min-width: 0; padding: 0 3px; font-size: 12px; }
+  .bulkbtn:disabled { opacity: .7; }
   #bHarvest:not(:disabled), #bPlant:not(:disabled) { background: #e2f4cf; border-color: #5a9b3b; color: #285c12; }
   .tag.sign.locked { width: 25px; height: 25px; box-sizing: border-box; padding: 0; font-size: 0; justify-content: center; box-shadow: 0 2px 7px rgba(60, 35, 10, .2); }
   .tag.sign.locked::before { content: '🔒'; font-size: 13px; line-height: 1; }

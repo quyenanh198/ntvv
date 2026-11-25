@@ -228,7 +228,7 @@ export function createStations(c) {
         cls += ' progress';
       }
       if (s.tag.dataset.t !== txt) { s.tag.textContent = txt; s.tag.className = cls; s.tag.dataset.t = txt; }
-      const p = toScreen(s.x, s.state === 'done' ? 4.8 : 4.6, s.z);
+      const p = toScreen(s.x, s.state === 'done' ? 5.5 : 4.6, s.z);
       if (p.behind) s.tag.style.display = 'none'; else { s.tag.style.display = ''; place(s.tag, p, 70); }
     }
   }

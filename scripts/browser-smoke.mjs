@@ -35,6 +35,10 @@ try {
     await page.waitForFunction(() => window.__farm?.store.me && document.querySelector('#boot').hidden, null, { timeout: 60_000 });
     assert.equal(await page.evaluate(() => __farm.plots.length), 12);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `${width}px horizontal overflow`);
+    assert.equal(await page.evaluate(() => [...document.querySelectorAll('#bulk button:not([hidden])')].every(button => {
+      const r = button.getBoundingClientRect();
+      return r.width >= 44 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth;
+    })), true, `${width}px action buttons fit`);
     await page.screenshot({ path: join(out, `farm-${width}.png`) });
     await page.locator('#bMore').click();
     await page.locator('#prodSheet:not([hidden])').waitFor();
