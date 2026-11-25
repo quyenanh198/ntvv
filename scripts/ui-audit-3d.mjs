@@ -26,6 +26,19 @@ try {
     await page.goto(`${address}/farm/?view=3d#debug`);
     await page.waitForFunction(() => window.__farm?.store.me && document.querySelector('#boot').hidden, null, { timeout: 30000 });
     await page.screenshot({ path: `${out}/farm-${width}.png` });
+    if (width === 390) {
+      await page.evaluate(() => {
+        __farm.store.visitors = [{ id: 2, name: 'Farmer 2' }]; __farm.syncGuest();
+        __farm.camTarget.set(-11, 0, 11); __farm.setZoom(0.9);
+      });
+      await page.waitForTimeout(900);
+      assert.equal(await page.evaluate(() => __farm.guest.root.visible && __farm.guest.root.position.x > -18 && __farm.guest.tag.textContent === 'Farmer 2'), true, 'guest walks in from the road');
+      await page.evaluate(() => { __farm.guest.root.position.x = -9; });
+      await page.waitForTimeout(250);
+      await page.screenshot({ path: `${out}/visitor-road-390.png` });
+      await page.evaluate(() => { __farm.store.visitors = []; __farm.syncGuest(); __farm.camTarget.set(2.5, 0, 4.2); __farm.setZoom(1); });
+      await page.waitForTimeout(300);
+    }
     assert.equal(await page.evaluate(() => [...document.querySelectorAll('#tags .tag')].every(el => {
       const style = getComputedStyle(el); if (style.visibility === 'hidden' || style.display === 'none') return true;
       const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight - 210;

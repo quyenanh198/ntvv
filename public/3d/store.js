@@ -1,7 +1,7 @@
 // Trạng thái phía client: catalog (luật, tải một lần) + me (trạng thái người chơi, do server trả).
 import { api } from './net.js';
 
-export const store = { catalog: null, catalogVersion: null, me: null, family: [], events: [], listeners: new Set() };
+export const store = { catalog: null, catalogVersion: null, me: null, family: [], events: [], visitors: [], listeners: new Set() };
 
 const emit = () => store.listeners.forEach((fn) => fn(store));
 export const subscribe = (fn) => { store.listeners.add(fn); return () => store.listeners.delete(fn); };
@@ -21,6 +21,7 @@ export async function refresh() {
   store.me = state.me;
   store.family = state.family || [];
   store.events = state.events || [];
+  store.visitors = state.visitors || [];
   emit();
   return state;
 }

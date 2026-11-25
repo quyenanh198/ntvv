@@ -156,6 +156,16 @@ const MUTATION_TARGET_FIELDS = new Map(Object.entries({
 export function buildApp({ config, db, logger = true }) {
   const app = Fastify({ logger, trustProxy: true });
   const clockNow = () => config.now?.() ?? Date.now();
+  const visits = new Map(); // shortcut: guest presence expires after missed heartbeats; add explicit leave if stale avatars become disruptive.
+  const VISIT_TTL_MS = 45_000;
+  const activeVisitors = (ownerId) => {
+    const guests = visits.get(ownerId);
+    if (!guests) return [];
+    const now = clockNow();
+    for (const [id, guest] of guests) if (now - guest.at > VISIT_TTL_MS) guests.delete(id);
+    if (!guests.size) visits.delete(ownerId);
+    return [...guests.values()].sort((a, b) => b.at - a.at).slice(0, 3).map(({ id, name }) => ({ id, name }));
+  };
   const startedAt = Date.now();
   const bootStartedNs = config.bootStartedNs ?? process.hrtime.bigint();
   const apiMetrics = {
@@ -1131,6 +1141,7 @@ export function buildApp({ config, db, logger = true }) {
         });
         return {
           me: fresh(request.farmer.user_id),
+          visitors: activeVisitors(request.farmer.user_id),
           family,
           ...(request.query.slim ? {} : { config: catalog.config }),
           catalogVersion: catalog.version,
@@ -2738,6 +2749,13 @@ export function buildApp({ config, db, logger = true }) {
       api.get('/farm/:id', async (request, reply) => {
         const ownerId = Number(request.params.id);
         if (!getFarmer.get(ownerId)) return reply.code(404).send({ error: 'no_farm' });
+        if (ownerId !== request.farmer.user_id) {
+          if (!visits.has(ownerId)) {
+            if (visits.size >= ME_CACHE_MAX) visits.delete(visits.keys().next().value);
+            visits.set(ownerId, new Map());
+          }
+          visits.get(ownerId).set(request.farmer.user_id, { id: request.farmer.user_id, name: request.farmer.name, at: clockNow() });
+        }
         return visitPayload(request, ownerId);
       });
 

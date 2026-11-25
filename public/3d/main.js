@@ -1151,6 +1151,36 @@ function makeFarmer() {
   return { root, upper, legs, arms, head, tail, hoe, can, spoutTip, basket, eyes, glints, phase: 0, state: 'idle', t: 0, task: null, facing: 0, lookT: 0, blinkT: 2, blink: 0 };
 }
 const farmer = makeFarmer(); farmer.queue = [];
+const guest = (() => {
+  const root = new THREE.Group(); scene.add(root);
+  const legs = [-0.13, 0.13].map(x => { const leg = new THREE.Group(); leg.position.set(x, 0.56, 0); root.add(leg); box(0.15, 0.45, 0.18, 0x5a477f, 0, -0.22, 0, leg); return leg; });
+  box(0.48, 0.55, 0.3, 0xaa6b45, 0, 0.82, 0, root);
+  [-0.3, 0.3].forEach(x => box(0.14, 0.45, 0.16, 0xaa6b45, x, 0.83, 0, root));
+  mesh(new THREE.SphereGeometry(0.4, 12, 10), skin, 0, 1.46, 0.06, root);
+  [-0.14, 0.14].forEach(x => mesh(new THREE.SphereGeometry(0.035, 6, 4), 0x2a1a10, x, 1.49, 0.41, root));
+  mesh(new THREE.ConeGeometry(0.64, 0.38, 16), 0xe9c77b, 0, 1.91, 0, root);
+  const tag = document.createElement('div'); tag.className = 'tag sign'; tag.hidden = true; tagsEl.appendChild(tag);
+  root.position.set(-18, 0, ROAD_Z); root.scale.setScalar(1.05); root.visible = false;
+  return { root, legs, tag, id: null, phase: 0 };
+})();
+function syncGuest() {
+  const current = !VISIT && store.visitors?.[0];
+  guest.root.visible = !!current; guest.tag.hidden = !current;
+  if (!current) { guest.id = null; return; }
+  if (guest.id !== current.id) { guest.id = current.id; guest.root.position.set(-18, 0, ROAD_Z); }
+  guest.tag.textContent = current.name;
+}
+function updateGuest(dt) {
+  if (!guest.root.visible) return;
+  const p = guest.root.position, tx = p.x < -6 ? -6 : -4.9, tz = p.x < -6 ? ROAD_Z : 9.5;
+  const dx = tx - p.x, dz = tz - p.z, distance = Math.hypot(dx, dz);
+  if (distance > 0.05) {
+    const step = Math.min(distance, dt * 3.2); p.x += dx / distance * step; p.z += dz / distance * step;
+    guest.root.rotation.y = Math.atan2(dx, dz); guest.phase += dt * 12;
+    guest.legs[0].rotation.x = Math.sin(guest.phase) * 0.6; guest.legs[1].rotation.x = -guest.legs[0].rotation.x;
+  } else guest.legs.forEach(leg => { leg.rotation.x *= Math.max(0, 1 - dt * 8); });
+  place(guest.tag, toScreen(p.x, 2.5, p.z), 70);
+}
 
 const animals = [];
 function chicken(x, z, brown) {
@@ -1493,7 +1523,7 @@ function onState() {
     else if (lastMe.level < MILL_LEVEL) { mill.state = 'pending'; setTimeout(unlockMill, 1700); }
   }
   lastMe = me;
-  renderSeeds(); renderHUD(); ensureStations(); ensureHerd(); if (!VISIT) { herd.sync(me); syncLuxuryScene(me.luxury); syncGuardDog(me.dog?.active); }
+  renderSeeds(); renderHUD(); ensureStations(); ensureHerd(); syncGuest(); if (!VISIT) { herd.sync(me); syncLuxuryScene(me.luxury); syncGuardDog(me.dog?.active); }
 }
 subscribe(onState);
 
@@ -1994,7 +2024,7 @@ mill.groups.forEach(gp => bakeVC(gp, [mill.stone, mill.grain]));
 
 // tiny parts (eyes, buttons, beaks) cast shadows nobody sees but cost a draw call each
 scene.traverse(o => { if (o.isMesh && !o.isInstancedMesh) { if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); const s = new THREE.Vector3(); o.getWorldScale(s); if (o.geometry.boundingSphere.radius * Math.max(s.x, s.y, s.z) < 0.16) o.castShadow = false; } });
-mergeStatic(new Set([sun, sun.target, farmer.root, truck.g, mill.g, mill.site, mill.hit, pondHit, sails, ...animals.map(a => a.g), ...clouds, ...flies.map(f => f.g), ...plots.flatMap(p => [p.crop, p.marker])]));
+mergeStatic(new Set([sun, sun.target, farmer.root, guest.root, truck.g, mill.g, mill.site, mill.hit, pondHit, sails, ...animals.map(a => a.g), ...clouds, ...flies.map(f => f.g), ...plots.flatMap(p => [p.crop, p.marker])]));
 
 // Drop resolution, then shadow detail, when frames stay slow (weak phones)
 let qualT = 0;
@@ -2087,6 +2117,7 @@ function frame(t) {
   place(stallTag, ss, 64);
 
   updateFarmer(dt, time);
+  updateGuest(dt);
   updateAnimals(dt, time);
   updateTruck(dt, time);
   updateMill(dt, time);
@@ -2109,7 +2140,7 @@ function frame(t) {
   if (!document.hidden) adaptQuality(gap);
 }
 requestAnimationFrame(frame);
-if (location.hash === '#debug') window.__farm = { get layout() { return layout; }, editCell, get EDIT() { return EDIT; }, get stations() { return stations; }, get herd() { return herd; }, animals, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, openStore, openProd, camTarget, mill, pondHit, toScreen, tapMill, template, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
+if (location.hash === '#debug') window.__farm = { get layout() { return layout; }, editCell, get EDIT() { return EDIT; }, get stations() { return stations; }, get herd() { return herd; }, animals, visitFarm, leaveVisit, G, store, plots, tapPlot, truck, farmer, guest, syncGuest, openStore, openProd, camTarget, mill, pondHit, toScreen, tapMill, template, refresh, setZoom: z => { zoomGoal = zoom = z; }, perf, renderer };
 
 if (location.hash === '#debug') Object.defineProperty(window.__farm, 'luxuryScene', { get: () => luxuryScene });
 if (location.hash === '#debug') Object.defineProperty(window.__farm, 'guardDogSprite', { get: () => guardDogSprite });
@@ -2328,6 +2359,7 @@ const visitBar = $('#visitBar');
 ERR.own_farm = 'Đây là nhà bạn'; ERR.already_poached = 'Bạn đã hái ô này rồi'; ERR.water_cooldown = 'Ô này vừa được tưới, đợi một lát'; ERR.no_farm = 'Không tìm thấy trang trại';
 ERR.caught_by_dog = 'Chó canh vườn bắt được bạn!'; ERR.not_ready = 'Cây chưa chín';
 function showVisit() {
+  syncGuest();
   const f = VISIT.farm;
   syncLuxuryScene(f.luxury);
   syncGuardDog(f.dogUntil > serverNow());
@@ -2390,6 +2422,7 @@ async function visitFarm(id) {
 }
 function leaveVisit() {
   VISIT = null; visitBar.hidden = true; $('#visitActs').hidden = true; document.body.classList.remove('visiting');
+  syncGuest();
   syncLuxuryScene(store.me.luxury);
   syncGuardDog(store.me.dog?.active);
   for (const p of plots) { p.marker.visible = false; p.pending = null; }
@@ -2510,6 +2543,10 @@ async function start() {
   }
 }
 $('#bootRetry').addEventListener('click', start);
-setInterval(() => { if (document.visibilityState === 'visible' && bootEl.hidden) refresh().catch(() => {}); }, 20_000);
+setInterval(() => {
+  if (document.visibilityState !== 'visible' || !bootEl.hidden) return;
+  refresh().catch(() => {});
+  if (VISIT) api(`/farm/${VISIT.ownerId}`).catch(() => {});
+}, 20_000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && bootEl.hidden) refresh().catch(() => {}); });
 start();
