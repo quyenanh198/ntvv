@@ -1402,7 +1402,7 @@ function renderSeeds() {
     const locked = c.level > me.level, sprite = itemSprite(c.id);
     const b = document.createElement('button'); b.type = 'button'; b.className = 'seed' + (locked ? ' locked' : '');
     b.dataset.crop = c.id; b.setAttribute('aria-pressed', String(c.id === G.seed));
-    b.setAttribute('aria-label', `${c.name}, ${locked ? 'cần cấp ' + c.level : c.seed + ' vàng, ' + fmtDur(c.growMs)}`);
+    b.setAttribute('aria-description', locked ? 'Chưa mở khóa' : `Giá ${c.seed} vàng một hạt`);
     b.innerHTML = (sprite ? `<img src="${sprite}" alt="" loading="lazy" decoding="async">` : `<span class="emo">${c.emoji}</span>`)
       + `<span><b>${c.name}</b>${locked ? `<span class="lock">Cấp ${c.level}</span>` : `<span class="meta"><span><i></i>${c.seed}</span><span><i class="clock"></i>${fmtDur(c.growMs)}</span></span>`}</span>`;
     b.addEventListener('click', () => {
@@ -1422,7 +1422,7 @@ function renderBulk() {
   $('#bHarvest').disabled = !ripe || busyBulk; $('#bWater').disabled = !dry || busyBulk; $('#bPlant').disabled = !empty || busyBulk;
   const nx = me.expandNext, bx = $('#bExpand');
   bx.hidden = !nx;
-  if (nx) { bx.textContent = `Mở đất · ${nf.format(nx.gold)}`; bx.setAttribute('aria-label', `Mở rộng thêm ${nx.plots} ô đất, giá ${nf.format(nx.gold)} vàng, cần cấp ${nx.level}`); bx.disabled = busyBulk || me.level < nx.level || me.gold < nx.gold; bx.title = me.level < nx.level ? `Cần cấp ${nx.level}` : ''; }
+  if (nx) { bx.textContent = `Mở đất · ${nf.format(nx.gold)}`; bx.setAttribute('aria-label', `Mở đất · ${nf.format(nx.gold)}, mở rộng thêm ${nx.plots} ô đất, cần cấp ${nx.level}`); bx.disabled = busyBulk || me.level < nx.level || me.gold < nx.gold; bx.title = me.level < nx.level ? `Cần cấp ${nx.level}` : ''; }
 }
 
 const ERR = {

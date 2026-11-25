@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { chromium, firefox, webkit } from 'playwright';
 import { buildApp } from '../server/src/app.js';
@@ -9,6 +10,7 @@ import { openDb } from '../server/src/db.js';
 const engineName = process.env.NTVV_BROWSER || 'chromium';
 const engine = { chromium, firefox, webkit }[engineName];
 if (!engine) throw new Error('NTVV_BROWSER must be chromium, firefox or webkit');
+const axePath = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 const out = resolve('artifacts/browser-3d', engineName);
 mkdirSync(out, { recursive: true });
 const dataDir = mkdtempSync(join(tmpdir(), 'ntvv-browser-3d-'));
@@ -40,6 +42,13 @@ try {
       return r.width >= 44 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth;
     })), true, `${width}px action buttons fit`);
     await page.screenshot({ path: join(out, `farm-${width}.png`) });
+    if (width === 320) {
+      await page.route('**/farm/axe.min.js', route => route.fulfill({ path: axePath, contentType: 'application/javascript' }));
+      await page.addScriptTag({ url: `${address}/farm/axe.min.js` });
+      const violations = await page.evaluate(() => axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }).then(result => result.violations.map(({ id, nodes }) => ({ id, targets: nodes.map(node => ({ target: node.target, summary: node.failureSummary, data: node.any.map(check => check.data) })) }))));
+      writeFileSync(join(out, 'accessibility-farm-320.json'), `${JSON.stringify(violations, null, 2)}\n`);
+      assert.deepEqual(violations, [], '320px farm accessibility');
+    }
     await page.locator('#bMore').click();
     await page.locator('#prodSheet:not([hidden])').waitFor();
     await page.locator('#prodSheet').evaluate(el => el.getAnimations({ subtree: true }).forEach(animation => animation.finish()));
@@ -49,9 +58,14 @@ try {
       return sheet.left >= 0 && sheet.right <= innerWidth && close.width >= 44 && close.height >= 44;
     }), true, `${width}px sheet layout`);
     await page.screenshot({ path: join(out, `menu-${width}.png`) });
+    if (width === 320) {
+      const violations = await page.evaluate(() => axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }).then(result => result.violations.map(({ id, nodes }) => ({ id, targets: nodes.map(node => node.target) }))));
+      writeFileSync(join(out, 'accessibility-menu-320.json'), `${JSON.stringify(violations, null, 2)}\n`);
+      assert.deepEqual(violations, [], '320px menu accessibility');
+    }
     await page.locator('#prodClose').click();
     assert.deepEqual(errors, [], `${width}px browser errors`);
-    const resources = await page.evaluate(() => performance.getEntriesByType('resource').filter(e => new URL(e.name).origin === location.origin).map(e => ({ path: new URL(e.name).pathname, transfer: e.transferSize, encoded: e.encodedBodySize })));
+    const resources = await page.evaluate(() => performance.getEntriesByType('resource').filter(e => new URL(e.name).origin === location.origin && !e.name.endsWith('/farm/axe.min.js')).map(e => ({ path: new URL(e.name).pathname, transfer: e.transferSize, encoded: e.encodedBodySize })));
     writeFileSync(join(out, `transfer-${width}.json`), `${JSON.stringify(resources, null, 2)}\n`);
     console.log(`${engineName} ${width}px: 3D farm, menu and layout passed; ${resources.reduce((sum, e) => sum + e.transfer, 0)} transfer bytes`);
     await page.close();
